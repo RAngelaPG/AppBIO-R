@@ -1,0 +1,156 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: PC-correlated SNPs in principal component analysis</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for snpgdsPCACorr {SNPRelate}"><tr><td>snpgdsPCACorr {SNPRelate}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+PC-correlated SNPs in principal component analysis
+</h2>
+
+<h3>Description</h3>
+
+<p>To calculate the SNP correlations between eigenvactors and SNP genotypes
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+snpgdsPCACorr(pcaobj, gdsobj, snp.id=NULL, eig.which=NULL, num.thread=1L,
+    with.id=TRUE, outgds=NULL, verbose=TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>pcaobj</code></td>
+<td>
+<p>a <code>snpgdsPCAClass</code> object returned from the function
+<a href="../../SNPRelate/help/snpgdsPCA.html">snpgdsPCA</a>, a <code>snpgdsEigMixClass</code> from
+<a href="../../SNPRelate/help/snpgdsEIGMIX.html">snpgdsEIGMIX</a>, or an eigenvector matrix with row names
+(sample id)</p>
+</td></tr>
+<tr valign="top"><td><code>gdsobj</code></td>
+<td>
+<p>an object of class <code><a href="../../SNPRelate/help/SNPGDSFileClass.html">SNPGDSFileClass</a></code>,
+a SNP GDS file</p>
+</td></tr>
+<tr valign="top"><td><code>snp.id</code></td>
+<td>
+<p>a vector of snp id specifying selected SNPs;
+if NULL, all SNPs are used</p>
+</td></tr>
+<tr valign="top"><td><code>eig.which</code></td>
+<td>
+<p>a vector of integers, to specify which eigenvectors
+to be used</p>
+</td></tr>
+<tr valign="top"><td><code>num.thread</code></td>
+<td>
+<p>the number of (CPU) cores used; if <code>NA</code>, detect
+the number of cores automatically</p>
+</td></tr>
+<tr valign="top"><td><code>with.id</code></td>
+<td>
+<p>if <code>TRUE</code>, the returned value with <code>sample.id</code> and
+<code>sample.id</code></p>
+</td></tr>
+<tr valign="top"><td><code>outgds</code></td>
+<td>
+<p><code>NULL</code> or a character of file name for exporting
+correlations to a GDS file, see details</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>if TRUE, show information</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>If an output file name is specified via <code>outgds</code>, &quot;sample.id&quot;,
+&quot;snp.id&quot; and &quot;correlation&quot; will be stored in the GDS file. The GDS node
+&quot;correlation&quot; is a matrix of correlation coefficients, and it is stored with
+the format of packed real number (&quot;packedreal16&quot; preserving 4 digits, 0.0001
+is the smallest number greater zero, see <a href="../../gdsfmt/html/add.gdsn.html">add.gdsn</a>).
+</p>
+
+
+<h3>Value</h3>
+
+<p>Return a list if <code>outgds=NULL</code>,
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>sample.id</code></td>
+<td>
+<p>the sample ids used in the analysis</p>
+</td></tr>
+<tr valign="top"><td><code>snp.id</code></td>
+<td>
+<p>the SNP ids used in the analysis</p>
+</td></tr>
+<tr valign="top"><td><code>snpcorr</code></td>
+<td>
+<p>a matrix of correlation coefficients,
+&quot;# of eigenvectors&quot; x &quot;# of SNPs&quot;</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Xiuwen Zheng</p>
+
+
+<h3>References</h3>
+
+<p>Patterson N, Price AL, Reich D (2006)
+Population structure and eigenanalysis. PLoS Genetics 2:e190.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../SNPRelate/help/snpgdsPCA.html">snpgdsPCA</a></code>, <code><a href="../../SNPRelate/help/snpgdsPCASampLoading.html">snpgdsPCASampLoading</a></code>,
+<code><a href="../../SNPRelate/help/snpgdsPCASNPLoading.html">snpgdsPCASNPLoading</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# open an example dataset (HapMap)
+genofile &lt;- snpgdsOpen(snpgdsExampleFileName())
+# get chromosome index
+chr &lt;- read.gdsn(index.gdsn(genofile, "snp.chromosome"))
+
+pca &lt;- snpgdsPCA(genofile)
+cr &lt;- snpgdsPCACorr(pca, genofile, eig.which=1:4)
+plot(abs(cr$snpcorr[3,]), xlab="SNP Index", ylab="PC 3", col=chr)
+
+
+# output to a gds file if limited memory
+snpgdsPCACorr(pca, genofile, eig.which=1:4, outgds="test.gds")
+
+(f &lt;- openfn.gds("test.gds"))
+m &lt;- read.gdsn(index.gdsn(f, "correlation"))
+closefn.gds(f)
+
+# check
+summary(c(m - cr$snpcorr))  # should &lt; 1e-4
+
+
+# close the file
+snpgdsClose(genofile)
+
+# delete the temporary file
+unlink("test.gds", force=TRUE)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>SNPRelate</em> version 1.28.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

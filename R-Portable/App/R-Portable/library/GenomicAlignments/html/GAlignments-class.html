@@ -1,0 +1,541 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: GAlignments objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for GAlignments-class {GenomicAlignments}"><tr><td>GAlignments-class {GenomicAlignments}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>GAlignments objects</h2>
+
+<h3>Description</h3>
+
+<p>The GAlignments class is a simple container which purpose is
+to store a set of genomic alignments that will hold just enough
+information for supporting the operations described below.
+</p>
+
+
+<h3>Details</h3>
+
+<p>A GAlignments object is a vector-like object where each element
+describes a genomic alignment i.e. how a given sequence (called &quot;query&quot;
+or &quot;read&quot;, typically short) aligns to a reference sequence (typically
+long).
+</p>
+<p>Typically, a GAlignments object will be created by loading
+records from a BAM (or SAM) file and each element in the resulting
+object will correspond to a record. BAM/SAM records generally contain
+a lot of information but only part of that information is loaded
+in the GAlignments object. In particular, we discard the query
+sequences (SEQ field), the query qualities (QUAL), the mapping qualities
+(MAPQ) and any other information that is not needed in order to support
+the operations or methods described below.
+</p>
+<p>This means that multi-reads (i.e. reads with multiple hits in the
+reference) won't receive any special treatment i.e. the various SAM/BAM
+records corresponding to a multi-read will show up in the GAlignments
+object as if they were coming from different/unrelated queries.
+Also paired-end reads will be treated as single-end reads and the
+pairing information will be lost (see <code>?<a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a></code>
+for how to handle aligned paired-end reads).
+</p>
+<p>Each element of a GAlignments object consists of:
+</p>
+
+<ul>
+<li><p> The name of the reference sequence. (This is the RNAME field
+in a SAM/BAM record.)
+</p>
+</li>
+<li><p> The strand in the reference sequence to which the query is
+aligned. (This information is stored in the FLAG field in a
+SAM/BAM record.)
+</p>
+</li>
+<li><p> The CIGAR string in the &quot;Extended CIGAR format&quot; (see the SAM
+Format Specifications for the details).
+</p>
+</li>
+<li><p> The 1-based leftmost position/coordinate of the clipped query
+relative to the reference sequence. We will refer to it as
+the &quot;start&quot; of the query. (This is the POS field in a SAM/BAM
+record.)
+</p>
+</li>
+<li><p> The 1-based rightmost position/coordinate of the clipped query
+relative to the reference sequence. We will refer to it as
+the &quot;end&quot; of the query. (This is NOT explicitly stored in a
+SAM/BAM record but can be inferred from the POS and CIGAR fields.)
+Note that all positions/coordinates are always relative to
+the first base at the 5' end of the plus strand of the reference
+sequence, even when the query is aligned to the minus strand.
+</p>
+</li>
+<li><p> The genomic intervals between the &quot;start&quot; and &quot;end&quot; of the query
+that are &quot;covered&quot; by the alignment. Saying that the full
+[start,end] interval is covered is the same as saying that the
+alignment contains no junction (no N in the CIGAR). It is then
+considered to be a simple alignment. Note that a simple alignment
+can have mismatches or deletions (in the reference). In other words,
+a deletion (encoded with a D in the CIGAR) is NOT considered to
+introduce a gap in the coverage, but a junction is.
+</p>
+</li></ul>
+
+<p>Note that the last 2 items are not expicitly stored in the GAlignments
+object: they are inferred on-the-fly from the CIGAR and the &quot;start&quot;.
+</p>
+<p>Optionally, a GAlignments object can have names (accessed thru the
+<code><a href="../../base/help/names.html">names</a></code> generic function) which will be coming from
+the QNAME field of the SAM/BAM records.
+</p>
+<p>The rest of this man page will focus on describing how to:
+</p>
+
+<ul>
+<li><p> Access the information stored in a GAlignments object
+in a way that is independent from how the data are actually
+stored internally.
+</p>
+</li>
+<li><p> How to create and manipulate a GAlignments object.
+</p>
+</li></ul>
+
+
+
+<h3>Constructor</h3>
+
+
+<dl>
+<dt></dt><dd>
+<p><code>GAlignments(seqnames=Rle(factor()), pos=integer(0),
+                        cigar=character(0),
+                        strand=NULL, names=NULL, seqlengths=NULL, ...)</code>:
+Low-level GAlignments constructor. Generally not used directly.
+Named arguments in <code>...</code> are used as metadata columns.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Accessors</h3>
+
+<p>In the code snippets below, <code>x</code> is a GAlignments object.
+</p>
+
+<dl>
+<dt></dt><dd>
+<p><code>length(x)</code>:
+Return the number of alignments in <code>x</code>.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>names(x)</code>, <code>names(x) &lt;- value</code>:
+Get or set the names on <code>x</code>.
+See <code><a href="../../GenomicAlignments/help/readGAlignments.html">readGAlignments</a></code> for how to automatically extract
+and set the names when reading the alignments from a file.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>seqnames(x)</code>, <code>seqnames(x) &lt;- value</code>:
+Get or set the name of the reference sequence for each alignment
+in <code>x</code> (see Details section above for more information about
+the RNAME field of a SAM/BAM file).
+<code>value</code> can be a factor, or a 'factor' <a href="../../S4Vectors/help/Rle.html">Rle</a>,
+or a character vector.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>rname(x)</code>, <code>rname(x) &lt;- value</code>:
+Same as <code>seqnames(x)</code> and <code>seqnames(x) &lt;- value</code>.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>strand(x)</code>, <code>strand(x) &lt;- value</code>:
+Get or set the strand for each alignment in <code>x</code> (see Details
+section above for more information about the strand of an alignment).
+<code>value</code> can be a factor (with levels +, - and *), or a 'factor'
+<a href="../../S4Vectors/help/Rle.html">Rle</a>, or a character vector.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>cigar(x)</code>:
+Returns a character vector of length <code>length(x)</code>
+containing the CIGAR string for each alignment.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>qwidth(x)</code>:
+Returns an integer vector of length <code>length(x)</code>
+containing the length of the query *after* hard clipping
+(i.e. the length of the query sequence that is stored in
+the corresponding SAM/BAM record).
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>start(x)</code>, <code>end(x)</code>:
+Returns an integer vector of length <code>length(x)</code>
+containing the &quot;start&quot; and &quot;end&quot; (respectively) of the query
+for each alignment. See Details section above for the exact
+definitions of the &quot;start&quot; and &quot;end&quot; of a query.
+Note that <code>start(x)</code> and <code>end(x)</code> are equivalent
+to <code>start(granges(x))</code> and <code>end(granges(x))</code>,
+respectively (or, alternatively, to <code>min(rglist(x))</code> and
+<code>max(rglist(x))</code>, respectively).
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>width(x)</code>:
+Equivalent to <code>width(granges(x))</code> (or, alternatively, to
+<code>end(x) - start(x) + 1L</code>).
+Note that this is generally different from <code>qwidth(x)</code>
+except for alignments with a trivial CIGAR string (i.e. a
+string of the form <code>"&lt;n&gt;M"</code> where &lt;n&gt; is a number).
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>njunc(x)</code>:
+Returns an integer vector of the same length as <code>x</code> containing
+the number of junctions (i.e. N operations in the CIGAR) in each
+alignment. Equivalent to <code>unname(elementNROWS(rglist(x))) - 1L</code>.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>seqinfo(x)</code>, <code>seqinfo(x) &lt;- value</code>:
+Get or set the information about the underlying sequences.
+<code>value</code> must be a <a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> object.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>seqlevels(x)</code>, <code>seqlevels(x) &lt;- value</code>:
+Get or set the sequence levels.
+<code>seqlevels(x)</code> is equivalent to <code>seqlevels(seqinfo(x))</code>
+or to <code>levels(seqnames(x))</code>, those 2 expressions being
+guaranteed to return identical character vectors on a GAlignments
+object. <code>value</code> must be a character vector with no NAs.
+See <code>?<a href="../../GenomeInfoDb/html/seqinfo.html">seqlevels</a></code> for more information.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>seqlengths(x)</code>, <code>seqlengths(x) &lt;- value</code>:
+Get or set the sequence lengths.
+<code>seqlengths(x)</code> is equivalent to <code>seqlengths(seqinfo(x))</code>.
+<code>value</code> can be a named non-negative integer or numeric vector
+eventually with NAs.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>isCircular(x)</code>, <code>isCircular(x) &lt;- value</code>:
+Get or set the circularity flags.
+<code>isCircular(x)</code> is equivalent to <code>isCircular(seqinfo(x))</code>.
+<code>value</code> must be a named logical vector eventually with NAs.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>genome(x)</code>, <code>genome(x) &lt;- value</code>:
+Get or set the genome identifier or assembly name for each sequence.
+<code>genome(x)</code> is equivalent to <code>genome(seqinfo(x))</code>.
+<code>value</code> must be a named character vector eventually with NAs.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>seqnameStyle(x)</code>:
+Get or set the seqname style for <code>x</code>.
+Note that this information is not stored in <code>x</code> but inferred
+by looking up <code>seqnames(x)</code> against a seqname style database
+stored in the <span class="pkg">seqnames.db</span> metadata package (required).
+<code>seqnameStyle(x)</code> is equivalent to <code>seqnameStyle(seqinfo(x))</code>
+and can return more than 1 seqname style (with a warning)
+in case the style cannot be determined unambiguously.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Coercion</h3>
+
+<p>In the code snippets below, <code>x</code> is a GAlignments object.
+</p>
+
+<dl>
+<dt></dt><dd>
+<p><code>granges(x, use.names=TRUE, use.mcols=FALSE)</code>,
+<code>ranges(x, use.names=TRUE, use.mcols=FALSE)</code>:
+</p>
+<p>Return a <a href="../../GenomicRanges/html/GRanges-class.html">GRanges</a> object (for <code>granges()</code>) or
+<a href="../../IRanges/help/IRanges.html">IRanges</a>) object (for <code>ranges()</code>) <em>parallel</em>
+to <code>x</code> where the i-th element is the range of the genomic region
+spanned by the i-th alignment in <code>x</code>. All gaps in the region are
+ignored.
+</p>
+<p>If <code>use.names</code> is TRUE, then the names on <code>x</code> 
+(if any) are propagated to the returned object.
+If <code>use.mcols</code> is TRUE, then the metadata columns on <code>x</code>
+(if any) are propagated to the returned object.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>grglist(x, use.names=TRUE, use.mcols=FALSE,
+                       order.as.in.query=FALSE, drop.D.ranges=FALSE)</code>,
+<code>rglist(x, use.names=TRUE, use.mcols=FALSE,
+                      order.as.in.query=FALSE, drop.D.ranges=FALSE)</code>:
+</p>
+<p>Return either a <a href="../../ChIPseeker/html/reexports.html">GRangesList</a> or a <a href="../../IRanges/help/IntegerRangesList.html">IntegerRangesList</a>
+object of length <code>length(x)</code> where the i-th element represents
+the ranges (with respect to the reference) of the i-th alignment in
+<code>x</code>.
+</p>
+<p>More precisely, the <a href="../../IRanges/help/IntegerRangesList.html">IntegerRangesList</a> object returned
+by <code>rglist(x)</code> is a <a href="../../IRanges/help/CompressedIRangesList.html">CompressedIRangesList</a> object.
+</p>
+<p>If <code>use.names</code> is TRUE, then the names on <code>x</code> 
+(if any) are propagated to the returned object.
+If <code>use.mcols</code> is TRUE, then the metadata columns on <code>x</code>
+(if any) are propagated to the returned object.
+</p>
+<p>The <code>order.as.in.query</code> toggle affects the order of the ranges
+<em>within</em> each top-level element of the returned object.
+</p>
+<p>If FALSE (the default), then the ranges are ordered from 5' to 3'
+in elements associated with the plus strand (i.e. corresponding to
+alignments located on the plus strand), and from 3' to 5' in elements
+associated with the minus strand. So, whatever the strand is, the ranges
+are in ascending order (i.e. left-to-right).
+</p>
+<p>If TRUE, then the order of the ranges in elements associated
+with the <em>minus</em> strand is reversed. So they end up being
+ordered from 5' to 3' too, which means that they are now in decending
+order (i.e. right-to-left). It also means that, when
+<code>order.as.in.query=TRUE</code> is used, the ranges are
+<em>always</em> ordered consistently with the original &quot;query template&quot;,
+that is, in the order defined by walking the &quot;query template&quot; from the
+beginning to the end.
+</p>
+<p>If <code>drop.D.ranges</code> is TRUE, then deletions (D operations
+in the CIGAR) are treated like junctions (N operations in the CIGAR),
+that is, the ranges corresponding to deletions are dropped.
+</p>
+<p>See Details section above for more information.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>as(x, "GRanges")</code>, <code>as(x, "IntegerRanges")</code>,
+<code>as(x, "GRangesList")</code>, <code>as(x, "IntegerRangesList")</code>:
+Alternate ways of doing
+<code>granges(x, use.names=TRUE, use.mcols=TRUE)</code>,
+<code>ranges(x, use.names=TRUE, use.mcols=TRUE)</code>,
+<code>grglist(x, use.names=TRUE, use.mcols=TRUE)</code>, and
+<code>rglist(x, use.names=TRUE, use.mcols=TRUE)</code>, respectively.
+</p>
+</dd>
+</dl>
+
+<p>In the code snippet below, <code>x</code> is a <a href="../../GenomicRanges/help/GRanges.html">GRanges</a>
+object.
+</p>
+
+<dl>
+<dt></dt><dd>
+<p><code>as(from, "GAlignments")</code>:
+Creates a GAlignments object from a <a href="../../GenomicRanges/help/GRanges.html">GRanges</a> object.
+The metadata columns are propagated. cigar values are created from the
+sequence width unless a &quot;cigar&quot; metadata column already exists in
+<code>from</code>.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Subsetting and related operations</h3>
+
+<p>In the code snippets below, <code>x</code> is a GAlignments object.
+</p>
+
+<dl>
+<dt></dt><dd>
+<p><code>x[i]</code>:
+Return a new GAlignments object made of the selected
+alignments. <code>i</code> can be a numeric or logical vector.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Concatenation</h3>
+
+
+<dl>
+<dt></dt><dd>
+<p><code>c(x, ..., ignore.mcols=FALSE)</code>:
+Concatenate GAlignments object <code>x</code> and the GAlignments objects in
+<code>...</code> together.
+See <code>?<a href="../../S4Vectors/help/c.html">c</a></code> in the <span class="pkg">S4Vectors</span> package for
+more information about concatenating Vector derivatives.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Other methods</h3>
+
+
+<dl>
+<dt></dt><dd>
+<p><code>show(x)</code>:
+By default the <code>show</code> method displays 5 head and 5 tail
+elements. This can be changed by setting the global options
+<code>showHeadLines</code> and <code>showTailLines</code>. If the object
+length is less than (or equal to) the sum of these 2 options
+plus 1, then the full object is displayed.
+Note that these options also affect the display of <a href="../../GenomicRanges/html/GRanges-class.html">GRanges</a>
+and <a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> objects, as well as other objects
+defined in the <span class="pkg">IRanges</span> and <span class="pkg">Biostrings</span> packages
+(e.g. <a href="../../IRanges/help/IntegerRanges.html">IntegerRanges</a> and <a href="../../Biostrings/help/DNAStringSet.html">DNAStringSet</a>
+objects).
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Hervé Pagès and P. Aboyoun</p>
+
+
+<h3>References</h3>
+
+<p><a href="http://samtools.sourceforge.net/">http://samtools.sourceforge.net/</a>
+</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><code><a href="../../GenomicAlignments/help/readGAlignments.html">readGAlignments</a></code> for reading genomic alignments
+from a file (typically a BAM file) into a GAlignments object.
+</p>
+</li>
+<li> <p><a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> objects for handling aligned paired-end
+reads.
+</p>
+</li>
+<li> <p><a href="../../GenomicAlignments/help/junctions-methods.html">junctions-methods</a> for extracting and summarizing junctions
+from a GAlignments object.
+</p>
+</li>
+<li> <p><a href="../help/coverage-methods.html">coverage-methods</a> for computing the
+coverage of a GAlignments object.
+</p>
+</li>
+<li> <p><a href="../help/findOverlaps-methods.html">findOverlaps-methods</a> for finding
+overlapping genomic alignments.
+</p>
+</li>
+<li> <p><code><a href="../../GenomeInfoDb/help/seqinfo.html">seqinfo</a></code> in the <span class="pkg">GenomeInfoDb</span>
+package for getting/setting/modifying the sequence information
+stored in an object.
+</p>
+</li>
+<li><p> The <a href="../../GenomicRanges/help/GRanges.html">GRanges</a> and
+<a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> classes defined and documented
+in the <span class="pkg">GenomicRanges</span> package.
+</p>
+</li>
+<li><p> The <a href="../../IRanges/help/CompressedIRangesList.html">CompressedIRangesList</a> class defined and
+documented in the <span class="pkg">IRanges</span> package.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+library(Rsamtools)  # for the ex1.bam file
+ex1_file &lt;- system.file("extdata", "ex1.bam", package="Rsamtools")
+gal &lt;- readGAlignments(ex1_file, param=ScanBamParam(what="flag"))
+gal
+
+## ---------------------------------------------------------------------
+## A. BASIC MANIPULATION
+## ---------------------------------------------------------------------
+length(gal)
+head(gal)
+names(gal)  # no names by default
+seqnames(gal)
+strand(gal)
+head(cigar(gal))
+head(qwidth(gal))
+table(qwidth(gal))
+head(start(gal))
+head(end(gal))
+head(width(gal))
+head(njunc(gal))
+seqlevels(gal)
+
+## Invert the strand:
+invertStrand(gal)
+
+## Rename the reference sequences:
+seqlevels(gal) &lt;- sub("seq", "chr", seqlevels(gal))
+seqlevels(gal)
+
+grglist(gal)  # a GRangesList object
+stopifnot(identical(unname(elementNROWS(grglist(gal))), njunc(gal) + 1L))
+granges(gal)  # a GRanges object
+rglist(gal)   # a CompressedIRangesList object
+stopifnot(identical(unname(elementNROWS(rglist(gal))), njunc(gal) + 1L))
+ranges(gal)   # an IRanges object
+
+## Modify the number of lines in 'show'
+options(showHeadLines=3)
+options(showTailLines=2)
+gal
+
+## Revert to default
+options(showHeadLines=NULL)
+options(showTailLines=NULL)
+
+## ---------------------------------------------------------------------
+## B. SUBSETTING
+## ---------------------------------------------------------------------
+gal[strand(gal) == "-"]
+gal[grep("I", cigar(gal), fixed=TRUE)]
+gal[grep("N", cigar(gal), fixed=TRUE)]  # no junctions
+
+## A confirmation that none of the alignments contains junctions (in
+## other words, each alignment can be represented by a single genomic
+## range on the reference):
+stopifnot(all(njunc(gal) == 0))
+
+## Different ways to subset:
+gal[6]             # a GAlignments object of length 1
+grglist(gal)[[6]]  # a GRanges object of length 1
+rglist(gal)[[6]]   # a NormalIRanges object of length 1
+
+## Unlike N operations, D operations don't introduce gaps:
+ii &lt;- grep("D", cigar(gal), fixed=TRUE)
+gal[ii]
+njunc(gal[ii])
+grglist(gal[ii])
+
+## qwidth() vs width():
+gal[qwidth(gal) != width(gal)]
+
+## This MUST return an empty object:
+gal[cigar(gal) == "35M" &amp; qwidth(gal) != 35]
+## but this doesn't have too:
+gal[cigar(gal) != "35M" &amp; qwidth(gal) == 35]
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GenomicAlignments</em> version 1.30.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

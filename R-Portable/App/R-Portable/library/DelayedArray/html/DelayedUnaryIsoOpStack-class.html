@@ -1,0 +1,242 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: DelayedUnaryIsoOpStack objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for DelayedUnaryIsoOpStack-class {DelayedArray}"><tr><td>DelayedUnaryIsoOpStack-class {DelayedArray}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>DelayedUnaryIsoOpStack objects</h2>
+
+<h3>Description</h3>
+
+<p>NOTE: This man page is about <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> internals and is provided
+for developers and advanced users only.
+</p>
+<p>The DelayedUnaryIsoOpStack class provides a formal representation of a
+<em>stack of delayed unary isometric operations</em>, that is, of a group
+of delayed unary isometric operations stacked (a.k.a. piped) together.
+It is a concrete subclass of the <a href="../../DelayedArray/help/DelayedUnaryIsoOp.html">DelayedUnaryIsoOp</a> virtual class,
+which itself is a subclass of the <a href="../../DelayedArray/help/DelayedUnaryOp.html">DelayedUnaryOp</a> virtual class,
+which itself is a subclass of the <a href="../../DelayedArray/help/DelayedOp.html">DelayedOp</a> virtual class:
+</p>
+<pre>
+                          DelayedOp
+                              ^
+                              |
+                       DelayedUnaryOp
+                              ^
+                              |
+                      DelayedUnaryIsoOp
+                              ^
+                              |
+                    DelayedUnaryIsoOpStack
+  </pre>
+<p>DelayedUnaryIsoOpStack objects are used inside a <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> object
+to represent groups of delayed unary isometric operations carried by the
+object. They're never exposed to the end user and are not intended to be
+manipulated directly.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S4 method for signature 'DelayedUnaryIsoOpStack'
+summary(object, ...)
+
+## ~ ~ ~ Seed contract ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+## DelayedUnaryIsoOpStack objects inherit the default dim()
+## and dimnames() methods defined for DelayedUnaryIsoOp
+## derivatives, but overwite their extract_array() method.
+
+## S4 method for signature 'DelayedUnaryIsoOpStack'
+extract_array(x, index)
+
+## ~ ~ ~ Propagation of sparsity ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+## S4 method for signature 'DelayedUnaryIsoOpStack'
+is_sparse(x)
+
+## S4 method for signature 'DelayedUnaryIsoOpStack'
+extract_sparse_array(x, index)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x, object</code></td>
+<td>
+
+<p>A DelayedUnaryIsoOpStack object.
+</p>
+</td></tr>
+<tr valign="top"><td><code>index</code></td>
+<td>
+
+<p>See <code>?<a href="../../DelayedArray/help/extract_array.html">extract_array</a></code> for a description of the <code>index</code>
+argument.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>Not used.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>A DelayedUnaryIsoOpStack object is used to represent the delayed version
+of an operation of the form:
+</p>
+<pre>
+    out &lt;- a |&gt; OP1 |&gt; OP2 |&gt; ... |&gt; OPk
+  </pre>
+<p>where:
+</p>
+
+<ul>
+<li> <p><code>OP1</code>, <code>OP2</code>, ..., <code>OPk</code> are isometric array
+transformations i.e. operations that return an array with the
+same dimensions as the input array.
+</p>
+</li>
+<li> <p><code>a</code> is the input array.
+</p>
+</li>
+<li><p> The output (<code>out</code>) is an array of same dimensions as <code>a</code>.
+</p>
+</li></ul>
+
+<p>In addition, each operation (<code>OP</code>) in the pipe must satisfy the
+property that each value in the output array must be determined **solely**
+by the corresponding value in the input array. In other words:
+</p>
+<pre>
+    a |&gt; OP |&gt; `[`(i_1, i_2, ..., i_n)   # i.e. OP(a)[i_1, i_2, ..., i_n]
+  </pre>
+<p>must be equal to:
+</p>
+<pre>
+    a |&gt; `[`(i_1, i_2, ..., i_n) |&gt; OP   # i.e. OP(a[i_1, i_2, ..., i_n])
+  </pre>
+<p>for any valid multidimensional index (i_1, i_2, ..., i_n).
+</p>
+<p>We refer to this property as the <em>locality principle</em>.
+</p>
+<p>Concrete examples:
+</p>
+
+<ol>
+<li><p> Things like <code>is.na()</code>, <code>is.finite()</code>, logical negation
+(<code>!</code>), <code>nchar()</code>, <code>tolower()</code>.
+</p>
+</li>
+<li><p> Most functions in the <a href="../../methods/help/Math.html">Math</a> and <a href="../../methods/help/Math2.html">Math2</a>
+groups e.g. <code>log()</code>, <code>sqrt()</code>, <code>abs()</code>,
+<code>ceiling()</code>, <code>round()</code>, etc...
+Notable exceptions are the <code>cum*()</code> functions (<code>cummin()</code>,
+<code>cummax()</code>, <code>cumsum()</code>, and <code>cumprod()</code>): they don't
+satisfy the <em>locality principle</em>.
+</p>
+</li>
+<li><p> Operations in the <a href="../../methods/help/Ops.html">Ops</a> group when one operand is
+an array and the other a scalar e.g. <code>a + 10</code>, <code>2 ^ a</code>,
+<code>a &lt;= 0.5</code>, etc...
+</p>
+</li></ol>
+
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><a href="../../DelayedArray/help/DelayedOp.html">DelayedOp</a> objects.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/showtree.html">showtree</a></code> to visualize the nodes and access the
+leaves in the tree of delayed operations carried by a
+<a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> object.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/extract_array.html">extract_array</a></code> and <code><a href="../../DelayedArray/help/extract_sparse_array.html">extract_sparse_array</a></code>.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## DelayedUnaryIsoOpStack extends DelayedUnaryIsoOp, which extends
+## DelayedUnaryOp, which extends DelayedOp:
+extends("DelayedUnaryIsoOpStack")
+
+## ---------------------------------------------------------------------
+## BASIC EXAMPLE
+## ---------------------------------------------------------------------
+m0 &lt;- matrix(runif(12), ncol=3)
+M0 &lt;- DelayedArray(m0)
+showtree(M0)
+
+M &lt;- log(1 + M0) / 10
+showtree(M)
+class(M@seed)        # a DelayedUnaryIsoOpStack object
+
+## ---------------------------------------------------------------------
+## PROPAGATION OF SPARSITY
+## ---------------------------------------------------------------------
+sm0 &lt;- sparseMatrix(i=c(1, 4), j=c(1, 3), x=c(11, 43), dims=4:3)
+SM0 &lt;- DelayedArray(sm0)
+showtree(SM0)
+is_sparse(SM0)       # TRUE
+
+M1 &lt;- SM0 - 11
+showtree(M1)
+class(M1@seed)       # a DelayedUnaryIsoOpStack object
+is_sparse(M1@seed)   # FALSE
+
+SM2 &lt;- 10 * SM0
+showtree(SM2)
+class(SM2@seed)      # a DelayedUnaryIsoOpStack object
+is_sparse(SM2@seed)  # TRUE
+
+M3 &lt;- SM0 / 0
+showtree(M3)
+class(M3@seed)       # a DelayedUnaryIsoOpStack object
+is_sparse(M3@seed)   # FALSE
+
+SM4 &lt;- log(1 + SM0) / 10
+showtree(SM4)
+class(SM4@seed)      # a DelayedUnaryIsoOpStack object
+is_sparse(SM4@seed)  # TRUE
+
+SM5 &lt;- 2 ^ SM0 - 1
+showtree(SM5)
+class(SM5@seed)      # a DelayedUnaryIsoOpStack object
+is_sparse(SM5@seed)  # TRUE
+
+## ---------------------------------------------------------------------
+## SANITY CHECKS
+## ---------------------------------------------------------------------
+stopifnot(class(M@seed) == "DelayedUnaryIsoOpStack")
+stopifnot(class(M1@seed) == "DelayedUnaryIsoOpStack")
+stopifnot(!is_sparse(M1@seed))
+stopifnot(class(SM2@seed) == "DelayedUnaryIsoOpStack")
+stopifnot(is_sparse(SM2@seed))
+stopifnot(class(M3@seed) == "DelayedUnaryIsoOpStack")
+stopifnot(!is_sparse(M3@seed))
+stopifnot(class(SM4@seed) == "DelayedUnaryIsoOpStack")
+stopifnot(is_sparse(SM4@seed))
+stopifnot(class(SM5@seed) == "DelayedUnaryIsoOpStack")
+stopifnot(is_sparse(SM5@seed))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>DelayedArray</em> version 0.20.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Button for launching longer-running operations</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for input_task_button {bslib}"><tr><td>input_task_button {bslib}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Button for launching longer-running operations</h2>
+
+<h3>Description</h3>
+
+<p><code>input_task_button</code> is a button that can be used in conjuction with
+<code><a href="../../shiny/help/bindEvent.html">shiny::bindEvent()</a></code> (or the older <code><a href="../../shiny/help/observeEvent.html">shiny::eventReactive()</a></code> and
+<code><a href="../../shiny/help/observeEvent.html">shiny::observeEvent()</a></code> functions) to trigger actions or recomputation.
+</p>
+<p>It is similar to <code><a href="../../shiny/help/actionButton.html">shiny::actionButton()</a></code>, except it prevents the user from
+clicking when its operation is already in progress.
+</p>
+<p>Upon click, it automatically displays a customizable progress message and
+disables itself; and after the server has dealt with whatever reactivity is
+triggered from the click, the button automatically reverts to its original
+appearance and re-enables itself.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+input_task_button(
+  id,
+  label,
+  ...,
+  icon = NULL,
+  label_busy = "Processing...",
+  icon_busy = rlang::missing_arg(),
+  type = "primary",
+  auto_reset = TRUE
+)
+
+update_task_button(id, ..., state = NULL, session = get_current_session())
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>id</code></td>
+<td>
+<p>The <code>input</code> slot that will be used to access the value.</p>
+</td></tr>
+<tr valign="top"><td><code>label</code></td>
+<td>
+<p>The label of the button while it is in ready (clickable) state;
+usually a string.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Named arguments become attributes to include on the <code style="white-space: pre;">&lt;button&gt;</code>
+element.</p>
+</td></tr>
+<tr valign="top"><td><code>icon</code></td>
+<td>
+<p>An optional icon to display next to the label while the button is
+in ready state. See <code><a href="../../fontawesome/help/fa_i.html">fontawesome::fa_i()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>label_busy</code></td>
+<td>
+<p>The label of the button while it is busy.</p>
+</td></tr>
+<tr valign="top"><td><code>icon_busy</code></td>
+<td>
+<p>The icon to display while the button is busy. By default,
+<code>fontawesome::fa_i("refresh", class = "fa-spin", "aria-hidden" = "true")</code>
+is used, which displays a spinning &quot;chasing arrows&quot; icon. You can create
+spinning icons out of other Font Awesome icons by using the same
+expression, but replacing <code>"refresh"</code> with a different icon name. See
+<code><a href="../../fontawesome/help/fa_i.html">fontawesome::fa_i()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>One of the Bootstrap theme colors (<code>"primary"</code>, <code>"default"</code>,
+<code>"secondary"</code>, <code>"success"</code>, <code>"danger"</code>, <code>"warning"</code>, <code>"info"</code>, <code>"light"</code>,
+<code>"dark"</code>), or <code>NULL</code> to leave off the Bootstrap-specific button CSS classes
+altogether.</p>
+</td></tr>
+<tr valign="top"><td><code>auto_reset</code></td>
+<td>
+<p>If <code>TRUE</code> (the default), automatically put the button back
+in &quot;ready&quot; state after its click is handled by the server.</p>
+</td></tr>
+<tr valign="top"><td><code>state</code></td>
+<td>
+<p>If <code>"busy"</code>, put the button into busy/disabled state. If
+<code>"ready"</code>, put the button into ready/enabled state.</p>
+</td></tr>
+<tr valign="top"><td><code>session</code></td>
+<td>
+<p>The <code>session</code> object; using the default is recommended.</p>
+</td></tr>
+</table>
+
+
+<h3>Manual button reset</h3>
+
+<p>In some advanced use cases, it may be necessary to keep a task button in its
+busy state even after the normal reactive processing has completed. Calling
+<code>update_task_button(id, state = "busy")</code> from the server will opt out of any
+currently pending reset for a specific task button. After doing so, the
+button can be re-enabled by calling <code>update_task_button(id, state = "ready")</code>
+after each click's work is complete.
+</p>
+<p>You can also pass an explicit <code>auto_reset = FALSE</code> to <code>input_task_button()</code>,
+which means that button will <em>never</em> be automatically re-enabled and will
+require <code>update_task_button(id, state = "ready")</code> to be called each time.
+</p>
+<p>Note that, as a general rule, Shiny's <code>update</code> family of functions do not
+take effect at the instant that they are called, but are held until the end
+of the current reactive cycle. So if you have many different reactive
+calculations and outputs, you don't have to be too careful about when you
+call <code>update_task_button(id, state = "ready")</code>, as the button on the client
+will not actually re-enable until the same moment that all of the updated
+outputs simultaneously sent to the client.
+</p>
+
+
+<h3>Server value</h3>
+
+<p>An integer of class <code>"shinyActionButtonValue"</code>. This class differs from
+ordinary integers in that a value of 0 is considered &quot;falsy&quot;.
+This implies two things:
+</p>
+
+<ul>
+<li><p> Event handlers (e.g., <code><a href="../../shiny/help/observeEvent.html">shiny::observeEvent()</a></code>, <code><a href="../../shiny/help/observeEvent.html">shiny::eventReactive()</a></code>) won't execute on initial load.
+</p>
+</li>
+<li><p> Input validation (e.g., <code><a href="../../shiny/help/req.html">shiny::req()</a></code>, <code><a href="../../shiny/help/validate.html">shiny::need()</a></code>) will fail on initial load.
+</p>
+</li></ul>
+
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../bslib/help/bind_task_button.html">bind_task_button()</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+library(shiny)
+library(bslib)
+
+ui &lt;- page_sidebar(
+  sidebar = sidebar(
+    open = "always",
+    input_task_button("resample", "Resample"),
+  ),
+  verbatimTextOutput("summary")
+)
+
+server &lt;- function(input, output, session) {
+  sample &lt;- eventReactive(input$resample, ignoreNULL=FALSE, {
+    Sys.sleep(2)  # Make this artificially slow
+    rnorm(100)
+  })
+
+  output$summary &lt;- renderPrint({
+    summary(sample())
+  })
+}
+
+shinyApp(ui, server)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>bslib</em> version 0.7.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

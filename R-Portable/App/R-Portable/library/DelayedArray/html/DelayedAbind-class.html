@@ -1,0 +1,180 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: DelayedAbind objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for DelayedAbind-class {DelayedArray}"><tr><td>DelayedAbind-class {DelayedArray}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>DelayedAbind objects</h2>
+
+<h3>Description</h3>
+
+<p>NOTE: This man page is about <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> internals and is provided
+for developers and advanced users only.
+</p>
+<p>The DelayedAbind class provides a formal representation of a
+<em>delayed <code>abind()</code> operation</em>. It is a concrete subclass of
+the <a href="../../DelayedArray/help/DelayedNaryOp.html">DelayedNaryOp</a> virtual class, which itself is a subclass of
+the <a href="../../DelayedArray/help/DelayedOp.html">DelayedOp</a> virtual class:
+</p>
+<pre>
+                          DelayedOp
+                              ^
+                              |
+                        DelayedNaryOp
+                              ^
+                              |
+                        DelayedAbind
+  </pre>
+<p>DelayedAbind objects are used inside a <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> object to
+represent the <em>delayed <code>abind()</code> operations</em> carried by the object.
+They're never exposed to the end user and are not intended to be manipulated
+directly.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S4 method for signature 'DelayedAbind'
+is_noop(x)
+
+## S4 method for signature 'DelayedAbind'
+summary(object, ...)
+
+## ~ ~ ~ Seed contract ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+## S4 method for signature 'DelayedAbind'
+dim(x)
+
+## S4 method for signature 'DelayedAbind'
+dimnames(x)
+
+## S4 method for signature 'DelayedAbind'
+extract_array(x, index)
+
+## ~ ~ ~ Propagation of sparsity ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+## S4 method for signature 'DelayedAbind'
+is_sparse(x)
+
+## S4 method for signature 'DelayedAbind'
+extract_sparse_array(x, index)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x, object</code></td>
+<td>
+
+<p>A DelayedAbind object.
+</p>
+</td></tr>
+<tr valign="top"><td><code>index</code></td>
+<td>
+
+<p>See <code>?<a href="../../DelayedArray/help/extract_array.html">extract_array</a></code> for a description of the <code>index</code>
+argument.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>Not used.
+</p>
+</td></tr>
+</table>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><a href="../../DelayedArray/help/DelayedOp.html">DelayedOp</a> objects.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/showtree.html">showtree</a></code> to visualize the nodes and access the
+leaves in the tree of delayed operations carried by a
+<a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> object.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/extract_array.html">extract_array</a></code> and <code><a href="../../DelayedArray/help/extract_sparse_array.html">extract_sparse_array</a></code>.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## DelayedAbind extends DelayedNaryOp which extends DelayedOp:
+extends("DelayedAbind")
+
+## ---------------------------------------------------------------------
+## BASIC EXAMPLE
+## ---------------------------------------------------------------------
+m1 &lt;- matrix(101:128, ncol=4)
+m2 &lt;- matrix(runif(16), ncol=4)
+M1 &lt;- DelayedArray(m1)
+M2 &lt;- DelayedArray(m2)
+showtree(M1)
+showtree(M2)
+
+M3 &lt;- rbind(M1, M2)
+showtree(M3)
+class(M3@seed)        # a DelayedAbind object
+
+M4 &lt;- cbind(t(M1), M2)
+showtree(M4)
+class(M4@seed)        # a DelayedAbind object
+
+## ---------------------------------------------------------------------
+## PROPAGATION OF SPARSITY
+## ---------------------------------------------------------------------
+## DelayedAbind objects always propagate sparsity (granted that all the
+## input arrays are sparse).
+
+sm1 &lt;- sparseMatrix(i=c(1, 1, 7, 7), j=c(1, 4, 1, 4),
+                    x=c(11, 14, 71, 74), dims=c(7, 4))
+SM1 &lt;- DelayedArray(sm1)
+sm2 &lt;- sparseMatrix(i=c(1, 1, 4, 4), j=c(1, 4, 1, 4),
+                    x=c(11, 14, 41, 44), dims=c(4, 4))
+SM2 &lt;- DelayedArray(sm2)
+showtree(SM1)
+showtree(SM2)
+is_sparse(SM1)        # TRUE
+is_sparse(SM2)        # TRUE
+
+SM3 &lt;- rbind(SM1, SM2)
+showtree(SM3)
+class(SM3@seed)       # a DelayedAbind object
+is_sparse(SM3@seed)   # TRUE
+
+SM4 &lt;- cbind(SM2, t(SM1))
+showtree(SM4)
+class(SM4@seed)       # a DelayedAbind object
+is_sparse(SM4@seed)   # TRUE
+
+M5 &lt;- rbind(SM2, M1)  # 2nd input array is not sparse!
+showtree(M5)
+class(M5@seed)        # a DelayedAbind object
+is_sparse(M5@seed)    # FALSE
+
+## ---------------------------------------------------------------------
+## SANITY CHECKS
+## ---------------------------------------------------------------------
+stopifnot(class(M3@seed) == "DelayedAbind")
+stopifnot(class(M4@seed) == "DelayedAbind")
+stopifnot(class(SM3@seed) == "DelayedAbind")
+stopifnot(is_sparse(SM3@seed))
+stopifnot(class(SM4@seed) == "DelayedAbind")
+stopifnot(is_sparse(SM4@seed))
+stopifnot(class(M5@seed) == "DelayedAbind")
+stopifnot(!is_sparse(M5@seed))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>DelayedArray</em> version 0.20.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,312 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: DelayedUnaryIsoOpWithArgs objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for DelayedUnaryIsoOpWithArgs-class {DelayedArray}"><tr><td>DelayedUnaryIsoOpWithArgs-class {DelayedArray}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>DelayedUnaryIsoOpWithArgs objects</h2>
+
+<h3>Description</h3>
+
+<p>NOTE: This man page is about <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> internals and is provided
+for developers and advanced users only.
+</p>
+<p>The DelayedUnaryIsoOpWithArgs class provides a formal representation of a
+<em>delayed unary isometric operation with vector-like arguments going
+along the dimensions of the input array</em>. It is a concrete subclass of
+the <a href="../../DelayedArray/help/DelayedUnaryIsoOp.html">DelayedUnaryIsoOp</a> virtual class, which itself is a subclass of
+the <a href="../../DelayedArray/help/DelayedUnaryOp.html">DelayedUnaryOp</a> virtual class, which itself is a subclass of
+the <a href="../../DelayedArray/help/DelayedOp.html">DelayedOp</a> virtual class:
+</p>
+<pre>
+                          DelayedOp
+                              ^
+                              |
+                       DelayedUnaryOp
+                              ^
+                              |
+                      DelayedUnaryIsoOp
+                              ^
+                              |
+                  DelayedUnaryIsoOpWithArgs
+  </pre>
+<p>DelayedUnaryIsoOpWithArgs objects are used inside a <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a>
+object to represent the <em>delayed unary isometric operations with
+vector-like arguments going along the dimensions of the input array</em> carried
+by the object. They're never exposed to the end user and are not intended
+to be manipulated directly.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S4 method for signature 'DelayedUnaryIsoOpWithArgs'
+summary(object, ...)
+
+## ~ ~ ~ Seed contract ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+## DelayedUnaryIsoOpWithArgs objects inherit the default dim()
+## and dimnames() methods defined for DelayedUnaryIsoOp
+## derivatives, but overwite their extract_array() method.
+
+## S4 method for signature 'DelayedUnaryIsoOpWithArgs'
+extract_array(x, index)
+
+## ~ ~ ~ Propagation of sparsity ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+## S4 method for signature 'DelayedUnaryIsoOpWithArgs'
+is_sparse(x)
+
+## S4 method for signature 'DelayedUnaryIsoOpWithArgs'
+extract_sparse_array(x, index)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x, object</code></td>
+<td>
+
+<p>A DelayedUnaryIsoOpWithArgs object.
+</p>
+</td></tr>
+<tr valign="top"><td><code>index</code></td>
+<td>
+
+<p>See <code>?<a href="../../DelayedArray/help/extract_array.html">extract_array</a></code> for a description of the <code>index</code>
+argument.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>Not used.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>A DelayedUnaryIsoOpWithArgs object is used to represent the delayed version
+of an operation of the form:
+</p>
+<pre>
+    out &lt;- OP(L1, L2, ..., a, R1, R2, ...)
+  </pre>
+<p>where:
+</p>
+
+<ul>
+<li> <p><code>OP</code> is an isometric array transformation i.e. a transformation
+that returns an array with the same dimensions as the input array.
+</p>
+</li>
+<li> <p><code>a</code> is the input array.
+</p>
+</li>
+<li> <p><code>L1</code>, <code>L2</code>, etc... are the left arguments.
+</p>
+</li>
+<li> <p><code>R1</code>, <code>R2</code>, etc... are the right arguments.
+</p>
+</li>
+<li><p> The output (<code>out</code>) is an array of same dimensions as <code>a</code>.
+</p>
+</li></ul>
+
+<p>Some of the arguments (left or right) can go along the dimensions of the
+input array. For example if <code>a</code> is a 12 x 150 x 5 array, argument
+<code>L2</code> is considered to go along the 3rd dimension if its length is 5
+and if the result of:
+</p>
+<pre>
+    OP(L1, L2[k], ..., a[ , , k, drop=FALSE], R1, R2, ...)
+  </pre>
+<p>is the same as <code>out[ , , k, drop=FALSE]</code> for any index <code>k</code>.
+</p>
+<p>More generally speaking, if, say, arguments <code>L2</code>, <code>L3</code>, <code>R1</code>,
+and <code>R2</code> go along the 3rd, 1st, 2nd, and 1st dimensions, respectively,
+then each value in the output array (<code>a[i, j, k]</code>) must be determined
+solely by the corresponding values in the input array (<code>a[i, j, k]</code>)
+and arguments (<code>L2[k]</code>, <code>L3[i]</code>, <code>R1[j]</code>, <code>R2[i]</code>).
+In other words, <code>out[i, j, k]</code> must be equal to:
+</p>
+<pre>
+    OP(L1, L2[k], L3[i], ..., a[i, j, k], R1[j], R2[i], ...)
+  </pre>
+<p>for any 1 &lt;= <code>i</code> &lt;= 12, 1 &lt;= <code>j</code> &lt;= 150, and 1 &lt;= <code>k</code> &lt;= 5.
+</p>
+<p>We refer to this property as the <em>locality principle</em>.
+</p>
+<p>Concrete examples:
+</p>
+
+<ol>
+<li><p> Addition (or any operation in the <a href="../../methods/help/Ops.html">Ops</a> group)
+of an array <code>a</code> and an atomic vector <code>v</code> of length
+<code>dim(a)[[1]]</code>:
+</p>
+
+<ul>
+<li> <p><code>`+`(a, v)</code>: <code>OP</code> is <code>`+`</code>, right argument
+goes along the 1st dimension.
+</p>
+</li>
+<li> <p><code>`&lt;=`(a, v)</code>: <code>OP</code> is <code>`&lt;=`</code>, right argument
+goes along the 1st dimension.
+</p>
+</li>
+<li> <p><code>`&amp;`(v, a)</code>: <code>OP</code> is <code>`&amp;`</code>, left argument
+goes along the 1st dimension.
+</p>
+</li></ul>
+
+</li>
+<li> <p><code>scale(x, center=v1, scale=v2)</code>: <code>OP</code> is <code>scale</code>,
+right arguments <code>center</code> and <code>scale</code> go along the 2nd
+dimension.
+</p>
+</li></ol>
+
+<p>Note that if <code>OP</code> has no argument that goes along a dimension of
+the input array, then the delayed operation is better represented with
+a <a href="../../DelayedArray/help/DelayedUnaryIsoOpStack.html">DelayedUnaryIsoOpStack</a> object.
+</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><a href="../../DelayedArray/help/DelayedOp.html">DelayedOp</a> objects.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/showtree.html">showtree</a></code> to visualize the nodes and access the
+leaves in the tree of delayed operations carried by a
+<a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> object.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/extract_array.html">extract_array</a></code> and <code><a href="../../DelayedArray/help/extract_sparse_array.html">extract_sparse_array</a></code>.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## DelayedUnaryIsoOpWithArgs extends DelayedUnaryIsoOp, which extends
+## DelayedUnaryOp, which extends DelayedOp:
+extends("DelayedUnaryIsoOpWithArgs")
+
+## ---------------------------------------------------------------------
+## BASIC EXAMPLE
+## ---------------------------------------------------------------------
+m0 &lt;- matrix(runif(12), ncol=3)
+M0 &lt;- DelayedArray(m0)
+showtree(M0)
+
+M &lt;- M0 + 101:104
+showtree(M)
+class(M@seed)        # a DelayedUnaryIsoOpWithArgs object
+
+## ---------------------------------------------------------------------
+## PROPAGATION OF SPARSITY
+## ---------------------------------------------------------------------
+sm0 &lt;- sparseMatrix(i=c(1, 4), j=c(1, 3), x=c(11, 43), dims=4:3)
+SM0 &lt;- DelayedArray(sm0)
+showtree(SM0)
+is_sparse(SM0)       # TRUE
+
+M1 &lt;- SM0 + 101:104
+showtree(M1)
+class(M1@seed)       # a DelayedUnaryIsoOpWithArgs object
+is_sparse(M1@seed)   # FALSE
+
+SM2 &lt;- SM0 * 101:104
+showtree(SM2)
+class(SM2@seed)      # a DelayedUnaryIsoOpWithArgs object
+is_sparse(SM2@seed)  # TRUE
+
+SM3 &lt;- SM0 * c(101:103, 0)
+showtree(SM3)
+class(SM3@seed)      # a DelayedUnaryIsoOpWithArgs object
+is_sparse(SM3@seed)  # TRUE
+
+M4 &lt;- SM0 * c(101:103, NA)
+showtree(M4)
+class(M4@seed)       # a DelayedUnaryIsoOpWithArgs object
+is_sparse(M4@seed)   # FALSE
+
+M5 &lt;- SM0 * c(101:103, Inf)
+showtree(M5)
+class(M5@seed)       # a DelayedUnaryIsoOpWithArgs object
+is_sparse(M5@seed)   # FALSE
+
+SM6 &lt;- SM0 / 101:104
+showtree(SM6)
+class(SM6@seed)      # a DelayedUnaryIsoOpWithArgs object
+is_sparse(SM6@seed)  # TRUE
+
+M7 &lt;- SM0 / c(101:103, 0)
+showtree(M7)
+class(M7@seed)       # a DelayedUnaryIsoOpWithArgs object
+is_sparse(M7@seed)   # FALSE
+
+M8 &lt;- SM0 / c(101:103, NA)
+showtree(M8)
+class(M8@seed)       # a DelayedUnaryIsoOpWithArgs object
+is_sparse(M8@seed)   # FALSE
+
+SM9 &lt;- SM0 / c(101:103, Inf)
+showtree(SM9)
+class(SM9@seed)      # a DelayedUnaryIsoOpWithArgs object
+is_sparse(SM9@seed)  # TRUE
+
+M10 &lt;- 101:104 / SM0
+showtree(M10)
+class(M10@seed)      # a DelayedUnaryIsoOpWithArgs object
+is_sparse(M10@seed)  # FALSE
+
+## ---------------------------------------------------------------------
+## ADVANCED EXAMPLE
+## ---------------------------------------------------------------------
+## Not ready yet!
+#op &lt;- DelayedArray:::new_DelayedUnaryIsoOpWithArgs(m0,
+#          scale,
+#          Rargs=list(center=c(1, 0, 100), scale=c(10, 1, 1)),
+#          Ralong=c(2, 2))
+
+## ---------------------------------------------------------------------
+## SANITY CHECKS
+## ---------------------------------------------------------------------
+stopifnot(class(M@seed) == "DelayedUnaryIsoOpWithArgs")
+stopifnot(class(M1@seed) == "DelayedUnaryIsoOpWithArgs")
+stopifnot(!is_sparse(M1@seed))
+stopifnot(class(SM2@seed) == "DelayedUnaryIsoOpWithArgs")
+stopifnot(is_sparse(SM2@seed))
+stopifnot(class(SM3@seed) == "DelayedUnaryIsoOpWithArgs")
+stopifnot(is_sparse(SM3@seed))
+stopifnot(class(M4@seed) == "DelayedUnaryIsoOpWithArgs")
+stopifnot(!is_sparse(M4@seed))
+stopifnot(class(M5@seed) == "DelayedUnaryIsoOpWithArgs")
+stopifnot(!is_sparse(M5@seed))
+stopifnot(class(SM6@seed) == "DelayedUnaryIsoOpWithArgs")
+stopifnot(is_sparse(SM6@seed))
+stopifnot(class(M7@seed) == "DelayedUnaryIsoOpWithArgs")
+stopifnot(!is_sparse(M7@seed))
+stopifnot(class(M8@seed) == "DelayedUnaryIsoOpWithArgs")
+stopifnot(!is_sparse(M8@seed))
+stopifnot(class(SM9@seed) == "DelayedUnaryIsoOpWithArgs")
+stopifnot(is_sparse(SM9@seed))
+stopifnot(class(M10@seed) == "DelayedUnaryIsoOpWithArgs")
+stopifnot(!is_sparse(M10@seed))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>DelayedArray</em> version 0.20.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

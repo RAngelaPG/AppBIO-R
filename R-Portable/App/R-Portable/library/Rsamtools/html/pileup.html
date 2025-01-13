@@ -1,0 +1,669 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Use filters and output formats to calculate pile-up...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for pileup {Rsamtools}"><tr><td>pileup {Rsamtools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Use filters and output formats to calculate pile-up statistics for a
+BAM file.
+</h2>
+
+<h3>Description</h3>
+
+<p><code>pileup</code> uses <code>PileupParam</code> and <code>ScanBamParam</code> objects
+to calculate pileup statistics for a BAM file. The result is a
+<code>data.frame</code> with columns summarizing counts of reads overlapping
+each genomic position, optionally differentiated on nucleotide,
+strand, and position within read.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+
+pileup(file, index=file, ..., scanBamParam=ScanBamParam(),
+       pileupParam=PileupParam())
+
+## PileupParam constructor
+PileupParam(max_depth=250, min_base_quality=13, min_mapq=0,
+    min_nucleotide_depth=1, min_minor_allele_depth=0,
+    distinguish_strands=TRUE, distinguish_nucleotides=TRUE,
+    ignore_query_Ns=TRUE, include_deletions=TRUE, include_insertions=FALSE,
+    left_bins=NULL, query_bins=NULL, cycle_bins=NULL)
+
+phred2ASCIIOffset(phred=integer(),
+    scheme= c("Illumina 1.8+", "Sanger", "Solexa", "Illumina 1.3+",
+              "Illumina 1.5+"))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>file</code></td>
+<td>
+
+<p>character(1) or <code><a href="../../Rsamtools/help/BamFile.html">BamFile</a></code>; BAM file path.
+</p>
+</td></tr>
+<tr valign="top"><td><code>index</code></td>
+<td>
+
+<p>When <code>file</code> is character(1), an optional character(1) of BAM
+index file path; see <code><a href="../../Rsamtools/help/scanBam.html">scanBam</a></code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Additional arguments, perhaps used by methods.</p>
+</td></tr>
+<tr valign="top"><td><code>scanBamParam</code></td>
+<td>
+<p>An instance of <code><a href="../../Rsamtools/help/ScanBamParam.html">ScanBamParam</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>pileupParam</code></td>
+<td>
+<p>An instance of <code><a href="../../Rsamtools/help/PileupParam.html">PileupParam</a></code>.</p>
+</td></tr>
+</table>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>max_depth</code></td>
+<td>
+<p>integer(1); maximum number of overlapping alignments
+considered for each position in the pileup.</p>
+</td></tr>
+<tr valign="top"><td><code>min_base_quality</code></td>
+<td>
+<p>integer(1); minimum &lsquo;QUAL&rsquo; value for
+each nucleotide in an alignment. Use <code>phred2ASCIIOffset</code> to
+help translate numeric or character values to these offsets.</p>
+</td></tr>
+<tr valign="top"><td><code>min_mapq</code></td>
+<td>
+<p>integer(1); minimum &lsquo;MAPQ&rsquo; value for an
+alignment to be included in pileup.</p>
+</td></tr>
+<tr valign="top"><td><code>min_nucleotide_depth</code></td>
+<td>
+<p>integer(1); minimum count of each
+nucleotide (<em>independent</em> of other nucleotides) at a given
+position required for said nucleotide to appear in the result.</p>
+</td></tr>
+<tr valign="top"><td><code>min_minor_allele_depth</code></td>
+<td>
+<p>integer(1); minimum count of <em>all</em>
+nucleotides other than the major allele at a given position required
+for a particular nucleotide to appear in the result.</p>
+</td></tr>
+<tr valign="top"><td><code>distinguish_strands</code></td>
+<td>
+<p>logical(1); <code>TRUE</code> if result should
+differentiate between strands.</p>
+</td></tr>
+<tr valign="top"><td><code>distinguish_nucleotides</code></td>
+<td>
+<p>logical(1); <code>TRUE</code> if result
+should differentiate between nucleotides.</p>
+</td></tr>
+<tr valign="top"><td><code>ignore_query_Ns</code></td>
+<td>
+<p>logical(1); <code>TRUE</code> if non-determinate
+nucleotides in alignments should be excluded from the pileup.</p>
+</td></tr>
+<tr valign="top"><td><code>include_deletions</code></td>
+<td>
+<p>logical(1); <code>TRUE</code> to include deletions
+in pileup.</p>
+</td></tr>
+<tr valign="top"><td><code>include_insertions</code></td>
+<td>
+<p>logical(1); <code>TRUE</code> to include
+insertions in pileup.</p>
+</td></tr>
+<tr valign="top"><td><code>left_bins</code></td>
+<td>
+<p>numeric; all same sign; unique positions within a
+read to delimit bins. Position within read is based on counting from
+the <em>5' end regardless of strand</em>. Minimum of two values are
+required so at least one range can be formed. <code>NULL</code> (default)
+indicates no binning. Use negative values to count from the opposite
+end. Sorted order not required. Floating-point values are coerced to
+<code>integer</code>.
+</p>
+<p>If you want to delimit bins based on sequencing cycles to, e.g.,
+discard later cycles, <code><a href="../../Rsamtools/help/query_bins.html">query_bins</a></code> probably gives the
+desired behavior.
+</p>
+</td></tr>
+<tr valign="top"><td><code>query_bins</code></td>
+<td>
+<p>numeric; all same sign; unique positions within a
+read to delimit bins. Position within a read is based on counting
+from the <em>5' end</em> when the read aligns to <em>plus strand</em>,
+counting from the <em>3' end</em> when read aligns to minus
+strand. Minimum of two values are required so at least one range can
+be formed. <code>NULL</code> (default) indicates no binning. Use negative
+values to count from the opposite end. Sorted order not
+required. Floating-point values are coerced to <code>integer</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>phred</code></td>
+<td>
+<p>Either a numeric() (coerced to integer()) PHRED score
+(e.g., in the range (0, 41) for the &lsquo;Illumina 1.8+&rsquo; scheme)
+or character() of printable ASCII characters. When <code>phred</code> is
+character(), it can be of length 1 with 1 or more characters, or of
+any length where all elements have exactly 1 character.</p>
+</td></tr>
+<tr valign="top"><td><code>scheme</code></td>
+<td>
+<p>Encoding scheme, used to translate numeric() PHRED
+scores to their ASCII code. Ignored when <code>phred</code> is already
+character().</p>
+</td></tr>
+<tr valign="top"><td><code>cycle_bins</code></td>
+<td>
+<p>DEPRECATED. See <code><a href="../../Rsamtools/help/left_bins.html">left_bins</a></code> for
+identical behavior.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><em>NB</em>: Use of <code>pileup</code> assumes familiarity with
+<code><a href="../../Rsamtools/help/ScanBamParam.html">ScanBamParam</a></code>, and use of <code>left_bins</code> and
+<code>query_bins</code> assumes familiarity with <code><a href="../../base/html/cut.html">cut</a></code>.
+</p>
+<p><code>pileup</code> visits each position in the BAM file, subject to
+constraints implied by <code>which</code> and <code>flag</code> of
+<code>scanBamParam</code>. For a given position, all reads overlapping the
+position that are consistent with constraints dictated by <code>flag</code>
+of <code>scanBamParam</code> and <code>pileupParam</code> are used for
+counting. <code>pileup</code> also automatically excludes reads with flags
+that indicate any of:
+</p>
+
+<ul>
+<li><p>unmapped alignment (<code><a href="../../Rsamtools/help/isUnmappedQuery.html">isUnmappedQuery</a></code>)
+</p>
+</li>
+<li><p>secondary alignment (<code><a href="../../Rsamtools/help/isSecondaryAlignment.html">isSecondaryAlignment</a></code>)
+</p>
+</li>
+<li><p>not passing quality controls (<code><a href="../../Rsamtools/help/isNotPassingQualityControls.html">isNotPassingQualityControls</a></code>)
+</p>
+</li>
+<li><p>PCR or optical duplicate (<code><a href="../../Rsamtools/help/isDuplicate.html">isDuplicate</a></code>)
+</p>
+</li></ul>
+
+<p>If no <code>which</code> argument is supplied to the <code>ScanBamParam</code>,
+behavior reflects that of <code>scanBam</code>: the entire file is visited
+and counted.
+</p>
+<p>Use a <code><a href="../../Rsamtools/help/yieldSize.html">yieldSize</a></code> value when creating a <code>BamFile</code>
+instance to manage memory consumption when using pileup with large BAM
+files. There are some differences in how <code>pileup</code> behavior is
+affected when the <code>yieldSize</code> value is set on the BAM file. See
+more details below.
+</p>
+<p>Many of the parameters of the <code>pileupParam</code> interact. A simple
+illustration is <code>ignore_query_Ns</code> and
+<code>distinguish_nucleotides</code>, as mentioned in the
+<code>ignore_query_Ns</code> section.
+</p>
+<p>Parameters for <code>pileupParam</code> belong to two categories: parameters
+that affect only the filtering criteria (so-called
+&lsquo;behavior-only&rsquo; policies), and parameters that affect
+filtering behavior and the schema of the results
+(&lsquo;behavior+structure&rsquo; policies).
+</p>
+
+
+
+
+<p><code>distinguish_nucleotides</code> and <code>distinguish_strands</code> when set
+to <code>TRUE</code> each add a column (<code>nucleotide</code> and <code>strand</code>,
+respectively) to the resulting <code>data.frame</code>. If both are TRUE,
+each combination of <code>nucleotide</code> and <code>strand</code> at a given
+position is counted separately. Setting only one to <code>TRUE</code>
+behaves as expected; for example, if only <code>nucleotide</code> is set to
+<code>TRUE</code>, each nucleotide at a given position is counted
+separately, but the distinction of on which strand the nucleotide
+appears is ignored.
+</p>
+<p><code>ignore_query_Ns</code> determines how ambiguous nucloetides are
+treated. By default, ambiguous nucleotides (typically &lsquo;N&rsquo; in
+BAM files) in alignments are ignored. If <code>ignore_query_Ns</code> is
+<code>FALSE</code>, ambiguous nucleotides are included in counts; further,
+if <code>ignore_query_Ns</code> is <code>FALSE</code> and
+<code>distinguish_nucleotides</code> is <code>TRUE</code> the &lsquo;N&rsquo;
+nucleotide value appears in the nucleotide column when a base at a
+given position is ambiguous.
+</p>
+<p>By default, deletions with respect to the reference genome to which
+the reads were aligned are included in the counts in a pileup. If
+<code>include_deletions</code> is <code>TRUE</code> and
+<code>distinguish_nucleotides</code> is <code>TRUE</code>, the nucleotide column
+uses a &lsquo;-&rsquo; character to indicate a deletion at a position.
+</p>
+<p>The &lsquo;=&rsquo; nucleotide code in the <code>SEQ</code> field (to mean
+&lsquo;identical to reference genome&rsquo;) is supported by pileup, such
+that a match with the reference genome is counted separately in the
+results if <code>distinguish_nucleotides</code> is <code>TRUE</code>.
+</p>
+<p>CIGAR support: <code>pileup</code> handles the extended CIGAR format by only
+heeding operations that contribute to counts (&lsquo;M&rsquo;, &lsquo;D&rsquo;,
+&lsquo;I&rsquo;). If you are confused about how the different CIGAR
+operations interact, see the SAM versions of the BAM files used for
+<code>pileup</code> unit testing for a fairly comprehensive human-readable
+treatment.
+</p>
+
+<ul>
+<li><p>Deletions and clipping:
+</p>
+<p>The extended CIGAR allows a number of operations conceptually
+similar to a &lsquo;deletion&rsquo; with respect to the reference
+genome, but offer more specialized meanings than a simple
+deletion. CIGAR &lsquo;N&rsquo; operations (not to be confused with
+&lsquo;N&rsquo; used for non-determinate bases in the <code>SEQ</code> field)
+indicate a large skipped region, &lsquo;S&rsquo; a soft clip, and
+&lsquo;H&rsquo; a hard clip. &lsquo;N&rsquo;, &lsquo;S&rsquo;, and &lsquo;H&rsquo;
+CIGAR operations are never counted: only counts of true deletions
+(&lsquo;D&rsquo; in the CIGAR) can be included by setting
+<code>include_deletions</code> to <code>TRUE</code>.
+</p>
+<p>Soft clip operations contribute to the relative position of
+nucleotides within a read, whereas hard clip and refskip
+operations do not. For example, consider a sequence in a bam file
+that starts at 11, with a CIGAR <code>2S1M</code> and <code>SEQ</code> field
+<code>ttA</code>. The cycle position of the <code>A</code> nucleotide will be
+<code>3</code>, but the reported position will be <code>11</code>. If using
+<code>left_bins</code> or <code>query_bins</code> it might make sense to first
+preprocess your files to remove soft clipping.
+</p>
+
+</li>
+<li><p>Insertions and padding:
+</p>
+<p><code>pileup</code> can include counts of insertion operations by
+setting <code>include_insertions</code> to <code>TRUE</code>. Details about
+insertions are effectively truncated such that each insertion is
+reduced to a single &lsquo;+&rsquo; nucleotide. Information about
+e.g. the nucleotide code and base quality within the insertion is
+not included.
+</p>
+<p>Because &lsquo;+&rsquo; is used as a nucleotide code to represent
+insertions in <code>pileup</code>, counts of the &lsquo;+&rsquo; nucleotide
+participate in voting for <code>min_nucleotide_depth</code> and
+<code>min_minor_allele_depth</code> functionality.
+</p>
+<p>The position of an insertion is the position that precedes it on
+the reference sequence. <em>Note:</em> this means if
+<code>include_insertions</code> is <code>TRUE</code> a single read will
+contribute two nucleotide codes (<code>+</code>, plus that of the
+non-insertion base) at a given position if the non-insertion base
+passes filter criteria.
+</p>
+<p>&lsquo;P&rsquo; CIGAR (padding) operations never affect counts.
+</p>
+
+</li></ul>
+
+<p>The &ldquo;bin&rdquo; arguments <code>query_bins</code> and <code>left_bins</code>
+allow users to differentiate pileup counts based on arbitrary
+non-overlapping regions within a read. <code>pileup</code> relies on
+<code><a href="../../base/html/cut.html">cut</a></code> to derive bins, but limits input to numeric values
+of the same sign (coerced to <code>integer</code>s), including
+<code>+/-Inf</code>. If a &ldquo;bin&rdquo; argument is set <code>pileup</code>
+automatically excludes bases outside the implicit outer range. Here
+are some important points regarding bin arguments:
+</p>
+
+<ul>
+<li><p><code>query_bins</code> vs. <code>left_bins</code>:
+</p>
+<p>BAM files store sequence data from the 5' end to the 3' end
+(regardless of to which strand the read aligns). That means for
+reads aligned to the minus strand, cycle position within a read is
+effectively reversed. Take care to use the appropriate bin
+argument for your use case.
+</p>
+<p>The most common use of a bin argument is to bin later cycles
+separately from earlier cycles; this is because accuracy typically
+degrades in later cycles. For this application, <code>query_bins</code>
+yields the correct behavior because bin positions are relative to
+cycle order (i.e., sensitive to strand).
+</p>
+<p><code>left_bins</code> (in contrast with <code>query_bins</code>) determines
+bin positions from the 5' end, regardless of strand.
+</p>
+
+</li>
+<li><p>Positive or negative bin values can be used to delmit bins
+based on the effective &ldquo;start&rdquo; or &ldquo;end&rdquo; of a
+read. For <code>left_bin</code> the effective start is always the 5' end
+(left-to-right as appear in the BAM file).
+</p>
+<p>For <code>query_bin</code> the effective start is the first cycle of the
+read as it came off the sequencer; that means the 5' end for reads
+aligned to the plus strand and 3' for reads aligned to the minus
+strand.
+</p>
+
+<ul>
+<li><p><em>From effective start of reads</em>: use positive values,
+<code>0</code>, and <code>(+)Inf</code>. Because <code><a href="../../base/html/cut.html">cut</a></code>
+produces ranges in the form (first,last], &lsquo;0&rsquo; should be
+used to create a bin that includes the first position. To
+account for variable-length reads in BAM files, use
+<code>(+)Inf</code> as the upper bound on a bin that extends to the
+end of all reads.
+</p>
+</li>
+<li><p><em>From effective end of reads</em>: use negative values
+and <code>-Inf</code>. <code>-1</code> denotes the last position in a
+read. Because <code><a href="../../base/html/cut.html">cut</a></code> produces ranges in the form
+(first,last], specify the lower bound of a bin by using one
+less than the desired value, e.g., a bin that captures only
+the second nucleotide from the last position:
+<code>query_bins=c(-3, -2)</code>. To account for variable-length
+reads in BAM files, use <code>-Inf</code> as the lower bound on a
+bin that extends to the beginning of all reads.
+</p>
+</li></ul>
+
+
+</li></ul>
+ 
+<p><code>pileup</code> obeys <code><a href="../../Rsamtools/help/yieldSize.html">yieldSize</a></code> on <code>BamFile</code> objects
+with some differences from how <code>scanBam</code> responds to
+<code>yieldSize</code>. Here are some points to keep in mind when using
+<code>pileup</code> in conjunction with <code>yieldSize</code>:
+</p>
+
+<ul>
+<li><p><code>BamFile</code>s with a <code>yieldSize</code> value set, once
+opened and used with <code>pileup</code>, <em>should not be used</em> with
+other functions that accept a <code>BamFile</code> instance as
+input. Create a new <code>BamFile</code> instance instead of trying to
+reuse.
+</p>
+</li>
+<li><p><code>pileup</code> only returns genomic positions for which all
+input has been processed. <code>pileup</code> will hold in reserve
+positions for which only partial data has been
+processed. Positions held in reserve will be returned upon
+subsequent calls to <code>pileup</code> when all the input for a given
+position has been processed.
+</p>
+</li>
+<li><p>The correspondence between yieldSize and the number of rows
+in the <code>data.frame</code> returned from <code>pileup</code> is not
+1-to-1. <code>yieldSize</code> only limits the number of
+<em>alignments processed</em> from the BAM file each time the file
+is read. Only a handful of alignments can lead to many distinct
+records in the result.
+</p>
+</li>
+<li><p>Like <code>scanBam</code>, <code>pileup</code> uses an empty return
+object (a zero-row <code>data.frame</code>) to indicate end-of-input.
+</p>
+</li>
+<li><p>Sometimes reading <code>yieldSize</code> records from the BAM file
+does not result in any completed positions. In order to avoid
+returning a zero-row <code>data.frame</code> <code>pileup</code> will
+repeatedly process <code>yieldSize</code> additional records until at
+least one position can be returned to the user.
+</p>
+</li></ul>
+
+
+
+<h3>Value</h3>
+
+<p>For <code>pileup</code> a <code>data.frame</code> with 1 row per unique
+combination of differentiating column values that satisfied filter
+criteria, with frequency (<code>count</code>) of unique combination. Columns
+<code>seqnames</code>, <code>pos</code>, and <code>count</code> always appear; optional
+<code>strand</code>, <code>nulceotide</code>, and <code>left_bin</code> /
+<code>query_bin</code> columns appear as dictated by arguments to
+<code>PileupParam</code>.
+</p>
+<p>Column details:
+</p>
+
+<ul>
+<li><p><code>seqnames</code>: factor. SAM &lsquo;RNAME&rsquo; field of
+alignment.
+</p>
+</li>
+<li><p><code>pos</code>: integer(1). Genomic position of base. Derived by
+offset from SAM &lsquo;POS&rsquo; field of alignment.
+</p>
+</li>
+<li><p><code>strand</code>: factor. &lsquo;strand&rsquo; to which read aligns.
+</p>
+</li>
+<li><p><code>nucleotide</code>: factor. &lsquo;nucleotide&rsquo; of base,
+extracted from SAM &lsquo;SEQ&rsquo; field of alignment.
+</p>
+</li>
+<li><p><code>left_bin</code> / <code>query_bin</code>: factor. Bin in which base
+appears.
+</p>
+</li>
+<li><p><code>count</code>: integer(1). Frequency of combination of
+differentiating fields, as indicated by values of other columns.
+</p>
+</li></ul>
+
+<p>See <code><a href="../../Rsamtools/help/scanBam.html">scanBam</a></code> for more detailed explanation of SAM fields.
+</p>
+<p>If a <code>which</code> argument is specified for the <code>scanBamParam</code>, a
+<code>which_label</code> column (<code>factor</code> in the form
+&lsquo;rname:start-end&rsquo;) is automatically included. The
+<code>which_label</code> column is used to maintain grouping of results,
+such that two queries of the same genomic region can be
+differentiated.
+</p>
+<p>Order of rows in <code>data.frame</code> is first by order of
+<code>seqnames</code> column based on the BAM index file, then
+non-decreasing order on columns <code>pos</code>, then <code>nucleotide</code>,
+then <code>strand</code>, then <code>left_bin</code> / <code>query_bin</code>.
+</p>
+<p><code>PileupParam</code> returns an instance of PileupParam class.
+</p>
+<p><code>phred2ASCIIOffset</code> returns a named integer vector of the same
+length or number of characters in <code>phred</code>. The names are the
+ASCII encoding, and the values are the offsets to be used with
+<code>min_base_quality</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Nathaniel Hayden <a href="nhayden@fredhutch.org">nhayden@fredhutch.org</a></p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li><p><a href="../../Rsamtools/help/Rsamtools.html">Rsamtools</a>
+</p>
+</li>
+<li><p><a href="../../Rsamtools/help/BamFile-class.html">BamFile</a>
+</p>
+</li>
+<li><p><a href="../../Rsamtools/help/ScanBamParam.html">ScanBamParam</a>
+</p>
+</li>
+<li><p><a href="../../Rsamtools/help/scanBam.html">scanBam</a>
+</p>
+</li>
+<li><p><a href="../../base/html/cut.html">cut</a>
+</p>
+</li></ul>
+
+<p>For the relationship between PHRED scores and ASCII encoding, see
+<a href="https://en.wikipedia.org/wiki/FASTQ_format#Encoding">https://en.wikipedia.org/wiki/FASTQ_format#Encoding</a>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## The examples below apply equally to pileup queries for specific
+## genomic ranges (specified by the 'which' parameter of 'ScanBamParam')
+## and queries across entire files; the entire-file examples are
+## included first to make them easy to find. The more detailed examples
+## of pileup use queries with a 'which' argument.
+
+library("RNAseqData.HNRNPC.bam.chr14")
+
+fl &lt;- RNAseqData.HNRNPC.bam.chr14_BAMFILES[1]
+## Minimum base quality to be tallied
+p_param &lt;- PileupParam(min_base_quality = 10L)
+
+
+## no 'which' argument to ScanBamParam: process entire file at once
+res &lt;- pileup(fl, pileupParam = p_param)
+head(res)
+table(res$strand, res$nucleotide)
+
+
+
+## no 'which' argument to ScanBamParam with 'yieldSize' set on BamFile
+bf &lt;- open(BamFile(fl, yieldSize=5e4))
+repeat {
+    res &lt;- pileup(bf, pileupParam = p_param)
+    message(nrow(res), " rows in result data.frame")
+    if(nrow(res) == 0L)
+        break
+}
+close(bf)
+
+
+## pileup for the first half of chr14 with default Pileup parameters
+## 'which' argument: process only specified genomic range(s)
+sbp &lt;- ScanBamParam(which=GRanges("chr14", IRanges(1, 53674770)))
+res &lt;- pileup(fl, scanBamParam=sbp, pileupParam = p_param)
+head(res)
+table(res$strand, res$nucleotide)
+
+## specify pileup parameters: include ambiguious nucleotides
+## (the 'N' level in the nucleotide column of the data.frame)
+p_param &lt;- PileupParam(ignore_query_Ns=FALSE, min_base_quality = 10L)
+res &lt;- pileup(fl, scanBamParam=sbp, pileupParam=p_param)
+head(res)
+table(res$strand, res$nucleotide)
+
+## Don't distinguish strand, require a minimum frequency of 7 for a
+## nucleotide at a genomic position to be included in results.
+
+p_param &lt;- PileupParam(distinguish_strands=TRUE,
+                       min_base_quality = 10L,
+                       min_nucleotide_depth=7)
+res &lt;- pileup(fl, scanBamParam=sbp, pileupParam=p_param)
+head(res)
+table(res$nucleotide, res$strand)
+
+## Any combination of the filtering criteria is possible: let's say we
+## want a "coverage pileup" that only counts reads with mapping
+## quality &gt;= 13, and bases with quality &gt;= 10 that appear at least 4
+## times at each genomic position
+p_param &lt;- PileupParam(distinguish_nucleotides=FALSE,
+                       distinguish_strands=FALSE,
+                       min_mapq=13,
+                       min_base_quality=10,
+                       min_nucleotide_depth=4)
+res &lt;- pileup(fl, scanBamParam=sbp, pileupParam=p_param)
+head(res)
+res &lt;- res[, c("pos", "count")] ## drop seqnames and which_label cols
+plot(count ~ pos, res, pch=".")
+
+## ASCII offsets to help specify min_base_quality, e.g., quality of at
+## least 10 on the Illumina 1.3+ scale
+phred2ASCIIOffset(10, "Illumina 1.3+")
+
+## Well-supported polymorphic positions (minor allele present in at
+## least 5 alignments) with high map quality
+p_param &lt;- PileupParam(min_minor_allele_depth=5,
+                       min_mapq=40,
+                       min_base_quality = 10,
+                       distinguish_strand=FALSE)
+res &lt;- pileup(fl, scanBamParam=sbp, pileupParam=p_param)
+dim(res) ## reduced to our biologically interesting positions
+head(xtabs(count ~ pos + nucleotide, res))
+
+## query_bins
+
+
+
+## basic use of positive bins: single pivot; count bases that appear in
+## first 10 cycles of a read separately from the rest
+p_param &lt;- PileupParam(query_bins=c(0, 10, Inf), min_base_quality = 10)
+res &lt;- pileup(fl, scanBamParam=sbp, pileupParam=p_param)
+
+## basic use of positive bins: simple range; only include bases in
+## cycle positions 6-10 within read
+p_param &lt;- PileupParam(query_bins=c(5, 10), min_base_quality = 10)
+res &lt;- pileup(fl, scanBamParam=sbp, pileupParam=p_param)
+
+## basic use of negative bins: single pivot; count bases that appear in
+## last 3 cycle positions of a read separately from the rest.
+p_param &lt;- PileupParam(query_bins=c(-Inf, -4, -1), min_base_quality = 10)
+res &lt;- pileup(fl, scanBamParam=sbp, pileupParam=p_param)
+
+## basic use of negative bins: drop nucleotides in last two cycle
+## positions of each read
+p_param &lt;- PileupParam(query_bins=c(-Inf, -3), min_base_quality = 10)
+res &lt;- pileup(fl, scanBamParam=sbp, pileupParam=p_param)
+
+
+## typical use: beginning, middle, and end segments; because of the
+## nature of sequencing technology, it is common for bases in the
+## beginning and end segments of each read to be less reliable. pileup
+## makes it easy to count each segment separately.
+
+## Assume determined ahead of time that for the data 1-7 makes sense for
+## beginning, 8-12 middle, &gt;=13 end (actual cycle positions should be
+## tailored to data in actual BAM files).
+p_param &lt;- PileupParam(query_bins=c(0, 7, 12, Inf), ## note non-symmetric
+                       min_base_quality = 10)
+res &lt;- pileup(fl, scanBamParam=sbp, pileupParam=p_param)
+xt &lt;- xtabs(count ~ nucleotide + query_bin, res)
+print(xt)
+t(t(xt) / colSums(xt)) ## cheap normalization for illustrative purposes
+
+## 'implicit outer range': in contrast to c(0, 7, 12, Inf), suppose we
+##  still want to have beginning, middle, and end segements, but know
+##  that the first three cycles and any bases beyond the 16th cycle are
+##  irrelevant. Hence, the implicit outer range is (3,16]; all bases
+##  outside of that are dropped.
+p_param &lt;- PileupParam(query_bins=c(3, 7, 12, 16), min_base_quality = 10)
+res &lt;- pileup(fl, scanBamParam=sbp, pileupParam=p_param)
+xt &lt;- xtabs(count ~ nucleotide + query_bin, res)
+print(xt)
+t(t(xt) / colSums(xt))
+
+
+## single-width bins: count each cycle within a read separately.
+p_param &lt;- PileupParam(query_bins=seq(1,20), min_base_quality = 10)
+res &lt;- pileup(fl, scanBamParam=sbp, pileupParam=p_param)
+xt &lt;- xtabs(count ~ nucleotide + query_bin, res)
+print(xt[ , c(1:3, 18:19)]) ## fit on one screen
+print(t(t(xt) / colSums(xt))[ , c(1:3, 18:19)])
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>Rsamtools</em> version 2.10.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

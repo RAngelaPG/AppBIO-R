@@ -1,0 +1,237 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Finding overlapping genomic ranges</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for findOverlaps-methods {GenomicRanges}"><tr><td>findOverlaps-methods {GenomicRanges}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Finding overlapping genomic ranges</h2>
+
+<h3>Description</h3>
+
+<p>Various methods for finding/counting overlaps between objects containing
+genomic ranges. This man page describes the methods that operate on
+<a href="../../GenomicRanges/help/GenomicRanges.html">GenomicRanges</a> and <a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> objects.
+</p>
+<p>NOTE: The <code><a href="../../IRanges/help/findOverlaps.html">findOverlaps</a></code> generic function
+and methods for <a href="../../IRanges/help/IntegerRanges.html">IntegerRanges</a> and
+<a href="../../IRanges/help/IntegerRangesList.html">IntegerRangesList</a> objects are defined and
+documented in the <span class="pkg">IRanges</span> package.
+The methods for <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a>,
+<a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a>, and
+<a href="../../GenomicAlignments/help/GAlignmentsList.html">GAlignmentsList</a> objects are defined and
+documented in the <span class="pkg">GenomicAlignments</span> package.
+</p>
+<p><a href="../../GenomicRanges/help/GenomicRanges.html">GenomicRanges</a> and <a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> objects also support
+<code>countOverlaps</code>, <code>overlapsAny</code>, and <code>subsetByOverlaps</code> 
+thanks to the default methods defined in the <span class="pkg">IRanges</span> package and
+to the <code>findOverlaps</code> and <code>countOverlaps</code> methods defined in
+this package and documented below.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S4 method for signature 'GenomicRanges,GenomicRanges'
+findOverlaps(query, subject,
+    maxgap=-1L, minoverlap=0L,
+    type=c("any", "start", "end", "within", "equal"),
+    select=c("all", "first", "last", "arbitrary"),
+    ignore.strand=FALSE)
+
+## S4 method for signature 'GenomicRanges,GenomicRanges'
+countOverlaps(query, subject,
+    maxgap=-1L, minoverlap=0L,
+    type=c("any", "start", "end", "within", "equal"),
+    ignore.strand=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>query, subject</code></td>
+<td>
+
+<p>A <a href="../../GenomicRanges/help/GRanges.html">GRanges</a> or <a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> object.
+</p>
+</td></tr>
+<tr valign="top"><td><code>maxgap, minoverlap, type</code></td>
+<td>
+
+<p>See <code>?<a href="../../IRanges/help/findOverlaps.html">findOverlaps</a></code> in the <span class="pkg">IRanges</span> package
+for a description of these arguments.
+</p>
+</td></tr>
+<tr valign="top"><td><code>select</code></td>
+<td>
+
+<p>When <code>select</code> is <code>"all"</code> (the default), the results are
+returned as a <a href="../../S4Vectors/html/Hits-class.html">Hits</a> object.
+Otherwise the returned value is an integer vector parallel to <code>query</code>
+(i.e. same length) containing the first, last, or arbitrary overlapping
+interval in <code>subject</code>, with <code>NA</code> indicating intervals that did
+not overlap any intervals in <code>subject</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>ignore.strand</code></td>
+<td>
+
+<p>When set to <code>TRUE</code>, the strand information is ignored in the
+overlap calculations.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>When the query and the subject are <a href="../../GenomicRanges/help/GRanges.html">GRanges</a> or
+<a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> objects, <code>findOverlaps</code> uses the triplet
+(sequence name, range, strand) to determine which features (see
+paragraph below for the definition of feature) from the <code>query</code>
+overlap which features in the <code>subject</code>, where a strand value
+of <code>"*"</code> is treated as occurring on both the <code>"+"</code> and
+<code>"-"</code> strand.
+An overlap is recorded when a feature in the <code>query</code> and a feature
+in the <code>subject</code> have the same sequence name, have a compatible
+pairing of strands (e.g. <code>"+"</code>/<code>"+"</code>, <code>"-"</code>/<code>"-"</code>,
+<code>"*"</code>/<code>"+"</code>, <code>"*"</code>/<code>"-"</code>, etc.), and satisfy the
+interval overlap requirements.
+</p>
+<p>In the context of <code>findOverlaps</code>, a feature is a collection of
+ranges that are treated as a single entity. For <a href="../../GenomicRanges/help/GRanges.html">GRanges</a> objects,
+a feature is a single range; while for <a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> objects,
+a feature is a list element containing a set of ranges. In the results,
+the features are referred to by number, which run from 1 to
+<code>length(query)</code>/<code>length(subject)</code>.
+</p>
+<p>For <code>type="equal"</code> with GRangesList objects, <code>query[[i]]</code>
+matches <code>subject[[j]]</code> iff for each range in <code>query[[i]]</code>
+there is an identical range in <code>subject[[j]]</code>, and vice versa.
+</p>
+
+
+<h3>Value</h3>
+
+<p>For <code>findOverlaps</code> either a <a href="../../S4Vectors/help/Hits.html">Hits</a> object when
+<code>select="all"</code> or an integer vector otherwise. 
+</p>
+<p>For <code>countOverlaps</code> an integer vector containing the tabulated
+query overlap hits.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>P. Aboyoun, S. Falcon, M. Lawrence, and H. Pagès</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li><p> The <a href="../../S4Vectors/html/Hits-class.html">Hits</a> class for representing a set of hits between 2
+vector-like objects.
+</p>
+</li>
+<li><p> The <code><a href="../../IRanges/help/findOverlaps.html">findOverlaps</a></code> generic function defined
+in the <span class="pkg">IRanges</span> package.
+</p>
+</li>
+<li><p> The <a href="../../GenomicRanges/help/GNCList.html">GNCList</a> constructor and class for preprocessing and
+representing a <a href="../../GenomicRanges/help/GenomicRanges.html">GenomicRanges</a> or object as a data structure
+based on Nested Containment Lists.
+</p>
+</li>
+<li><p> The <a href="../../GenomicRanges/help/GRanges.html">GRanges</a> and <a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> classes.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## ---------------------------------------------------------------------
+## BASIC EXAMPLES
+## ---------------------------------------------------------------------
+
+## GRanges object:
+gr &lt;- GRanges(
+        seqnames=Rle(c("chr1", "chr2", "chr1", "chr3"), c(1, 3, 2, 4)),
+        ranges=IRanges(1:10, width=10:1, names=head(letters,10)),
+        strand=Rle(strand(c("-", "+", "*", "+", "-")), c(1, 2, 2, 3, 2)),
+        score=1:10,
+        GC=seq(1, 0, length=10)
+      )
+gr
+
+## GRangesList object:
+gr1 &lt;- GRanges(seqnames="chr2", ranges=IRanges(4:3, 6),
+               strand="+", score=5:4, GC=0.45)
+gr2 &lt;- GRanges(seqnames=c("chr1", "chr1"),
+               ranges=IRanges(c(7,13), width=3),
+               strand=c("+", "-"), score=3:4, GC=c(0.3, 0.5))
+gr3 &lt;- GRanges(seqnames=c("chr1", "chr2"),
+               ranges=IRanges(c(1, 4), c(3, 9)),
+               strand=c("-", "-"), score=c(6L, 2L), GC=c(0.4, 0.1))
+grl &lt;- GRangesList("gr1"=gr1, "gr2"=gr2, "gr3"=gr3)
+
+## Overlapping two GRanges objects:
+table(!is.na(findOverlaps(gr, gr1, select="arbitrary")))
+countOverlaps(gr, gr1)
+findOverlaps(gr, gr1)
+subsetByOverlaps(gr, gr1)
+
+countOverlaps(gr, gr1, type="start")
+findOverlaps(gr, gr1, type="start")
+subsetByOverlaps(gr, gr1, type="start")
+
+findOverlaps(gr, gr1, select="first")
+findOverlaps(gr, gr1, select="last")
+
+findOverlaps(gr1, gr)
+findOverlaps(gr1, gr, type="start")
+findOverlaps(gr1, gr, type="within")
+findOverlaps(gr1, gr, type="equal")
+
+## ---------------------------------------------------------------------
+## MORE EXAMPLES
+## ---------------------------------------------------------------------
+
+table(!is.na(findOverlaps(gr, gr1, select="arbitrary")))
+countOverlaps(gr, gr1)
+findOverlaps(gr, gr1)
+subsetByOverlaps(gr, gr1)
+
+## Overlaps between a GRanges and a GRangesList object:
+
+table(!is.na(findOverlaps(grl, gr, select="first")))
+countOverlaps(grl, gr)
+findOverlaps(grl, gr)
+subsetByOverlaps(grl, gr)
+countOverlaps(grl, gr, type="start")
+findOverlaps(grl, gr, type="start")
+subsetByOverlaps(grl, gr, type="start")
+findOverlaps(grl, gr, select="first")
+
+table(!is.na(findOverlaps(grl, gr1, select="first")))
+countOverlaps(grl, gr1)
+findOverlaps(grl, gr1)
+subsetByOverlaps(grl, gr1)
+countOverlaps(grl, gr1, type="start")
+findOverlaps(grl, gr1, type="start")
+subsetByOverlaps(grl, gr1, type="start")
+findOverlaps(grl, gr1, select="first")
+
+## Overlaps between two GRangesList objects:
+countOverlaps(grl, rev(grl))
+findOverlaps(grl, rev(grl))
+subsetByOverlaps(grl, rev(grl))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GenomicRanges</em> version 1.46.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

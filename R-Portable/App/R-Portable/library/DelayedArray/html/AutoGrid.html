@@ -1,0 +1,320 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Create automatic grids to use for block processing of...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for AutoGrid {DelayedArray}"><tr><td>AutoGrid {DelayedArray}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Create automatic grids to use for block processing
+of array-like objects</h2>
+
+<h3>Description</h3>
+
+<p>We provide various utility functions to create grids that can be used
+for block processing of array-like objects:
+</p>
+
+<ul>
+<li> <p><code>defaultAutoGrid()</code> is the default <em>automatic grid maker</em>.
+It creates a grid that is suitable for block processing of the
+array-like object passed to it.
+</p>
+</li>
+<li> <p><code>rowAutoGrid()</code> and <code>colAutoGrid()</code> are more specialized
+<em>automatic grid makers</em>, for the 2-dimensional case.
+They can be used to create a grid where the blocks are made of
+full rows or full columns, respectively.
+</p>
+</li>
+<li> <p><code>defaultSinkAutoGrid()</code> is a specialized version of
+<code>defaultAutoGrid()</code> for creating a grid that is suitable
+for writing to a <a href="../../DelayedArray/help/RealizationSink.html">RealizationSink</a> derivative while walking
+on it.
+</p>
+</li></ul>
+
+
+
+<h3>Usage</h3>
+
+<pre>
+defaultAutoGrid(x, block.length=NULL, chunk.grid=NULL, block.shape=NULL)
+
+## Two specialized "automatic grid makers" for the 2-dimensional case:
+rowAutoGrid(x, nrow=NULL, block.length=NULL)
+colAutoGrid(x, ncol=NULL, block.length=NULL)
+
+## Replace default automatic grid maker with user-defined one:
+getAutoGridMaker()
+setAutoGridMaker(GRIDMAKER="defaultAutoGrid")
+
+## A specialized version of defaultAutoGrid() to create an automatic
+## grid on a RealizationSink derivative:
+defaultSinkAutoGrid(sink, block.length=NULL, chunk.grid=NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+
+<p>An array-like or matrix-like object for <code>defaultAutoGrid</code>.
+</p>
+<p>A matrix-like object for <code>rowAutoGrid</code> and <code>colAutoGrid</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>block.length</code></td>
+<td>
+
+<p>The length of the blocks i.e. the number of array elements per block.
+By default the automatic block length (returned by
+<code>getAutoBlockLength(type(x))</code>, or <code>getAutoBlockLength(type(sink))</code>
+in the case of <code>defaultSinkAutoGrid()</code>) is used.
+Depending on how much memory is available on your machine, you might
+want to increase (or decrease) the automatic block length by adjusting
+the automatic block size with <code>setAutoBlockSize()</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>chunk.grid</code></td>
+<td>
+
+<p>The grid of physical chunks.
+By default <code><a href="../../DelayedArray/help/chunkGrid.html">chunkGrid</a>(x)</code> (or <code><a href="../../DelayedArray/help/chunkGrid.html">chunkGrid</a>(sink)</code>
+in the case of <code>defaultSinkAutoGrid()</code>) is used.
+</p>
+</td></tr>
+<tr valign="top"><td><code>block.shape</code></td>
+<td>
+
+<p>A string specifying the shape of the blocks.
+See <code><a href="../../DelayedArray/help/makeCappedVolumeBox.html">makeCappedVolumeBox</a></code> for a description of the
+supported shapes.
+By default <code>getAutoBlockShape()</code> is used.
+</p>
+</td></tr>
+<tr valign="top"><td><code>nrow</code></td>
+<td>
+
+<p>The number of rows of the blocks. The bottommost blocks might have less.
+See examples below.
+</p>
+</td></tr>
+<tr valign="top"><td><code>ncol</code></td>
+<td>
+
+<p>The number of columns of the blocks. The rightmost blocks might have less.
+See examples below.
+</p>
+</td></tr>
+<tr valign="top"><td><code>GRIDMAKER</code></td>
+<td>
+
+<p>The function to use as <em>automatic grid maker</em>, that is, the
+function that will be used by <code><a href="../../DelayedArray/help/blockApply.html">blockApply</a>()</code> and
+<code><a href="../../DelayedArray/help/blockReduce.html">blockReduce</a>()</code> to make a grid when no grid is supplied
+via their <code>grid</code> argument.
+The function will be called on array-like object <code>x</code> and must
+return an <a href="../../DelayedArray/help/ArrayGrid.html">ArrayGrid</a> object, say <code>grid</code>, that is compatible
+with <code>x</code> i.e. such that <code>refdim(grid)</code> is identical to
+<code>dim(x)</code>.
+</p>
+<p><code>GRIDMAKER</code> can be specified as a function or as a single string
+naming a function. It can be a user-defined function or a pre-defined
+grid maker like <code>defaultAutoGrid</code>, <code>rowAutoGrid</code>, or
+<code>colAutoGrid</code>.
+</p>
+<p>The <em>automatic grid maker</em> is set to <code>defaultAutoGrid</code> at
+package startup and can be reset anytime to this value by calling
+<code>setAutoGridMaker()</code> with no argument.
+</p>
+</td></tr>
+<tr valign="top"><td><code>sink</code></td>
+<td>
+
+<p>A <a href="../../DelayedArray/help/RealizationSink.html">RealizationSink</a> derivative.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>By default, primary block processing functions <code><a href="../../DelayedArray/help/blockApply.html">blockApply</a>()</code>
+and <code><a href="../../DelayedArray/help/blockReduce.html">blockReduce</a>()</code> use the grid returned by
+<code>defaultAutoGrid(x)</code> to walk on the blocks of array-like
+object <code>x</code>. This can be changed with <code>setAutoGridMaker()</code>.
+</p>
+<p>By default <code><a href="../../DelayedArray/help/sinkApply.html">sinkApply</a>()</code> uses the grid returned by
+<code>defaultSinkAutoGrid(sink)</code> to walk on the viewports of
+<a href="../../DelayedArray/help/RealizationSink.html">RealizationSink</a> derivative <code>sink</code> and write to them.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>defaultAutoGrid</code>: An <a href="../../DelayedArray/help/ArrayGrid.html">ArrayGrid</a> object on reference array
+<code>x</code>. The grid elements define the blocks that will be used to
+process <code>x</code> by block. The grid is <em>optimal</em> in the sense that:
+</p>
+
+<ol>
+<li><p> It's <em>compatible</em> with the grid of physical chunks a.k.a.
+<em>chunk grid</em>. This means that, when the chunk grid is known
+(i.e. when <code><a href="../../DelayedArray/help/chunkGrid.html">chunkGrid</a>(x)</code> is not NULL or
+<code>chunk.grid</code> is supplied), every block in the grid contains
+one or more <em>full</em> chunks. In other words, chunks never cross
+block boundaries.
+</p>
+</li>
+<li><p> Its <em>resolution</em> is such that the blocks have a length
+that is as close as possibe to (but does not exceed)
+<code>block.length</code>. An exception is made when some chunks
+already have a length that is &gt;= <code>block.length</code>, in which
+case the returned grid is the same as the chunk grid.
+</p>
+</li></ol>
+
+<p>Note that the returned grid is regular (i.e. is a <a href="../../DelayedArray/help/RegularArrayGrid.html">RegularArrayGrid</a>
+object) unless the chunk grid is not regular (i.e. is an
+<a href="../../DelayedArray/help/ArbitraryArrayGrid.html">ArbitraryArrayGrid</a> object).
+</p>
+<p><code>rowAutoGrid</code>: A <a href="../../DelayedArray/help/RegularArrayGrid.html">RegularArrayGrid</a> object on reference array
+<code>x</code> where the grid elements define blocks made of full rows of <code>x</code>.
+</p>
+<p><code>colAutoGrid</code>: A <a href="../../DelayedArray/help/RegularArrayGrid.html">RegularArrayGrid</a> object on reference array
+<code>x</code> where the grid elements define blocks made of full columns
+of <code>x</code>.
+</p>
+<p><code>defaultSinkAutoGrid</code>: Like <code>defaultAutoGrid</code> except
+that <code>defaultSinkAutoGrid</code> always returns a grid with a
+&quot;first-dim-grows-first&quot; shape (note that, unlike the former, the
+latter has no <code>block.shape</code> argument).
+The advantage of using a grid with a &quot;first-dim-grows-first&quot; shape in
+the context of writing to the viewports of a <a href="../../DelayedArray/help/RealizationSink.html">RealizationSink</a>
+derivative is that such a grid is guaranteed to work with &quot;linear write
+only&quot; realization backends. See important notes about &quot;Cross realization
+backend compatibility&quot; in <code>?<a href="../../DelayedArray/help/write_block.html">write_block</a></code> for more information.
+</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><code><a href="../../DelayedArray/help/setAutoBlockSize.html">setAutoBlockSize</a></code> and <code><a href="../../DelayedArray/help/setAutoBlockShape.html">setAutoBlockShape</a></code>
+to control the geometry of automatic blocks.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/blockApply.html">blockApply</a></code> and family for convenient block
+processing of an array-like object.
+</p>
+</li>
+<li> <p><a href="../../DelayedArray/help/ArrayGrid.html">ArrayGrid</a> for the formal representation of grids and
+viewports.
+</p>
+</li>
+<li><p> The <code><a href="../../DelayedArray/help/makeCappedVolumeBox.html">makeCappedVolumeBox</a></code> utility to make
+<em>capped volume boxes</em>.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/chunkGrid.html">chunkGrid</a></code>.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/read_block.html">read_block</a></code> and <code><a href="../../DelayedArray/help/write_block.html">write_block</a></code>.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## ---------------------------------------------------------------------
+## A VERSION OF sum() THAT USES BLOCK PROCESSING
+## ---------------------------------------------------------------------
+
+block_sum &lt;- function(a, grid) {
+  sums &lt;- lapply(grid, function(viewport) sum(read_block(a, viewport)))
+  sum(unlist(sums))
+}
+
+## On an ordinary matrix:
+m &lt;- matrix(runif(600), ncol=12)
+m_grid &lt;- defaultAutoGrid(m, block.length=120)
+sum1 &lt;- block_sum(m, m_grid)
+sum1
+
+## On a DelayedArray object:
+library(HDF5Array)
+M &lt;- as(m, "HDF5Array")
+sum2 &lt;- block_sum(M, m_grid)
+sum2
+
+sum3 &lt;- block_sum(M, colAutoGrid(M, block.length=120))
+sum3
+
+sum4 &lt;- block_sum(M, rowAutoGrid(M, block.length=80))
+sum4
+
+## Sanity checks:
+sum0 &lt;- sum(m)
+stopifnot(identical(sum1, sum0))
+stopifnot(identical(sum2, sum0))
+stopifnot(identical(sum3, sum0))
+stopifnot(identical(sum4, sum0))
+
+## ---------------------------------------------------------------------
+## defaultAutoGrid()
+## ---------------------------------------------------------------------
+grid &lt;- defaultAutoGrid(m, block.length=120)
+grid
+as.list(grid)  # turn the grid into a list of ArrayViewport objects
+table(lengths(grid))
+stopifnot(maxlength(grid) &lt;= 120)
+
+grid &lt;- defaultAutoGrid(m, block.length=120,
+                           block.shape="first-dim-grows-first")
+grid
+table(lengths(grid))
+stopifnot(maxlength(grid) &lt;= 120)
+
+grid &lt;- defaultAutoGrid(m, block.length=120,
+                           block.shape="last-dim-grows-first")
+grid
+table(lengths(grid))
+stopifnot(maxlength(grid) &lt;= 120)
+
+defaultAutoGrid(m, block.length=100)
+defaultAutoGrid(m, block.length=75)
+defaultAutoGrid(m, block.length=25)
+defaultAutoGrid(m, block.length=20)
+defaultAutoGrid(m, block.length=10)
+
+## ---------------------------------------------------------------------
+## rowAutoGrid() AND colAutoGrid()
+## ---------------------------------------------------------------------
+rowAutoGrid(m, nrow=10)  # 5 blocks of 10 rows each
+rowAutoGrid(m, nrow=15)  # 3 blocks of 15 rows each plus 1 block of 5 rows
+colAutoGrid(m, ncol=5)   # 2 blocks of 5 cols each plus 1 block of 2 cols
+
+## See '?write_block' for an advanced example of user-implemented
+## block processing using colAutoGrid() and a realization sink.
+
+## ---------------------------------------------------------------------
+## REPLACE DEFAULT AUTOMATIC GRID MAKER WITH USER-DEFINED ONE
+## ---------------------------------------------------------------------
+getAutoGridMaker()
+setAutoGridMaker(function(x) colAutoGrid(x, ncol=5))
+getAutoGridMaker()
+
+blockApply(m, function(block) currentViewport())
+
+## Reset automatic grid maker to factory settings:
+setAutoGridMaker()
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>DelayedArray</em> version 0.20.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

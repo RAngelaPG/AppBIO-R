@@ -1,0 +1,96 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: qcrypt</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for qcrypt {Hmisc}"><tr><td>qcrypt {Hmisc}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>qcrypt</h2>
+
+<h3>Description</h3>
+
+<p>Store and Encrypt R Objects or Files or Read and Decrypt Them
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+qcrypt(obj, base, service = "R-keyring-service", file)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>obj</code></td>
+<td>
+<p>an R object to write to disk and encrypt (if <code>base</code> is specified) or the base file name to read and uncrypted (if <code>base</code> is not specified).  Not used when <code>file</code> is given.</p>
+</td></tr>
+<tr valign="top"><td><code>base</code></td>
+<td>
+<p>base file name when creating a file.  Not used when <code>file</code> is given.</p>
+</td></tr>
+<tr valign="top"><td><code>service</code></td>
+<td>
+<p>a fairly arbitrary <code>keyring</code> service name.  The default is almost always OK unless you need to use different passwords for different files.</p>
+</td></tr>
+<tr valign="top"><td><code>file</code></td>
+<td>
+<p>full name of file to encrypt or decrypt</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>qcrypt</code> is used to protect sensitive information on a user's computer or when transmitting a copy of the file to another R user.  Unencrypted information only exists for a moment, and the encryption password does not appear in the user's script but instead is managed by the <code>keyring</code> package to remember the password across R sessions, and the <code>getPass</code> package, which pops up a password entry window and does not allow the password to be visible.  The password is requested only once, except perhaps when the user logs out of their operating system session or reboots.
+</p>
+<p><code>qcrypt</code> writes R objects to disk in a temporary file using the <code>qs</code> package <code>qsave</code> function.  The file is quickly encrypted using the <code>safer</code> package, and the temporary unencrypted <code>qs</code> file is deleted.  When reading an encrypted file the process is reversed.
+</p>
+<p>To save an object in an encrypted file, specify the object as the first argument <code>obj</code> and specify a base file name as a character string in the second argument <code>base</code>.  The full <code>qs</code> file name will be of the form <code>base.qs.encrypted</code> in the user's current working directory.  To unencrypt the file into a short-lived temporary file and use <code>qs::qread</code> to read it, specify the base file name as a character string with the first argument, and do not specify the <code>base</code> argument.
+</p>
+<p>Alternatively, <code>qcrypt</code> can be used to encrypt or decrypt existing files of any type using the same password and keyring mechanism.  The former is done by specifying <code>file</code> that does not end in <code>'.encrypted'</code> and the latter is done by ending <code>file</code> with <code>'.encrypted'</code>.  When <code>file</code> does not contain a path it is assumed to be in the current working directory.  When a file is encrypted the original file is removed.  Files are decrypted into a temporary directory created by <code>tempdir()</code>, with the name of the file being the value of <code>file</code> with <code>'.encrypted'</code> removed.
+</p>
+<p>Interactive password provision works when running <code>R</code>, <code>Rscript</code>, <code>RStudio</code>, or <code>Quarto</code> but does not work when running <code style="white-space: pre;">R CMD BATCH</code>.  <code>getPass</code> fails under <code>RStudio</code> on Macs.
+</p>
+<p>See <a href="https://hbiostat.org/rflow/fcreate.html#sec-fcreate-secure">R Workflow</a> for more information.
+</p>
+
+
+<h3>Value</h3>
+
+<p>(invisibly) the full encrypted file name if writing the file, or the restored R object if reading the file.  When decrypting a general file with <code style="white-space: pre;">file=</code>, the returned value is the full path to a temporary file containing the decrypted data.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Frank Harrell
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+# Suppose x is a data.table or data.frame
+# The first time qcrypt is run with a service a password will
+# be requested.  It will be remembered across sessions thanks to
+# the keyring package
+qcrypt(x, 'x')   # creates x.qs.encrypted in current working directory
+x &lt;- qcrypt('x') # unencrypts x.qs.encrypted into a temporary
+                 # directory, uses qs::qread to read it, and
+                 # stores the result in x
+# Encrypt a general file using a different password
+qcrypt(file='report.pdf', service='pdfkey')
+# Decrypt that file
+fi &lt;- qcrypt(file='report.pdf.encrypted', service='pdfkey')
+fi contains the full unencrypted file name which is in a temporary directory
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>Hmisc</em> version 5.1-2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

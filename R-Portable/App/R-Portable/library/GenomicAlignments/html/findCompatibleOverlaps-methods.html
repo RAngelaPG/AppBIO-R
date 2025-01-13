@@ -1,0 +1,148 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Finding hits between reads and transcripts that are...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for findCompatibleOverlaps-methods {GenomicAlignments}"><tr><td>findCompatibleOverlaps-methods {GenomicAlignments}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Finding hits between reads and transcripts that are <em>compatible</em>
+with the splicing of the transcript</h2>
+
+<h3>Description</h3>
+
+<p>In the context of an RNA-seq experiment, <code>findCompatibleOverlaps</code>
+(or <code>countCompatibleOverlaps</code>) can be used for finding (or counting)
+hits between reads and transcripts that are <em>compatible</em>
+with the splicing of the transcript.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+findCompatibleOverlaps(query, subject)
+countCompatibleOverlaps(query, subject)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>query</code></td>
+<td>
+
+<p>A <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> or <a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> object representing
+the aligned reads.
+</p>
+</td></tr>
+<tr valign="top"><td><code>subject</code></td>
+<td>
+
+<p>A <a href="../../ChIPseeker/html/reexports.html">GRangesList</a> object representing the transcripts.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>findCompatibleOverlaps</code> is a specialized version of
+<code><a href="../../IRanges/help/findOverlaps.html">findOverlaps</a></code> that uses
+<code><a href="../../GenomicAlignments/help/encodeOverlaps.html">encodeOverlaps</a></code> internally to keep only
+the hits where the junctions in the aligned read are <em>compatible</em>
+with the splicing of the annotated transcript.
+</p>
+<p>The topic of working with overlap encodings is covered in details
+in the &quot;OverlapEncodings&quot; vignette located this package
+(<span class="pkg">GenomicAlignments</span>) and accessible with
+<code>vignette("OverlapEncodings")</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <a href="../../S4Vectors/help/Hits.html">Hits</a> object for <code>findCompatibleOverlaps</code>.
+</p>
+<p>An integer vector <em>parallel</em> to (i.e. same length as) <code>query</code>
+for <code>countCompatibleOverlaps</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Hervé Pagès</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li><p> The <code><a href="../../IRanges/help/findOverlaps.html">findOverlaps</a></code> generic function defined
+in the <span class="pkg">IRanges</span> package.
+</p>
+</li>
+<li><p> The <code><a href="../../GenomicAlignments/help/encodeOverlaps.html">encodeOverlaps</a></code> generic function and
+<a href="../../GenomicAlignments/help/OverlapEncodings.html">OverlapEncodings</a> class.
+</p>
+</li>
+<li><p> The &quot;OverlapEncodings&quot; vignette in this package.
+</p>
+</li>
+<li> <p><a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> and <a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> objects.
+</p>
+</li>
+<li> <p><a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> objects in the
+<span class="pkg">GenomicRanges</span> package.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## Here we only show a simple example illustrating the use of
+## countCompatibleOverlaps() on a very small data set. Please
+## refer to the "OverlapEncodings" vignette in the GenomicAlignments
+## package for a comprehensive presentation of "overlap
+## encodings" and related tools/concepts (e.g. "compatible"
+## overlaps, "almost compatible" overlaps etc...), and for more
+## examples.
+
+## sm_treated1.bam contains a small subset of treated1.bam, a BAM
+## file containing single-end reads from the "Pasilla" experiment
+## (RNA-seq, Fly, see the pasilla data package for the details)
+## and aligned to reference genome BDGP Release 5 (aka dm3 genome on
+## the UCSC Genome Browser):
+sm_treated1 &lt;- system.file("extdata", "sm_treated1.bam",
+                           package="GenomicAlignments", mustWork=TRUE)
+
+## Load the alignments:
+flag0 &lt;- scanBamFlag(isDuplicate=FALSE, isNotPassingQualityControls=FALSE)
+param0 &lt;- ScanBamParam(flag=flag0)
+gal &lt;- readGAlignments(sm_treated1, use.names=TRUE, param=param0)
+
+## Load the transcripts (IMPORTANT: Like always, the reference genome
+## of the transcripts must be *exactly* the same as the reference
+## genome used to align the reads):
+library(TxDb.Dmelanogaster.UCSC.dm3.ensGene)
+txdb &lt;- TxDb.Dmelanogaster.UCSC.dm3.ensGene
+exbytx &lt;- exonsBy(txdb, by="tx", use.names=TRUE)
+
+## Number of "compatible" transcripts per alignment in 'gal':
+gal_ncomptx &lt;- countCompatibleOverlaps(gal, exbytx)
+mcols(gal)$ncomptx &lt;- gal_ncomptx
+table(gal_ncomptx)
+mean(gal_ncomptx &gt;= 1)
+## --&gt; 33% of the alignments in 'gal' are "compatible" with at least
+## 1 transcript in 'exbytx'.
+
+## Keep only alignments compatible with at least 1 transcript in
+## 'exbytx':
+compgal &lt;- gal[gal_ncomptx &gt;= 1]
+head(compgal)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GenomicAlignments</em> version 1.30.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

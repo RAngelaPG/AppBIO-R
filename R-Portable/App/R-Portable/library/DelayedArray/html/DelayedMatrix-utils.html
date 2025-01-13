@@ -1,0 +1,186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Common operations on DelayedMatrix objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for DelayedMatrix-utils {DelayedArray}"><tr><td>DelayedMatrix-utils {DelayedArray}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Common operations on DelayedMatrix objects</h2>
+
+<h3>Description</h3>
+
+<p>Common operations on <a href="../../DelayedArray/help/DelayedMatrix.html">DelayedMatrix</a> objects.
+</p>
+
+
+<h3>Details</h3>
+
+<p>In addition to the operations supported on <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> objects,
+<a href="../../DelayedArray/help/DelayedMatrix.html">DelayedMatrix</a> objects support the following operations:
+</p>
+<p>Delayed operations:
+</p>
+
+<ul>
+<li> <p><code>t</code>
+</p>
+</li></ul>
+
+<p>Block-processed operations:
+</p>
+
+<ul>
+<li> <p><code>rowsum</code> and <code>colsum</code>
+</p>
+</li>
+<li><p> matrix multiplication (%*%) of an ordinary matrix by a
+<a href="../../DelayedArray/help/DelayedMatrix.html">DelayedMatrix</a> object
+</p>
+</li>
+<li><p> matrix row/col summarization (see
+<code>?`<a href="../../DelayedArray/help/DelayedMatrix-stats.html">DelayedMatrix-stats</a>`</code>)
+</p>
+</li></ul>
+
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><code><a href="../../base/help/rowsum.html">rowsum</a></code> in the <span class="pkg">base</span> package for
+computing column sums across rows of an ordinary matrix
+for each level of a grouping variable.
+</p>
+</li>
+<li> <p><a href="../../DelayedArray/help/DelayedArray-utils.html">DelayedArray-utils</a> for common operations on
+<a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> objects.
+</p>
+</li>
+<li> <p><a href="../../DelayedArray/help/DelayedArray-stats.html">DelayedArray-stats</a> for statistical functions on
+<a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> objects.
+</p>
+</li>
+<li> <p><a href="../../DelayedArray/help/DelayedMatrix-stats.html">DelayedMatrix-stats</a> for <a href="../../DelayedArray/help/DelayedMatrix.html">DelayedMatrix</a> row/col
+summarization.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/setAutoRealizationBackend.html">setAutoRealizationBackend</a></code> for how to set a
+<em>automatic realization backend</em>.
+</p>
+</li>
+<li> <p><code><a href="../../HDF5Array/help/writeHDF5Array.html">writeHDF5Array</a></code> in the <span class="pkg">HDF5Array</span>
+package for writing an array-like object to an HDF5 file and other
+low-level utilities to control the location of automatically created
+HDF5 datasets.
+</p>
+</li>
+<li> <p><a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> objects.
+</p>
+</li>
+<li> <p><a href="../../HDF5Array/help/HDF5Array.html">HDF5Array</a> objects in the <span class="pkg">HDF5Array</span> package.
+</p>
+</li>
+<li> <p><a href="../../base/help/array.html">array</a> objects in base R.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## ---------------------------------------------------------------------
+## rowsum() / colsum()
+## ---------------------------------------------------------------------
+library(HDF5Array)
+set.seed(123)
+m0 &lt;- matrix(runif(14400000), ncol=2250,
+             dimnames=list(NULL, sprintf("C%04d", 1:2250)))
+M0 &lt;- writeHDF5Array(m0, chunkdim=c(200, 250))
+dimnames(M0) &lt;- dimnames(m0)
+
+## --- rowsum() ---
+
+group &lt;- sample(90, nrow(M0), replace=TRUE)  # define groups of rows
+rs &lt;- rowsum(M0, group)
+rs[1:5, 1:8]
+rs2 &lt;- rowsum(M0, group, reorder=FALSE)
+rs2[1:5, 1:8]
+
+## Let's see block processing in action:
+DelayedArray:::set_verbose_block_processing(TRUE)
+setAutoBlockSize(2e6)
+rs3 &lt;- rowsum(M0, group)
+setAutoBlockSize()
+DelayedArray:::set_verbose_block_processing(FALSE)
+
+## Sanity checks:
+stopifnot(all.equal(rowsum(m0, group), rs))
+stopifnot(all.equal(rowsum(m0, group, reorder=FALSE), rs2))
+stopifnot(all.equal(rs, rs3))
+
+## --- colsum() ---
+
+group &lt;- sample(30, ncol(M0), replace=TRUE)  # define groups of cols
+cs &lt;- colsum(M0, group)
+cs[1:5, 1:7]
+cs2 &lt;- colsum(M0, group, reorder=FALSE)
+cs2[1:5, 1:7]
+
+## Sanity checks:
+stopifnot(all.equal(colsum(m0, group), cs))
+stopifnot(all.equal(cs, t(rowsum(t(m0), group))))
+stopifnot(all.equal(cs, t(rowsum(t(M0), group))))
+stopifnot(all.equal(colsum(m0, group, reorder=FALSE), cs2))
+stopifnot(all.equal(cs2, t(rowsum(t(m0), group, reorder=FALSE))))
+stopifnot(all.equal(cs2, t(rowsum(t(M0), group, reorder=FALSE))))
+
+## ---------------------------------------------------------------------
+## MATRIX MULTIPLICATION
+## ---------------------------------------------------------------------
+library(HDF5Array)
+toy_h5 &lt;- system.file("extdata", "toy.h5", package="HDF5Array")
+h5ls(toy_h5)
+M1 &lt;- HDF5Array(toy_h5, "M1")
+
+## Matrix multiplication is not delayed: the output matrix is realized
+## block by block. The current "automatic realization backend" controls
+## where realization happens e.g. in memory as an ordinary matrix if not
+## (i.e. set to NULL) or in an HDF5 file if set to "HDF5Array".
+## See '?setAutoRealizationBackend' for more information about
+## "realization backends".
+## The output matrix is returned as a DelayedMatrix object with no delayed
+## operations on it. The exact class of the object depends on the backend
+## e.g. it will be HDF5Matrix with "HDF5Array" backend.
+
+m &lt;- matrix(runif(50000), ncol=nrow(M1))
+
+## Set backend to NULL for in-memory realization:
+setAutoRealizationBackend()
+P1 &lt;- m %*% M1
+P1
+
+## Set backend to HDF5Array for realization in HDF5 file:
+setAutoRealizationBackend("HDF5Array")
+
+## With the HDF5Array backend, the output matrix will be written to an
+## automatic location on disk:
+getHDF5DumpFile()  # HDF5 file where the output matrix will be written
+lsHDF5DumpFile()
+
+P2 &lt;- m %*% M1
+P2
+
+lsHDF5DumpFile()
+
+## Use setHDF5DumpFile() and setHDF5DumpName() from the HDF5Array package
+## to control the location of automatically created HDF5 datasets.
+
+stopifnot(identical(dim(P1), dim(P2)),
+          all.equal(as.array(P1), as.array(P2)))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>DelayedArray</em> version 0.20.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

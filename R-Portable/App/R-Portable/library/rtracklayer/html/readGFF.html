@@ -1,0 +1,165 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Reads a file in GFF format</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for readGFF {rtracklayer}"><tr><td>readGFF {rtracklayer}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Reads a file in GFF format</h2>
+
+<h3>Description</h3>
+
+<p>Reads a file in GFF format and creates a data frame or
+<a href="../../S4Vectors/help/DataFrame.html">DataFrame</a> object from it. This is a low-level
+function that should not be called by user code.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+readGFF(filepath, version=0,
+        columns=NULL, tags=NULL, filter=NULL, nrows=-1,
+        raw_data=FALSE)
+
+GFFcolnames(GFF1=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>filepath</code></td>
+<td>
+
+<p>A single string containing the path or URL to the file to read.
+Alternatively can be a connection.
+</p>
+</td></tr>
+<tr valign="top"><td><code>version</code></td>
+<td>
+
+<p><code>readGFF</code> should do a pretty descent job at detecting the GFF
+version. Use this argument <em>only</em> if it doesn't or if you want to
+force it to parse and import the file as if its 9-th column was in a
+different format than what it really is (e.g. specify <code>version=1</code>
+on a GTF or GFF3 file to interpret its 9-th column as the <code>"group"</code>
+column of a GFF1 file). Supported versions are 1, 2, and 3.
+</p>
+</td></tr>
+<tr valign="top"><td><code>columns</code></td>
+<td>
+
+<p>The standard GFF columns to load. All of them are loaded by default.
+</p>
+</td></tr>
+<tr valign="top"><td><code>tags</code></td>
+<td>
+
+<p>The tags to load. All of them are loaded by default.
+</p>
+</td></tr>
+<tr valign="top"><td><code>filter</code></td>
+<td>
+
+</td></tr>
+<tr valign="top"><td><code>nrows</code></td>
+<td>
+
+<p><code>-1</code> or the maximum number of rows to read in (after filtering).
+</p>
+</td></tr>
+<tr valign="top"><td><code>raw_data</code></td>
+<td>
+
+</td></tr>
+<tr valign="top"><td><code>GFF1</code></td>
+<td>
+
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A DataFrame with columns corresponding to those in the GFF.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>H. Pages
+</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><code><a href="../../BiocIO/html/export.html">import</a></code> for importing a GFF file as a
+<a href="../../GenomicRanges/help/GRanges.html">GRanges</a> object.
+</p>
+</li>
+<li> <p><code><a href="../../GenomicRanges/help/makeGRangesFromDataFrame.html">makeGRangesFromDataFrame</a></code> in the
+<span class="pkg">GenomicRanges</span> package for making a
+<a href="../../GenomicRanges/help/GRanges.html">GRanges</a> object from a data frame or
+<a href="../../S4Vectors/help/DataFrame.html">DataFrame</a> object.
+</p>
+</li>
+<li> <p><code><a href="../../GenomicFeatures/help/makeTxDbFromGFF.html">makeTxDbFromGFF</a></code> in the
+<span class="pkg">GenomicFeatures</span> package for importing a GFF file as a
+<a href="../../GenomicFeatures/help/TxDb.html">TxDb</a> object.
+</p>
+</li>
+<li><p> The <a href="../../S4Vectors/help/DataFrame.html">DataFrame</a> class in the <span class="pkg">S4Vectors</span>
+package.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## Standard GFF columns.
+GFFcolnames()
+GFFcolnames(GFF1=TRUE)  # "group" instead of "attributes"
+
+tests_dir &lt;- system.file("tests", package="rtracklayer")
+test_gff3 &lt;- file.path(tests_dir, "genes.gff3")
+
+## Load everything.
+df0 &lt;- readGFF(test_gff3)
+head(df0)
+
+## Load some tags only (in addition to the standard GFF columns).
+my_tags &lt;- c("ID", "Parent", "Name", "Dbxref", "geneID")
+df1 &lt;- readGFF(test_gff3, tags=my_tags)
+head(df1)
+
+## Load no tags (in that case, the "attributes" standard column
+## is loaded).
+df2 &lt;- readGFF(test_gff3, tags=character(0))
+head(df2)
+
+## Load some standard GFF columns only (in addition to all tags).
+my_columns &lt;- c("seqid", "start", "end", "strand", "type")
+df3 &lt;- readGFF(test_gff3, columns=my_columns)
+df3
+table(df3$seqid, df3$type)
+makeGRangesFromDataFrame(df3, keep.extra.columns=TRUE)
+
+## Combine use of 'columns' and 'tags' arguments.
+readGFF(test_gff3, columns=my_columns, tags=c("ID", "Parent", "Name"))
+readGFF(test_gff3, columns=my_columns, tags=character(0))
+
+## Use the 'filter' argument to load only features of type "gene"
+## or "mRNA" located on chr10.
+my_filter &lt;- list(type=c("gene", "mRNA"), seqid="chr10")
+readGFF(test_gff3, filter=my_filter)
+readGFF(test_gff3, columns=my_columns, tags=character(0), filter=my_filter)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rtracklayer</em> version 1.54.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

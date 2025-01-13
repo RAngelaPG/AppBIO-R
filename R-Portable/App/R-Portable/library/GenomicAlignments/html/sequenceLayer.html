@@ -1,0 +1,406 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Lay read sequences alongside the reference space, using their...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for sequenceLayer {GenomicAlignments}"><tr><td>sequenceLayer {GenomicAlignments}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Lay read sequences alongside the reference space, using their CIGARs</h2>
+
+<h3>Description</h3>
+
+<p><code>sequenceLayer</code> can lay strings that belong to a given space (e.g.
+the <code>"query"</code> space) alongside another space (e.g. the
+<code>"reference"</code> space) by removing/injecting substrings from/into them,
+using the supplied CIGARs.
+</p>
+<p>Its primary use case is to lay the read sequences stored in a BAM file
+(which are considered to belong to the <code>"query"</code> space) alongside
+the <code>"reference"</code> space. It can also be used to remove the parts
+of the read sequences that correspond to soft-clipping. More generally
+it can lay strings that belong to any supported space alongside any other
+supported space. See the Details section below for the list of supported
+spaces.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+sequenceLayer(x, cigar, from="query", to="reference",
+              D.letter="-", N.letter=".",
+              I.letter="-", S.letter="+", H.letter="+")
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+
+<p>An <a href="../../Biostrings/html/XStringSet-class.html">XStringSet</a> object containing strings that belong to a given
+space.
+</p>
+</td></tr>
+<tr valign="top"><td><code>cigar</code></td>
+<td>
+
+<p>A character vector or factor of the same length as <code>x</code> containing
+the extended CIGAR strings (one per element in <code>x</code>).
+</p>
+</td></tr>
+<tr valign="top"><td><code>from, to</code></td>
+<td>
+
+<p>A single string specifying one of the 8 supported spaces listed in the
+Details section below. <code>from</code> must be the current space (i.e. the
+space the strings in <code>x</code> belong to) and <code>to</code> is the space
+alonside which to lay the strings in <code>x</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>D.letter, N.letter, I.letter, S.letter, H.letter</code></td>
+<td>
+
+<p>A single letter used as a filler for injections. More on this in
+the Details section below.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The 8 supported spaces are: <code>"reference"</code>,
+<code>"reference-N-regions-removed"</code>, <code>"query"</code>,
+<code>"query-before-hard-clipping"</code>, <code>"query-after-soft-clipping"</code>,
+<code>"pairwise"</code>, <code>"pairwise-N-regions-removed"</code>,
+and <code>"pairwise-dense"</code>.
+</p>
+<p>Each space can be characterized by the extended CIGAR
+operations that are <em>visible</em> in it. A CIGAR operation is
+said to be <em>visible</em> in a given space if it &quot;runs along it&quot;,
+that is, if it's associated with a block of contiguous positions in
+that space (the size of the block being the length of the operation).
+For example, the M/=/X operations are <em>visible</em> in all spaces,
+the D/N operations are <em>visible</em> in the <code>"reference"</code> space
+but not in the <code>"query"</code> space, the S operation is <em>visible</em>
+in the <code>"query"</code> space but not in the <code>"reference"</code>
+or in the <code>"query-after-soft-clipping"</code> space, etc...
+</p>
+<p>Here are the extended CIGAR operations that are <em>visible</em> in each
+space:
+</p>
+
+<ol>
+<li><p> reference: M, D, N, =, X
+</p>
+</li>
+<li><p> reference-N-regions-removed: M, D, =, X
+</p>
+</li>
+<li><p> query: M, I, S, =, X
+</p>
+</li>
+<li><p> query-before-hard-clipping: M, I, S, H, =, X
+</p>
+</li>
+<li><p> query-after-soft-clipping: M, I, =, X
+</p>
+</li>
+<li><p> pairwise: M, I, D, N, =, X
+</p>
+</li>
+<li><p> pairwise-N-regions-removed: M, I, D, =, X
+</p>
+</li>
+<li><p> pairwise-dense: M, =, X
+</p>
+</li></ol>
+
+<p><code>sequenceLayer</code> lays a string that belongs to one space alongside
+another by (1) removing the substrings associated with operations that
+are not <em>visible</em> anymore in the new space, and (2) injecting
+substrings associated with operations that become <em>visible</em> in the
+new space. Each injected substring has the length of the operation
+associated with it, and its content is controlled via the corresponding
+<code>*.letter</code> argument.
+</p>
+<p>For example, when going from the <code>"query"</code> space to the
+<code>"reference"</code> space (the default), the I- and S-substrings (i.e.
+the substrings associated with I/S operations) are removed, and
+substrings associated with D/N operations are injected. More precisely,
+the D-substrings are filled with the letter specified in <code>D.letter</code>,
+and the N-substrings with the letter specified in <code>N.letter</code>.
+The other <code>*.letter</code> arguments are ignored in that case.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An <a href="../../Biostrings/html/XStringSet-class.html">XStringSet</a> object of the same class and length as <code>x</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Hervé Pagès</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li><p> The <code><a href="../../GenomicAlignments/help/stackStringsFromBam.html">stackStringsFromBam</a></code> function
+for stacking the read sequences (or their quality strings)
+stored in a BAM file on a region of interest.
+</p>
+</li>
+<li><p> The <code><a href="../../GenomicAlignments/help/readGAlignments.html">readGAlignments</a></code> function for loading read
+sequences from a BAM file (via a <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> object).
+</p>
+</li>
+<li><p> The <code><a href="../../Biostrings/help/extractAt.html">extractAt</a></code> and
+<code><a href="../../Biostrings/help/replaceAt.html">replaceAt</a></code> functions in the <span class="pkg">Biostrings</span>
+package for extracting/replacing arbitrary substrings from/in a
+string or set of strings.
+</p>
+</li>
+<li> <p><a href="../../GenomicAlignments/help/cigar-utils.html">cigar-utils</a> for the CIGAR utility functions used internally
+by <code>sequenceLayer</code>.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## ---------------------------------------------------------------------
+## A. FROM "query" TO "reference" SPACE
+## ---------------------------------------------------------------------
+
+## Load read sequences from a BAM file (they will be returned in a
+## GAlignments object):
+bamfile &lt;- system.file("extdata", "ex1.bam", package="Rsamtools")
+param &lt;- ScanBamParam(what="seq")
+gal &lt;- readGAlignments(bamfile, param=param)
+qseq &lt;- mcols(gal)$seq  # the read sequences (aka query sequences)
+
+## Lay the query sequences alongside the reference space. This will
+## remove the substrings associated with insertions to the reference
+## (I operations) and soft clipping (S operations), and will inject new
+## substrings (filled with "-") where deletions from the reference (D
+## operations) and skipped regions from the reference (N operations)
+## occurred during the alignment process:
+qseq_on_ref &lt;- sequenceLayer(qseq, cigar(gal))
+
+## A typical use case for doing the above is to compute 1 consensus
+## sequence per chromosome. The code below shows how this can be done
+## in 2 extra steps.
+
+## Step 1: Compute one consensus matrix per chromosome.
+qseq_on_ref_by_chrom &lt;- splitAsList(qseq_on_ref, seqnames(gal))
+pos_by_chrom &lt;- splitAsList(start(gal), seqnames(gal))
+
+cm_by_chrom &lt;- lapply(names(pos_by_chrom),
+    function(seqname)
+        consensusMatrix(qseq_on_ref_by_chrom[[seqname]],
+                        as.prob=TRUE,
+                        shift=pos_by_chrom[[seqname]]-1,
+                        width=seqlengths(gal)[[seqname]]))
+names(cm_by_chrom) &lt;- names(pos_by_chrom)
+
+## 'cm_by_chrom' is a list of consensus matrices. Each matrix has 17
+## rows (1 per letter in the DNA alphabet) and 1 column per chromosome
+## position.
+
+## Step 2: Compute the consensus string from each consensus matrix.
+## We'll put "+" in the strings wherever there is no coverage for that
+## position, and "N" where there is coverage but no consensus.
+cs_by_chrom &lt;- lapply(cm_by_chrom,
+    function(cm) {
+        ## Because consensusString() doesn't like consensus matrices
+        ## with columns that contain only zeroes (and you will have
+        ## columns like that for chromosome positions that don't
+        ## receive any coverage), we need to "fix" 'cm' first.
+        idx &lt;- colSums(cm) == 0
+        cm["+", idx] &lt;- 1
+        DNAString(consensusString(cm, ambiguityMap="N"))
+    })
+
+## consensusString() provides some flexibility to let you extract
+## the consensus in different ways. See '?consensusString' in the
+## Biostrings package for the details.
+
+## Finally, note that the read quality strings can also be used as
+## input for sequenceLayer():
+param &lt;- ScanBamParam(what="qual")
+gal &lt;- readGAlignments(bamfile, param=param)
+qual &lt;- mcols(gal)$qual  # the read quality strings
+qual_on_ref &lt;- sequenceLayer(qual, cigar(gal))
+## Note that since the "-" letter is a valid quality code, there is
+## no way to distinguish it from the "-" letters inserted by
+## sequenceLayer().
+
+## ---------------------------------------------------------------------
+## B. FROM "query" TO "query-after-soft-clipping" SPACE
+## ---------------------------------------------------------------------
+
+## Going from "query" to "query-after-soft-clipping" simply removes
+## the substrings associated with soft clipping (S operations):
+qseq &lt;- DNAStringSet(c("AAAGTTCGAA", "TTACGATTAN", "GGATAATTTT"))
+cigar &lt;- c("3H10M", "2S7M1S2H", "2M1I1M3D2M4S")
+clipped_qseq &lt;- sequenceLayer(qseq, cigar,
+                              from="query", to="query-after-soft-clipping")
+
+sequenceLayer(clipped_qseq, cigar,
+              from="query-after-soft-clipping", to="query")
+
+sequenceLayer(clipped_qseq, cigar,
+              from="query-after-soft-clipping", to="query",
+              S.letter="-")
+
+## ---------------------------------------------------------------------
+## C. BRING QUERY AND REFERENCE SEQUENCES TO THE "pairwise" or
+##    "pairwise-dense" SPACE
+## ---------------------------------------------------------------------
+
+## Load read sequences from a BAM file:
+library(RNAseqData.HNRNPC.bam.chr14)
+bamfile &lt;- RNAseqData.HNRNPC.bam.chr14_BAMFILES[1]
+param &lt;- ScanBamParam(what="seq",
+                      which=GRanges("chr14", IRanges(1, 25000000)))
+gal &lt;- readGAlignments(bamfile, param=param)
+qseq &lt;- mcols(gal)$seq  # the read sequences (aka query sequences)
+
+## Load the corresponding reference sequences from the appropriate
+## BSgenome package (the reads in RNAseqData.HNRNPC.bam.chr14 were
+## aligned to hg19):
+library(BSgenome.Hsapiens.UCSC.hg19)
+rseq &lt;- getSeq(Hsapiens, as(gal, "GRanges"))  # the reference sequences
+
+## Bring 'qseq' and 'rseq' to the "pairwise" space.
+## For 'qseq', this will remove the substrings associated with soft
+## clipping (S operations) and inject substrings (filled with "-")
+## associated with deletions from the reference (D operations) and
+## skipped regions from the reference (N operations). For 'rseq', this
+## will inject substrings (filled with "-") associated with insertions
+## to the reference (I operations).
+qseq2 &lt;- sequenceLayer(qseq, cigar(gal),
+                       from="query", to="pairwise")
+rseq2 &lt;- sequenceLayer(rseq, cigar(gal),
+                       from="reference", to="pairwise")
+
+## Sanity check: 'qseq2' and 'rseq2' should have the same shape.
+stopifnot(identical(elementNROWS(qseq2), elementNROWS(rseq2)))
+
+## A closer look at reads with insertions and deletions:
+cigar_op_table &lt;- cigarOpTable(cigar(gal))
+head(cigar_op_table)
+
+I_idx &lt;- which(cigar_op_table[ , "I"] &gt;= 2)  # at least 2 insertions
+qseq2[I_idx]
+rseq2[I_idx]
+
+D_idx &lt;- which(cigar_op_table[ , "D"] &gt;= 2)  # at least 2 deletions
+qseq2[D_idx]
+rseq2[D_idx]
+
+## A closer look at reads with skipped regions:
+N_idx &lt;- which(cigar_op_table[ , "N"] != 0)
+qseq2[N_idx]
+rseq2[N_idx]
+
+## A variant of the "pairwise" space is the "pairwise-dense" space.
+## In that space, all indels and skipped regions are removed from 'qseq'
+## and 'rseq'.
+qseq3 &lt;- sequenceLayer(qseq, cigar(gal),
+                       from="query", to="pairwise-dense")
+rseq3 &lt;- sequenceLayer(rseq, cigar(gal),
+                       from="reference", to="pairwise-dense")
+
+## Sanity check: 'qseq3' and 'rseq3' should have the same shape.
+stopifnot(identical(elementNROWS(qseq3), elementNROWS(rseq3)))
+
+## Insertions were removed:
+qseq3[I_idx]
+rseq3[I_idx]
+
+## Deletions were removed:
+qseq3[D_idx]
+rseq3[D_idx]
+
+## Skipped regions were removed:
+qseq3[N_idx]
+rseq3[N_idx]
+
+## ---------------------------------------------------------------------
+## D. SANITY CHECKS
+## ---------------------------------------------------------------------
+SPACES &lt;- c("reference",
+            "reference-N-regions-removed",
+            "query",
+            "query-before-hard-clipping",
+            "query-after-soft-clipping",
+            "pairwise",
+            "pairwise-N-regions-removed",
+            "pairwise-dense")
+
+cigarWidth &lt;- list(
+    function(cigar) cigarWidthAlongReferenceSpace(cigar),
+    function(cigar) cigarWidthAlongReferenceSpace(cigar,
+                                                  N.regions.removed=TRUE),
+    function(cigar) cigarWidthAlongQuerySpace(cigar),
+    function(cigar) cigarWidthAlongQuerySpace(cigar,
+                                              before.hard.clipping=TRUE),
+    function(cigar) cigarWidthAlongQuerySpace(cigar,
+                                              after.soft.clipping=TRUE),
+    function(cigar) cigarWidthAlongPairwiseSpace(cigar),
+    function(cigar) cigarWidthAlongPairwiseSpace(cigar,
+                                                 N.regions.removed=TRUE),
+    function(cigar) cigarWidthAlongPairwiseSpace(cigar, dense=TRUE)
+)
+
+cigar &lt;- c("3H2S4M1D2M2I1M5N3M6H", "5M1I3M2D4M2S")
+
+seq &lt;- list(
+    BStringSet(c(A="AAAA-BBC.....DDD", B="AAAAABBB--CCCC")),
+    BStringSet(c(A="AAAA-BBCDDD", B="AAAAABBB--CCCC")),
+    BStringSet(c(A="++AAAABBiiCDDD", B="AAAAAiBBBCCCC++")),
+    BStringSet(c(A="+++++AAAABBiiCDDD++++++", B="AAAAAiBBBCCCC++")),
+    BStringSet(c(A="AAAABBiiCDDD", B="AAAAAiBBBCCCC")),
+    BStringSet(c(A="AAAA-BBiiC.....DDD", B="AAAAAiBBB--CCCC")),
+    BStringSet(c(A="AAAA-BBiiCDDD", B="AAAAAiBBB--CCCC")),
+    BStringSet(c(A="AAAABBCDDD", B="AAAAABBBCCCC"))
+)
+
+stopifnot(all(sapply(1:8,
+    function(i) identical(width(seq[[i]]), cigarWidth[[i]](cigar))
+)))
+
+sequenceLayer2 &lt;- function(x, cigar, from, to)
+    sequenceLayer(x, cigar, from=from, to=to, I.letter="i")
+
+identical_XStringSet &lt;- function(target, current)
+{
+    ok1 &lt;- identical(class(target), class(current))
+    ok2 &lt;- identical(names(target), names(current))
+    ok3 &lt;- all(target == current)
+    ok1 &amp;&amp; ok2 &amp;&amp; ok3
+}
+
+res &lt;- sapply(1:8, function(i) {
+           sapply(1:8, function(j) {
+               target &lt;- seq[[j]]
+               current &lt;- sequenceLayer2(seq[[i]], cigar,
+                                         from=SPACES[i], to=SPACES[j])
+               identical_XStringSet(target, current)
+           })
+       })
+stopifnot(all(res))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GenomicAlignments</em> version 1.30.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

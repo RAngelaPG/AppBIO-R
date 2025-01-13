@@ -1,0 +1,520 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: CIGAR utility functions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for cigar-utils {GenomicAlignments}"><tr><td>cigar-utils {GenomicAlignments}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+CIGAR utility functions
+</h2>
+
+<h3>Description</h3>
+
+<p>Utility functions for low-level CIGAR manipulation.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## -=-= Supported CIGAR operations =-=-
+CIGAR_OPS
+
+## -=-= Transform CIGARs into other useful representations =-=-
+explodeCigarOps(cigar, ops=CIGAR_OPS)
+explodeCigarOpLengths(cigar, ops=CIGAR_OPS)
+cigarToRleList(cigar)
+
+## -=-= Summarize CIGARs =-=-
+cigarOpTable(cigar)
+
+## -=-= From CIGARs to ranges =-=-
+cigarRangesAlongReferenceSpace(cigar, flag=NULL,
+        N.regions.removed=FALSE, pos=1L, f=NULL,
+        ops=CIGAR_OPS, drop.empty.ranges=FALSE, reduce.ranges=FALSE,
+        with.ops=FALSE)
+
+cigarRangesAlongQuerySpace(cigar, flag=NULL,
+        before.hard.clipping=FALSE, after.soft.clipping=FALSE,
+        ops=CIGAR_OPS, drop.empty.ranges=FALSE, reduce.ranges=FALSE,
+        with.ops=FALSE)
+
+cigarRangesAlongPairwiseSpace(cigar, flag=NULL,
+        N.regions.removed=FALSE, dense=FALSE,
+        ops=CIGAR_OPS, drop.empty.ranges=FALSE, reduce.ranges=FALSE,
+        with.ops=FALSE)
+
+extractAlignmentRangesOnReference(cigar, pos=1L,
+        drop.D.ranges=FALSE, f=NULL)
+
+## -=-= From CIGARs to sequence lengths =-=-
+cigarWidthAlongReferenceSpace(cigar, flag=NULL,
+        N.regions.removed=FALSE)
+
+cigarWidthAlongQuerySpace(cigar, flag=NULL,
+        before.hard.clipping=FALSE, after.soft.clipping=FALSE)
+
+cigarWidthAlongPairwiseSpace(cigar, flag=NULL,
+        N.regions.removed=FALSE, dense=FALSE)
+
+## -=-= Narrow CIGARs =-=-
+cigarNarrow(cigar, start=NA, end=NA, width=NA)
+cigarQNarrow(cigar, start=NA, end=NA, width=NA)
+
+## -=-= Translate coordinates between query and reference spaces =-=-
+queryLoc2refLoc(qloc, cigar, pos=1L)
+queryLocs2refLocs(qlocs, cigar, pos=1L, flag=NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>cigar</code></td>
+<td>
+
+<p>A character vector or factor containing the extended CIGAR strings.
+It can be of arbitrary length except for <code>queryLoc2refLoc</code> which
+only accepts a single CIGAR (as a character vector or factor of length 1).
+</p>
+</td></tr>
+<tr valign="top"><td><code>ops</code></td>
+<td>
+
+<p>Character vector containing the extended CIGAR operations to actually
+consider. Zero-length operations or operations not listed <code>ops</code>
+are ignored.
+</p>
+</td></tr>
+<tr valign="top"><td><code>flag</code></td>
+<td>
+
+<p><code>NULL</code> or an integer vector containing the SAM flag for
+each read.
+</p>
+<p>According to the SAM Spec v1.4, flag bit 0x4 is the only reliable place
+to tell whether a segment (or read) is mapped (bit is 0) or not (bit
+is 1). If <code>flag</code> is supplied, then
+<code>cigarRangesAlongReferenceSpace</code>, <code>cigarRangesAlongQuerySpace</code>,
+<code>cigarRangesAlongPairwiseSpace</code>, and
+<code>extractAlignmentRangesOnReference</code> don't produce any range
+for unmapped reads i.e. they treat them as if their CIGAR was empty
+(independently of what their CIGAR is). If <code>flag</code> is supplied, then
+<code>cigarWidthAlongReferenceSpace</code>, <code>cigarWidthAlongQuerySpace</code>, and
+<code>cigarWidthAlongPairwiseSpace</code> return <code>NA</code>s for unmapped reads.
+</p>
+</td></tr>
+<tr valign="top"><td><code>N.regions.removed</code></td>
+<td>
+
+<p><code>TRUE</code> or <code>FALSE</code>.
+If <code>TRUE</code>, then <code>cigarRangesAlongReferenceSpace</code> and
+<code>cigarWidthAlongReferenceSpace</code> report ranges/widths with respect
+to the &quot;reference&quot; space from which the N regions have been removed,
+and <code>cigarRangesAlongPairwiseSpace</code> and
+<code>cigarWidthAlongPairwiseSpace</code> report them with respect to
+the &quot;pairwise&quot; space from which the N regions have been removed.
+</p>
+</td></tr>
+<tr valign="top"><td><code>pos</code></td>
+<td>
+
+<p>An integer vector containing the 1-based leftmost
+position/coordinate for each (eventually clipped) read
+sequence. Must have length 1 (in which case it's recycled to the
+length of <code>cigar</code>), or the same length as <code>cigar</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>f</code></td>
+<td>
+
+<p><code>NULL</code> or a factor of length <code>cigar</code>.
+If <code>NULL</code>, then the ranges are grouped by alignment i.e. the
+returned <a href="../../IRanges/help/IRangesList.html">IRangesList</a> object has 1 list element per
+element in <code>cigar</code>. Otherwise they are grouped by factor level
+i.e. the returned <a href="../../IRanges/help/IRangesList.html">IRangesList</a> object has 1 list element
+per level in <code>f</code> and is named with those levels.
+</p>
+<p>For example, if <code>f</code> is a factor containing the chromosome for each
+read, then the returned <a href="../../IRanges/help/IRangesList.html">IRangesList</a> object will have
+1 list element per chromosome and each list element will contain all
+the ranges on that chromosome.
+</p>
+</td></tr>
+<tr valign="top"><td><code>drop.empty.ranges</code></td>
+<td>
+
+<p>Should empty ranges be dropped?
+</p>
+</td></tr>
+<tr valign="top"><td><code>reduce.ranges</code></td>
+<td>
+
+<p>Should adjacent ranges coming from the same cigar be merged or not?
+Using <code>TRUE</code> can significantly reduce the size of the returned
+object.
+</p>
+</td></tr>
+<tr valign="top"><td><code>with.ops</code></td>
+<td>
+
+<p><code>TRUE</code> or <code>FALSE</code> indicating whether the returned ranges should
+be named with their corresponding CIGAR operation.
+</p>
+</td></tr>
+<tr valign="top"><td><code>before.hard.clipping</code></td>
+<td>
+
+<p><code>TRUE</code> or <code>FALSE</code>.
+If <code>TRUE</code>, then <code>cigarRangesAlongQuerySpace</code> and
+<code>cigarWidthAlongQuerySpace</code> report ranges/widths with respect
+to the &quot;query&quot; space to which the H regions have been added.
+<code>before.hard.clipping</code> and <code>after.soft.clipping</code> cannot
+both be <code>TRUE</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>after.soft.clipping</code></td>
+<td>
+
+<p><code>TRUE</code> or <code>FALSE</code>.
+If <code>TRUE</code>, then <code>cigarRangesAlongQuerySpace</code> and
+<code>cigarWidthAlongQuerySpace</code> report ranges/widths with respect
+to the &quot;query&quot; space from which the S regions have been removed.
+<code>before.hard.clipping</code> and <code>after.soft.clipping</code> cannot
+both be <code>TRUE</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>dense</code></td>
+<td>
+
+<p><code>TRUE</code> or <code>FALSE</code>.
+If <code>TRUE</code>, then <code>cigarRangesAlongPairwiseSpace</code> and
+<code>cigarWidthAlongPairwiseSpace</code> report ranges/widths with respect to
+the &quot;pairwise&quot; space from which the I, D, and N regions have been removed.
+<code>N.regions.removed</code> and <code>dense</code> cannot both be <code>TRUE</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>drop.D.ranges</code></td>
+<td>
+
+<p>Should the ranges corresponding to a deletion from the
+reference (encoded with a D in the CIGAR) be dropped?
+By default we keep them to be consistent with the pileup tool
+from SAMtools.
+Note that, when <code>drop.D.ranges</code> is <code>TRUE</code>, then Ds
+and Ns in the CIGAR are equivalent.
+</p>
+</td></tr>
+<tr valign="top"><td><code>start,end,width</code></td>
+<td>
+
+<p>Vectors of integers. NAs and negative values are accepted and
+&quot;solved&quot; according to the rules of the SEW (Start/End/Width)
+interface (see <code>?<a href="../../IRanges/help/solveUserSEW.html">solveUserSEW</a></code> for the details).
+</p>
+</td></tr>
+<tr valign="top"><td><code>qloc</code></td>
+<td>
+
+<p>An integer vector containing &quot;query-based locations&quot; i.e.
+1-based locations relative to the query sequence
+stored in the SAM/BAM file.
+</p>
+</td></tr>
+<tr valign="top"><td><code>qlocs</code></td>
+<td>
+
+<p>A list of the same length as <code>cigar</code> where each
+element is an integer vector containing &quot;query-based
+locations&quot; i.e. 1-based locations relative to the corresponding
+query sequence stored in the SAM/BAM file.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p><code>CIGAR_OPS</code> is a predefined character vector containing the supported
+extended CIGAR operations: M, I, D, N, S, H, P, =, X. See p. 4 of the
+SAM Spec v1.4 at <a href="http://samtools.sourceforge.net/">http://samtools.sourceforge.net/</a> for the list of
+extended CIGAR operations and their meanings.
+</p>
+<p>For <code>explodeCigarOps</code> and <code>explodeCigarOpLengths</code>:
+Both functions return a list of the same length as <code>cigar</code> where each
+list element is a character vector (for <code>explodeCigarOps</code>) or an integer
+vector (for <code>explodeCigarOpLengths</code>). The 2 lists have the same shape,
+that is, same <code>length()</code> and same <code>elementNROWS()</code>. The i-th
+character vector in the list returned by <code>explodeCigarOps</code> contains one
+single-letter string per CIGAR operation in <code>cigar[i]</code>. The i-th integer
+vector in the list returned by <code>explodeCigarOpLengths</code> contains the
+corresponding CIGAR operation lengths. Zero-length operations or operations
+not listed in <code>ops</code> are ignored.
+</p>
+<p>For <code>cigarToRleList</code>: A <a href="../../IRanges/help/CompressedRleList.html">CompressedRleList</a> object.
+</p>
+<p>For <code>cigarOpTable</code>: An integer matrix with number of rows equal
+to the length of <code>cigar</code> and nine columns, one for each extended
+CIGAR operation.
+</p>
+<p>For <code>cigarRangesAlongReferenceSpace</code>, <code>cigarRangesAlongQuerySpace</code>,
+<code>cigarRangesAlongPairwiseSpace</code>, and
+<code>extractAlignmentRangesOnReference</code>: An <a href="../../IRanges/help/IRangesList.html">IRangesList</a>
+object (more precisely a <a href="../../IRanges/help/CompressedIRangesList.html">CompressedIRangesList</a> object)
+with 1 list element per element in <code>cigar</code>.
+However, if <code>f</code> is a factor, then the returned
+<a href="../../IRanges/help/IRangesList.html">IRangesList</a> object can be a <a href="../../IRanges/help/SimpleIRangesList.html">SimpleIRangesList</a>
+object (instead of <a href="../../IRanges/help/CompressedIRangesList.html">CompressedIRangesList</a>), and in that case,
+has 1 list element per level in <code>f</code> and is named with those levels.
+</p>
+<p>For <code>cigarWidthAlongReferenceSpace</code> and
+<code>cigarWidthAlongPairwiseSpace</code>: An integer vector of the same
+length as <code>cigar</code> where each element is the width of the alignment
+with respect to the &quot;reference&quot; and &quot;pairwise&quot; space, respectively.
+More precisely, for <code>cigarWidthAlongReferenceSpace</code>, the returned
+widths are the lengths of the alignments on the reference,
+N gaps included (except if <code>N.regions.removed</code> is <code>TRUE</code>).
+NAs or <code>"*"</code> in <code>cigar</code> will produce NAs in the returned vector.
+</p>
+<p>For <code>cigarWidthAlongQuerySpace</code>: An integer vector of the same
+length as <code>cigar</code> where each element is the length of the corresponding
+query sequence as inferred from the CIGAR string. Note that, by default
+(i.e. if <code>before.hard.clipping</code> and <code>after.soft.clipping</code> are
+<code>FALSE</code>), this is the length of the query sequence stored in the
+SAM/BAM file. If <code>before.hard.clipping</code> or <code>after.soft.clipping</code>
+is <code>TRUE</code>, the returned widths are the lengths of the query sequences
+before hard clipping or after soft clipping.
+NAs or <code>"*"</code> in <code>cigar</code> will produce NAs in the returned vector.
+</p>
+<p>For <code>cigarNarrow</code> and <code>cigarQNarrow</code>: A character vector
+of the same length as <code>cigar</code> containing the narrowed cigars.
+In addition the vector has an &quot;rshift&quot; attribute which is an integer
+vector of the same length as <code>cigar</code>. It contains the values that
+would need to be added to the POS field of a SAM/BAM file as a
+consequence of this cigar narrowing.
+</p>
+<p>For <code>queryLoc2refLoc</code>: An integer vector of the same length as
+<code>qloc</code> containing the &quot;reference-based locations&quot; (i.e. the
+1-based locations relative to the reference sequence) corresponding
+to the &quot;query-based locations&quot; passed in <code>qloc</code>.
+</p>
+<p>For <code>queryLocs2refLocs</code>: A list of the same length as
+<code>qlocs</code> where each element is an integer vector containing
+the &quot;reference-based locations&quot; corresponding to the &quot;query-based
+locations&quot; passed in the corresponding element in <code>qlocs</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Hervé Pagès &amp; P. Aboyoun</p>
+
+
+<h3>References</h3>
+
+<p><a href="http://samtools.sourceforge.net/">http://samtools.sourceforge.net/</a>
+</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li><p> The <a href="../help/sequenceLayer.html">sequenceLayer</a> function in the
+<span class="pkg">GenomicAlignments</span> package for laying the query sequences
+alongside the &quot;reference&quot; or &quot;pairwise&quot; spaces.
+</p>
+</li>
+<li><p> The <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> container for storing a set of genomic
+alignments.
+</p>
+</li>
+<li><p> The <a href="../../IRanges/help/IRanges.html">IRanges</a>, <a href="../../IRanges/help/IRangesList.html">IRangesList</a>, and
+<a href="../../IRanges/help/RleList.html">RleList</a> classes in the <span class="pkg">IRanges</span> package.
+</p>
+</li>
+<li><p> The <code><a href="../../IRanges/help/coverage.html">coverage</a></code> generic and methods for
+computing the coverage across a set of ranges or genomic ranges.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## ---------------------------------------------------------------------
+## A. CIGAR_OPS, explodeCigarOps(), explodeCigarOpLengths(),
+##    cigarToRleList(), and cigarOpTable()
+## ---------------------------------------------------------------------
+
+## Supported CIGAR operations:
+CIGAR_OPS
+
+## Transform CIGARs into other useful representations:
+cigar1 &lt;- "3H15M55N4M2I6M2D5M6S"
+cigar2 &lt;- c("40M2I9M", cigar1, "2S10M2000N15M", "3H33M5H")
+
+explodeCigarOps(cigar2)
+explodeCigarOpLengths(cigar2)
+explodeCigarOpLengths(cigar2, ops=c("I", "S"))
+cigarToRleList(cigar2)
+
+## Summarize CIGARs:
+cigarOpTable(cigar2)
+
+## ---------------------------------------------------------------------
+## B. From CIGARs to ranges and to sequence lengths
+## ---------------------------------------------------------------------
+
+## CIGAR ranges along the "reference" space:
+cigarRangesAlongReferenceSpace(cigar1, with.ops=TRUE)[[1]]
+
+cigarRangesAlongReferenceSpace(cigar1,
+                               reduce.ranges=TRUE, with.ops=TRUE)[[1]]
+
+ops &lt;- setdiff(CIGAR_OPS, "N")
+
+cigarRangesAlongReferenceSpace(cigar1, ops=ops, with.ops=TRUE)[[1]]
+
+cigarRangesAlongReferenceSpace(cigar1, ops=ops,
+                               reduce.ranges=TRUE, with.ops=TRUE)[[1]]
+
+ops &lt;- setdiff(CIGAR_OPS, c("D", "N"))
+
+cigarRangesAlongReferenceSpace(cigar1, ops=ops, with.ops=TRUE)[[1]]
+
+cigarWidthAlongReferenceSpace(cigar1)
+
+pos2 &lt;- c(1, 1001, 1,  351)
+
+cigarRangesAlongReferenceSpace(cigar2, pos=pos2, with.ops=TRUE)
+
+res1a &lt;- extractAlignmentRangesOnReference(cigar2, pos=pos2)
+res1b &lt;- cigarRangesAlongReferenceSpace(cigar2,
+                               pos=pos2,
+                               ops=setdiff(CIGAR_OPS, "N"),
+                               reduce.ranges=TRUE)
+stopifnot(identical(res1a, res1b))
+
+res2a &lt;- extractAlignmentRangesOnReference(cigar2, pos=pos2,
+                               drop.D.ranges=TRUE)
+res2b &lt;- cigarRangesAlongReferenceSpace(cigar2,
+                               pos=pos2,
+                               ops=setdiff(CIGAR_OPS, c("D", "N")),
+                               reduce.ranges=TRUE)
+stopifnot(identical(res2a, res2b))
+
+seqnames &lt;- factor(c("chr6", "chr6", "chr2", "chr6"),
+                   levels=c("chr2", "chr6"))
+extractAlignmentRangesOnReference(cigar2, pos=pos2, f=seqnames)
+
+## CIGAR ranges along the "query" space:
+cigarRangesAlongQuerySpace(cigar2, with.ops=TRUE)
+cigarWidthAlongQuerySpace(cigar1)
+cigarWidthAlongQuerySpace(cigar1, before.hard.clipping=TRUE)
+
+## CIGAR ranges along the "pairwise" space:
+cigarRangesAlongPairwiseSpace(cigar2, with.ops=TRUE)
+cigarRangesAlongPairwiseSpace(cigar2, dense=TRUE, with.ops=TRUE)
+
+## ---------------------------------------------------------------------
+## C. COMPUTE THE COVERAGE OF THE READS STORED IN A BAM FILE
+## ---------------------------------------------------------------------
+## The information stored in a BAM file can be used to compute the
+## "coverage" of the mapped reads i.e. the number of reads that hit any
+## given position in the reference genome.
+## The following function takes the path to a BAM file and returns an
+## object representing the coverage of the mapped reads that are stored
+## in the file. The returned object is an RleList object named with the
+## names of the reference sequences that actually receive some coverage.
+
+flag0 &lt;- scanBamFlag(isUnmappedQuery=FALSE, isDuplicate=FALSE)
+
+extractCoverageFromBAM &lt;- function(bamfile)
+{
+  stopifnot(is(bamfile, "BamFile"))
+  ## This ScanBamParam object allows us to load only the necessary
+  ## information from the file.
+  param &lt;- ScanBamParam(flag=flag0, what=c("rname", "pos", "cigar"))
+  bam &lt;- scanBam(bamfile, param=param)[[1]]
+  ## Note that unmapped reads and reads that are PCR/optical duplicates
+  ## have already been filtered out by using the ScanBamParam object
+  ## above.
+  f &lt;- factor(bam$rname, levels=seqlevels(bamfile))
+  irl &lt;- extractAlignmentRangesOnReference(bam$cigar, pos=bam$pos, f=f)
+  coverage(irl, width=seqlengths(bamfile))
+}
+
+library(Rsamtools)
+f1 &lt;- system.file("extdata", "ex1.bam", package="Rsamtools")
+cvg &lt;- extractCoverageFromBAM(BamFile(f1))
+
+## extractCoverageFromBAM() is equivalent but slightly more efficient
+## than loading a GAlignments object and computing its coverage:
+cvg2 &lt;- coverage(readGAlignments(f1, param=ScanBamParam(flag=flag0)))
+stopifnot(identical(cvg, cvg2))
+
+## ---------------------------------------------------------------------
+## D. cigarNarrow() and cigarQNarrow()
+## ---------------------------------------------------------------------
+
+## cigarNarrow():
+cigarNarrow(cigar1)  # only drops the soft/hard clipping
+cigarNarrow(cigar1, start=10)
+cigarNarrow(cigar1, start=15)
+cigarNarrow(cigar1, start=15, width=57)
+cigarNarrow(cigar1, start=16)
+#cigarNarrow(cigar1, start=16, width=55)  # ERROR! (empty cigar)
+cigarNarrow(cigar1, start=71)
+cigarNarrow(cigar1, start=72)
+cigarNarrow(cigar1, start=75)
+
+## cigarQNarrow():
+cigarQNarrow(cigar1, start=4, end=-3)
+cigarQNarrow(cigar1, start=10)
+cigarQNarrow(cigar1, start=19)
+cigarQNarrow(cigar1, start=24)
+
+## ---------------------------------------------------------------------
+## E. PERFORMANCE
+## ---------------------------------------------------------------------
+
+if (interactive()) {
+  ## We simulate 20 millions aligned reads, all 40-mers. 95% of them
+  ## align with no indels. 5% align with a big deletion in the
+  ## reference. In the context of an RNAseq experiment, those 5% would
+  ## be suspected to be "junction reads".
+  set.seed(123)
+  nreads &lt;- 20000000L
+  njunctionreads &lt;- nreads * 5L / 100L
+  cigar3 &lt;- character(nreads)
+  cigar3[] &lt;- "40M"
+  junctioncigars &lt;- paste(
+      paste(10:30, "M", sep=""),
+      paste(sample(80:8000, njunctionreads, replace=TRUE), "N", sep=""),
+      paste(30:10, "M", sep=""), sep="")
+  cigar3[sample(nreads, njunctionreads)] &lt;- junctioncigars
+  some_fake_rnames &lt;- paste("chr", c(1:6, "X"), sep="")
+  rname &lt;- factor(sample(some_fake_rnames, nreads, replace=TRUE),
+                  levels=some_fake_rnames)
+  pos &lt;- sample(80000000L, nreads, replace=TRUE)
+
+  ## The following takes &lt; 3 sec. to complete:
+  system.time(irl1 &lt;- extractAlignmentRangesOnReference(cigar3, pos=pos))
+
+  ## The following takes &lt; 4 sec. to complete:
+  system.time(irl2 &lt;- extractAlignmentRangesOnReference(cigar3, pos=pos,
+                                                        f=rname))
+
+  ## The sizes of the resulting objects are about 240M and 160M,
+  ## respectively:
+  object.size(irl1)
+  object.size(irl2)
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GenomicAlignments</em> version 1.30.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

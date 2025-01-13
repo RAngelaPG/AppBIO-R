@@ -1,0 +1,466 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: GAlignmentPairs objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for GAlignmentPairs-class {GenomicAlignments}"><tr><td>GAlignmentPairs-class {GenomicAlignments}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>GAlignmentPairs objects</h2>
+
+<h3>Description</h3>
+
+<p>The GAlignmentPairs class is a container for storing <em>pairs of genomic
+alignments</em>. These pairs are typically obtained by aligning paired-end reads
+to a reference genome or transcriptome.
+</p>
+
+
+<h3>Details</h3>
+
+<p>A GAlignmentPairs object is a list-like object where each list element
+represents a pair of genomic alignment.
+</p>
+<p>An <em>alignment pair</em> is made of a &quot;first&quot; and a &quot;last&quot;/&quot;second&quot;
+alignment, and is formally represented by a <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> object of
+length 2. In most applications, an <em>alignment pair</em> will represent
+an aligned paired-end read. In that case, the &quot;first&quot; member of the pair
+represents the alignment of the first end of the read (aka &quot;first segment
+in the template&quot;, using SAM Spec terminology), and the &quot;last&quot; member of
+the pair represents the alignment of the second end of the read (aka &quot;last
+segment in the template&quot;, using SAM Spec terminology).
+</p>
+<p>In general, a GAlignmentPairs object will be created by loading
+records from a BAM (or SAM) file containing aligned paired-end reads,
+using the <code>readGAlignmentPairs</code> function (see below).
+Each element in the returned object will be obtained by pairing 2
+records.
+</p>
+
+
+<h3>Constructor</h3>
+
+
+<dl>
+<dt></dt><dd>
+<p><code>GAlignmentPairs(first, last, strandMode=1,
+                            isProperPair=TRUE, names=NULL)</code>:
+Low-level GAlignmentPairs constructor. Generally not used directly.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Accessors</h3>
+
+<p>In the code snippets below, <code>x</code> is a GAlignmentPairs object.
+</p>
+
+<dl>
+<dt></dt><dd>
+<p><code>strandMode(x)</code>, <code>strandMode(x) &lt;- value</code>:
+The <em>strand mode</em> is a per-object switch on GAlignmentPairs objects
+that controls the behavior of the <code>strand</code> getter.
+More precisely, it indicates how the strand of a pair should be
+inferred from the strand of the first and last alignments in the pair:
+</p>
+
+<ul>
+<li><p> 0: strand of the pair is always *.
+</p>
+</li>
+<li><p> 1: strand of the pair is strand of its first alignment.
+This mode should be used when the paired-end data was generated
+using one of the following stranded protocols:
+Directional Illumina (Ligation), Standard SOLiD.
+</p>
+</li>
+<li><p> 2: strand of the pair is strand of its last alignment.
+This mode should be used when the paired-end data was generated
+using one of the following stranded protocols:
+dUTP, NSR, NNSR, Illumina stranded TruSeq PE protocol.
+</p>
+</li></ul>
+
+<p>These modes are equivalent to <code>strandSpecific</code> equal 0, 1, and 2,
+respectively, for the <code>featureCounts</code> function defined in the
+<span class="pkg">Rsubread</span> package.
+</p>
+<p>Note that, by default, the <code><a href="../../GenomicAlignments/help/readGAlignmentPairs.html">readGAlignmentPairs</a></code> function
+sets the <em>strand mode</em> to 1 on the returned GAlignmentPairs object.
+The function has a <code>strandMode</code> argument to let the user set a
+different <em>strand mode</em>. The <em>strand mode</em> can also be changed
+any time with the <code>strandMode</code> setter or with <code>invertStrand</code>.
+</p>
+<p>Also note that 3rd party programs TopHat2 and Cufflinks have a
+<code>--library-type</code> option to let the user specify which protocol
+was used. Please refer to the documentation of these programs for more
+information.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>length(x)</code>:
+Return the number of alignment pairs in <code>x</code>.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>names(x)</code>, <code>names(x) &lt;- value</code>:
+Get or set the names on <code>x</code>.
+See <code><a href="../../GenomicAlignments/help/readGAlignmentPairs.html">readGAlignmentPairs</a></code> for how to automatically extract
+and set the names when reading the alignments from a file.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>first(x, real.strand=FALSE)</code>,
+<code>last(x, real.strand=FALSE)</code>,
+<code>second(x, real.strand=FALSE)</code>:
+Get the &quot;first&quot; or &quot;last&quot;/&quot;second&quot; alignment for each alignment pair in
+<code>x</code>. The result is a <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> object of the same length
+as <code>x</code>.
+</p>
+<p>If <code>real.strand=TRUE</code>, then the strand is inverted on-the-fly
+according to the <em>strand mode</em> currently set on the object (see
+<code>strandMode(x)</code> above). More precisely, if <code>strandMode(x)</code>
+is 0, then the strand is set to * for the <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> object
+returned by both, <code>first()</code> and <code>last()</code>.
+If <code>strandMode(x)</code> is 1, then the strand of the object returned
+by <code>last()</code> is inverted. If <code>strandMode(x)</code> is 2, then the
+strand of the object returned by <code>first()</code> is inverted.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>seqnames(x)</code>:
+Get the sequence names of the pairs in <code>x</code> i.e. the name of the
+reference sequence for each alignment pair in <code>x</code>. The sequence
+name of a pair is the sequence name of the 2 alignments in the pair
+if they are the same (<em>concordant seqnames</em>), or NA if they differ
+(<em>discordant seqnames</em>).
+</p>
+<p>The sequence names are returned in a factor-<a href="../../S4Vectors/help/Rle.html">Rle</a>
+object that is <em>parallel</em> to <code>x</code>, i.e. the i-th element in
+the returned object is the sequence name of the i-th pair in <code>x</code>.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>strand(x)</code>:
+Get the strand for each alignment pair in <code>x</code>.
+Obey <code>strandMode(x)</code> above to infer the strand of a pair.
+Return <code>*</code> for pairs with <em>discordant strand</em>, or for
+all pairs if <code>strandMode(x)</code> is 0.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>njunc(x)</code>:
+Equivalent to <code>njunc(first(x)) + njunc(last(x))</code>.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>isProperPair(x)</code>:
+Get the &quot;isProperPair&quot; flag bit (bit 0x2 in SAM Spec) set by
+the aligner for each alignment pair in <code>x</code>.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>seqinfo(x)</code>, <code>seqinfo(x) &lt;- value</code>:
+Get or set the information about the underlying sequences.
+<code>value</code> must be a <a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> object.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>seqlevels(x)</code>, <code>seqlevels(x) &lt;- value</code>:
+Get or set the sequence levels.
+<code>seqlevels(x)</code> is equivalent to <code>seqlevels(seqinfo(x))</code>
+or to <code>levels(seqnames(x))</code>, those 2 expressions being
+guaranteed to return identical character vectors on a
+GAlignmentPairs object. <code>value</code> must be a character vector
+with no NAs.
+See <code>?<a href="../../GenomeInfoDb/html/seqinfo.html">seqlevels</a></code> for more information.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>seqlengths(x)</code>, <code>seqlengths(x) &lt;- value</code>:
+Get or set the sequence lengths.
+<code>seqlengths(x)</code> is equivalent to <code>seqlengths(seqinfo(x))</code>.
+<code>value</code> can be a named non-negative integer or numeric vector
+eventually with NAs.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>isCircular(x)</code>, <code>isCircular(x) &lt;- value</code>:
+Get or set the circularity flags.
+<code>isCircular(x)</code> is equivalent to <code>isCircular(seqinfo(x))</code>.
+<code>value</code> must be a named logical vector eventually with NAs.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>genome(x)</code>, <code>genome(x) &lt;- value</code>:
+Get or set the genome identifier or assembly name for each sequence.
+<code>genome(x)</code> is equivalent to <code>genome(seqinfo(x))</code>.
+<code>value</code> must be a named character vector eventually with NAs.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>seqnameStyle(x)</code>:
+Get or set the seqname style for <code>x</code>.
+Note that this information is not stored in <code>x</code> but inferred
+by looking up <code>seqnames(x)</code> against a seqname style database
+stored in the seqnames.db metadata package (required).
+<code>seqnameStyle(x)</code> is equivalent to <code>seqnameStyle(seqinfo(x))</code>
+and can return more than 1 seqname style (with a warning)
+in case the style cannot be determined unambiguously.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Vector methods</h3>
+
+<p>In the code snippets below, <code>x</code> is a GAlignmentPairs object.
+</p>
+
+<dl>
+<dt></dt><dd>
+<p><code>x[i]</code>:
+Return a new GAlignmentPairs object made of the selected
+alignment pairs. 
+</p>
+</dd>
+</dl>
+
+
+
+<h3>List methods</h3>
+
+<p>In the code snippets below, <code>x</code> is a GAlignmentPairs object.
+</p>
+
+<dl>
+<dt></dt><dd>
+<p><code>x[[i]]</code>:
+Extract the i-th alignment pair as a <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> object
+of length 2. As expected <code>x[[i]][1]</code> and <code>x[[i]][2]</code> are
+respectively the &quot;first&quot; and &quot;last&quot; alignments in the pair.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>unlist(x, use.names=TRUE)</code>:
+Return the <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> object conceptually defined
+by <code>c(x[[1]], x[[2]], ..., x[[length(x)]])</code>.
+<code>use.names</code> determines whether <code>x</code> names should be
+propagated to the result or not.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Coercion</h3>
+
+<p>In the code snippets below, <code>x</code> is a GAlignmentPairs object.
+</p>
+
+<dl>
+<dt></dt><dd>
+<p><code>granges(x, use.names=TRUE, use.mcols=FALSE,
+                       on.discordant.seqnames=c("error", "drop", "split"))</code>,
+<code>ranges(x, use.names=TRUE, use.mcols=FALSE,
+                      on.discordant.seqnames=c("error", "drop", "split"))</code>:
+</p>
+<p>Return a <a href="../../GenomicRanges/html/GRanges-class.html">GRanges</a> object (for <code>granges()</code>) or
+<a href="../../IRanges/help/IRanges.html">IRanges</a>) object (for <code>ranges()</code>).
+</p>
+<p>If <code>x</code> contains no pairs with <em>discordant seqnames</em>, the
+operation is guaranteed to be successful and to return an object
+<em>parallel</em> to <code>x</code>, that is, an object where the i-th element
+is the range of the genomic region spanned by the i-th alignment in
+<code>x</code> (all gaps in the region are ignored).
+</p>
+<p>If <code>x</code> contains pairs with discordant seqnames, then an error
+is raised, unless the <code>on.discordant.seqnames</code> argument is set
+to <code>"drop"</code> or <code>"split"</code>, in which case the pairs with
+discordant seqnames are either dropped or represented with 2 genomic
+ranges (or 2 ranges for <code>ranges()</code>) in the returned object.
+In that case, the returned object is NOT <em>parallel</em> to <code>x</code>.
+</p>
+<p>If <code>use.names</code> is TRUE, then the names on <code>x</code> 
+(if any) are propagated to the returned object.
+If <code>use.mcols</code> is TRUE, then the metadata columns on <code>x</code>
+(if any) are propagated to the returned object.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>grglist(x, use.mcols=FALSE, drop.D.ranges=FALSE)</code>:
+</p>
+<p>Return a <a href="../../ChIPseeker/html/reexports.html">GRangesList</a> object of length <code>length(x)</code>
+where the i-th element represents the ranges (with respect to the
+reference) of the i-th alignment pair in <code>x</code>. The strand of
+the returned ranges obeys the <em>strand mode</em> currently set on the
+object (see <code>strandMode(x)</code> above).
+</p>
+<p>More precisely, if <code>grl1</code> and <code>grl2</code> are
+<code>grglist(first(x, real.strand=TRUE), order.as.in.query=TRUE)</code> and
+<code>grglist(last(x, real.strand=TRUE), order.as.in.query=TRUE)</code>,
+respectively, then the i-th element in the returned <a href="../../ChIPseeker/html/reexports.html">GRangesList</a>
+object is <code>c(grl1[[i]], grl2[[i]])</code> if <code>strandMode(x)</code> is 0
+or 1, or <code>c(grl2[[i]], grl1[[i]])</code> if <code>strandMode(x)</code> is 2.
+</p>
+<p>Note that, if <code>strandMode(x)</code> is 1 or 2, this results in the ranges
+being in consistent order with the original &quot;query template&quot;, that is,
+being in the order defined by walking the &quot;query template&quot; from the
+beginning to the end.
+</p>
+<p>If <code>use.names</code> is TRUE, then the names on <code>x</code> 
+(if any) are propagated to the returned object.
+If <code>use.mcols</code> is TRUE, then the metadata columns on <code>x</code>
+(if any) are propagated to the returned object.
+</p>
+<p>If <code>drop.D.ranges</code> is TRUE, then deletions (Ds in the
+CIGAR) are treated like junctions (Ns in the CIGAR), that is, the
+ranges corresponding to deletions are dropped.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>as(x, "GRanges")</code>, <code>as(x, "IntegerRanges")</code>,
+<code>as(x, "GRangesList")</code>:
+Alternate ways of doing
+<code>granges(x, use.names=TRUE, use.mcols=TRUE)</code>,
+<code>ranges(x, use.names=TRUE, use.mcols=TRUE)</code>, and
+<code>grglist(x, use.names=TRUE, use.mcols=TRUE)</code>, respectively.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>as(x, "GAlignments")</code>:
+Equivalent of <code>unlist(x, use.names=TRUE)</code>.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Other methods</h3>
+
+<p>In the code snippets below, <code>x</code> is a GAlignmentPairs object.
+</p>
+
+<dl>
+<dt></dt><dd>
+<p><code>show(x)</code>:
+By default the <code>show</code> method displays 5 head and 5 tail
+elements. This can be changed by setting the global options
+<code>showHeadLines</code> and <code>showTailLines</code>. If the object
+length is less than (or equal to) the sum of these 2 options
+plus 1, then the full object is displayed.
+Note that these options also affect the display of <a href="../../GenomicRanges/html/GRanges-class.html">GRanges</a>
+and <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> objects, as well as other <a href="../../S4Vectors/help/Vector.html">Vector</a>
+derivatives defined in the <span class="pkg">IRanges</span> and <span class="pkg">Biostrings</span> packages
+(e.g. <a href="../../IRanges/help/IRanges.html">IRanges</a> and <a href="../../Biostrings/help/XStringSet.html">XStringSet</a> objects).
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Hervé Pagès</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><code><a href="../../GenomicAlignments/help/readGAlignmentPairs.html">readGAlignmentPairs</a></code> for reading aligned paired-end
+reads from a file (typically a BAM file) into a GAlignmentPairs
+object.
+</p>
+</li>
+<li> <p><a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> objects for handling aligned single-end reads.
+</p>
+</li>
+<li> <p><code><a href="../../GenomicAlignments/help/makeGAlignmentPairs.html">makeGAlignmentPairs</a></code> for pairing the elements of a
+<a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> object into a GAlignmentPairs object.
+</p>
+</li>
+<li> <p><a href="../../GenomicAlignments/help/junctions-methods.html">junctions-methods</a> for extracting and summarizing junctions
+from a GAlignmentPairs object.
+</p>
+</li>
+<li> <p><a href="../help/coverage-methods.html">coverage-methods</a> for computing the
+coverage of a GAlignmentPairs object.
+</p>
+</li>
+<li> <p><a href="../help/findOverlaps-methods.html">findOverlaps-methods</a> for finding range
+overlaps between a GAlignmentPairs object and another range-based
+object.
+</p>
+</li>
+<li> <p><code><a href="../../GenomeInfoDb/help/seqinfo.html">seqinfo</a></code> in the <span class="pkg">GenomeInfoDb</span>
+package for getting/setting/modifying the sequence information
+stored in an object.
+</p>
+</li>
+<li><p> The <a href="../../GenomicRanges/help/GRanges.html">GRanges</a> and
+<a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> classes defined and documented
+in the <span class="pkg">GenomicRanges</span> package.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+library(Rsamtools)  # for the ex1.bam file
+ex1_file &lt;- system.file("extdata", "ex1.bam", package="Rsamtools")
+galp &lt;- readGAlignmentPairs(ex1_file, use.names=TRUE, strandMode=1)
+galp
+
+length(galp)
+head(galp)
+head(names(galp))
+
+first(galp)
+last(galp)
+# or
+second(galp)
+
+strandMode(galp)
+first(galp, real.strand=TRUE)
+last(galp, real.strand=TRUE)
+strand(galp)
+
+strandMode(galp) &lt;- 2
+first(galp, real.strand=TRUE)
+last(galp, real.strand=TRUE)
+strand(galp)
+
+seqnames(galp)
+
+head(njunc(galp))
+table(isProperPair(galp))
+seqlevels(galp)
+
+## Rename the reference sequences:
+seqlevels(galp) &lt;- sub("seq", "chr", seqlevels(galp))
+seqlevels(galp)
+
+galp[[1]]
+unlist(galp)
+
+grglist(galp)  # a GRangesList object
+
+strandMode(galp) &lt;- 1
+grglist(galp)
+
+## Alternatively the strand mode can be changed with invertStrand():
+invertStrand(galp)
+
+stopifnot(identical(unname(elementNROWS(grglist(galp))), njunc(galp) + 2L))
+
+granges(galp)  # a GRanges object
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GenomicAlignments</em> version 1.30.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

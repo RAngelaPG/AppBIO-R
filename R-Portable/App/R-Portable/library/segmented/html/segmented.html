@@ -1,0 +1,433 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Segmented relationships in regression models</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for segmented {segmented}"><tr><td>segmented {segmented}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Segmented relationships in regression models
+</h2>
+
+<h3>Description</h3>
+
+<p>Fits regression models with segmented relationships between the response
+and one or more explanatory variables. Break-point estimates are provided.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+segmented(obj, seg.Z, psi, npsi, fixed.psi=NULL, control = seg.control(), 
+    model = TRUE, ...)
+
+## Default S3 method:
+segmented(obj, seg.Z, psi, npsi, fixed.psi=NULL, control = seg.control(),
+    model = TRUE, keep.class=FALSE, ...)
+
+## S3 method for class 'lm'
+segmented(obj, seg.Z, psi, npsi, fixed.psi=NULL, control = seg.control(),
+    model = TRUE, keep.class=FALSE, ...)
+
+## S3 method for class 'glm'
+segmented(obj, seg.Z, psi, npsi, fixed.psi=NULL, control = seg.control(),
+    model = TRUE, keep.class=FALSE, ...)
+
+## S3 method for class 'Arima'
+segmented(obj, seg.Z, psi, npsi, fixed.psi=NULL, control = seg.control(),
+    model = TRUE, keep.class=FALSE, ...)
+    
+## S3 method for class 'numeric'
+segmented(obj, seg.Z, psi, npsi, fixed.psi=NULL, control = seg.control(),
+    model = TRUE, keep.class=FALSE, adjX=FALSE, weights=NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>obj</code></td>
+<td>
+<p> standard &lsquo;linear&rsquo; model of class &quot;lm&quot;, &quot;glm&quot; or &quot;Arima&quot;, or potentially any regression 
+fit may be supplied since version 0.5-0 (see 'Details'). <code>obj</code> can include any covariate understood to have a linear (i.e. no break-points) effect on the response. If <code>obj</code> also includes the segmented covariate specified in <code>seg.Z</code>, then all the slopes of the fitted segmented relationship will be estimated. On the other hand, if <code>obj</code> misses the segmented variable, then the 1st (the leftmost) slope is assumed to be zero. Since version 1.5.0, <code>obj</code> can be a simple numeric or <code>ts</code> object but with only a single segmented variable (<code>segmented.numeric</code>) see examples below.</p>
+</td></tr>
+<tr valign="top"><td><code>seg.Z</code></td>
+<td>
+<p> the segmented variable(s), i.e. the continuous covariate(s) understood to have a piecewise-linear relationship with response. It is a formula with no response variable, such as <code>seg.Z=~x</code> or <code>seg.Z=~x1+x2</code>. It can be missing when <code>obj</code> includes only one covariate which is taken as segmented variable. Currently, formulas involving functions, 
+such as <code>seg.Z=~log(x1)</code>, or selection operators, such as <code>seg.Z=~d[,"x1"]</code> or <code>seg.Z=~d$x1</code>, are <em>not</em> allowed. Also, variable names formed by <code style="white-space: pre;">U</code> or <code style="white-space: pre;">V</code> only (with or without numbers) are not permitted.</p>
+</td></tr>
+<tr valign="top"><td><code>psi</code></td>
+<td>
+<p> starting values for the breakpoints to be estimated. If there is a single segmented variable specified in <code>seg.Z</code>, <code>psi</code> is a numeric vector, and it can be missing  when 1 breakpoint has to be estimated (and the median of the segmented variable is used as a starting value). If <code>seg.Z</code> includes several covariates, <code>psi</code> has be specified as a <em>named</em> list of vectors whose names have to match the variables in the <code>seg.Z</code> argument. Each vector of such list includes starting values for the break-point(s) for the corresponding variable in <code>seg.Z</code>. A <code>NA</code> value means that '<code>K</code>' quantiles (or equally spaced values) are used as starting values; <code>K</code> is fixed via the <code><a href="../../segmented/help/seg.control.html">seg.control</a></code> auxiliary function. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>npsi</code></td>
+<td>
+
+<p>A named vector or list meaning the <em>number</em> (and not locations) of breakpoints to be estimated. The starting values will be internally   computed via the quantiles or equally spaced values, as specified in argument <code>quant</code> in <code><a href="../../segmented/help/seg.control.html">seg.control</a></code>. <code>npsi</code> can be   missing and <code>npsi=1</code> is assumed for all variables specified in <code>seg.Z</code>. If <code>psi</code> is provided, <code>npsi</code> is ignored.
+</p>
+</td></tr>
+<tr valign="top"><td><code>fixed.psi</code></td>
+<td>
+<p>An optional named list meaning the breakpoints to be kept fixed during the estimation procedure. The names should be a subset of (or even the same) variables specified in <code>seg.Z</code>. If there is a single variable in <code>seg.Z</code>, a simple numeric vector can be specified. Note that, in addition to the values specified here, <code>segmented</code> will estimate additional breakpoints. To keep fixed all breakpoints (to be specified in <code>psi</code>) use <code>it.max=0</code> in <code><a href="../../segmented/help/seg.control.html">seg.control</a></code>
+</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+<p> a list of parameters for controlling the fitting process.
+See the documentation for <code><a href="../../segmented/help/seg.control.html">seg.control</a></code> for details. </p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>logical value indicating if the model.frame should be returned.</p>
+</td></tr>
+<tr valign="top"><td><code>keep.class</code></td>
+<td>
+<p>logical value indicating if the final fit returned by <code>segmented.default</code> should keep the class '<code>segmented</code>' (along with the class of the original fit <code>obj</code>). Ignored by the segmented methods. </p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p> optional arguments (to be ignored safely). Notice specific arguments relevant to the original call (via <code>lm</code> or <code>glm</code> for instance), such as <code>weights</code> or <code>offet</code>, have to be included in the starting model <code>obj</code>
+</p>
+</td></tr>
+<tr valign="top"><td><code>adjX</code></td>
+<td>
+<p>if <code>obj</code> is a <code>ts</code>, the segmented variable (if not specified in <code>seg.Z</code>) is computed by taking information from the time series (e.g., years starting from 2000, say). If <code>adjX=TRUE</code>, the segmented variable is shifted such that its min equals zero.
+Default is using the unshifted values, but if there are several breakpoints to be estimated , it is strongly suggested to set <code>adjX=TRUE</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>the weights if <code>obj</code> is a vector or a ts object, otherwise the  weights should be specified in the 
+starting fit <code>obj</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Given a linear regression model usually of class &quot;lm&quot; or &quot;glm&quot; (or even a simple numeric/ts vector), segmented tries to estimate
+a new regression model having broken-line relationships with the variables specified in <code>seg.Z</code>.
+A segmented (or broken-line) relationship is defined by the slope
+parameters and the break-points where the linear relation changes. The number of breakpoints
+of each segmented relationship is fixed via the <code>psi</code> argument, where initial
+values for the break-points must be specified. The model
+is estimated simultaneously yielding point estimates and relevant approximate
+standard errors of all the model parameters, including the break-points.
+</p>
+<p>Since version 0.2-9.0 <code>segmented</code> implements the bootstrap restarting algorithm described in Wood (2001).
+The bootstrap restarting is expected to escape the local optima of the objective function when the
+segmented relationship is flat and the log likelihood can have multiple local optima.
+</p>
+<p>Since version 0.5-0.0 the default method <code>segmented.default</code> has been added to estimate segmented relationships in 
+general (besides &quot;lm&quot; and &quot;glm&quot; fits) regression models, such as Cox regression or quantile regression (for a single percentile). 
+The objective function to be minimized is the (minus) value extracted by the <code>logLik</code> function or it may be passed on via 
+the <code>fn.obj</code> argument in <code>seg.control</code>. See example below. While the default method is expected to work with any regression 
+fit (where the usual <code>coef()</code>, <code>update()</code>, and <code>logLik()</code> returns appropriate results), it is not recommended for 
+&quot;lm&quot; or &quot;glm&quot; fits (as <code>segmented.default</code> is slower than the specific methods <code>segmented.lm</code> and <code>segmented.glm</code>), although 
+final results are the same. However the object returned by <code>segmented.default</code> is <em>not</em> of class &quot;segmented&quot;, as currently
+the segmented methods are not guaranteed to work for &lsquo;generic&rsquo; (i.e., besides &quot;lm&quot; and &quot;glm&quot;) regression fits. The user 
+could try each &quot;segmented&quot; method on the returned object by calling it explicitly (e.g. via <code>plot.segmented()</code> or <code>confint.segmented()</code> wherein the regression coefficients and relevant covariance matrix have to be specified, see <code>.coef</code> and <code>.vcov</code> in <code>plot.segmented()</code>, <code>confint.segmented()</code>, <code>slope()</code>). 
+</p>
+
+
+<h3>Value</h3>
+
+<p>segmented returns an object of class &quot;segmented&quot; which inherits
+from the class of <code>obj</code>, for instance &quot;lm&quot; or &quot;glm&quot;. <br />
+</p>
+<p>An object of class &quot;segmented&quot; is a list containing the components of the
+original object <code>obj</code> with additionally the followings:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>psi</code></td>
+<td>
+<p>estimated break-points and relevant (approximate) standard errors</p>
+</td></tr>
+<tr valign="top"><td><code>it</code></td>
+<td>
+<p>number of iterations employed</p>
+</td></tr>
+<tr valign="top"><td><code>epsilon</code></td>
+<td>
+<p>difference in the objective function when the algorithm stops</p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>the model frame</p>
+</td></tr>
+<tr valign="top"><td><code>psi.history</code></td>
+<td>
+<p>a list or a vector including the breakpoint estimates at each step</p>
+</td></tr>
+<tr valign="top"><td><code>seed</code></td>
+<td>
+<p>the integer vector containing the seed just before the bootstrap resampling. 
+Returned only if bootstrap restart is employed</p>
+</td></tr>
+<tr valign="top"><td><code>..</code></td>
+<td>
+<p>Other components are not of direct interest of the user</p>
+</td></tr>
+</table>
+
+
+<h3> Warning </h3>
+
+<p>At convergence, if the estimated breakpoints are too close each other or at the boundaries, the parameter point estimate could be returned, but without finite standard errors. To avoid that, <code>segmented</code> revises the final breakpoint estimates to allow that at least <code>min.nj</code> are within each interval of the segmented covariate. A warning message is printed if such adjustment is made. See <code>min.nj</code> in <code><a href="../../segmented/help/seg.control.html">seg.control</a></code>.
+</p>
+
+
+<h3>Note</h3>
+
+
+<ol>
+<li><p> The algorithm will start if the <code>it.max</code> argument returned by <code>seg.control</code>
+is greater than zero. If <code>it.max=0</code> <code>segmented</code> will estimate a new linear model with
+break-point(s) fixed at the values reported in <code>psi</code>.Alternatively, it is also possible to set <code>h=0</code> in <code>seg.control()</code>. In this case, bootstrap restarting is unncessary, then to have breakpoints at <code>mypsi</code> type <br />
+</p>
+<p><code>segmented(.., psi=mypsi, control=seg.control(h=0, n.boot=0, it.max=1))</code>
+</p>
+</li>
+<li><p> In the returned fit object, &lsquo;U.&rsquo; is put before the name of the segmented 
+variable to mean the difference-in-slopes coefficient.
+</p>
+</li>
+<li><p> Methods specific to the class <code>"segmented"</code> are
+</p>
+
+<ul>
+<li> <p><code><a href="../../segmented/help/print.segmented.html">print.segmented</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../segmented/help/summary.segmented.html">summary.segmented</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../segmented/help/print.summary.segmented.html">print.summary.segmented</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../segmented/help/plot.segmented.html">plot.segmented</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../segmented/help/lines.segmented.html">lines.segmented</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../segmented/help/confint.segmented.html">confint.segmented</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../segmented/help/vcov.segmented.html">vcov.segmented</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../segmented/help/predict.segmented.html">predict.segmented</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../segmented/help/points.segmented.html">points.segmented</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../segmented/help/coef.segmented.html">coef.segmented</a></code>
+</p>
+</li></ul>
+
+<p>Others are inherited from the class <code>"lm"</code> or <code>"glm"</code> depending on the
+class of <code>obj</code>.
+</p>
+</li></ol>
+
+
+
+<h3>Author(s)</h3>
+
+<p> Vito M. R. Muggeo, <a href="mailto:vito.muggeo@unipa.it">vito.muggeo@unipa.it</a> </p>
+
+
+<h3>References</h3>
+
+ 
+<p>Muggeo, V.M.R. (2003) Estimating regression models with unknown 
+break-points. <em>Statistics in Medicine</em> <b>22</b>, 3055&ndash;3071.
+</p>
+<p>Muggeo, V.M.R. (2008) Segmented: an R package to fit regression 
+models with broken-line relationships. <em>R News</em> <b>8/1</b>, 20&ndash;25.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../segmented/help/segmented.glm.html">segmented.glm</a></code> for segmented GLM and <code><a href="../../segmented/help/segreg.html">segreg</a></code> to fit the models via a formula interface. <code><a href="../../segmented/help/segmented.lme.html">segmented.lme</a></code> fits random changepoints (segmented mixed) models. </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+set.seed(12)
+xx&lt;-1:100
+zz&lt;-runif(100)
+yy&lt;-2+1.5*pmax(xx-35,0)-1.5*pmax(xx-70,0)+15*pmax(zz-.5,0)+rnorm(100,0,2)
+dati&lt;-data.frame(x=xx,y=yy,z=zz)
+out.lm&lt;-lm(y~x,data=dati)
+
+#the simplest example: the starting model includes just 1 covariate 
+#.. and 1 breakpoint has to be estimated for that
+o&lt;-segmented(out.lm) #1 breakpoint for x
+
+#the single segmented variable is not in the starting model, and thus..
+#... you need to specify it via seg.Z, but no starting value for psi
+o&lt;-segmented(out.lm, seg.Z=~z)
+#note the leftmost slope is constrained to be zero (since out.lm does not include z)
+
+#2 segmented variables, 1 breakpoint each (again no need to specify npsi or psi)
+o&lt;-segmented(out.lm,seg.Z=~z+x)
+
+
+#1 segmented variable, but 2 breakpoints: you have to specify starting values (vector) for psi:
+o&lt;-segmented(out.lm,seg.Z=~x,psi=c(30,60), control=seg.control(display=FALSE))
+
+#.. or you can specify just the *number* of breakpoints
+#o&lt;-segmented(out.lm,seg.Z=~x, npsi=2, control=seg.control(display=FALSE)) 
+
+slope(o) #the slopes of the segmented relationship
+
+
+#2 segmented variables: starting values requested via a named list
+out.lm&lt;-lm(y~z,data=dati)
+o1&lt;-update(o,seg.Z=~x+z,psi=list(x=c(30,60),z=.3))
+#..or by specifying just the *number* of breakpoints
+#o1&lt;-update(o,seg.Z=~x+z, npsi=c(x=2,z=1))
+
+
+
+#the default method leads to the same results (but it is slower)
+#o1&lt;-segmented.default(out.lm,seg.Z=~x+z,psi=list(x=c(30,60),z=.3))
+#o1&lt;-segmented.default(out.lm,seg.Z=~x+z,psi=list(x=c(30,60),z=.3), 
+#    control=seg.control(fn.obj="sum(x$residuals^2)"))
+
+
+#automatic procedure to estimate breakpoints in the covariate x (starting from K quantiles)
+# Hint: increases number of iterations. Notice: bootstrap restart is not allowed!
+# However see ?selgmented for a better approach
+#o&lt;-segmented.lm(out.lm,seg.Z=~x+z,psi=list(x=NA,z=.3), 
+#    control=seg.control(fix.npsi=FALSE, n.boot=0, tol=1e-7, it.max = 50, K=5, display=TRUE))
+
+#assess the progress of the breakpoint estimates throughout the iterations
+## Not run: 
+par(mfrow=c(1,2))
+draw.history(o, "x")
+draw.history(o, "z")
+
+## End(Not run)
+#try to increase the number of iterations and re-assess the 
+#convergence diagnostics 
+
+
+# A simple segmented model with continuous responses and no linear covariates
+# No need to fit the starting lm model:
+segmented(yy, npsi=2) #NOTE: subsetting the vector works ( segmented(yy[-1],..) ) 
+#only a single segmented covariate is allowed in seg.Z, and if seg.Z is unspecified, 
+#   the segmented variable is taken as 1:n/n 
+
+
+# An example using the Arima method:
+## Not run: 
+n&lt;-50
+idt &lt;-1:n #the time index
+
+mu&lt;-50-idt +1.5*pmax(idt-30,0)
+set.seed(6969)
+y&lt;-mu+arima.sim(list(ar=.5),n)*3.5
+
+o&lt;-arima(y, c(1,0,0), xreg=idt)
+os1&lt;-segmented(o, ~idt, control=seg.control(display=TRUE))
+
+#note using the .coef argument is mandatory!
+slope(os1, .coef=os1$coef)
+plot(y)
+plot(os1, add=TRUE, .coef=os1$coef, col=2)
+
+
+## End(Not run)
+
+################################################################
+################################################################
+######Four examples using the default method:
+################################################################
+################################################################
+
+
+################################################################
+#==&gt; 1. Cox regression with a segmented relationship  
+################################################################
+## Not run: 
+library(survival)
+data(stanford2)
+
+o&lt;-coxph(Surv(time, status)~age, data=stanford2)
+os&lt;-segmented(o, ~age, psi=40) #estimate the breakpoint in the age effect
+summary(os) #actually it means summary.coxph(os)
+plot(os) #it does not work
+plot.segmented(os) #call explicitly plot.segmented() to plot the fitted piecewise lines
+
+
+################################################################
+# ==&gt; 2. Linear mixed model via the nlme package
+################################################################
+
+dati$g&lt;-gl(10,10) #the cluster 'id' variable
+library(nlme)
+o&lt;-lme(y~x+z, random=~1|g, data=dati)
+os&lt;-segmented.default(o, ~x+z, npsi=list(x=2, z=1))
+
+#summarizing results (note the '.coef' argument)
+slope(os, .coef=fixef(os))
+plot.segmented(os, "x", .coef=fixef(os), conf.level=.95)
+confint.segmented(os, "x", .coef=fixef(os))
+dd&lt;-data.frame(x=c(20,50),z=c(.2,.6), g=1:2)
+predict.segmented(os, newdata=dd, .coef=fixef(os)) 
+
+
+################################################################
+# ==&gt; 3. segmented quantile regression via the quantreg  package
+################################################################
+
+library(quantreg)
+data(Mammals)
+y&lt;-with(Mammals, log(speed))
+x&lt;-with(Mammals, log(weight))
+o&lt;-rq(y~x, tau=.9)
+os&lt;-segmented.default(o, ~x) #it does NOT work. It cannot compute the vcov matrix..
+
+#Let's define the vcov.rq function.. (I don't know if it is the best option..)
+vcov.rq&lt;-function(x,...) {
+  V&lt;-summary(x,cov=TRUE,se="nid",...)$cov
+  rownames(V)&lt;-colnames(V)&lt;-names(x$coef)
+V}
+
+os&lt;-segmented.default(o, ~x) #now it does work
+ plot.segmented(os, res=TRUE, col=2, conf.level=.95)
+
+
+################################################################
+# ==&gt; 4. segmented regression with the svyglm() (survey  package)   
+################################################################
+
+library(survey)
+data(api)
+dstrat&lt;-svydesign(id=~1,strata=~stype, weights=~pw, data=apistrat, fpc=~fpc)
+
+o&lt;-svyglm(api00~ell, design=dstrat)
+
+#specify as a string the objective function to be minimized. It can be obtained via svyvar() 
+
+fn.x&lt;- 'as.numeric(svyvar(resid(x, "pearson"), x$survey.design, na.rm = TRUE))'
+os&lt;-segmented.default(o, ~ell, control=seg.control(fn.obj=fn.x, display=TRUE))
+slope(os)
+plot.segmented(os, res=TRUE, conf.level=.9, shade=TRUE)
+
+## End(Not run)
+            
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>segmented</em> version 2.1-0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

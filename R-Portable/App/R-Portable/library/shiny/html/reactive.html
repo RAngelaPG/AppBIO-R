@@ -1,0 +1,131 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Create a reactive expression</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for reactive {shiny}"><tr><td>reactive {shiny}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Create a reactive expression</h2>
+
+<h3>Description</h3>
+
+<p>Wraps a normal expression to create a reactive expression. Conceptually, a
+reactive expression is a expression whose result will change over time.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+reactive(
+  x,
+  env = parent.frame(),
+  quoted = FALSE,
+  ...,
+  label = NULL,
+  domain = getDefaultReactiveDomain(),
+  ..stacktraceon = TRUE
+)
+
+is.reactive(x)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>For <code>is.reactive()</code>, an object to test. For <code>reactive()</code>, an expression. When passing in a <code><a href="../../rlang/html/defusing-advanced.html">quo()</a></code>sure with <code>reactive()</code>, remember to use <code><a href="../../rlang/help/inject.html">rlang::inject()</a></code> to distinguish that you are passing in the content of your quosure, not the expression of the quosure.</p>
+</td></tr>
+<tr valign="top"><td><code>env</code></td>
+<td>
+<p>The parent environment for the reactive expression. By default,
+this is the calling environment, the same as when defining an ordinary
+non-reactive expression. If <code>x</code> is a quosure and <code>quoted</code> is <code>TRUE</code>,
+then <code>env</code> is ignored.</p>
+</td></tr>
+<tr valign="top"><td><code>quoted</code></td>
+<td>
+<p>If it is <code>TRUE</code>, then the <code><a href="../../base/html/substitute.html">quote()</a></code>ed value of <code>x</code>
+will be used when <code>x</code> is evaluated. If <code>x</code> is a quosure and you
+would like to use its expression as a value for <code>x</code>, then you must set
+<code>quoted</code> to <code>TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Not used.</p>
+</td></tr>
+<tr valign="top"><td><code>label</code></td>
+<td>
+<p>A label for the reactive expression, useful for debugging.</p>
+</td></tr>
+<tr valign="top"><td><code>domain</code></td>
+<td>
+<p>See <a href="../../shiny/help/domains.html">domains</a>.</p>
+</td></tr>
+<tr valign="top"><td><code>..stacktraceon</code></td>
+<td>
+<p>Advanced use only. For stack manipulation purposes; see
+<code><a href="../../shiny/help/stacktrace.html">stacktrace()</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Reactive expressions are expressions that can read reactive values and call
+other reactive expressions. Whenever a reactive value changes, any reactive
+expressions that depended on it are marked as &quot;invalidated&quot; and will
+automatically re-execute if necessary. If a reactive expression is marked as
+invalidated, any other reactive expressions that recently called it are also
+marked as invalidated. In this way, invalidations ripple through the
+expressions that depend on each other.
+</p>
+<p>See the <a href="https://shiny.rstudio.com/tutorial/">Shiny tutorial</a> for
+more information about reactive expressions.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a function, wrapped in a S3 class &quot;reactive&quot;
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(rlang)
+values &lt;- reactiveValues(A=1)
+
+reactiveB &lt;- reactive({
+  values$A + 1
+})
+# View the values from the R console with isolate()
+isolate(reactiveB())
+# 2
+
+# To store expressions for later conversion to reactive, use quote()
+myquo &lt;- rlang::quo(values$A + 2)
+# Unexpected value! Sending a quosure directly will not work as expected.
+reactiveC &lt;- reactive(myquo)
+# We'd hope for `3`, but instead we get the quosure that was supplied.
+isolate(reactiveC())
+
+# Instead, the quosure should be `rlang::inject()`ed
+reactiveD &lt;- rlang::inject(reactive(!!myquo))
+isolate(reactiveD())
+# 3
+
+# (Legacy) Can use quoted expressions
+expr &lt;- quote({ values$A + 3 })
+reactiveE &lt;- reactive(expr, quoted = TRUE)
+isolate(reactiveE())
+# 4
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>shiny</em> version 1.8.1.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

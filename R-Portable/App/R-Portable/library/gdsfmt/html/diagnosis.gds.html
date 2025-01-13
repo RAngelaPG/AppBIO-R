@@ -1,0 +1,145 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Diagnose the GDS file</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for diagnosis.gds {gdsfmt}"><tr><td>diagnosis.gds {gdsfmt}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Diagnose the GDS file</h2>
+
+<h3>Description</h3>
+
+<p>Diagnose the GDS file and data information.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+diagnosis.gds(gds, log.only=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>gds</code></td>
+<td>
+<p>an object of class <code><a href="../../gdsfmt/help/gdsn.class.html">gdsn.class</a></code> or
+<code><a href="../../gdsfmt/help/gds.class.html">gds.class</a></code></p>
+</td></tr>
+<tr valign="top"><td><code>log.only</code></td>
+<td>
+<p>if <code>TRUE</code>, return a character vector of log only</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A list with stream and chunk information.
+</p>
+<p>If <code>gds</code> is a <code>"gds.class"</code> object (i.e., a GDS file), the
+function returns a list with components, like:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>stream</code></td>
+<td>
+<p>summary of byte stream</p>
+</td></tr>
+<tr valign="top"><td><code>log</code></td>
+<td>
+<p>event log records</p>
+</td></tr>
+</table>
+<p>If <code>gds</code> is a <code>"gdsn.class"</code> object, the function returns a list
+with components, like:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>head</code></td>
+<td>
+<p>total_size, chunk_offset, chunk_size</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>total_size, chunk_offset, chunk_size</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Xiuwen Zheng</p>
+
+
+<h3>References</h3>
+
+<p><a href="http://github.com/zhengxwen/gdsfmt">http://github.com/zhengxwen/gdsfmt</a></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# cteate a GDS file
+f &lt;- createfn.gds("test.gds")
+
+set.seed(1000)
+rawval &lt;- as.raw(rep(0:99, 50))
+
+add.gdsn(f, "label", NULL)
+add.gdsn(f, "raw", rawval)
+
+closefn.gds(f)
+
+##
+
+f &lt;- openfn.gds("test.gds")
+
+diagnosis.gds(f)
+diagnosis.gds(f$root)
+diagnosis.gds(index.gdsn(f, "label"))
+diagnosis.gds(index.gdsn(f, "raw"))
+
+closefn.gds(f)
+
+## remove fragments
+
+cleanup.gds("test.gds")
+
+##
+
+f &lt;- openfn.gds("test.gds")
+
+diagnosis.gds(f$root)
+diagnosis.gds(index.gdsn(f, "label"))
+(adr &lt;- diagnosis.gds(index.gdsn(f, "raw")))
+
+closefn.gds(f)
+
+
+## read binary data directly
+
+f &lt;- file("test.gds", "rb")
+
+dat &lt;- NULL
+for (i in seq_len(length(adr$data$chunk_offset)))
+{
+    seek(f, adr$data$chunk_offset[i])
+    dat &lt;- c(dat, readBin(f, "raw", adr$data$chunk_size[i]))
+}
+
+identical(dat, rawval)  # should be TRUE
+
+close(f)
+
+
+# delete the temporary file
+unlink("test.gds", force=TRUE)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>gdsfmt</em> version 1.30.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

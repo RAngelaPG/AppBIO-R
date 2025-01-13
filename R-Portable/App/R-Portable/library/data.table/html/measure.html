@@ -1,0 +1,137 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Specify measure.vars via regex or separator</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for measure {data.table}"><tr><td>measure {data.table}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Specify measure.vars via regex or separator</h2>
+
+<h3>Description</h3>
+
+<p>These functions compute an integer vector or list for use as
+the <code>measure.vars</code> argument to <code>melt</code>.
+Each measured variable name is converted into several groups that occupy
+different columns in the output melted data.
+<code>measure</code> allows specifying group names/conversions in R code
+(each group and conversion specified as an argument)
+whereas <code>measurev</code> allows specifying group names/conversions using
+data values
+(each group and conversion specified as a list element).
+See
+<a href="../doc/datatable-reshape.html"><code>vignette("datatable-reshape")</code></a>
+for more info.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+measure(..., sep, pattern, cols, multiple.keyword="value.name")
+measurev(fun.list, sep, pattern, cols, multiple.keyword="value.name",
+  group.desc="elements of fun.list")
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>One or more (1) symbols (without argument name; symbol
+is used for group name) or (2) functions to convert the groups
+(with argument name that is used for group name).
+Must have same number of arguments as groups that are
+specified by either <code>sep</code> or <code>pattern</code> arguments.</p>
+</td></tr>
+<tr valign="top"><td><code>fun.list</code></td>
+<td>
+<p>Named list which must have the same number of
+elements as groups that are specified by either <code>sep</code> or
+<code>pattern</code> arguments. Each name used for a group
+name, and each value must be either a function
+(to convert the group from a character vector to an atomic vector of the
+same size) or NULL (no conversion).</p>
+</td></tr>
+<tr valign="top"><td><code>sep</code></td>
+<td>
+<p>Separator to split each element of <code>cols</code> into
+groups. Columns that result in the maximum number of groups
+are considered measure variables.</p>
+</td></tr>
+<tr valign="top"><td><code>pattern</code></td>
+<td>
+<p>Perl-compatible regex with capture groups to match to
+<code>cols</code>. Columns that match the regex are considered measure variables.</p>
+</td></tr>
+<tr valign="top"><td><code>cols</code></td>
+<td>
+<p>A character vector of column names.</p>
+</td></tr>
+<tr valign="top"><td><code>multiple.keyword</code></td>
+<td>
+<p>A string, if used as a group name, then
+measure returns a list and melt returns multiple
+value columns (with names defined by the unique values in that
+group). Otherwise if the string not used as a group name, then
+measure returns a vector and melt returns a single value column.</p>
+</td></tr>
+<tr valign="top"><td><code>group.desc</code></td>
+<td>
+<p>Internal, used in error messages.</p>
+</td></tr>
+</table>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../data.table/help/melt.html">melt</a></code>,
+<a href="https://github.com/Rdatatable/data.table/wiki/Getting-started">https://github.com/Rdatatable/data.table/wiki/Getting-started</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+(two.iris = data.table(datasets::iris)[c(1,150)])
+# melt into a single value column.
+melt(two.iris, measure.vars = measure(part, dim, sep="."))
+# do the same, programmatically with measurev
+my.list = list(part=NULL, dim=NULL)
+melt(two.iris, measure.vars=measurev(my.list, sep="."))
+# melt into two value columns, one for each part.
+melt(two.iris, measure.vars = measure(value.name, dim, sep="."))
+# melt into two value columns, one for each dim.
+melt(two.iris, measure.vars = measure(part, value.name, sep="."))
+# melt using sep, converting child number to integer.
+(two.families = data.table(sex_child1="M", sex_child2="F", age_child1=10, age_child2=20))
+print(melt(two.families, measure.vars = measure(
+  value.name, child=as.integer,
+  sep="_child"
+)), class=TRUE)
+# same melt using pattern.
+print(melt(two.families, measure.vars = measure(
+  value.name, child=as.integer,
+  pattern="(.*)_child(.)"
+)), class=TRUE)
+# same melt with pattern and measurev function list.
+print(melt(two.families, measure.vars = measurev(
+  list(value.name=NULL, child=as.integer),
+  pattern="(.*)_child(.)"
+)), class=TRUE)
+# inspired by data(who, package="tidyr")
+(who &lt;- data.table(id=1, new_sp_m5564=2, newrel_f65=3))
+# melt to three variable columns, all character.
+melt(who, measure.vars = measure(diagnosis, gender, ages, pattern="new_?(.*)_(.)(.*)"))
+# melt to five variable columns, two numeric (with custom conversion).
+print(melt(who, measure.vars = measure(
+  diagnosis, gender, ages,
+  ymin=as.numeric,
+  ymax=function(y)ifelse(y=="", Inf, as.numeric(y)),
+  pattern="new_?(.*)_(.)(([0-9]{2})([0-9]{0,2}))"
+)), class=TRUE)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>data.table</em> version 1.15.4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

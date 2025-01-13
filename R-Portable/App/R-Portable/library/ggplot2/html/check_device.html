@@ -1,0 +1,214 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Check graphics device capabilities</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for check_device {ggplot2}"><tr><td>check_device {ggplot2}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Check graphics device capabilities</h2>
+
+<h3>Description</h3>
+
+<p>This function makes an attempt to estimate whether the graphics device is
+able to render newer graphics features.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+check_device(
+  feature,
+  action = "warn",
+  op = NULL,
+  maybe = FALSE,
+  call = caller_env()
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>feature</code></td>
+<td>
+<p>A string naming a graphics device feature. One of:
+<code>"clippingPaths"</code>, <code>"alpha_masks"</code>, <code>"lumi_masks"</code>, <code>"compositing"</code>,
+<code>"blending"</code>, <code>"transformations"</code>, <code>"gradients"</code>, <code>"patterns"</code>, <code>"paths"</code>
+or <code>"glyphs"</code>. See the 'Features' section below for an explanation
+of these terms.</p>
+</td></tr>
+<tr valign="top"><td><code>action</code></td>
+<td>
+<p>A string for what action to take. One of:
+</p>
+
+<ul>
+<li> <p><code>"test"</code> returns <code>TRUE</code> or <code>FALSE</code> indicating support of the feature.
+</p>
+</li>
+<li> <p><code>"warn"</code> also returns a logical, but throws an informative warning when
+<code>FALSE</code>.
+</p>
+</li>
+<li> <p><code>"abort"</code> throws an error when the device is estimated to not support
+the feature.
+</p>
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>op</code></td>
+<td>
+<p>A string for a specific operation to test for when <code>feature</code> is
+either <code>"blending"</code> or <code>"compositing"</code>. If <code>NULL</code> (default), support for
+all known blending or compositing operations is queried.</p>
+</td></tr>
+<tr valign="top"><td><code>maybe</code></td>
+<td>
+<p>A logical of length 1 determining what the return value should
+be in case the device capabilities cannot be assessed. When the current
+device is the 'null device', <code>maybe</code> is returned.</p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>The execution environment of a currently running function, e.g.
+<code><a href="../../rlang/help/stack.html">caller_env()</a></code>. The function will be mentioned in
+warnings and error messages as the source of the warning or error. See
+the <code>call</code> argument of <code><a href="../../rlang/help/abort.html">abort()</a></code> for more information.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The procedure for testing is as follows:
+</p>
+
+<ul>
+<li><p> First, the <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> version is checked against the version wherein a feature was
+introduced.
+</p>
+</li>
+<li><p> Next, the <a href="../../grDevices/help/dev.capabilities.html">dev.capabilities()</a> function is
+queried for support of the feature.
+</p>
+</li>
+<li><p> If that check is ambiguous, the <span class="pkg">svglite</span> and <span class="pkg">ragg</span> devices are
+checked for known support.
+</p>
+</li>
+<li><p> Lastly, if there is no answer yet, it is checked whether the device is one
+of the 'known' devices that supports a feature.
+</p>
+</li></ul>
+
+
+
+<h3>Value</h3>
+
+<p><code>TRUE</code> when the feature is thought to be supported and <code>FALSE</code>
+otherwise.
+</p>
+
+
+<h3>Features</h3>
+
+
+<dl>
+<dt><code>"clippingPaths"</code></dt><dd><p>While most devices support rectangular clipping
+regions, this feature is about the support for clipping to arbitrary paths.
+It can be used to only display a part of a drawing.</p>
+</dd>
+<dt><code>"alpha_masks"</code></dt><dd><p>Like clipping regions and paths, alpha masks can also
+be used to only display a part of a drawing. In particular a
+semi-transparent mask can be used to display a drawing in the opaque parts
+of the mask and hide a drawing in transparent part of a mask.</p>
+</dd>
+<dt><code style="white-space: pre;">"lumi_masks</code></dt><dd><p>Similar to alpha masks, but using the mask's luminance
+(greyscale value) to determine what is drawn. Light values are opaque and
+dark values are transparent.</p>
+</dd>
+<dt><code>"compositing"</code></dt><dd><p>Compositing allows one to control how to drawings
+are drawn in relation to one another. By default, one drawing is drawn
+'over' the previous one, but other operators are possible, like 'clear',
+'in' and 'out'.</p>
+</dd>
+<dt><code>"blending"</code></dt><dd><p>When placing one drawing atop of another, the blend
+mode determines how the colours of the drawings relate to one another.</p>
+</dd>
+<dt><code>"transformations"</code></dt><dd><p>Performing an affine transformation on a group
+can be used to translate, rotate, scale, shear and flip the drawing.</p>
+</dd>
+<dt><code>"gradients"</code></dt><dd><p>Gradients can be used to show a transition between
+two or more colours as a fill in a drawing. The checks expects both linear
+and radial gradients to be supported.</p>
+</dd>
+<dt><code>"patterns"</code></dt><dd><p>Patterns can be used to display a repeated, tiled
+drawing as a fill in another drawing.</p>
+</dd>
+<dt><code>"paths"</code></dt><dd><p>Contrary to 'paths' as polyline or polygon drawings,
+<code>"paths"</code> refers to the ability to fill and stroke collections of
+drawings.</p>
+</dd>
+<dt><code>"glyphs"</code></dt><dd><p>Refers to the advanced typesetting feature for
+controlling the appearance of individual glyphs.</p>
+</dd>
+</dl>
+
+
+
+<h3>Limitations</h3>
+
+
+<ul>
+<li><p> On Windows machines, bitmap devices such as <code>png()</code> or <code>jpeg()</code> default
+to <code>type = "windows"</code>. At the time of writing, these don't support any
+new features, in contrast to <code>type = "cairo"</code>, which does. Prior to <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>
+version 4.2.0, the capabilities cannot be resolved and the value of the
+<code>maybe</code> argument is returned.
+</p>
+</li>
+<li><p> With the exception of the <span class="pkg">ragg</span> and <span class="pkg">svglite</span> devices, if the
+device doesn't report their capabilities via
+<a href="../../grDevices/help/dev.capabilities.html">dev.capabilities()</a>, or the <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> version is
+below 4.2.0, the <code>maybe</code> value is returned.
+</p>
+</li>
+<li><p> Even though patterns and gradients where introduced in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> 4.1.0, they
+are considered unsupported because providing vectorised patterns and
+gradients was only introduced later in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> 4.2.0.
+</p>
+</li>
+<li><p> When using the RStudio graphics device, the back end is assumed to be the
+next device on the list. This assumption is typically met by default,
+unless the device list is purposefully rearranged.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+# Typically you'd run `check_device()` inside a function that might produce
+# advanced graphics.
+# The check is designed for use in control flow statements in the test mode
+if (check_device("patterns", action = "test")) {
+  print("Yay")
+} else {
+  print("Nay")
+}
+
+# Automatically throw a warning when unavailable
+if (check_device("compositing", action = "warn")) {
+  print("Yay")
+} else {
+  print("Nay")
+}
+
+# Possibly throw an error
+try(check_device("glyphs", action = "abort"))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ggplot2</em> version 3.5.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

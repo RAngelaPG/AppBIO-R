@@ -1,0 +1,178 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Put (virtual) tiles on a given genome</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for tileGenome {GenomicRanges}"><tr><td>tileGenome {GenomicRanges}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Put (virtual) tiles on a given genome</h2>
+
+<h3>Description</h3>
+
+<p><code>tileGenome</code> returns a set of genomic regions that form a
+partitioning of the specified genome. Each region is called a &quot;tile&quot;.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+tileGenome(seqlengths, ntile, tilewidth, cut.last.tile.in.chrom=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>seqlengths</code></td>
+<td>
+
+<p>Either a named numeric vector of chromosome lengths or a <a href="../../GenomeInfoDb/html/Seqinfo-class.html">Seqinfo</a>
+object. More precisely, if a named numeric vector, it must have a length
+&gt;= 1, cannot contain NAs or negative values, and cannot have duplicated
+names. If a <a href="../../GenomeInfoDb/html/Seqinfo-class.html">Seqinfo</a> object, then it's first replaced with the
+vector of sequence lengths stored in the object (extracted from the object
+with the <code><a href="../../GenomeInfoDb/html/seqinfo.html">seqlengths</a></code> getter), then the restrictions described
+previously apply to this vector.
+</p>
+</td></tr>
+<tr valign="top"><td><code>ntile</code></td>
+<td>
+
+<p>The number of tiles to generate.
+</p>
+</td></tr>
+<tr valign="top"><td><code>tilewidth</code></td>
+<td>
+
+<p>The desired tile width. The effective tile width might be slightly
+different but is guaranteed to never be more than the desired width.
+</p>
+</td></tr>
+<tr valign="top"><td><code>cut.last.tile.in.chrom</code></td>
+<td>
+
+<p>Whether or not to cut the last tile in each chromosome.
+This is set to <code>FALSE</code> by default.
+Can be set to <code>TRUE</code> only when <code>tilewidth</code> is specified.
+In that case, a tile will never overlap with more than 1 chromosome
+and a <a href="../../GenomicRanges/help/GRanges.html">GRanges</a> object is returned with one element (i.e. one
+genomic range) per tile. 
+</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>If <code>cut.last.tile.in.chrom</code> is <code>FALSE</code> (the default),
+a <a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> object with one list element per tile, each of
+them containing a number of genomic ranges equal to the number of
+chromosomes it overlaps with. Note that when the tiles are small (i.e.
+much smaller than the chromosomes), most of them only overlap with a
+single chromosome.
+</p>
+<p>If <code>cut.last.tile.in.chrom</code> is <code>TRUE</code>, a <a href="../../GenomicRanges/help/GRanges.html">GRanges</a>
+object with one element (i.e. one genomic range) per tile.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>H. Pagès, based on a proposal by M. Morgan
+</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><a href="../../GenomicRanges/help/genomicvars.html">genomicvars</a> for an example of how to compute the binned
+average of a numerical variable defined along a genome.
+</p>
+</li>
+<li> <p><a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> and <a href="../../GenomicRanges/help/GRanges.html">GRanges</a> objects.
+</p>
+</li>
+<li> <p><a href="../../GenomeInfoDb/html/Seqinfo-class.html">Seqinfo</a> objects and the <code><a href="../../GenomeInfoDb/html/seqinfo.html">seqlengths</a></code> getter.
+</p>
+</li>
+<li> <p><a href="../../IRanges/help/IntegerList.html">IntegerList</a> objects.
+</p>
+</li>
+<li> <p><a href="../../IRanges/help/Views.html">Views</a> objects.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## ---------------------------------------------------------------------
+## A. WITH A TOY GENOME
+## ---------------------------------------------------------------------
+
+seqlengths &lt;- c(chr1=60, chr2=20, chr3=25)
+
+## Create 5 tiles:
+tiles &lt;- tileGenome(seqlengths, ntile=5)
+tiles
+elementNROWS(tiles)  # tiles 3 and 4 contain 2 ranges
+
+width(tiles)
+## Use sum() on this IntegerList object to get the effective tile
+## widths:
+sum(width(tiles))  # each tile covers exactly 21 genomic positions
+
+## Create 9 tiles:
+tiles &lt;- tileGenome(seqlengths, ntile=9)
+elementNROWS(tiles)  # tiles 6 and 7 contain 2 ranges
+
+table(sum(width(tiles)))  # some tiles cover 12 genomic positions,
+                          # others 11
+
+## Specify the tile width:
+tiles &lt;- tileGenome(seqlengths, tilewidth=20)
+length(tiles)  # 6 tiles
+table(sum(width(tiles)))  # effective tile width is &lt;= specified
+
+## Specify the tile width and cut the last tile in each chromosome:
+tiles &lt;- tileGenome(seqlengths, tilewidth=24,
+                    cut.last.tile.in.chrom=TRUE)
+tiles
+width(tiles)  # each tile covers exactly 24 genomic positions, except
+              # the last tile in each chromosome
+
+## Partition a genome by chromosome ("natural partitioning"):
+tiles &lt;- tileGenome(seqlengths, tilewidth=max(seqlengths),
+                    cut.last.tile.in.chrom=TRUE)
+tiles  # one tile per chromosome
+
+## sanity check
+stopifnot(all.equal(setNames(end(tiles), seqnames(tiles)), seqlengths))
+
+## ---------------------------------------------------------------------
+## B. WITH A REAL GENOME
+## ---------------------------------------------------------------------
+
+library(BSgenome.Scerevisiae.UCSC.sacCer2)
+tiles &lt;- tileGenome(seqinfo(Scerevisiae), ntile=20)
+tiles
+
+tiles &lt;- tileGenome(seqinfo(Scerevisiae), tilewidth=50000,
+                    cut.last.tile.in.chrom=TRUE)
+tiles
+
+## ---------------------------------------------------------------------
+## C. AN APPLICATION: COMPUTE THE BINNED AVERAGE OF A NUMERICAL VARIABLE
+##    DEFINED ALONG A GENOME
+## ---------------------------------------------------------------------
+
+## See '?genomicvars' for an example of how to compute the binned
+## average of a numerical variable defined along a genome.
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GenomicRanges</em> version 1.46.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

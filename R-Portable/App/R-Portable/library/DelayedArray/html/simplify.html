@@ -1,0 +1,295 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Simplify a tree of delayed operations</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for simplify {DelayedArray}"><tr><td>simplify {DelayedArray}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Simplify a tree of delayed operations</h2>
+
+<h3>Description</h3>
+
+<p>NOTE: The tools documented in this man page are primarily intended
+for developers or advanced users curious about the internals of the
+<span class="pkg">DelayedArray</span> package. End users typically don't need them for
+their regular use of <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> objects.
+</p>
+<p>In a <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> object, the delayed operations are stored as a
+tree of <a href="../../DelayedArray/help/DelayedOp.html">DelayedOp</a> objects. See <code>?<a href="../../DelayedArray/help/DelayedOp.html">DelayedOp</a></code> for more
+information about this tree.
+</p>
+<p><code>simplify</code> can be used to simplify the tree of delayed operations
+in a <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> object.
+</p>
+<p><code>isPristine</code> can be used to know whether a <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a>
+object is <em>pristine</em> or not. A <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> object is
+considered <em>pristine</em> when it carries no delayed operation.
+Note that an object that carries delayed operations that do nothing
+(e.g. <code>A + 0</code>) is not considered <em>pristine</em>.
+</p>
+<p><code>contentIsPristine</code> can be used to know whether the delayed
+operations in a <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> object <em>touch</em> its array
+elements or not.
+</p>
+<p><code>netSubsetAndAperm</code> returns an object that represents the <em>net
+subsetting</em> and <em>net dimension rearrangement</em> of all the delayed
+operations in a <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> object.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+simplify(x, incremental=FALSE)
+
+isPristine(x, ignore.dimnames=FALSE)
+contentIsPristine(x)
+netSubsetAndAperm(x, as.DelayedOp=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+
+<p>Typically a <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> object but can also be a <a href="../../DelayedArray/help/DelayedOp.html">DelayedOp</a>
+object (except for <code>isPristine</code>).
+</p>
+</td></tr>
+<tr valign="top"><td><code>incremental</code></td>
+<td>
+
+<p>For internal use.
+</p>
+</td></tr>
+<tr valign="top"><td><code>ignore.dimnames</code></td>
+<td>
+
+<p><code>TRUE</code> or <code>FALSE</code>. When <code>TRUE</code>, the object is considered
+<em>pristine</em> even if its dimnames have been modified and no longer
+match the dimnames of its seed (in which case the object carries a
+single delayed operations of type <a href="../../DelayedArray/help/DelayedSetDimnames.html">DelayedSetDimnames</a>).
+</p>
+</td></tr>
+<tr valign="top"><td><code>as.DelayedOp</code></td>
+<td>
+
+<p><code>TRUE</code> or <code>FALSE</code>. Controls the form of the returned object.
+See details below.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>netSubsetAndAperm</code> is only supported on a <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a>
+object <code>x</code> with a single seed i.e. if <code>nseed(x) == 1</code>.
+</p>
+<p>The mapping between the array elements of <code>x</code> and the array elements
+of its seed is affected by the following delayed operations carried by
+<code>x</code>: <code>[</code>, <code>drop()</code>, and <code>aperm()</code>.
+<code>x</code> can carry any number of each of these operations in any order but
+their net result can always be described by a <em>net subsetting</em>
+followed by a <em>net dimension rearrangement</em>.
+</p>
+<p><code>netSubsetAndAperm(x)</code> returns an object that represents the
+<em>net subsetting</em> and <em>net dimension rearrangement</em>.
+The <code>as.DelayedOp</code> argument controls in what form this object should
+be returned:
+</p>
+
+<ul>
+<li><p> If <code>as.DelayedOp</code> is <code>FALSE</code> (the default), the returned
+object is a list of subscripts that describes the <em>net
+subsetting</em>. The list contains one subscript per dimension in the
+seed. Each subscript can be either a vector of positive integers
+or a <code>NULL</code>. A <code>NULL</code> indicates a <em>missing subscript</em>.
+In addition, if <code>x</code> carries delayed operations that rearrange
+its dimensions (i.e. operations that drop and/or permute some of
+the original dimensions), the <em>net dimension rearrangement</em>
+is described in a <code>dimmap</code> attribute added to the list. This
+attribute is an integer vector parallel to <code>dim(x)</code> that
+reports how the dimensions of <code>x</code> are mapped to the dimensions
+of its seed.
+</p>
+</li>
+<li><p> If <code>as.DelayedOp</code> is <code>TRUE</code>, the returned object is a
+linear tree with 2 <a href="../../DelayedArray/help/DelayedOp.html">DelayedOp</a> nodes and a leaf node. The
+leaf node is the seed of <code>x</code>. Walking the tree from the seed,
+the 2 <a href="../../DelayedArray/help/DelayedOp.html">DelayedOp</a> nodes are of type <a href="../../DelayedArray/help/DelayedSubset.html">DelayedSubset</a> and
+<a href="../../DelayedArray/help/DelayedAperm.html">DelayedAperm</a>, in that order (this reflects the order in
+which the operations apply). More precisely, the returned object
+is a <a href="../../DelayedArray/help/DelayedAperm.html">DelayedAperm</a> object with one child (the
+<a href="../../DelayedArray/help/DelayedSubset.html">DelayedSubset</a> object), and one grandchid (the seed of
+<code>x</code>).
+The <a href="../../DelayedArray/help/DelayedSubset.html">DelayedSubset</a> and <a href="../../DelayedArray/help/DelayedAperm.html">DelayedAperm</a> nodes represent
+the <em>net subsetting</em> and <em>net dimension rearrangement</em>,
+respectively. Either or both of them can be a no-op.
+</p>
+</li></ul>
+
+<p>Note that the returned object describes how the array elements of <code>x</code>
+map to their corresponding array element in <code>seed(x)</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The simplified object for <code>simplify</code>.
+</p>
+<p><code>TRUE</code> or <code>FALSE</code> for <code>contentIsPristine</code>.
+</p>
+<p>An ordinary list (possibly with the <code>dimmap</code> attribute on it) for
+<code>netSubsetAndAperm</code>. Unless <code>as.DelayedOp</code> is set to <code>TRUE</code>,
+in which case a <a href="../../DelayedArray/help/DelayedAperm.html">DelayedAperm</a> object is returned (see Details
+section above for more information).
+</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><code><a href="../../DelayedArray/help/showtree.html">showtree</a></code> to visualize and access the leaves of
+a tree of delayed operations carried by a <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a>
+object.
+</p>
+</li>
+<li> <p><a href="../../DelayedArray/help/DelayedOp.html">DelayedOp</a> objects.
+</p>
+</li>
+<li> <p><a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> objects.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## ---------------------------------------------------------------------
+## Simplification of the tree of delayed operations
+## ---------------------------------------------------------------------
+m1 &lt;- matrix(runif(150), nrow=15, ncol=10)
+M1 &lt;- DelayedArray(m1)
+showtree(M1)
+
+## By default, the tree of delayed operations carried by a DelayedArray
+## object gets simplified each time a delayed operation is added to it.
+## This can be disabled via a global option:
+options(DelayedArray.simplify=FALSE)
+M2 &lt;- log(t(M1[5:1, c(TRUE, FALSE)] + 10))[-1, ]
+showtree(M2)  # linear tree
+
+## Note that as part of the simplification process, some operations
+## can be reordered:
+options(DelayedArray.simplify=TRUE)
+M2 &lt;- log(t(M1[5:1, c(TRUE, FALSE)] + 10))[-1, ]
+showtree(M2)  # linear tree
+
+options(DelayedArray.simplify=FALSE)
+
+dimnames(M1) &lt;- list(letters[1:15], LETTERS[1:10])
+showtree(M1)  # linear tree
+
+m2 &lt;- matrix(1:20, nrow=10)
+Y &lt;- cbind(t(M1[ , 10:1]), DelayedArray(m2), M1[6:15, "A", drop=FALSE])
+showtree(Y)   # non-linear tree
+
+Z &lt;- t(Y[10:1, ])[1:15, ] + 0.4 * M1
+showtree(Z)   # non-linear tree
+
+Z@seed@seeds
+Z@seed@seeds[[2]]@seed                      # reaching to M1
+Z@seed@seeds[[1]]@seed@seed@seed@seed@seed  # reaching to Y
+
+## ---------------------------------------------------------------------
+## isPristine()
+## ---------------------------------------------------------------------
+m &lt;- matrix(1:20, ncol=4, dimnames=list(letters[1:5], NULL))
+M &lt;- DelayedArray(m)
+
+isPristine(M)                 # TRUE
+isPristine(log(M))            # FALSE
+isPristine(M + 0)             # FALSE
+isPristine(t(M))              # FALSE
+isPristine(t(t(M)))           # TRUE
+isPristine(cbind(M, M))       # FALSE
+isPristine(cbind(M))          # TRUE
+
+dimnames(M) &lt;- NULL
+isPristine(M)                 # FALSE
+isPristine(M, ignore.dimnames=TRUE)  # TRUE
+isPristine(t(t(M)), ignore.dimnames=TRUE)  # TRUE
+isPristine(cbind(M, M), ignore.dimnames=TRUE)  # FALSE
+
+## ---------------------------------------------------------------------
+## contentIsPristine()
+## ---------------------------------------------------------------------
+a &lt;- array(1:40, c(4, 5, 2))
+A &lt;- DelayedArray(a)
+
+stopifnot(contentIsPristine(A))
+stopifnot(contentIsPristine(A[1, , ]))
+stopifnot(contentIsPristine(t(A[1, , ])))
+stopifnot(contentIsPristine(cbind(A[1, , ], A[2, , ])))
+dimnames(A) &lt;- list(LETTERS[1:4], letters[1:5], NULL)
+stopifnot(contentIsPristine(A))
+
+contentIsPristine(log(A))     # FALSE
+contentIsPristine(A - 11:14)  # FALSE
+contentIsPristine(A * A)      # FALSE
+
+## ---------------------------------------------------------------------
+## netSubsetAndAperm()
+## ---------------------------------------------------------------------
+a &lt;- array(1:40, c(4, 5, 2))
+M &lt;- aperm(DelayedArray(a)[ , -1, ] / 100)[ , , 3] + 99:98
+M
+showtree(M)
+
+netSubsetAndAperm(M)  # 1st dimension was dropped, 2nd and 3rd
+                      # dimension were permuted (transposition)
+
+op2 &lt;- netSubsetAndAperm(M, as.DelayedOp=TRUE)
+op2                   # 2 nested delayed operations
+op1 &lt;- op2@seed
+class(op1)            # DelayedSubset
+class(op2)            # DelayedAperm
+op1@index
+op2@perm
+
+DelayedArray(op2)     # same as M from a [, drop(), and aperm() point of
+                      # view but the individual array elements are now
+                      # reset to their original values i.e. to the values
+                      # they have in the seed
+stopifnot(contentIsPristine(DelayedArray(op2)))
+
+## A simple function that returns TRUE if a DelayedArray object carries
+## no "net subsetting" and no "net dimension rearrangement":
+is_aligned_with_seed &lt;- function(x)
+{
+    if (nseed(x) != 1L)
+        return(FALSE)
+    op2 &lt;- netSubsetAndAperm(x, as.DelayedOp=TRUE)
+    op1 &lt;- op2@seed
+    is_noop(op1) &amp;&amp; is_noop(op2)
+}
+
+M &lt;- DelayedArray(a[ , , 1])
+is_aligned_with_seed(log(M + 11:14) &gt; 3)            # TRUE
+is_aligned_with_seed(M[4:1, ])                      # FALSE
+is_aligned_with_seed(M[4:1, ][4:1, ])               # TRUE
+is_aligned_with_seed(t(M))                          # FALSE
+is_aligned_with_seed(t(t(M)))                       # TRUE
+is_aligned_with_seed(t(0.5 * t(M[4:1, ])[ , 4:1]))  # TRUE
+
+options(DelayedArray.simplify=TRUE)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>DelayedArray</em> version 0.20.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

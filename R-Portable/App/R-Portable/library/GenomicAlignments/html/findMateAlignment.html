@@ -1,0 +1,367 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Pairing the elements of a GAlignments object</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for findMateAlignment {GenomicAlignments}"><tr><td>findMateAlignment {GenomicAlignments}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Pairing the elements of a GAlignments object</h2>
+
+<h3>Description</h3>
+
+<p>Utilities for pairing the elements of a <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> object.
+</p>
+<p>NOTE: Until BioC 2.13, <code>findMateAlignment</code> was the power horse used
+by <code><a href="../../GenomicAlignments/help/readGAlignmentPairs.html">readGAlignmentPairs</a></code> for pairing the records loaded
+from a BAM file containing aligned paired-end reads.
+Starting with BioC 2.14, <code><a href="../../GenomicAlignments/help/readGAlignmentPairs.html">readGAlignmentPairs</a></code> relies
+on <code><a href="../../Rsamtools/help/scanBam.html">scanBam</a>(BamFile(asMates=TRUE), ...)</code> for the
+pairing.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+findMateAlignment(x)
+makeGAlignmentPairs(x, use.names=FALSE, use.mcols=FALSE, strandMode=1)
+
+## Related low-level utilities:
+getDumpedAlignments()
+countDumpedAlignments()
+flushDumpedAlignments()
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+
+<p>A named <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> object with metadata columns <code>flag</code>,
+<code>mrnm</code>, and <code>mpos</code>. Typically obtained by loading aligned
+paired-end reads from a BAM file with:
+</p>
+<pre>
+    param &lt;- ScanBamParam(what=c("flag", "mrnm", "mpos"))
+    x &lt;- readGAlignments(..., use.names=TRUE, param=param)
+    </pre>
+</td></tr>
+<tr valign="top"><td><code>use.names</code></td>
+<td>
+
+<p>Whether the names on the input object should be propagated to the
+returned object or not.
+</p>
+</td></tr>
+<tr valign="top"><td><code>use.mcols</code></td>
+<td>
+
+<p>Names of the metadata columns to propagate to the returned
+<a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> object.
+</p>
+</td></tr>
+<tr valign="top"><td><code>strandMode</code></td>
+<td>
+
+<p>Strand mode to set on the returned <a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> object.
+See <code>?<a href="../../GenomicAlignments/help/strandMode.html">strandMode</a></code> for more information.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+
+
+<h4>Pairing algorithm used by findMateAlignment</h4>
+
+<p><code>findMateAlignment</code> is the power horse used by <code>makeGAlignmentPairs</code>
+for pairing the records loaded from a BAM file containing aligned paired-end
+reads.
+</p>
+<p>It implements the following pairing algorithm:
+</p>
+
+<ul>
+<li><p> First, only records with flag bit 0x1 (multiple segments) set to 1,
+flag bit 0x4 (segment unmapped) set to 0, and flag bit 0x8 (next
+segment in the template unmapped) set to 0, are candidates for
+pairing (see the SAM Spec for a description of flag bits and fields).
+<code>findMateAlignment</code> will ignore any other record. That is,
+records that correspond to single-end reads, or records that
+correspond to paired-end reads where one or both ends are unmapped,
+are discarded.
+</p>
+</li>
+<li><p> Then the algorithm looks at the following fields and flag bits:
+</p>
+
+<ul>
+<li><p> (A) QNAME
+</p>
+</li>
+<li><p> (B) RNAME, RNEXT
+</p>
+</li>
+<li><p> (C) POS, PNEXT
+</p>
+</li>
+<li><p> (D) Flag bits Ox10 (segment aligned to minus strand)
+and 0x20 (next segment aligned to minus strand)
+</p>
+</li>
+<li><p> (E) Flag bits 0x40 (first segment in template) and 0x80 (last
+segment in template)
+</p>
+</li>
+<li><p> (F) Flag bit 0x2 (proper pair)
+</p>
+</li>
+<li><p> (G) Flag bit 0x100 (secondary alignment)
+</p>
+</li></ul>
+
+<p>2 records rec1 and rec2 are considered mates iff all the following
+conditions are satisfied:
+</p>
+
+<ul>
+<li><p> (A) QNAME(rec1) == QNAME(rec2)
+</p>
+</li>
+<li><p> (B) RNEXT(rec1) == RNAME(rec2) and RNEXT(rec2) == RNAME(rec1)
+</p>
+</li>
+<li><p> (C) PNEXT(rec1) == POS(rec2) and PNEXT(rec2) == POS(rec1)
+</p>
+</li>
+<li><p> (D) Flag bit 0x20 of rec1 == Flag bit 0x10 of rec2 and
+Flag bit 0x20 of rec2 == Flag bit 0x10 of rec1
+</p>
+</li>
+<li><p> (E) rec1 corresponds to the first segment in the template and
+rec2 corresponds to the last segment in the template, OR,
+rec2 corresponds to the first segment in the template and
+rec1 corresponds to the last segment in the template
+</p>
+</li>
+<li><p> (F) rec1 and rec2 have same flag bit 0x2
+</p>
+</li>
+<li><p> (G) rec1 and rec2 have same flag bit 0x100
+</p>
+</li></ul>
+
+</li></ul>
+
+
+
+
+<h4>Timing and memory requirement of the pairing algorithm</h4>
+
+<p>The estimated timings and memory requirements on a modern Linux system are
+(those numbers may vary depending on your hardware and OS):
+</p>
+<pre>
+  nb of alignments |         time | required memory
+  -----------------+--------------+----------------
+        8 millions |       28 sec |          1.4 GB
+       16 millions |       58 sec |          2.8 GB
+       32 millions |        2 min |          5.6 GB
+       64 millions | 4 min 30 sec |         11.2 GB
+</pre>
+<p>This is for a <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> object coming from a file with an
+&quot;average nb of records per unique QNAME&quot; of 2.04. A value of 2 (which means
+the file contains only primary reads) is optimal for the pairing algorithm.
+A greater value, say &gt; 3, will significantly degrade its performance.
+An easy way to avoid this degradation is to load only primary alignments
+by setting the <code>isSecondaryAlignment</code> flag to <code>FALSE</code> in
+ScanBamParam().  See examples in <code>?<a href="../../GenomicAlignments/help/readGAlignmentPairs.html">readGAlignmentPairs</a></code> for how
+to do this.
+</p>
+
+
+
+<h4>Ambiguous pairing</h4>
+
+<p>The above algorithm will find almost all pairs unambiguously, even when
+the same pair of reads maps to several places in the genome. Note
+that, when a given pair maps to a single place in the genome, looking
+at (A) is enough to pair the 2 corresponding records. The additional
+conditions (B), (C), (D), (E), (F), and (G), are only here to help in
+the situation where more than 2 records share the same QNAME. And that
+works most of the times. Unfortunately there are still situations where
+this is not enough to solve the pairing problem unambiguously.
+</p>
+<p>For example, here are 4 records (loaded in a GAlignments object)
+that cannot be paired with the above algorithm:
+</p>
+<p>Showing the 4 records as a GAlignments object of length 4:
+</p>
+<pre>
+GAlignments with 4 alignments and 2 metadata columns:
+                    seqnames strand       cigar    qwidth     start    end
+                       &lt;Rle&gt;  &lt;Rle&gt; &lt;character&gt; &lt;integer&gt; &lt;integer&gt; &lt;integer&gt;
+  SRR031714.2658602    chr2R      +  21M384N16M        37   6983850 6984270
+  SRR031714.2658602    chr2R      +  21M384N16M        37   6983850 6984270
+  SRR031714.2658602    chr2R      -  13M372N24M        37   6983858 6984266
+  SRR031714.2658602    chr2R      -  13M378N24M        37   6983858 6984272
+                        width     njunc |     mrnm      mpos
+                    &lt;integer&gt; &lt;integer&gt; | &lt;factor&gt; &lt;integer&gt;
+  SRR031714.2658602       421         1 |    chr2R   6983858
+  SRR031714.2658602       421         1 |    chr2R   6983858
+  SRR031714.2658602       409         1 |    chr2R   6983850
+  SRR031714.2658602       415         1 |    chr2R   6983850
+</pre>
+<p>Note that the BAM fields show up in the following columns:
+</p>
+
+<ul>
+<li><p> QNAME: the names of the GAlignments object (unnamed col)
+</p>
+</li>
+<li><p> RNAME: the seqnames col
+</p>
+</li>
+<li><p> POS: the start col
+</p>
+</li>
+<li><p> RNEXT: the mrnm col
+</p>
+</li>
+<li><p> PNEXT: the mpos col
+</p>
+</li></ul>
+
+<p>As you can see, the aligner has aligned the same pair to the same
+location twice! The only difference between the 2 aligned pairs is in
+the CIGAR i.e. one end of the pair is aligned twice to the same location
+with exactly the same CIGAR while the other end of the pair is aligned
+twice to the same location but with slightly different CIGARs.
+</p>
+<p>Now showing the corresponding flag bits:
+</p>
+<pre>
+     isPaired isProperPair isUnmappedQuery hasUnmappedMate isMinusStrand
+[1,]        1            1               0               0             0
+[2,]        1            1               0               0             0
+[3,]        1            1               0               0             1
+[4,]        1            1               0               0             1
+     isMateMinusStrand isFirstMateRead isSecondMateRead isSecondaryAlignment
+[1,]                 1               0                1                    0
+[2,]                 1               0                1                    0
+[3,]                 0               1                0                    0
+[4,]                 0               1                0                    0
+     isNotPassingQualityControls isDuplicate
+[1,]                           0           0
+[2,]                           0           0
+[3,]                           0           0
+[4,]                           0           0
+</pre>
+<p>As you can see, rec(1) and rec(2) are second mates, rec(3) and rec(4)
+are both first mates. But looking at (A), (B), (C), (D), (E), (F), and (G),
+the pairs could be rec(1) &lt;-&gt; rec(3) and rec(2) &lt;-&gt; rec(4), or they could
+be rec(1) &lt;-&gt; rec(4) and rec(2) &lt;-&gt; rec(3). There is no way to
+disambiguate!
+</p>
+<p>So <code>findMateAlignment</code> is just ignoring (with a warning) those alignments
+with ambiguous pairing, and dumping them in a place from which they can be
+retrieved later (i.e. after <code>findMateAlignment</code> has returned) for
+further examination (see &quot;Dumped alignments&quot; subsection below for the details).
+In other words, alignments that cannot be paired unambiguously are not paired
+at all. Concretely, this means that <code><a href="../../GenomicAlignments/help/readGAlignmentPairs.html">readGAlignmentPairs</a></code> is
+guaranteed to return a <a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> object
+where every pair was formed in an non-ambiguous way. Note that, in practice,
+this approach doesn't seem to leave aside a lot of records because ambiguous
+pairing events seem pretty rare.
+</p>
+
+
+
+<h4>Dumped alignments</h4>
+
+<p>Alignments with ambiguous pairing are dumped in a place (&quot;the dump
+environment&quot;) from which they can be retrieved with
+<code>getDumpedAlignments()</code> after <code>findMateAlignment</code> has returned.
+</p>
+<p>Two additional utilities are provided for manipulation of the dumped
+alignments: <code>countDumpedAlignments</code> for counting them (a fast equivalent
+to <code>length(getDumpedAlignments())</code>), and <code>flushDumpedAlignments</code> to
+flush &quot;the dump environment&quot;. Note that &quot;the dump environment&quot; is
+automatically flushed at the beginning of a call to <code>findMateAlignment</code>.
+</p>
+
+
+
+<h3>Value</h3>
+
+<p>For <code>findMateAlignment</code>: An integer vector of the same length as
+<code>x</code>, containing only positive or NA values, where the i-th element
+is interpreted as follow:
+</p>
+
+<ul>
+<li><p> An NA value means that no mate or more than 1 mate was found for
+<code>x[i]</code>.
+</p>
+</li>
+<li><p> A non-NA value j gives the index in <code>x</code> of <code>x[i]</code>'s mate.
+</p>
+</li></ul>
+
+<p>For <code>makeGAlignmentPairs</code>: A <a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> object where the
+pairs are formed internally by calling <code>findMateAlignment</code> on <code>x</code>.
+</p>
+<p>For <code>getDumpedAlignments</code>: <code>NULL</code> or a <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> object
+containing the dumped alignments. See &quot;Dumped alignments&quot; subsection in
+the &quot;Details&quot; section above for the details.
+</p>
+<p>For <code>countDumpedAlignments</code>: The number of dumped alignments.
+</p>
+<p>Nothing for <code>flushDumpedAlignments</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Hervé Pagès</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> and <a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> objects.
+</p>
+</li>
+<li> <p><code><a href="../../GenomicAlignments/help/readGAlignments.html">readGAlignments</a></code> and <code><a href="../../GenomicAlignments/help/readGAlignmentPairs.html">readGAlignmentPairs</a></code>.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+bamfile &lt;- system.file("extdata", "ex1.bam", package="Rsamtools",
+                       mustWork=TRUE)
+param &lt;- ScanBamParam(what=c("flag", "mrnm", "mpos"))
+x &lt;- readGAlignments(bamfile, use.names=TRUE, param=param)
+
+mate &lt;- findMateAlignment(x)
+head(mate)
+table(is.na(mate))
+galp0 &lt;- makeGAlignmentPairs(x)
+galp &lt;- makeGAlignmentPairs(x, use.name=TRUE, use.mcols="flag")
+galp
+colnames(mcols(galp))
+colnames(mcols(first(galp)))
+colnames(mcols(last(galp)))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GenomicAlignments</em> version 1.30.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

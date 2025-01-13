@@ -1,0 +1,143 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Cache the execution of an expression in memory or on disk</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for cache_exec {xfun}"><tr><td>cache_exec {xfun}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Cache the execution of an expression in memory or on disk</h2>
+
+<h3>Description</h3>
+
+<p>Caching is based on the assumption that if the input does not change, the
+output will not change. After an expression is executed for the first time,
+its result will be saved (either in memory or on disk). The next run will be
+skipped and the previously saved result will be loaded directly if all
+external inputs of the expression remain the same, otherwise the cache will
+be invalidated and the expression will be re-executed.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+cache_exec(expr, path = "cache/", id = NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>expr</code></td>
+<td>
+<p>An R expression to be cached.</p>
+</td></tr>
+<tr valign="top"><td><code>path</code></td>
+<td>
+<p>The path to save the cache. The special value <code>":memory:"</code> means
+in-memory caching. If it is intended to be a directory path, please make
+sure to add a trailing slash.</p>
+</td></tr>
+<tr valign="top"><td><code>id</code></td>
+<td>
+<p>A stable and unique string identifier for the expression to be used
+to identify a unique copy of cache for the current expression from all
+cache files (or in-memory elements). If not provided, an MD5 digest of the
+<a href="../../base/html/deparse.html">deparse</a>d expression will be used, which means if the expression does not
+change (changes in comments or white spaces do not matter), the <code>id</code> will
+remain the same. This may not be a good default is two identical
+expressions are cached under the same <code>path</code>, because they could overwrite
+each other's cache when one expression's cache is invalidated, which may or
+may not be what you want. If you do not want that to happen, you need to
+manually provide an <code>id</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>More arguments to control the behavior of caching (see
+&lsquo;Details&rsquo;).</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Arguments supported in <code>...</code> include:
+</p>
+
+<ul>
+<li> <p><code>vars</code>: Names of local variables (which are created inside the expression).
+By default, local variables are automatically detected from the expression
+via <code><a href="../../codetools/help/codetools.html">codetools::findLocalsList()</a></code>. Locally created variables are cached along
+with the value of the expression.
+</p>
+</li>
+<li> <p><code>hash</code> and <code>extra</code>: R objects to be used to determine if cache should be
+loaded or invalidated. If (the MD5 hash of) the objects is not changed, the
+cache is loaded, otherwise the cache is invalidated and rebuilt. By default,
+<code>hash</code> is a list of values of global variables in the expression (i.e.,
+variables created outside the expression). Global variables are automatically
+detected by <code><a href="../../codetools/help/findGlobals.html">codetools::findGlobals()</a></code>. You can provide a vector of names to
+override the automatic detection if you want some specific global variables
+to affect caching, or the automatic detection is not reliable. You can also
+provide additional information via the <code>extra</code> argument. For example, if the
+expression reads an external file <code>foo.csv</code>, and you want the cache to be
+invalidated after the file is modified, you may use <code>extra = file.mtime("foo.csv")</code>.
+</p>
+</li>
+<li> <p><code>keep</code>: By default, only one copy of the cache corresponding to an <code>id</code>
+under <code>path</code> is kept, and all other copies for this <code>id</code> is automatically
+purged. If <code>TRUE</code>, all copies of the cache are kept. If <code>FALSE</code>, all copies
+are removed, which means the cache is <em>always</em> invalidated, and can be useful
+to force re-executing the expression.
+</p>
+</li>
+<li> <p><code>rw</code>: A list of functions to read/write the cache files. The list is of the
+form <code>list(load = function(file) {}, save = function(x, file) {})</code>. By
+default, <code><a href="../../base/html/readRDS.html">readRDS()</a></code> and <code><a href="../../base/html/readRDS.html">saveRDS()</a></code> are used. This argument can also take a
+character string to use some built-in read/write methods. Currently available
+methods include <code>rds</code> (the default), <code>raw</code> (using <code><a href="../../base/html/serialize.html">serialize()</a></code> and
+<code><a href="../../base/html/serialize.html">unserialize()</a></code>), and <code>qs</code> (using <code><a href="../../qs/help/qread.html">qs::qread()</a></code> and <code><a href="../../qs/help/qsave.html">qs::qsave()</a></code>). The <code>rds</code>
+and <code>raw</code> methods only use base R functions (the <code>rds</code> method generates
+smaller files because it uses compression, but is often slower than the <code>raw</code>
+method, which does not use compression). The <code>qs</code> method requires the
+<span class="pkg">qs</span> package, which can be much faster than base R methods and also
+supports compression.
+</p>
+</li></ul>
+
+
+
+<h3>Value</h3>
+
+<p>If the cache is found, the cached value of the expression will be
+loaded and returned (other local variables will also be lazy-loaded into
+the current environment as a side-effect). If cache does not exist, the
+expression is executed and its value is returned.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# the first run takes about 1 second
+y1 = xfun::cache_exec({
+    x = rnorm(1e+05)
+    Sys.sleep(1)
+    x
+}, path = ":memory:", id = "sim-norm")
+
+# the second run takes almost no time
+y2 = xfun::cache_exec({
+    # comments won't affect caching
+    x = rnorm(1e+05)
+    Sys.sleep(1)
+    x
+}, path = ":memory:", id = "sim-norm")
+
+# y1, y2, and x should be identical
+stopifnot(identical(y1, y2), identical(y1, x))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>xfun</em> version 0.46 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

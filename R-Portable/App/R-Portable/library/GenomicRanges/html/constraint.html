@@ -1,0 +1,397 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Enforcing constraints thru Constraint objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for Constraints {GenomicRanges}"><tr><td>Constraints {GenomicRanges}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Enforcing constraints thru Constraint objects</h2>
+
+<h3>Description</h3>
+
+<p>Attaching a Constraint object to an object of class A (the &quot;constrained&quot;
+object) is meant to be a convenient/reusable/extensible way to enforce
+a particular set of constraints on particular instances of A.
+</p>
+<p>THIS IS AN EXPERIMENTAL FEATURE AND STILL VERY MUCH A WORK-IN-PROGRESS!
+</p>
+
+
+<h3>Details</h3>
+
+<p>For the developer, using constraints is an alternative to the more
+traditional approach that consists in creating subclasses of A and
+implementing specific validity methods for each of them.
+However, using constraints offers the following advantages over the
+traditional approach:
+</p>
+
+<ul>
+<li><p> The traditional approach often tends to lead to a proliferation
+of subclasses of A.
+</p>
+</li>
+<li><p> Constraints can easily be re-used across different classes without
+the need to create any new class.
+</p>
+</li>
+<li><p> Constraints can easily be combined.
+</p>
+</li></ul>
+
+<p>All constraints are implemented as concrete subclasses of the Constraint
+class, which is a virtual class with no slots.
+Like the Constraint virtual class itself, concrete Constraint subclasses
+cannot have slots.
+</p>
+<p>Here are the 7 steps typically involved in the process of putting
+constraints on objects of class A:
+</p>
+
+<ol>
+<li><p> Add a slot named <code>constraint</code> to the definition of class A.
+The type of this slot must be Constraint_OR_NULL. Note that
+any subclass of A will inherit this slot.
+</p>
+</li>
+<li><p> Implements the <code>constraint()</code> accessors (getter and setter)
+for objects of class A. This is done by implementing the
+<code>"constraint"</code> method (getter) and replacement method (setter)
+for objects of class A (see the examples below). As a convenience
+to the user, the setter should also accept the name of a constraint
+(i.e. the name of its class) in addition to an instance of that
+class. Note that those accessors will work on instances of any
+subclass of A.
+</p>
+</li>
+<li><p> Modify the validity method for class A so it also returns the
+result of <code>checkConstraint(x, constraint(x))</code> (append this
+result to the result returned by the validity method).
+</p>
+</li>
+<li><p> Testing: Create <code>x</code>, an instance of class A (or subclass of A).
+By default there is no constraint on it (<code>constraint(x)</code> is
+<code>NULL</code>). <code>validObject(x)</code> should return <code>TRUE</code>.
+</p>
+</li>
+<li><p> Create a new constraint (MyConstraint) by extending the
+Constraint class, typically with
+<code>setClass("MyConstraint", contains="Constraint")</code>.
+This constraint is not enforcing anything yet so you could put
+it on <code>x</code> (with <code>constraint(x) &lt;- "MyConstraint"</code>),
+but not much would happen. In order to actually enforce something,
+a <code>"checkConstraint"</code> method for signature
+<code>c(x="A", constraint="MyConstraint")</code> needs to be implemented.
+</p>
+</li>
+<li><p> Implement a <code>"checkConstraint"</code> method for signature
+<code>c(x="A", constraint="MyConstraint")</code>. Like validity methods,
+<code>"checkConstraint"</code> methods must return <code>NULL</code> or
+a character vector describing the problems found.
+Like validity methods, they should never fail (i.e. they should
+never raise an error).
+Note that, alternatively, an existing constraint (e.g.
+SomeConstraint) can be adapted to work on objects of class A
+by just defining a new <code>"checkConstraint"</code> method for
+signature <code>c(x="A", constraint="SomeConstraint")</code>.
+Also, stricter constraints can be built on top of existing
+constraints by extending one or more existing constraints
+(see the examples below).
+</p>
+</li>
+<li><p> Testing: Try <code>constraint(x) &lt;- "MyConstraint"</code>. It will or
+will not work depending on whether <code>x</code> satisfies the
+constraint or not. In the former case, trying to modify <code>x</code>
+in a way that breaks the constraint on it will also raise an
+error.
+</p>
+</li></ol>
+
+
+
+<h3>Note</h3>
+
+<p>WARNING: This note is not true anymore as the <code>constraint</code> slot has
+been temporarily removed from <a href="../../GenomicRanges/help/GenomicRanges.html">GenomicRanges</a> objects (starting with
+package GenomicRanges &gt;= 1.7.9).
+</p>
+<p>Currently, only <a href="../../GenomicRanges/help/GenomicRanges.html">GenomicRanges</a> objects can be constrained, that is:
+</p>
+
+<ul>
+<li><p> they have a <code>constraint</code> slot;
+</p>
+</li>
+<li><p> they have <code>constraint()</code> accessors (getter and setter)
+for this slot;
+</p>
+</li>
+<li><p> their validity method has been modified so it also returns the
+result of <code>checkConstraint(x, constraint(x))</code>.
+</p>
+</li></ul>
+
+<p>More classes in the GenomicRanges and IRanges packages will support
+constraints in the near future.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>H. Pagès</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../methods/html/setClass.html">setClass</a></code>,
+<code><a href="../../methods/html/is.html">is</a></code>,
+<code><a href="../../methods/html/setMethod.html">setMethod</a></code>,
+<code><a href="../../methods/html/showMethods.html">showMethods</a></code>,
+<code><a href="../../methods/html/validObject.html">validObject</a></code>,
+<a href="../../GenomicRanges/help/GenomicRanges-class.html">GenomicRanges-class</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## The examples below show how to define and set constraints on
+## GenomicRanges objects. Note that this is how the constraint()
+## setter is defined for GenomicRanges objects:
+#setReplaceMethod("constraint", "GenomicRanges",
+#    function(x, value)
+#    {
+#        if (isSingleString(value))
+#            value &lt;- new(value)
+#        if (!is(value, "Constraint_OR_NULL"))
+#            stop("the supplied 'constraint' must be a ",
+#                 "Constraint object, a single string, or NULL")
+#        x@constraint &lt;- value
+#        validObject(x)
+#        x
+#    }
+#)
+
+#selectMethod("constraint", "GenomicRanges")  # the getter
+#selectMethod("constraint&lt;-", "GenomicRanges")  # the setter
+
+## We'll use the GRanges instance 'gr' created in the GRanges examples
+## to test our constraints:
+example(GRanges, echo=FALSE)
+gr
+#constraint(gr)
+
+## ---------------------------------------------------------------------
+## EXAMPLE 1: The HasRangeTypeCol constraint.
+## ---------------------------------------------------------------------
+## The HasRangeTypeCol constraint checks that the constrained object
+## has a unique "rangeType" metadata column and that this column
+## is a 'factor' Rle with no NAs and with the following levels
+## (in this order): gene, transcript, exon, cds, 5utr, 3utr.
+
+setClass("HasRangeTypeCol", contains="Constraint")
+
+## Like validity methods, "checkConstraint" methods must return NULL or
+## a character vector describing the problems found. They should never
+## fail i.e. they should never raise an error.
+setMethod("checkConstraint", c("GenomicRanges", "HasRangeTypeCol"),
+    function(x, constraint, verbose=FALSE)
+    {
+        x_mcols &lt;- mcols(x)
+        idx &lt;- match("rangeType", colnames(x_mcols))
+        if (length(idx) != 1L || is.na(idx)) {
+            msg &lt;- c("'mcols(x)' must have exactly 1 column ",
+                     "named \"rangeType\"")
+            return(paste(msg, collapse=""))
+        }
+        rangeType &lt;- x_mcols[[idx]]
+        .LEVELS &lt;- c("gene", "transcript", "exon", "cds", "5utr", "3utr")
+        if (!is(rangeType, "Rle") ||
+            S4Vectors:::anyMissing(runValue(rangeType)) ||
+            !identical(levels(rangeType), .LEVELS))
+        {
+            msg &lt;- c("'mcols(x)$rangeType' must be a ",
+                     "'factor' Rle with no NAs and with levels: ",
+                     paste(.LEVELS, collapse=", "))
+            return(paste(msg, collapse=""))
+        }
+        NULL
+    }
+)
+
+#\dontrun{
+#constraint(gr) &lt;- "HasRangeTypeCol"  # will fail
+#}
+checkConstraint(gr, new("HasRangeTypeCol"))  # with GenomicRanges &gt;= 1.7.9
+
+levels &lt;- c("gene", "transcript", "exon", "cds", "5utr", "3utr")
+rangeType &lt;- Rle(factor(c("cds", "gene"), levels=levels), c(8, 2))
+mcols(gr)$rangeType &lt;- rangeType
+#constraint(gr) &lt;- "HasRangeTypeCol"  # OK
+checkConstraint(gr, new("HasRangeTypeCol"))  # with GenomicRanges &gt;= 1.7.9
+
+## Use is() to check whether the object has a given constraint or not:
+#is(constraint(gr), "HasRangeTypeCol")  # TRUE
+#\dontrun{
+#mcols(gr)$rangeType[3] &lt;- NA  # will fail
+#}
+mcols(gr)$rangeType[3] &lt;- NA
+checkConstraint(gr, new("HasRangeTypeCol"))  # with GenomicRanges &gt;= 1.7.9
+
+## ---------------------------------------------------------------------
+## EXAMPLE 2: The GeneRanges constraint.
+## ---------------------------------------------------------------------
+## The GeneRanges constraint is defined on top of the HasRangeTypeCol
+## constraint. It checks that all the ranges in the object are of type
+## "gene".
+
+setClass("GeneRanges", contains="HasRangeTypeCol")
+
+## The checkConstraint() generic will check the HasRangeTypeCol constraint
+## first, and, only if it's statisfied, it will then check the GeneRanges
+## constraint.
+setMethod("checkConstraint", c("GenomicRanges", "GeneRanges"),
+    function(x, constraint, verbose=FALSE)
+    {
+        rangeType &lt;- mcols(x)$rangeType
+        if (!all(rangeType == "gene")) {
+            msg &lt;- c("all elements in 'mcols(x)$rangeType' ",
+                     "must be equal to \"gene\"")
+            return(paste(msg, collapse=""))
+        }
+        NULL
+    }
+)
+
+#\dontrun{
+#constraint(gr) &lt;- "GeneRanges"  # will fail
+#}
+checkConstraint(gr, new("GeneRanges"))  # with GenomicRanges &gt;= 1.7.9
+
+mcols(gr)$rangeType[] &lt;- "gene"
+## This replace the previous constraint (HasRangeTypeCol):
+#constraint(gr) &lt;- "GeneRanges"  # OK
+checkConstraint(gr, new("GeneRanges"))  # with GenomicRanges &gt;= 1.7.9
+
+#is(constraint(gr), "GeneRanges")  # TRUE
+## However, 'gr' still indirectly has the HasRangeTypeCol constraint
+## (because the GeneRanges constraint extends the HasRangeTypeCol
+## constraint):
+#is(constraint(gr), "HasRangeTypeCol")  # TRUE
+#\dontrun{
+#mcols(gr)$rangeType[] &lt;- "exon"  # will fail
+#}
+mcols(gr)$rangeType[] &lt;- "exon"
+checkConstraint(gr, new("GeneRanges"))  # with GenomicRanges &gt;= 1.7.9
+
+## ---------------------------------------------------------------------
+## EXAMPLE 3: The HasGCCol constraint.
+## ---------------------------------------------------------------------
+## The HasGCCol constraint checks that the constrained object has a
+## unique "GC" metadata column, that this column is of type numeric,
+## with no NAs, and that all the values in that column are &gt;= 0 and &lt;= 1.
+
+setClass("HasGCCol", contains="Constraint")
+
+setMethod("checkConstraint", c("GenomicRanges", "HasGCCol"),
+    function(x, constraint, verbose=FALSE)
+    {
+        x_mcols &lt;- mcols(x)
+        idx &lt;- match("GC", colnames(x_mcols))
+        if (length(idx) != 1L || is.na(idx)) {
+            msg &lt;- c("'mcols(x)' must have exactly ",
+                     "one column named \"GC\"")
+            return(paste(msg, collapse=""))
+        }
+        GC &lt;- x_mcols[[idx]]
+        if (!is.numeric(GC) ||
+            S4Vectors:::anyMissing(GC) ||
+            any(GC &lt; 0) || any(GC &gt; 1))
+        {
+            msg &lt;- c("'mcols(x)$GC' must be a numeric vector ",
+                     "with no NAs and with values between 0 and 1")
+            return(paste(msg, collapse=""))
+        }
+        NULL
+    }
+)
+
+## This replace the previous constraint (GeneRanges):
+#constraint(gr) &lt;- "HasGCCol"  # OK
+checkConstraint(gr, new("HasGCCol"))  # with GenomicRanges &gt;= 1.7.9
+
+#is(constraint(gr), "HasGCCol")  # TRUE
+#is(constraint(gr), "GeneRanges")  # FALSE
+#is(constraint(gr), "HasRangeTypeCol")  # FALSE
+
+## ---------------------------------------------------------------------
+## EXAMPLE 4: The HighGCRanges constraint.
+## ---------------------------------------------------------------------
+## The HighGCRanges constraint is defined on top of the HasGCCol
+## constraint. It checks that all the ranges in the object have a GC
+## content &gt;= 0.5.
+
+setClass("HighGCRanges", contains="HasGCCol")
+
+## The checkConstraint() generic will check the HasGCCol constraint
+## first, and, if it's statisfied, it will then check the HighGCRanges
+## constraint.
+setMethod("checkConstraint", c("GenomicRanges", "HighGCRanges"),
+    function(x, constraint, verbose=FALSE)
+    {
+        GC &lt;- mcols(x)$GC
+        if (!all(GC &gt;= 0.5)) {
+            msg &lt;- c("all elements in 'mcols(x)$GC' ",
+                     "must be &gt;= 0.5")
+            return(paste(msg, collapse=""))
+        }
+        NULL
+    }
+)
+
+#\dontrun{
+#constraint(gr) &lt;- "HighGCRanges"  # will fail
+#}
+checkConstraint(gr, new("HighGCRanges"))  # with GenomicRanges &gt;= 1.7.9
+mcols(gr)$GC[6:10] &lt;- 0.5
+#constraint(gr) &lt;- "HighGCRanges"  # OK
+checkConstraint(gr, new("HighGCRanges"))  # with GenomicRanges &gt;= 1.7.9
+
+#is(constraint(gr), "HighGCRanges")  # TRUE
+#is(constraint(gr), "HasGCCol")  # TRUE
+
+## ---------------------------------------------------------------------
+## EXAMPLE 5: The HighGCGeneRanges constraint.
+## ---------------------------------------------------------------------
+## The HighGCGeneRanges constraint is the combination (AND) of the
+## GeneRanges and HighGCRanges constraints.
+
+setClass("HighGCGeneRanges", contains=c("GeneRanges", "HighGCRanges"))
+
+## No need to define a method for this constraint: the checkConstraint()
+## generic will automatically check the GeneRanges and HighGCRanges
+## constraints.
+
+#constraint(gr) &lt;- "HighGCGeneRanges"  # OK
+checkConstraint(gr, new("HighGCGeneRanges"))  # with GenomicRanges &gt;= 1.7.9
+
+#is(constraint(gr), "HighGCGeneRanges")  # TRUE
+#is(constraint(gr), "HighGCRanges")  # TRUE
+#is(constraint(gr), "HasGCCol")  # TRUE
+#is(constraint(gr), "GeneRanges")  # TRUE
+#is(constraint(gr), "HasRangeTypeCol")  # TRUE
+
+## See how all the individual constraints are checked (from less
+## specific to more specific constraints):
+#checkConstraint(gr, constraint(gr), verbose=TRUE)
+checkConstraint(gr, new("HighGCGeneRanges"), verbose=TRUE)  # with
+                                                            # GenomicRanges
+                                                            # &gt;= 1.7.9
+
+## See all the "checkConstraint" methods:
+showMethods("checkConstraint")
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GenomicRanges</em> version 1.46.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

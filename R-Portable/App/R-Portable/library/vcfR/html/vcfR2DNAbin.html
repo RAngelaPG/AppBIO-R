@@ -1,0 +1,178 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Convert vcfR to DNAbin</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for vcfR2DNAbin {vcfR}"><tr><td>vcfR2DNAbin {vcfR}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Convert vcfR to DNAbin</h2>
+
+<h3>Description</h3>
+
+<p>Convert objects of class vcfR to objects of class ape::DNAbin
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+vcfR2DNAbin(
+  x,
+  extract.indels = TRUE,
+  consensus = FALSE,
+  extract.haps = TRUE,
+  unphased_as_NA = TRUE,
+  asterisk_as_del = FALSE,
+  ref.seq = NULL,
+  start.pos = NULL,
+  verbose = TRUE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>an object of class chromR or vcfR</p>
+</td></tr>
+<tr valign="top"><td><code>extract.indels</code></td>
+<td>
+<p>logical indicating to remove indels (TRUE) or to include them while retaining alignment</p>
+</td></tr>
+<tr valign="top"><td><code>consensus</code></td>
+<td>
+<p>logical, indicates whether an IUPAC ambiguity code should be used for diploid heterozygotes</p>
+</td></tr>
+<tr valign="top"><td><code>extract.haps</code></td>
+<td>
+<p>logical specifying whether to separate each genotype into alleles based on a delimiting character</p>
+</td></tr>
+<tr valign="top"><td><code>unphased_as_NA</code></td>
+<td>
+<p>logical indicating how to handle alleles in unphased genotypes</p>
+</td></tr>
+<tr valign="top"><td><code>asterisk_as_del</code></td>
+<td>
+<p>logical indicating that the asterisk allele should be converted to a deletion (TRUE) or NA (FALSE)</p>
+</td></tr>
+<tr valign="top"><td><code>ref.seq</code></td>
+<td>
+<p>reference sequence (DNAbin) for the region being converted</p>
+</td></tr>
+<tr valign="top"><td><code>start.pos</code></td>
+<td>
+<p>chromosomal position for the start of the ref.seq</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>logical specifying whether to produce verbose output</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Objects of class <strong>DNAbin</strong>, from the package ape, store nucleotide sequence information.
+Typically, nucleotide sequence information contains all the nucleotides within a region, for example, a gene.
+Because most sites are typically invariant, this results in a large amount of redundant data.
+This is why files in the vcf format only contain information on variant sites, it results in a smaller file.
+Nucleotide sequences can be generated which only contain variant sites.
+However, some applications require the invariant sites.
+For example, inference of phylogeny based on maximum likelihood or Bayesian methods requires invariant sites.
+The function vcfR2DNAbin therefore includes a number of options in attempt to accomodate various scenarios.
+</p>
+<p>The presence of indels (insertions or deletions)in a sequence typically presents a data analysis problem.
+Mutation models typically do not accomodate this data well.
+For now, the only option is for indels to be omitted from the conversion of vcfR to DNAbin objects.
+The option <strong>extract.indels</strong> was included to remind us of this, and to provide a placeholder in case we wish to address this in the future.
+</p>
+<p>The <strong>ploidy</strong> of the samples is inferred from the first non-missing genotype.
+All samples and all variants within each sample are assumed to be of the same ploid.
+</p>
+<p>Conversion of <strong>haploid data</strong> is fairly straight forward.
+The options <code>consensus</code> and <code>extract.haps</code> are not relevant here.
+When vcfR2DNAbin encounters missing data in the vcf data (NA) it is coded as an ambiguous nucleotide (n) in the DNAbin object.
+When no reference sequence is provided (option <code>ref.seq</code>), a DNAbin object consisting only of variant sites is created.
+When a reference sequence and a starting position are provided the entire sequence, including invariant sites, is returned.
+The reference sequence is used as a starting point and variable sitees are added to this.
+Because the data in the vcfR object will be using a chromosomal coordinate system, we need to tell the function where on this chromosome the reference sequence begins.
+</p>
+<p>Conversion of <strong>diploid data</strong> presents a number of scenarios.
+When the option <code>consensus</code> is TRUE and <code>extract.haps</code> is FALSE, each genotype is split into two alleles and the two alleles are converted into their IUPAC ambiguity code.
+This results in one sequence for each diploid sample.
+This may be an appropriate path when you have unphased data.
+Note that functions called downstream of this choice may handle IUPAC ambiguity codes in unexpected manners.
+When extract.haps is set to TRUE, each genotype is split into two alleles.
+These alleles are inserted into two sequences.
+This results in two sequences per diploid sample.
+Note that this really only makes sense if you have phased data.
+The options ref.seq and start.pos are used as in halpoid data.
+</p>
+<p>When a variant overlaps a deletion it may be encoded by an <strong>asterisk allele (*)</strong>.
+The GATK site covers this in a post on <a href="https://gatk.broadinstitute.org/hc/en-us/articles/360035531912-Spanning-or-overlapping-deletions-allele-">Spanning or overlapping deletions</a> ].
+This is handled in vcfR by allowing the user to decide how it is handled with the paramenter <code>asterisk_as_del</code>.
+When <code>asterisk_as_del</code> is TRUE this allele is converted into a deletion ('-').
+When <code>asterisk_as_del</code> is FALSE the asterisk allele is converted to NA.
+If <code>extract.indels</code> is set to FALSE it should override this decision.
+</p>
+<p>Conversion of <strong>polyploid data</strong> is currently not supported.
+However, I have made some attempts at accomodating polyploid data.
+If you have polyploid data and are interested in giving this a try, feel free.
+But be prepared to scrutinize the output to make sure it appears reasonable.
+</p>
+<p>Creation of DNAbin objects from large chromosomal regions may result in objects which occupy large amounts of memory.
+If in doubt, begin by subsetting your data and the scale up to ensure you do not run out of memory.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><a href="https://cran.r-project.org/package=ape">ape</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(ape)
+data(vcfR_test)
+
+# Create an example reference sequence.
+nucs &lt;- c('a','c','g','t')
+set.seed(9)
+myRef &lt;- as.DNAbin(matrix(nucs[round(runif(n=20, min=0.5, max=4.5))], nrow=1))
+
+# Recode the POS data for a smaller example.
+set.seed(99)
+vcfR_test@fix[,'POS'] &lt;- sort(sample(10:20, size=length(getPOS(vcfR_test))))
+
+# Just vcfR
+myDNA &lt;- vcfR2DNAbin(vcfR_test)
+seg.sites(myDNA)
+image(myDNA)
+
+# ref.seq, no start.pos
+myDNA &lt;- vcfR2DNAbin(vcfR_test, ref.seq = myRef)
+seg.sites(myDNA)
+image(myDNA)
+
+# ref.seq, start.pos = 4.
+# Note that this is the same as the previous example but the variants are shifted.
+myDNA &lt;- vcfR2DNAbin(vcfR_test, ref.seq = myRef, start.pos = 4)
+seg.sites(myDNA)
+image(myDNA)
+
+# ref.seq, no start.pos, unphased_as_NA = FALSE
+myDNA &lt;- vcfR2DNAbin(vcfR_test, unphased_as_NA = FALSE, ref.seq = myRef)
+seg.sites(myDNA)
+image(myDNA)
+
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>vcfR</em> version 1.15.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

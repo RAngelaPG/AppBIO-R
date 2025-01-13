@@ -1,0 +1,354 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: GFFFile objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for GFFFile-class {rtracklayer}"><tr><td>GFFFile-class {rtracklayer}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>GFFFile objects</h2>
+
+<h3>Description</h3>
+
+<p>These functions support the import and export of the GFF format, of
+which there are three versions and several flavors.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S4 method for signature 'GFFFile,ANY,ANY'
+import(con, format, text,
+           version = c("", "1", "2", "3"),
+           genome = NA, colnames = NULL, which = NULL,
+           feature.type = NULL, sequenceRegionsAsSeqinfo = FALSE)
+import.gff(con, ...)
+import.gff1(con, ...)
+import.gff2(con, ...)
+import.gff3(con, ...)
+
+## S4 method for signature 'ANY,GFFFile,ANY'
+export(object, con, format, ...)
+## S4 method for signature 'GenomicRanges,GFFFile,ANY'
+export(object, con, format,
+                   version = c("1", "2", "3"),
+                   source = "rtracklayer", append = FALSE, index = FALSE)
+## S4 method for signature 'GenomicRangesList,GFFFile,ANY'
+export(object, con, format, ...)
+export.gff(object, con, ...)
+export.gff1(object, con, ...)
+export.gff2(object, con, ...)
+export.gff3(object, con, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>con</code></td>
+<td>
+<p>A path, URL, connection or <code>GFFFile</code> object. For the
+functions ending in <code>.gff</code>, <code>.gff1</code>, etc, the file format
+is indicated by the function name. For the base <code>export</code> and
+<code>import</code> functions, the format must be indicated another
+way. If <code>con</code> is a path, URL or connection, either the file
+extension or the <code>format</code> argument needs to be one of
+&ldquo;gff&rdquo;, &ldquo;gff1&rdquo; &ldquo;gff2&rdquo;, &ldquo;gff3&rdquo;,
+&ldquo;gvf&rdquo;, or &ldquo;gtf&rdquo;. Compressed files (&ldquo;gz&rdquo;,
+&ldquo;bz2&rdquo; and &ldquo;xz&rdquo;) are handled transparently.
+</p>
+</td></tr>
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>The object to export, should be a <code>GRanges</code> or
+something coercible to a <code>GRanges</code>. If the object has a method
+for <code>asGFF</code>, it is called prior to coercion. This makes it
+possible to export a <code>GRangesList</code> or <code>TxDb</code> in a
+way that preserves the hierarchical structure. For exporting
+multiple tracks, in the UCSC track line metaformat, pass a
+<code>GenomicRangesList</code>, or something coercible to one.
+</p>
+</td></tr>
+<tr valign="top"><td><code>format</code></td>
+<td>
+<p>If not missing, should be one of &ldquo;gff&rdquo;, &ldquo;gff1&rdquo;
+&ldquo;gff2&rdquo;, &ldquo;gff3&rdquo;, &ldquo;gvf&rdquo;, or &ldquo;gtf&rdquo;.
+</p>
+</td></tr>
+<tr valign="top"><td><code>version</code></td>
+<td>
+<p>If the format is given as &ldquo;gff&rdquo;, i.e., it does
+not specify a version, then this should indicate the GFF version as
+one of &ldquo;&rdquo; (for import only, from the <code>gff-version</code>
+directive in the file or &ldquo;1&rdquo; if none), &ldquo;1&rdquo;, &ldquo;2&rdquo;
+or &ldquo;3&rdquo;.
+</p>
+</td></tr>
+<tr valign="top"><td><code>text</code></td>
+<td>
+<p>If <code>con</code> is missing, a character vector to use as the
+input.
+</p>
+</td></tr>
+<tr valign="top"><td><code>genome</code></td>
+<td>
+<p>The identifier of a genome, or a <code>Seqinfo</code>, or <code>NA</code> if
+unknown. Typically, this is a UCSC identifier like &ldquo;hg19&rdquo;. An
+attempt will be made to derive the <code>Seqinfo</code> on the return
+value using either an installed BSgenome package or UCSC, if network
+access is available.
+</p>
+</td></tr>
+<tr valign="top"><td><code>colnames</code></td>
+<td>
+<p>A character vector naming the columns to parse. These
+should name either fixed fields, like <code>source</code> or
+<code>type</code>, or, for GFF2 and GFF3, any attribute.
+</p>
+</td></tr>
+<tr valign="top"><td><code>which</code></td>
+<td>
+<p>A <code>GRanges</code> or other range-based object supported
+by <code><a href="../../IRanges/help/findOverlaps.html">findOverlaps</a></code>. Only the intervals in the file
+overlapping the given ranges are returned. This is much more efficient
+when the file is indexed with the tabix utility.
+</p>
+</td></tr>
+<tr valign="top"><td><code>feature.type</code></td>
+<td>
+<p><code>NULL</code> (the default) or a character vector of
+valid feature types. If not <code>NULL</code>, then only the features of the
+specified type(s) are imported.
+</p>
+</td></tr>
+<tr valign="top"><td><code>sequenceRegionsAsSeqinfo</code></td>
+<td>
+<p>If <code>TRUE</code>, attempt to infer the
+<code>Seqinfo</code> (<code>seqlevels</code> and <code>seqlengths</code>) from the
+&ldquo;##sequence-region&rdquo; directives as specified by GFF3.
+</p>
+</td></tr>
+<tr valign="top"><td><code>source</code></td>
+<td>
+<p>The value for the source column in GFF. This is
+typically the name of the package or algorithm that generated the
+feature.
+</p>
+</td></tr>
+<tr valign="top"><td><code>index</code></td>
+<td>
+<p>If <code>TRUE</code>, automatically compress and index the
+output file with bgzf and tabix. Note that tabix indexing will
+sort the data by chromosome and start. Tabix supports a
+single track in a file.
+</p>
+</td></tr>
+<tr valign="top"><td><code>append</code></td>
+<td>
+<p>If <code>TRUE</code>, and <code>con</code> points to a file path,
+the data is appended to the file. Obviously, if <code>con</code> is a
+connection, the data is always appended.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Arguments to pass down to methods to other methods. For
+import, the flow eventually reaches the <code>GFFFile</code> method on
+<code>import</code>. When <code>trackLine</code> is
+<code>TRUE</code> or the target format is BED15, the arguments are passed
+through <code>export.ucsc</code>, so track line parameters are supported.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The Generic Feature Format (GFF) format is a tab-separated table of
+intervals. There are three different versions of GFF, and they all
+have the same number of columns. In GFF1, the last column is a
+grouping factor, whereas in the later versions the last column holds
+application-specific attributes, with some conventions defined for
+those commonly used. This attribute support facilitates specifying
+extensions to the format. These include GTF (Gene Transfer Format, an
+extension of GFF2) and GVF (Genome Variation Format, an extension of
+GFF3).  The rtracklayer package recognizes the &ldquo;gtf&rdquo; and
+&ldquo;gvf&rdquo; extensions and parses the extra attributes into columns
+of the result; however, it does not perform any extension-specific
+processing. Both GFF1 and GFF2 have been proclaimed obsolete; however,
+the UCSC Genome Browser only supports GFF1 (and GTF), and GFF2 is still
+in broad use.
+</p>
+<p>GFF is distinguished from the simpler BED format by its flexible
+attribute support and its hierarchical structure, as specified by the
+<code>group</code> column in GFF1 (only one level of grouping) and the
+<code>Parent</code> attribute in GFF3. GFF2 does not specify a convention
+for representing hierarchies, although its GTF extension provides this
+for gene structures. The combination of support for hierarchical data
+and arbitrary descriptive attributes makes GFF(3) the preferred format
+for representing gene models.
+</p>
+<p>Although GFF features a <code>score</code> column, large quantitative data
+belong in a format like <a href="../../rtracklayer/help/BigWigFile.html">BigWig</a> and alignments from
+high-throughput experiments belong in
+<a href="../../Rsamtools/help/BamFile.html">BAM</a>. For variants, the VCF format (supported
+by the VariantAnnotation package) seems to be more widely adopted than
+the GVF extension.
+</p>
+<p>A note on the UCSC track line metaformat: track lines are a means for
+passing hints to visualization tools like the UCSC Genome Browser and
+the Integrated Genome Browser (IGB), and they allow multiple tracks to
+be concatenated in the same file. Since GFF is not a UCSC format, it
+is not common to annotate GFF data with track lines, but rtracklayer
+still supports it. To export or import GFF data in the track line
+format, call <code><a href="../../rtracklayer/help/export.ucsc.html">export.ucsc</a></code> or <code><a href="../../rtracklayer/help/import.ucsc.html">import.ucsc</a></code>.
+</p>
+<p>The following is the mapping of GFF elements to a <code>GRanges</code> object.
+NA values are allowed only where indicated.
+These appear as a &ldquo;.&rdquo; in the file. GFF requires that all columns
+are included, so <code>export</code> generates defaults for missing columns.
+</p>
+
+<dl>
+<dt>seqid, start, end</dt><dd><p>the <code>ranges</code> component.</p>
+</dd>
+<dt>source</dt><dd><p>character vector in the <code>source</code>
+column; defaults to &ldquo;rtracklayer&rdquo; on export.
+</p>
+</dd>
+<dt>type</dt><dd><p>character vector in the <code>type</code> column; defaults
+to &ldquo;sequence_feature&rdquo; in the output, i.e., SO:0000110.
+</p>
+</dd>
+<dt>score</dt><dd><p>numeric vector (NA's allowed) in the <code>score</code>
+column, accessible via the <code>score</code> accessor; defaults
+to <code>NA</code> upon export.
+</p>
+</dd>
+<dt>strand</dt><dd><p>strand factor (NA's allowed) in the <code>strand</code>
+column, accessible via the <code>strand</code> accessor; defaults
+to <code>NA</code> upon export.
+</p>
+</dd>
+<dt>phase</dt><dd><p>integer vector, either 0, 1 or 2 (NA's allowed);
+defaults to <code>NA</code> upon export.
+</p>
+</dd>
+<dt>group</dt><dd><p>a factor (GFF1 only); defaults to the <code>seqid</code>
+(e.g., chromosome) on export.
+</p>
+</dd>
+</dl>
+
+<p>In GFF versions 2 and 3, attributes map to arbitrary columns in the
+result. In GFF3, some attributes (<code>Parent</code>, <code>Alias</code>,
+<code>Note</code>, <code>DBxref</code> and <code>Ontology_term</code>) can have
+multiple, comma-separated values; these columns are thus always
+<code>CharacterList</code> objects.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>GRanges</code> with the metadata columns described in the details.
+</p>
+
+
+<h3>GFFFile objects</h3>
+
+<p>The <code>GFFFile</code> class extends <code><a href="../../BiocIO/help/BiocFile-class.html">BiocFile</a></code>
+and is a formal represention of a resource in the GFF format.
+To cast a path, URL or connection to a <code>GFFFile</code>, pass it to
+the <code>GFFFile</code> constructor. The <code>GFF1File</code>, <code>GFF2File</code>,
+<code>GFF3File</code>, <code>GVFFile</code> and <code>GTFFile</code> classes all extend
+<code>GFFFile</code> and indicate a particular version of the format.
+</p>
+<p>It has the following utility methods:
+</p>
+
+<dl>
+<dt></dt><dd><p><code>genome</code>: Gets the genome identifier from
+the &ldquo;genome-build&rdquo; header directive.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Michael Lawrence</p>
+
+
+<h3>References</h3>
+
+
+<dl>
+<dt>GFF1, GFF2</dt><dd>
+<p><a href="http://www.sanger.ac.uk/resources/software/gff/spec.html">http://www.sanger.ac.uk/resources/software/gff/spec.html</a>
+</p>
+</dd>
+<dt>GFF3</dt><dd><p><a href="http://www.sequenceontology.org/gff3.shtml">http://www.sequenceontology.org/gff3.shtml</a></p>
+</dd>
+<dt>GVF</dt><dd><p><a href="http://www.sequenceontology.org/resources/gvf.html">http://www.sequenceontology.org/resources/gvf.html</a></p>
+</dd>
+<dt>GTF</dt><dd><p><a href="http://mblab.wustl.edu/GTF22.html">http://mblab.wustl.edu/GTF22.html</a></p>
+</dd>
+</dl>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+  test_path &lt;- system.file("tests", package = "rtracklayer")
+  test_gff3 &lt;- file.path(test_path, "genes.gff3")
+
+  ## basic import
+  test &lt;- import(test_gff3)
+  test
+
+  ## import.gff functions
+  import.gff(test_gff3)
+  import.gff3(test_gff3)
+
+  ## GFFFile derivatives
+  test_gff_file &lt;- GFF3File(test_gff3)
+  import(test_gff_file)
+  test_gff_file &lt;- GFFFile(test_gff3)
+  import(test_gff_file)
+  test_gff_file &lt;- GFFFile(test_gff3, version = "3")
+  import(test_gff_file)
+
+  ## from connection
+  test_gff_con &lt;- file(test_gff3)
+  test &lt;- import(test_gff_con, format = "gff")
+
+  ## various arguments
+  import(test_gff3, genome = "hg19")
+  import(test_gff3, colnames = character())
+  import(test_gff3, colnames = c("type", "geneName"))
+
+  ## 'which'
+  which &lt;- GRanges("chr10:90000-93000")
+  import(test_gff3, which = which)
+
+## Not run: 
+  ## 'append'
+  test_gff3_out &lt;- file.path(tempdir(), "genes.gff3")
+
+  export(test[seqnames(test) == "chr10"], test_gff3_out)
+  export(test[seqnames(test) == "chr12"], test_gff3_out, append = TRUE)
+  import(test_gff3_out)
+  
+  ## 'index'
+  export(test, test_gff3_out, index = TRUE)
+  test_bed_gz &lt;- paste(test_gff3_out, ".gz", sep = "")
+  import(test_bed_gz, which = which)
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rtracklayer</em> version 1.54.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

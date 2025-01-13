@@ -1,0 +1,690 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: GRanges objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for GRanges-class {GenomicRanges}"><tr><td>GRanges-class {GenomicRanges}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>GRanges objects</h2>
+
+<h3>Description</h3>
+
+<p>The GRanges class is a container for the genomic locations and
+their associated annotations.
+</p>
+
+
+<h3>Details</h3>
+
+<p>GRanges is a vector of genomic locations and associated
+annotations. Each element in the vector is comprised of a sequence name,
+an interval, a <a href="../../BiocGenerics/html/strand.html">strand</a>, and optional metadata columns (e.g. score, GC
+content, etc.). This information is stored in four components:
+</p>
+
+<dl>
+<dt><code>seqnames</code></dt><dd><p>a 'factor' <a href="../../S4Vectors/help/Rle.html">Rle</a> object
+containing the sequence names.</p>
+</dd>
+<dt><code>ranges</code></dt><dd><p>an <a href="../../IRanges/help/IRanges.html">IRanges</a> object containing
+the ranges.</p>
+</dd>
+<dt><code>strand</code></dt><dd><p>a 'factor' <a href="../../S4Vectors/help/Rle.html">Rle</a> object containing
+the <a href="../../BiocGenerics/html/strand.html">strand</a> information.</p>
+</dd>
+<dt><code>mcols</code></dt><dd><p>a <a href="../../S4Vectors/help/DataFrame.html">DataFrame</a> object
+containing the metadata columns. Columns cannot be named
+<code>"seqnames"</code>, <code>"ranges"</code>, <code>"strand"</code>,
+<code>"seqlevels"</code>, <code>"seqlengths"</code>, <code>"isCircular"</code>,
+<code>"start"</code>, <code>"end"</code>, <code>"width"</code>, or <code>"element"</code>.</p>
+</dd>
+<dt><code>seqinfo</code></dt><dd><p>a <a href="../../GenomeInfoDb/html/Seqinfo-class.html">Seqinfo</a> object containing information
+about the set of genomic sequences present in the GRanges object.</p>
+</dd>
+</dl>
+
+
+
+<h3>Constructor</h3>
+
+
+<dl>
+<dt></dt><dd>
+<p><code>GRanges(seqnames=NULL, ranges=NULL, strand=NULL,
+                    ..., seqinfo=NULL, seqlengths=NULL)</code>:
+Creates a GRanges object.
+</p>
+
+<dl>
+<dt><code>seqnames</code></dt><dd>
+<p><code>NULL</code>, or an <a href="../../S4Vectors/help/Rle.html">Rle</a> object, character vector,
+or factor containing the sequence names.
+</p>
+</dd>
+<dt><code>ranges</code></dt><dd>
+<p><code>NULL</code>, or an <a href="../../IRanges/help/IRanges.html">IRanges</a> object containing the
+ranges.
+</p>
+</dd>
+<dt><code>strand</code></dt><dd>
+<p><code>NULL</code>, or an <a href="../../S4Vectors/help/Rle.html">Rle</a> object, character vector,
+or factor containing the strand information.
+</p>
+</dd>
+<dt><code>...</code></dt><dd>
+<p>Metadata columns to set on the GRanges object. All the metadata
+columns must be vector-like objects of the same length as the object
+to construct. They cannot be named <code>"start"</code>, <code>"end"</code>,
+<code>"width"</code>, or <code>"element"</code>.
+</p>
+</dd>
+<dt><code>seqinfo</code></dt><dd>
+<p>Either <code>NULL</code>, or a <a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> object,
+or a character vector of unique sequence names (a.k.a.
+<em>seqlevels</em>), or a named numeric vector of sequence lengths.
+When not <code>NULL</code>, <code>seqinfo</code> must be compatible with the
+sequence names in <code>seqnames</code>, that is, it must have one entry
+for each unique sequence name in <code>seqnames</code>. Note that it can
+have additional entries i.e. entries for seqlevels not present
+in <code>seqnames</code>.
+</p>
+</dd>
+<dt><code>seqlengths</code></dt><dd>
+<p><code>NULL</code>, or an integer vector named with <code>levels(seqnames)</code>
+and containing the lengths (or NA) for each level in
+<code>levels(seqnames)</code>.
+</p>
+</dd>
+</dl>
+
+<p>If <code>ranges</code> is not supplied and/or NULL then the constructor
+proceeds in 2 steps:
+</p>
+
+<ol>
+<li><p> An initial GRanges object is created with
+<code>as(seqnames, "GRanges")</code>.
+</p>
+</li>
+<li><p> Then this GRanges object is updated according to whatever
+non-NULL remaining arguments were passed to the call to
+<code>GRanges()</code>.
+</p>
+</li></ol>
+
+<p>As a consequence of this behavior, <code>GRanges(x)</code> is equivalent to
+<code>as(x, "GRanges")</code>.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Accessors</h3>
+
+<p>In the following code snippets, <code>x</code> is a GRanges object.
+</p>
+
+<dl>
+<dt></dt><dd>
+<p><code>length(x)</code>:
+Get the number of elements.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>seqnames(x)</code>, <code>seqnames(x) &lt;- value</code>:
+Get or set the sequence names.
+<code>value</code> can be an <a href="../../S4Vectors/help/Rle.html">Rle</a> object, a character vector,
+or a factor.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>ranges(x)</code>, <code>ranges(x) &lt;- value</code>:
+Get or set the ranges. <code>value</code> can be an
+<a href="../../IRanges/help/IntegerRanges.html">IntegerRanges</a> object.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>start(x)</code>, <code>start(x) &lt;- value</code>:
+Get or set <code>start(ranges(x))</code>.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>end(x)</code>, <code>end(x) &lt;- value</code>:
+Get or set <code>end(ranges(x))</code>.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>width(x)</code>, <code>width(x) &lt;- value</code>:
+Get or set <code>width(ranges(x))</code>.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>strand(x)</code>, <code>strand(x) &lt;- value</code>:
+Get or set the strand. <code>value</code> can be an Rle object, character
+vector, or factor.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>names(x)</code>, <code>names(x) &lt;- value</code>:
+Get or set the names of the elements.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>mcols(x, use.names=FALSE)</code>, <code>mcols(x) &lt;- value</code>:
+Get or set the metadata columns.
+If <code>use.names=TRUE</code> and the metadata columns are not <code>NULL</code>,
+then the names of <code>x</code> are propagated as the row names of the
+returned <a href="../../MultiAssayExperiment/html/reexports.html">DataFrame</a> object.
+When setting the metadata columns, the supplied value must be <code>NULL</code>
+or a data-frame-like object (i.e. <a href="../../MultiAssayExperiment/html/reexports.html">DataFrame</a> or data.frame)
+holding element-wise metadata.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>elementMetadata(x)</code>, <code>elementMetadata(x) &lt;- value</code>,
+<code>values(x)</code>, <code>values(x) &lt;- value</code>:
+Alternatives to <code>mcols</code> functions. Their use is discouraged.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>seqinfo(x)</code>, <code>seqinfo(x) &lt;- value</code>:
+Get or set the information about the underlying sequences.
+<code>value</code> must be a <a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> object.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>seqlevels(x)</code>,
+<code>seqlevels(x, pruning.mode=c("error", "coarse", "fine", "tidy")) &lt;- value</code>:
+Get or set the sequence levels.
+<code>seqlevels(x)</code> is equivalent to <code>seqlevels(seqinfo(x))</code>
+or to <code>levels(seqnames(x))</code>, those 2 expressions being
+guaranteed to return identical character vectors on a GRanges object.
+<code>value</code> must be a character vector with no NAs.
+See <code>?<a href="../../GenomeInfoDb/html/seqinfo.html">seqlevels</a></code> for more information.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>seqlengths(x)</code>, <code>seqlengths(x) &lt;- value</code>:
+Get or set the sequence lengths.
+<code>seqlengths(x)</code> is equivalent to <code>seqlengths(seqinfo(x))</code>.
+<code>value</code> can be a named non-negative integer or numeric vector
+eventually with NAs.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>isCircular(x)</code>, <code>isCircular(x) &lt;- value</code>:
+Get or set the circularity flags.
+<code>isCircular(x)</code> is equivalent to <code>isCircular(seqinfo(x))</code>.
+<code>value</code> must be a named logical vector eventually with NAs.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>genome(x)</code>, <code>genome(x) &lt;- value</code>:
+Get or set the genome identifier or assembly name for each sequence.
+<code>genome(x)</code> is equivalent to <code>genome(seqinfo(x))</code>.
+<code>value</code> must be a named character vector eventually with NAs.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>seqlevelsStyle(x)</code>, <code>seqlevelsStyle(x) &lt;- value</code>:
+Get or set the seqname style for <code>x</code>.
+See the <a href="../../GenomeInfoDb/help/seqlevelsStyle.html">seqlevelsStyle</a> generic getter and setter
+in the <span class="pkg">GenomeInfoDb</span> package for more information.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>score(x), score(x) &lt;- value</code>: Get or set the &ldquo;score&rdquo;
+column from the element metadata.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>granges(x, use.names=FALSE, use.mcols=FALSE)</code>: Squeeze the genomic
+ranges out of <a href="../../GenomicRanges/help/GenomicRanges.html">GenomicRanges</a> object <code>x</code> and return them in a
+GRanges object <em>parallel</em> to <code>x</code> (i.e. same length as <code>x</code>).
+If <code>use.mcols</code> is <code>TRUE</code>, the metadata columns are propagated.
+If <code>x</code> is a <a href="../../GenomicRanges/help/GenomicRanges.html">GenomicRanges</a> derivative with <em>extra column
+slots</em>, these will be propagated as metadata columns on the returned
+GRanges object.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Coercion</h3>
+
+<p>In the code snippets below, <code>x</code> is a GRanges object.
+</p>
+
+<dl>
+<dt></dt><dd>
+<p><code>as(from, "GRanges")</code>: Creates a GRanges object from a character
+vector, a factor, or <a href="../../IRanges/help/IntegerRangesList.html">IntegerRangesList</a> object.
+</p>
+<p>When <code>from</code> is a character vector (or a factor), each element
+in it must represent a genomic range in format <code>chr1:2501-2800</code>
+(unstranded range) or <code>chr1:2501-2800:+</code> (stranded range).
+<code>..</code> is also supported as a separator between the start and end
+positions. Strand can be <code>+</code>, <code>-</code>, <code>*</code>, or missing.
+The names on <code>from</code> are propagated to the returned GRanges object.
+See <code>as.character()</code> and <code>as.factor()</code> below for the
+reverse transformations.
+</p>
+<p>Coercing a data.frame or DataFrame into a GRanges object is also
+supported. See <code><a href="../../GenomicRanges/help/makeGRangesFromDataFrame.html">makeGRangesFromDataFrame</a></code> for the details.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>as(from, "IntegerRangesList")</code>:
+Creates a <a href="../../IRanges/help/IntegerRangesList.html">IntegerRangesList</a> object from a GRanges
+object. The <code>strand</code> and metadata columns become <em>inner</em>
+metadata columns (i.e. metadata columns on the ranges).
+The <code>seqlengths(from)</code>, <code>isCircular(from)</code>, and
+<code>genome(from)</code> vectors become the metadata columns.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>as.character(x, ignore.strand=FALSE)</code>:
+Turn GRanges object <code>x</code> into a character vector where each
+range in <code>x</code> is represented by a string in format
+<code>chr1:2501-2800:+</code>. If <code>ignore.strand</code> is TRUE or if
+<em>all</em> the ranges in <code>x</code> are unstranded (i.e. their strand
+is set to <code>*</code>), then all the strings in the output are in
+format <code>chr1:2501-2800</code>.
+</p>
+<p>The names on <code>x</code> are propagated to the returned character vector.
+Its metadata (<code>metadata(x)</code>) and metadata columns (<code>mcols(x)</code>)
+are ignored.
+</p>
+<p>See <code>as(from, "GRanges")</code> above for the reverse transformation.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>as.factor(x)</code>:
+Equivalent to
+</p>
+<pre>  factor(as.character(x), levels=as.character(sort(unique(x))))
+</pre>
+<p>See <code>as(from, "GRanges")</code> above for the reverse transformation.
+</p>
+<p>Note that <code>table(x)</code> is supported on a GRanges object. It is
+equivalent to, but much faster than, <code>table(as.factor(x))</code>.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>as.data.frame(x, row.names = NULL, optional = FALSE, ...)</code>:
+Creates a data.frame with columns <code>seqnames</code> (factor),
+<code>start</code> (integer), <code>end</code> (integer), <code>width</code> (integer),
+<code>strand</code> (factor), as well as the additional metadata columns
+stored in <code>mcols(x)</code>. Pass an explicit
+<code>stringsAsFactors=TRUE/FALSE</code> argument via <code>...</code> to
+override the default conversions for the metadata columns in
+<code>mcols(x)</code>.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>as(from, "Grouping")</code>: Creates a
+<code><a href="../../IRanges/help/ManyToOneGrouping.html">ManyToOneGrouping</a></code> object that groups
+<code>from</code> by seqname, strand, start and end (same as the default
+sort order). This makes it convenient, for example, to aggregate a
+GenomicRanges object by range.
+</p>
+</dd>
+</dl>
+
+<p>In the code snippets below, <code>x</code> is a <a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a>
+object.
+</p>
+
+<dl>
+<dt></dt><dd>
+<p><code>as(x, "GRanges")</code>, <code>as(x, "GenomicRanges")</code>,
+<code>as(x, "IntegerRangesList")</code>: Turns <a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a>
+object <code>x</code> (with no <code>NA</code> lengths) into a GRanges or
+<a href="../../IRanges/help/IntegerRangesList.html">IntegerRangesList</a>.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Subsetting</h3>
+
+<p>In the code snippets below, <code>x</code> is a GRanges object.
+</p>
+
+<dl>
+<dt></dt><dd>
+<p><code>x[i]</code>:
+Return a new GRanges object made of the elements selected by <code>i</code>.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>x[i, j]</code>:
+Like the above, but allow the user to conveniently subset the metadata
+columns thru <code>j</code>.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>x[i] &lt;- value</code>:
+Replacement version of <code>x[i]</code>.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>x$name</code>, <code>x$name &lt;- value</code>:
+Shortcuts for <code>mcols(x)$name</code> and <code>mcols(x)$name &lt;- value</code>,
+respectively. Provided as a convenience, for GRanges objects *only*,
+and as the result of strong popular demand.
+Note that those methods are not consistent with the other <code>$</code>
+and <code>$&lt;-</code> methods in the IRanges/GenomicRanges infrastructure,
+and might confuse some users by making them believe that a GRanges
+object can be manipulated as a data.frame-like object.
+Therefore we recommend using them only interactively, and we discourage
+their use in scripts or packages. For the latter, use
+<code>mcols(x)$name</code> and <code>mcols(x)$name &lt;- value</code>, instead
+of <code>x$name</code> and <code>x$name &lt;- value</code>, respectively.
+</p>
+</dd>
+</dl>
+
+<p>See <code>?`<a href="../../S4Vectors/help/+5B.html">[</a>`</code> in the <span class="pkg">S4Vectors</span> package for more
+information about subsetting Vector derivatives and for an important note
+about the <code>x[i, j]</code> form.
+</p>
+<p>Note that a GRanges object can be used as a subscript to subset a
+list-like object that has names on it. In that case, the names on the
+list-like object are interpreted as sequence names.
+In the code snippets below, <code>x</code> is a list or <a href="../../S4Vectors/html/List-class.html">List</a> object with
+names on it, and the subscript <code>gr</code> is a GRanges object with all its
+seqnames being valid <code>x</code> names.
+</p>
+
+<dl>
+<dt></dt><dd>
+<p><code>x[gr]</code>:
+Return an object of the same class as <code>x</code> and <em>parallel</em>
+to <code>gr</code>. More precisely, it's conceptually doing:
+</p>
+<pre>  lapply(gr, function(gr1) x[[seqnames(gr1)]][ranges(gr1)])
+</pre>
+</dd>
+</dl>
+
+
+
+<h3>Concatenation</h3>
+
+
+<dl>
+<dt></dt><dd>
+<p><code>c(x, ..., ignore.mcols=FALSE)</code>:
+Concatenate GRanges object <code>x</code> and the GRanges objects in
+<code>...</code> together.
+See <code>?<a href="../../S4Vectors/help/c.html">c</a></code> in the <span class="pkg">S4Vectors</span> package
+for more information about concatenating Vector derivatives.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Splitting</h3>
+
+
+<dl>
+<dt></dt><dd>
+<p><code>split(x, f, drop=FALSE)</code>:
+Splits GRanges object <code>x</code> according to <code>f</code> to create a
+<a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> object.
+If <code>f</code> is a list-like object then <code>drop</code> is ignored
+and <code>f</code> is treated as if it was
+<code>rep(seq_len(length(f)), sapply(f, length))</code>,
+so the returned object has the same shape as <code>f</code> (it also
+receives the names of <code>f</code>).
+Otherwise, if <code>f</code> is not a list-like object, empty list
+elements are removed from the returned object if <code>drop</code> is
+<code>TRUE</code>.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Displaying</h3>
+
+<p>In the code snippets below, <code>x</code> is a GRanges object.
+</p>
+
+<dl>
+<dt></dt><dd>
+<p><code>show(x)</code>:
+By default the <code>show</code> method displays 5 head and 5 tail
+elements. This can be changed by setting the global options
+<code>showHeadLines</code> and <code>showTailLines</code>. If the object
+length is less than (or equal to) the sum of these 2 options
+plus 1, then the full object is displayed.
+Note that these options also affect the display of
+<a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> and
+<a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> objects (defined in
+the <span class="pkg">GenomicAlignments</span> package), as well as other objects
+defined in the <span class="pkg">IRanges</span> and <span class="pkg">Biostrings</span> packages (e.g.
+<a href="../../IRanges/help/IRanges.html">IRanges</a> and <a href="../../Biostrings/help/DNAStringSet.html">DNAStringSet</a> objects).
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Author(s)</h3>
+
+<p>P. Aboyoun and H. Pagès</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li><p> The <a href="../../IRanges/help/IRanges.html">IRanges</a> class in the <span class="pkg">IRanges</span>
+package for storing a set of <em>integer ranges</em>.
+</p>
+</li>
+<li><p> The <a href="../../GenomicRanges/help/GPos.html">GPos</a> class for representing a set of <em>genomic
+positions</em> (i.e. <em>genomic ranges</em> of width 1, a.k.a.
+<em>genomic loci</em>).
+</p>
+</li>
+<li> <p><code><a href="../../GenomicRanges/help/makeGRangesFromDataFrame.html">makeGRangesFromDataFrame</a></code> for making a GRanges object
+from a data.frame or <a href="../../S4Vectors/help/DataFrame.html">DataFrame</a> object.
+</p>
+</li>
+<li> <p><a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> objects and the
+<code><a href="../../GenomeInfoDb/help/seqinfo.html">seqinfo</a></code> accessor and family in the
+<span class="pkg">GenomeInfoDb</span> package for accessing/modifying information
+about the underlying sequences of a <a href="../../GenomicRanges/help/GenomicRanges.html">GenomicRanges</a> derivative.
+</p>
+</li>
+<li> <p><a href="../../GenomicRanges/help/GenomicRanges-comparison.html">GenomicRanges-comparison</a> for comparing and ordering genomic
+ranges and/or positions.
+</p>
+</li>
+<li> <p><a href="../help/findOverlaps-methods.html">findOverlaps-methods</a> for finding overlapping
+genomic ranges and/or positions.
+</p>
+</li>
+<li> <p><a href="../help/intra-range-methods.html">intra-range-methods</a> and
+<a href="../help/inter-range-methods.html">inter-range-methods</a>
+for <em>intra range</em> and <em>inter range</em> transformations
+of <a href="../../GenomicRanges/help/GenomicRanges.html">GenomicRanges</a> derivatives.
+</p>
+</li>
+<li> <p><a href="../help/coverage-methods.html">coverage-methods</a> for computing the coverage
+of a set of genomic ranges and/or positions.
+</p>
+</li>
+<li> <p><a href="../help/setops-methods.html">setops-methods</a> for set operations on GRanges
+objects.
+</p>
+</li>
+<li> <p><a href="../help/nearest-methods.html">nearest-methods</a> for finding the nearest
+genomic range/position neighbor.
+</p>
+</li>
+<li> <p><code><a href="../../GenomicRanges/help/absoluteRanges.html">absoluteRanges</a></code> for transforming genomic ranges into
+<em>absolute</em> ranges (i.e. into ranges on the sequence obtained
+by virtually concatenating all the sequences in a genome).
+</p>
+</li>
+<li> <p><code><a href="../../GenomicRanges/help/tileGenome.html">tileGenome</a></code> for putting tiles on a genome.
+</p>
+</li>
+<li> <p><a href="../../GenomicRanges/help/genomicvars.html">genomicvars</a> for manipulating genomic variables.
+</p>
+</li>
+<li> <p><a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> objects.
+</p>
+</li>
+<li> <p><a href="../../S4Vectors/help/Vector.html">Vector</a>, <a href="../../S4Vectors/help/Rle.html">Rle</a>, and
+<a href="../../S4Vectors/help/DataFrame.html">DataFrame</a> objects in the <span class="pkg">S4Vectors</span> package.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+showClass("GRanges")  # shows the known subclasses
+
+## ---------------------------------------------------------------------
+## CONSTRUCTION
+## ---------------------------------------------------------------------
+## Specifying the bare minimum i.e. seqnames and ranges only. The
+## GRanges object will have no names, no strand information, and no
+## metadata columns:
+gr0 &lt;- GRanges(Rle(c("chr2", "chr2", "chr1", "chr3"), c(1, 3, 2, 4)),
+               IRanges(1:10, width=10:1))
+gr0
+
+## Specifying names, strand, metadata columns. They can be set on an
+## existing object:
+names(gr0) &lt;- head(letters, 10)
+strand(gr0) &lt;- Rle(strand(c("-", "+", "*", "+", "-")), c(1, 2, 2, 3, 2))
+mcols(gr0)$score &lt;- 1:10
+mcols(gr0)$GC &lt;- seq(1, 0, length=10)
+gr0
+
+## ... or specified at construction time:
+gr &lt;- GRanges(Rle(c("chr2", "chr2", "chr1", "chr3"), c(1, 3, 2, 4)),
+              IRanges(1:10, width=10:1, names=head(letters, 10)),
+              Rle(strand(c("-", "+", "*", "+", "-")), c(1, 2, 2, 3, 2)),
+              score=1:10, GC=seq(1, 0, length=10))
+stopifnot(identical(gr0, gr))
+
+## Specifying the seqinfo. It can be set on an existing object:
+seqinfo &lt;- Seqinfo(paste0("chr", 1:3), c(1000, 2000, 1500), NA, "mock1")
+seqinfo(gr0) &lt;- merge(seqinfo(gr0), seqinfo)
+seqlevels(gr0) &lt;- seqlevels(seqinfo)
+
+## ... or specified at construction time:
+gr &lt;- GRanges(Rle(c("chr2", "chr2", "chr1", "chr3"), c(1, 3, 2, 4)),
+              IRanges(1:10, width=10:1, names=head(letters, 10)),
+              Rle(strand(c("-", "+", "*", "+", "-")), c(1, 2, 2, 3, 2)),
+              score=1:10, GC=seq(1, 0, length=10),
+              seqinfo=seqinfo)
+stopifnot(identical(gr0, gr))
+
+## ---------------------------------------------------------------------
+## COERCION
+## ---------------------------------------------------------------------
+## From GRanges:
+as.character(gr)
+as.factor(gr)
+as.data.frame(gr)
+
+## From character to GRanges:
+x1 &lt;- "chr2:56-125"
+as(x1, "GRanges")
+as(rep(x1, 4), "GRanges")
+x2 &lt;- c(A=x1, B="chr1:25-30:-")
+as(x2, "GRanges")
+
+## From data.frame to GRanges:
+df &lt;- data.frame(chrom="chr2", start=11:15, end=20:24)
+gr3 &lt;- as(df, "GRanges")
+
+## Alternatively, coercion to GRanges can be done by just calling the
+## GRanges() constructor on the object to coerce:
+gr1 &lt;- GRanges(x1)  # same as as(x1, "GRanges")
+gr2 &lt;- GRanges(x2)  # same as as(x2, "GRanges")
+gr3 &lt;- GRanges(df)  # same as as(df, "GRanges")
+
+## Sanity checks:
+stopifnot(identical(as(x1, "GRanges"), gr1))
+stopifnot(identical(as(x2, "GRanges"), gr2))
+stopifnot(identical(as(df, "GRanges"), gr3))
+
+## ---------------------------------------------------------------------
+## SUMMARIZING ELEMENTS
+## ---------------------------------------------------------------------
+table(seqnames(gr))
+table(strand(gr))
+sum(width(gr))
+table(gr)
+summary(mcols(gr)[,"score"])
+
+## The number of lines displayed in the 'show' method are controlled
+## with two global options:
+longGR  &lt;- sample(gr, 25, replace=TRUE)
+longGR
+options(showHeadLines=7)
+options(showTailLines=2)
+longGR
+
+## Revert to default values
+options(showHeadLines=NULL)
+options(showTailLines=NULL)
+
+## ---------------------------------------------------------------------
+## INVERTING THE STRAND
+## ---------------------------------------------------------------------
+invertStrand(gr)
+
+## ---------------------------------------------------------------------
+## RENAMING THE UNDERLYING SEQUENCES
+## ---------------------------------------------------------------------
+seqlevels(gr)
+seqlevels(gr) &lt;- sub("chr", "Chrom", seqlevels(gr))
+gr
+seqlevels(gr) &lt;- sub("Chrom", "chr", seqlevels(gr)) # revert
+
+## ---------------------------------------------------------------------
+## COMBINING OBJECTS
+## ---------------------------------------------------------------------
+gr2 &lt;- GRanges(seqnames=Rle(c('chr1', 'chr2', 'chr3'), c(3, 3, 4)),
+               IRanges(1:10, width=5),
+               strand='-',
+               score=101:110, GC=runif(10),
+               seqinfo=seqinfo)
+gr3 &lt;- GRanges(seqnames=Rle(c('chr1', 'chr2', 'chr3'), c(3, 4, 3)),
+               IRanges(101:110, width=10),
+               strand='-',
+               score=21:30,
+               seqinfo=seqinfo)
+some.gr &lt;- c(gr, gr2)
+
+c(gr, gr2, gr3)
+c(gr, gr2, gr3, ignore.mcols=TRUE)
+
+## ---------------------------------------------------------------------
+## USING A GRANGES OBJECT AS A SUBSCRIPT TO SUBSET ANOTHER OBJECT
+## ---------------------------------------------------------------------
+## Subsetting *by* a GRanges subscript is supported only if the object
+## to subset is a named list-like object:
+x &lt;- RleList(chr1=101:120, chr2=2:-8, chr3=31:40)
+x[gr]
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GenomicRanges</em> version 1.46.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

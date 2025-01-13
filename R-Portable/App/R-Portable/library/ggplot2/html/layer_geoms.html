@@ -1,0 +1,158 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Layer geometry display</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for layer_geoms {ggplot2}"><tr><td>layer_geoms {ggplot2}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Layer geometry display</h2>
+
+<h3>Description</h3>
+
+<p>In ggplot2, a plot in constructed by adding layers to it. A layer consists
+of two important parts: the geometry (geoms), and statistical transformations
+(stats). The 'geom' part of a layer is important because it determines the
+looks of the data. Geoms determine <em>how</em> something is displayed, not <em>what</em>
+is displayed.
+</p>
+
+
+<h3>Specifying geoms</h3>
+
+<p>There are five ways in which the 'geom' part of a layer can be specified.
+</p>
+<div class="sourceCode r"><pre># 1. The geom can have a layer constructor
+geom_area()
+
+# 2. A stat can default to a particular geom
+stat_density() # has `geom = "area"` as default
+
+# 3. It can be given to a stat as a string
+stat_function(geom = "area")
+
+# 4. The ggproto object of a geom can be given
+stat_bin(geom = GeomArea)
+
+# 5. It can be given to `layer()` directly
+layer(
+  geom = "area",
+  stat = "smooth",
+  position = "identity"
+)
+</pre></div>
+<p>Many of these ways are absolutely equivalent. Using
+<code>stat_density(geom = "line")</code> is identical to using
+<code>geom_line(stat = "density")</code>. Note that for <code><a href="../../ggplot2/help/layer.html">layer()</a></code>, you need to
+provide the <code>"position"</code> argument as well. To give geoms as a string, take
+the function name, and remove the <code>geom_</code> prefix, such that <code>geom_point</code>
+becomes <code>"point"</code>.
+</p>
+<p>Some of the more well known geoms that can be used for the <code>geom</code> argument
+are: <code><a href="../../ggplot2/help/geom_point.html">&quot;point&quot;</a></code>, <code><a href="../../ggplot2/help/geom_line.html">&quot;line&quot;</a></code>,
+<code><a href="../../ggplot2/help/geom_area.html">&quot;area&quot;</a></code>, <code><a href="../../ggplot2/help/geom_bar.html">&quot;bar&quot;</a></code> and
+<code><a href="../../ggplot2/help/geom_polygon.html">&quot;polygon&quot;</a></code>.
+</p>
+
+
+<h3>Graphical display</h3>
+
+<p>A ggplot is build on top of the <a href="../../grid/html/grid-package.html">grid</a> package. This package
+understands various graphical primitives, such as points, lines, rectangles
+and polygons and their <a href="../../ggplot2/help/aes_position.html">positions</a>, as well as graphical
+attributes, also termed aesthetics, such as
+<a href="../../ggplot2/help/aes_colour_fill_alpha.html">colours, fills</a>,
+<a href="../../ggplot2/help/aes_linetype_size_shape.html">linewidths and linetypes</a>. The job of the geom part
+of a layer, is to translate data to grid graphics that can be plotted.
+</p>
+<p>To see how aesthetics are specified, run <code>vignette("ggplot2-specs")</code>. To see
+what geom uses what aesthetics, you can find the <strong>Aesthetics</strong> section in
+their documentation, for example in <code><a href="../../ggplot2/help/geom_line.html">?geom_line</a></code>.
+</p>
+<p>While almost anything can be represented by polygons if you try hard enough,
+it is not always convenient to do so manually. For this reason, the geoms
+provide abstractions that take most of this hassle away. <code><a href="../../ggplot2/help/geom_ribbon.html">geom_ribbon()</a></code>
+for example is a special case of <code><a href="../../ggplot2/help/geom_polygon.html">geom_polygon()</a></code>, where two sets of
+y-positions have a shared x-position. In turn, <code><a href="../../ggplot2/help/geom_area.html">geom_area()</a></code> is a special
+case of a ribbon, where one of the two sets of y-positions is set at 0.
+</p>
+<div class="sourceCode r"><pre># A hassle to build a polygon
+my_polygon &lt;- data.frame(
+  x = c(economics$date,    rev(economics$date)),
+  y = c(economics$uempmed, rev(economics$psavert))
+)
+ggplot(my_polygon, aes(x, y)) +
+  geom_polygon()
+
+# More succinctly
+ggplot(economics, aes(date)) +
+  geom_ribbon(aes(ymin = uempmed, ymax = psavert))
+</pre></div>
+<p>In addition to abstraction, geoms sometimes also perform composition.
+A boxplot is a particular arrangement of lines, rectangles and points that
+people have agreed upon is a summary of some data, which is performed by
+<code><a href="../../ggplot2/help/geom_boxplot.html">geom_boxplot()</a></code>.
+</p>
+<div class="sourceCode r"><pre>Boxplot data
+value &lt;- fivenum(rnorm(100))
+df &lt;- data.frame(
+  min = value[1], lower = value[2], middle = value[3],
+  upper = value[4], max = value[5]
+)
+
+# Drawing a boxplot manually
+ggplot(df, aes(x = 1, xend = 1)) +
+  geom_rect(
+    aes(
+      xmin = 0.55, xmax = 1.45,
+      ymin = lower, ymax = upper
+    ),
+    colour = "black", fill = "white"
+  ) +
+  geom_segment(
+    aes(
+      x = 0.55, xend = 1.45,
+      y = middle, yend = middle
+    ),
+    size = 1
+  ) +
+  geom_segment(aes(y = lower, yend = min)) +
+  geom_segment(aes(y = upper, yend = max))
+
+# More succinctly
+ggplot(df, aes(x = 1)) +
+  geom_boxplot(
+    aes(ymin = min, ymax = max,
+        lower = lower, upper = upper,
+        middle = middle),
+    stat = "identity"
+  )
+</pre></div>
+
+
+<h3>Under the hood</h3>
+
+<p>Internally, geoms are represented as <code><a href="../../ggplot2/help/ggproto.html">ggproto</a></code> classes that
+occupy a slot in a layer. All these classes inherit from the parental
+<code><a href="../../ggplot2/help/Geom.html">Geom</a></code> ggproto object that orchestrates how geoms work. Briefly, geoms
+are given the opportunity to draw the data of the layer as a whole,
+a facet panel, or of individual groups. For more information on extending
+geoms, see the <strong>Creating a new geom</strong> section after running
+<code>vignette("extending-ggplot2")</code>. Additionally, see the <strong>New geoms</strong> section
+of the <a href="https://ggplot2-book.org/extensions.html#new-geoms">online book</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>For an overview of all geom layers, see the
+<a href="https://ggplot2.tidyverse.org/reference/index.html#geoms">online reference</a>.
+</p>
+<p>Other layer documentation: 
+<code><a href="../../ggplot2/help/layer.html">layer</a>()</code>,
+<code><a href="../../ggplot2/help/layer_positions.html">layer_positions</a></code>,
+<code><a href="../../ggplot2/help/layer_stats.html">layer_stats</a></code>
+</p>
+
+<hr /><div style="text-align: center;">[Package <em>ggplot2</em> version 3.5.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

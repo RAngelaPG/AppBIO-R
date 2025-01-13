@@ -1,0 +1,369 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: BEDFile objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for BEDFile-class {rtracklayer}"><tr><td>BEDFile-class {rtracklayer}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>BEDFile objects</h2>
+
+<h3>Description</h3>
+
+<p>These functions support the import and export of the UCSC BED
+format and its variants, including BEDGraph.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S4 method for signature 'BEDFile,ANY,ANY'
+import(con, format, text, trackLine = TRUE,
+                   genome = NA, colnames = NULL,
+                   which = NULL, seqinfo = NULL, extraCols = character(),
+                   sep = c("\t", ""), na.strings=character(0L))
+import.bed(con, ...)
+import.bed15(con, ...)
+import.bedGraph(con,  ...)
+
+## S4 method for signature 'ANY,BEDFile,ANY'
+export(object, con, format, ...)
+## S4 method for signature 'GenomicRanges,BEDFile,ANY'
+export(object, con, format,
+                  append = FALSE, index = FALSE,
+                  ignore.strand = FALSE, trackLine = NULL)
+## S4 method for signature 'UCSCData,BEDFile,ANY'
+export(object, con, format,
+                   trackLine = TRUE, ...)
+export.bed(object, con, ...)
+export.bed15(object, con, ...)
+## S4 method for signature 'GenomicRanges,BED15File,ANY'
+export(object, con, format,
+                  expNames = NULL, trackLine = NULL, ...)
+export.bedGraph(object, con, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>con</code></td>
+<td>
+<p>A path, URL, connection or <code>BEDFile</code> object. For the
+functions ending in <code>.bed</code>, <code>.bedGraph</code> and <code>.bed15</code>,
+the file format is indicated by the function name. For the base
+<code>export</code> and <code>import</code> functions, the format must be
+indicated another way. If <code>con</code> is a path, URL or connection,
+either the file extension or the <code>format</code> argument needs to be
+one of &ldquo;bed&rdquo;, &ldquo;bed15&rdquo;, &ldquo;bedGraph&rdquo;,
+&ldquo;bedpe&rdquo;, &ldquo;narrowPeak&rdquo;, or
+&ldquo;broadPeak&rdquo;. Compressed
+files (&ldquo;gz&rdquo;, &ldquo;bz2&rdquo; and
+&ldquo;xz&rdquo;) are handled transparently.
+</p>
+</td></tr>
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>The object to export, should be a <code>GRanges</code> or
+something coercible to a <code>GRanges</code>. If targeting the BEDPE
+format, this should be something coercible to <code>Pairs</code>.
+If the object has a method
+for <code>asBED</code> (like <code>GRangesList</code>), it is called prior to
+coercion. This makes it possible to export a <code>GRangesList</code> or
+<code>TxDb</code> in a way that preserves the hierarchical
+structure. For exporting multiple tracks, in the UCSC track line
+metaformat, pass a <code>GenomicRangesList</code>, or something coercible to
+one.
+</p>
+</td></tr>
+<tr valign="top"><td><code>format</code></td>
+<td>
+<p>If not missing, should be one of &ldquo;bed&rdquo;,
+&ldquo;bed15&rdquo;, &ldquo;bedGraph&rdquo;, &ldquo;bedpe&rdquo;,
+&ldquo;narrowPeak&rdquo; or &ldquo;broadPeak&rdquo;.</p>
+</td></tr>
+<tr valign="top"><td><code>text</code></td>
+<td>
+<p>If <code>con</code> is
+missing, a character vector to use as the input</p>
+</td></tr>
+<tr valign="top"><td><code>trackLine</code></td>
+<td>
+<p>For import, an imported track line will be stored
+in a <code><a href="../../rtracklayer/help/TrackLine-class.html">TrackLine</a></code> object, as part of the returned
+<code><a href="../../rtracklayer/help/UCSCData-class.html">UCSCData</a></code>.  For the UCSCData method on export,
+whether to output the UCSC track line stored on the object, for the
+other export methods, the actual TrackLine object to export.
+</p>
+</td></tr>
+<tr valign="top"><td><code>genome</code></td>
+<td>
+<p>The identifier of a genome, or a <code>Seqinfo</code>, or <code>NA</code> if
+unknown. Typically, this is a UCSC identifier like &ldquo;hg19&rdquo;. An
+attempt will be made to derive the <code>seqinfo</code> on the return
+value using either an installed BSgenome package or UCSC, if network
+access is available.
+</p>
+</td></tr>
+<tr valign="top"><td><code>colnames</code></td>
+<td>
+<p>A character vector naming the columns to parse. These
+should name columns in the result, not those in the BED spec, so
+e.g. specify &ldquo;thick&rdquo;, instead of &ldquo;thickStart&rdquo;.
+</p>
+</td></tr>
+<tr valign="top"><td><code>which</code></td>
+<td>
+<p>A <code>GRanges</code> or other range-based object supported
+by <code><a href="../../IRanges/help/findOverlaps.html">findOverlaps</a></code>. Only the intervals in the file
+overlapping the given ranges are returned. This is much more efficient
+when the file is indexed with the tabix utility.
+</p>
+</td></tr>
+<tr valign="top"><td><code>index</code></td>
+<td>
+<p>If <code>TRUE</code>, automatically compress and index the
+output file with bgzf and tabix. Note that tabix indexing will
+sort the data by chromosome and start. Tabix supports a
+single track in a file.
+</p>
+</td></tr>
+<tr valign="top"><td><code>ignore.strand</code></td>
+<td>
+<p>Whether to output the strand when not required
+(by the existence of later fields).
+</p>
+</td></tr>
+<tr valign="top"><td><code>seqinfo</code></td>
+<td>
+<p>If not <code>NULL</code>, the <code>Seqinfo</code> object to set on
+the result. Ignored if <code>genome</code> is a <code>Seqinfo</code> object.
+If the <code>genome</code> argument is not <code>NA</code>, it must
+agree with <code>genome(seqinfo)</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>extraCols</code></td>
+<td>
+<p>A character vector in the same form as
+<code>colClasses</code> from <code><a href="../../utils/html/read.table.html">read.table</a></code>.  It should indicate
+the name and class of each extra/special column to read from the BED
+file. As BED does not encode column names, these are assumed to be
+the last columns in the file. This enables parsing of the various
+BEDX+Y formats.
+</p>
+</td></tr>
+<tr valign="top"><td><code>sep</code></td>
+<td>
+<p>A character vector with a single character indicating the
+field separator, like <code>read.table</code>. This defaults to
+<code>"\t"</code>, as BEDtools requires, but BED files are also allowed to
+be whitespace separated (<code>""</code>) according to the UCSC spec.
+</p>
+</td></tr>
+<tr valign="top"><td><code>na.strings</code></td>
+<td>
+<p>Character vector with strings, appended to the
+standard <code>"."</code>, that represent an <code>NA</code> value.
+</p>
+</td></tr>
+<tr valign="top"><td><code>append</code></td>
+<td>
+<p>If <code>TRUE</code>, and <code>con</code> points to a file path,
+the data is appended to the file. Obviously, if <code>con</code> is a
+connection, the data is always appended.
+</p>
+</td></tr>
+<tr valign="top"><td><code>expNames</code></td>
+<td>
+<p>character vector naming columns in
+<code>mcols(object)</code> to export as data columns in the BED15
+file. These correspond to the sample names in the experiment. If
+<code>NULL</code> (the default), there is an attempt to extract these from
+<code>trackLine</code>. If the attempt fails, no scores are exported.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Arguments to pass down to methods to other methods. For
+import, the flow eventually reaches the <code>BEDFile</code> method on
+<code>import</code>. When <code>trackLine</code> is
+<code>TRUE</code> or the target format is BED15, the arguments are passed
+through <code>export.ucsc</code>, so track line parameters are supported.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The BED format is a tab-separated table of intervals, with annotations
+like name, score and even sub-intervals for representing alignments and
+gene models. Official (UCSC) child formats currently include BED15
+(adding a number matrix for e.g. expression data across multiple samples)
+and BEDGraph (a compressed means of storing a single score variable, e.g.
+coverage; overlapping features are not allowed). Many tools and
+organizations have extended the BED format with additional columns for
+particular use cases. The
+advantage of BED is its balance between simplicity and expressiveness. It
+is also relatively scalable, because only the first three columns (chrom,
+start and end) are required. Thus, BED is best suited for representing
+simple features. For specialized cases, one is usually better off with
+another format. For example, genome-scale vectors belong in
+<a href="../../rtracklayer/help/BigWigFile.html">BigWig</a>, alignments from high-throughput sequencing
+belong in <a href="../../Rsamtools/help/BamFile.html">BAM</a>, and gene models are more richly
+expressed in <a href="../../rtracklayer/help/GFFFile.html">GFF</a>.
+</p>
+<p>The following is the mapping of BED elements to a <code>GRanges</code> object.
+NA values are allowed only where indicated.
+These appear as a &ldquo;.&rdquo; in the file. Only the first three columns
+(chrom, start and strand) are required. The other columns can only be
+included if all previous columns (to the left) are included. Upon export,
+default values are used to automatically pad the table, if necessary.
+</p>
+
+<dl>
+<dt>chrom, start, end</dt><dd><p>the <code>ranges</code> component.</p>
+</dd>
+<dt>name</dt><dd><p>character vector (NA's allowed) in the <code>name</code>
+column; defaults to NA on export.
+</p>
+</dd>
+<dt>score</dt><dd><p>numeric vector in the <code>score</code>
+column, accessible via the <code>score</code> accessor. Defaults to 0
+on export. This is the only column present in BEDGraph (besides
+chrom, start and end), and it is required.
+</p>
+</dd>
+<dt>strand</dt><dd><p>strand factor (NA's allowed) in the <code>strand</code>
+column, accessible via the <code>strand</code> accessor; defaults to NA
+on export.
+</p>
+</dd>
+<dt>thickStart, thickEnd</dt><dd><p><code>IntegerRanges</code> object in a
+column named <code>thick</code>; defaults to the ranges of the feature
+on export.
+</p>
+</dd>
+<dt>itemRgb</dt><dd><p>an integer matrix of color codes, as returned by
+<code><a href="../../grDevices/html/col2rgb.html">col2rgb</a></code>, or any valid input to
+<code><a href="../../grDevices/html/col2rgb.html">col2rgb</a></code>, in the <code>itemRgb</code> column; default is NA
+on export, which translates to black.
+</p>
+</dd>
+<dt>blockSizes, blockStarts, blockCounts</dt><dd><p><code>IntegerRangesList</code>
+object in a column named <code>blocks</code>; defaults to empty upon BED15
+export.
+</p>
+</dd>
+</dl>
+
+<p>For BED15 files, there should be a column of scores in
+<code>mcols(object)</code> for each sample in the experiment. The columns
+are named according to the <code>expNames</code> (found in the file, or
+passed as an argument during export). <code>NA</code> scores are stored as
+&ldquo;-10000&rdquo; in the file.
+</p>
+
+
+<h3>Value</h3>
+
+<p>For a &ldquo;bedpe&rdquo; file, a <code>Pairs</code> object combining two
+<code>GRanges</code>. The <code>name</code> and <code>score</code> are carried over to
+the metadata columns.
+</p>
+<p>Otherwise, a <code>GRanges</code> with the metadata columns described in the
+details.
+</p>
+
+
+<h3>BEDX+Y formats</h3>
+
+<p>To import one of the multitude of BEDX+Y formats, such as those used
+to distribute ENCODE data through UCSC (narrowPeaks, etc), specify
+the <code>extraCols</code> argument to indicate the expected names and
+classes of the special columns. We assume that the
+last <code>length(extraCols)</code> columns are special, and that the
+preceding columns adhere to the BED format. &ldquo;narrowPeak&rdquo;
+and &ldquo;broadPeak&rdquo; types are handled explicitly by specifying
+these types as the <code>format</code> argument, rather than by
+using <code>extraCols</code>.
+</p>
+
+
+<h3>BEDFile objects</h3>
+
+<p>The <code>BEDFile</code> class extends <code><a href="../../BiocIO/help/BiocFile-class.html">BiocFile</a></code> and is a
+formal represention of a resource in the BED format.
+To cast a path, URL or connection to a <code>BEDFile</code>, pass it to
+the <code>BEDFile</code> constructor. Classes and constructors also exist
+for the subclasses <code>BED15File</code>, <code>BEDGraphFile</code> and
+<code>BEDPEFile</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Michael Lawrence</p>
+
+
+<h3>References</h3>
+
+<p><a href="http://genome.ucsc.edu/goldenPath/help/customTrack.html">http://genome.ucsc.edu/goldenPath/help/customTrack.html</a>
+<a href="http://bedtools.readthedocs.org/en/latest/content/general-usage.html">http://bedtools.readthedocs.org/en/latest/content/general-usage.html</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+  test_path &lt;- system.file("tests", package = "rtracklayer")
+  test_bed &lt;- file.path(test_path, "test.bed")
+
+  test &lt;- import(test_bed)
+  test
+
+  test_bed_file &lt;- BEDFile(test_bed)
+  import(test_bed_file)
+
+  test_bed_con &lt;- file(test_bed)
+  import(test_bed_con, format = "bed")
+
+  import(test_bed, trackLine = FALSE)
+  import(test_bed, genome = "hg19")
+  import(test_bed, colnames = c("name", "strand", "thick"))
+
+  which &lt;- GRanges("chr7:1-127473000")
+  import(test_bed, which = which)
+
+  bed15_file &lt;- file.path(test_path, "test.bed15")
+  bed15 &lt;- import(bed15_file)
+
+## Not run: 
+  test_bed_out &lt;- file.path(tempdir(), "test.bed")
+  export(test, test_bed_out)
+
+  test_bed_out_file &lt;- BEDFile(test_bed_out)
+  export(test, test_bed_out_file)
+
+  export(test, test_bed_out, name = "Alternative name")
+
+  test_bed_gz &lt;- paste(test_bed_out, ".gz", sep = "")
+  export(test, test_bed_gz)
+
+  export(test, test_bed_out, index = TRUE)
+  export(test, test_bed_out, index = TRUE, trackLine = FALSE)
+
+  bed_text &lt;- export(test, format = "bed")
+  test &lt;- import(format = "bed", text = bed_text)
+
+  test_bed15_out &lt;- file.path(tempdir(), "test.bed15")
+  export(bed15, test_bed15_out) # UCSCData knows the expNames
+  export(as(bed15, "GRanges"), test_bed15_out, # have to specify expNames
+         expNames=paste0("breast_", c("A", "B", "C")))
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rtracklayer</em> version 1.54.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

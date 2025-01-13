@@ -1,0 +1,202 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: UCSCFile objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for UCSCFile-class {rtracklayer}"><tr><td>UCSCFile-class {rtracklayer}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>UCSCFile objects</h2>
+
+<h3>Description</h3>
+
+<p>These functions support the import and export of tracks emucscded
+within the UCSC track line metaformat, whereby multiple tracks may be
+concatenated within a single file, along with metadata mostly oriented
+towards visualization. Any <code><a href="../../rtracklayer/help/UCSCData-class.html">UCSCData</a></code> object is
+automatically exported in this format, if the targeted format is known
+to be compatible. The BED and WIG import methods check for a track
+line, and delegate to these functions if one is found. Thus, calling
+this API directly is only necessary when importing embedded GFF
+(rare), or when one wants to create the track line during the export
+process.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S4 method for signature 'UCSCFile,ANY,ANY'
+import(con, format, text,
+                   subformat = "auto", drop = FALSE,
+                   genome = NA, ...)
+import.ucsc(con, ...)
+
+## S4 method for signature 'ANY,UCSCFile,ANY'
+export(object, con, format, ...)
+## S4 method for signature 'GenomicRanges,UCSCFile,ANY'
+export(object, con, format, ...)
+## S4 method for signature 'GenomicRangesList,UCSCFile,ANY'
+export(object, con, format,
+                   append = FALSE, index = FALSE, ...)
+## S4 method for signature 'UCSCData,UCSCFile,ANY'
+export(object, con, format,
+                   subformat = "auto", append = FALSE, index = FALSE, ...)
+export.ucsc(object, con, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>con</code></td>
+<td>
+<p>A path, URL, connection or <code>UCSCFile</code> object. For the
+functions ending in <code>.ucsc</code>, the file format is indicated by
+the function name. For the base <code>export</code> and <code>import</code>
+functions, &ldquo;ucsc&rdquo; must be passed as the <code>format</code>
+argument.
+</p>
+</td></tr>
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>The object to export, should be a <code>GRanges</code> or
+something coercible to a <code>GRanges</code>. For exporting multiple
+tracks pass a <code>GenomicRangesList</code>, or something coercible to one.
+</p>
+</td></tr>
+<tr valign="top"><td><code>format</code></td>
+<td>
+<p>If not missing, should be &ldquo;ucsc&rdquo;.</p>
+</td></tr>
+<tr valign="top"><td><code>text</code></td>
+<td>
+<p>If <code>con</code> is missing, a character vector to use as the
+input
+</p>
+</td></tr>
+<tr valign="top"><td><code>subformat</code></td>
+<td>
+<p>The file format to use for the actual features,
+between the track lines. Must be a text-based format that is
+compatible with track lines (most are). If an
+<code><a href="../../BiocIO/help/BiocFile-class.html">BiocFile</a></code> subclass other than
+<code>UCSCFile</code> is passed as <code>con</code> to <code>import.ucsc</code> or
+<code>export.ucsc</code>, the subformat is assumed to be the corresponding format
+of <code>con</code>. Otherwise it defaults to &ldquo;auto&rdquo;.  The following
+describes the logic of the &ldquo;auto&rdquo; mode. For import, the subformat is
+taken as the <code>type</code> field in the track line. If none, the file
+extension is consulted.  For export, if <code>object</code> is a
+<code>UCSCData</code>, the subformat is taken as the <code>type</code>
+in its track line, if present. Otherwise, the subformat is chosen
+based on whether <code>object</code> contains a &ldquo;score&rdquo; column. If
+there is a score, the target is either <code>BEDGraph</code> or
+<code>WIG</code>, depending on the structure of the ranges. Otherwise,
+<code>BED</code> is the target.
+</p>
+</td></tr>
+<tr valign="top"><td><code>genome</code></td>
+<td>
+<p>The identifier of a genome, or <code>NA</code> if
+unknown. Typically, this is a UCSC identifier like &ldquo;hg19&rdquo;. An
+attempt will be made to derive the <code>seqinfo</code> on the return
+value using either an installed BSgenome package or UCSC, if network
+access is available. This defaults to the <code>db</code> BED track line
+parameter, if any.
+</p>
+</td></tr>
+<tr valign="top"><td><code>drop</code></td>
+<td>
+<p>If <code>TRUE</code>, and there is only one track in the file,
+return the track object directly, rather than embedding it in a list.
+</p>
+</td></tr>
+<tr valign="top"><td><code>append</code></td>
+<td>
+<p>If <code>TRUE</code>, and <code>con</code> points to a file path,
+the data is appended to the file. Obviously, if <code>con</code> is a
+connection, the data is always appended.
+</p>
+</td></tr>
+<tr valign="top"><td><code>index</code></td>
+<td>
+<p>If <code>TRUE</code>, automatically compress and index the
+output file with bgzf and tabix. Note that tabix indexing will
+sort the data by chromosome and start. Tabix supports a
+single track in a file.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Should either specify track line parameters or arguments to
+pass down to the import and export routine for the subformat. 
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The UCSC track line permits the storage of multiple tracks in a single
+file by separating them with a so-called &ldquo;track line&rdquo;, a line
+belonging with the word &ldquo;track&rdquo; and containing
+various <code>key=value</code> pairs encoding metadata, most related to
+visualization. The standard fields in a track depend on the type of
+track being annotated. See <code><a href="../../rtracklayer/help/TrackLine-class.html">TrackLine</a></code> and its
+derivatives for how these lines are represented in R. The
+class <code><a href="../../rtracklayer/help/UCSCData-class.html">UCSCData</a></code> is an extension
+of <code>GRanges</code> with a formal slot for a <code>TrackLine</code>.
+Each <code>GRanges</code> in the returned <code>GenomicRangesList</code> has the
+track line stored in its metadata, under the <code>trackLine</code> key. 
+</p>
+<p>For each track object to be exported, if the object is not a
+<code>UCSCData</code>, and there is no <code>trackLine</code> element in the
+metadata, then a new track line needs to be generated. This happens
+through the coercion of <code>object</code> to <code>UCSCData</code>. The track line
+is initialized to have the appropriate <code>type</code> parameter for the
+subformat, and the required <code>name</code> parameter is taken from the
+name of the track in the input list (if any). Otherwise, the default
+is simply &ldquo;R Track&rdquo;. The <code>db</code> parameter (specific to BED
+track lines) is taken as <code>genome(object)</code> if not
+<code>NA</code>. Additional arguments passed to the export routines
+override parameters in the provided track line.
+</p>
+<p>If the subformat is either WIG or BEDGraph, and the features are
+stranded, a separate track will be output in the file for each
+strand. Neither of those formats encodes the strand and disallow
+overlapping features (which might occur upon destranding).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>GenomicRangesList</code> unless <code>drop</code> is <code>TRUE</code>
+and there is only a single track in the file. In that case, the first and
+only object is extracted from the list and returned.
+The structure of that object depends on the format of the
+data. The <code>GenomicRangesList</code> contains <code>UCSCData</code> objects.
+</p>
+
+
+<h3>UCSCFile objects</h3>
+
+<p>The <code>UCSCFile</code> class extends
+<code><a href="../../BiocIO/help/BiocFile-class.html">BiocFile</a></code> and is a
+formal represention of a resource in the UCSC format.
+To cast a path, URL or connection to a <code>UCSCFile</code>, pass it to
+the <code>UCSCFile</code> constructor.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Michael Lawrence</p>
+
+
+<h3>References</h3>
+
+<p><a href="http://genome.ucsc.edu/goldenPath/help/customTrack.html">http://genome.ucsc.edu/goldenPath/help/customTrack.html</a>
+</p>
+
+<hr /><div style="text-align: center;">[Package <em>rtracklayer</em> version 1.54.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

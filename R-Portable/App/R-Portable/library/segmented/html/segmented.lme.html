@@ -1,0 +1,338 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Segmented relationships in linear mixed models</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for segmented.lme {segmented}"><tr><td>segmented.lme {segmented}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Segmented relationships in linear mixed models
+</h2>
+
+<h3>Description</h3>
+
+<p>Fits linear mixed models with a segmented relationship between the response and 
+a numeric covariate. Random effects are allowed in each model parameter, including the breakpoint.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'lme'
+segmented(obj, seg.Z, psi, npsi = 1, fixed.psi = NULL, 
+    control = seg.control(), model = TRUE, 
+    z.psi = ~1, x.diff = ~1, random = NULL, 
+    random.noG = NULL, start.pd = NULL, psi.link = c("identity", "logit"), 
+    start = NULL, data, fixed.parms = NULL,...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>obj</code></td>
+<td>
+
+<p>A 'lme' fit returned by <code>lme</code> or simply its call. See example below. This represents the linear mixed model
+where the segmented relationship is added.
+</p>
+</td></tr>
+<tr valign="top"><td><code>seg.Z</code></td>
+<td>
+
+<p>A one-sided formula indicating the segmented variable, i.e. the quantitative variable having a segmented relationship with
+the response. In longitudinal studies typically it is the time.</p>
+</td></tr>
+<tr valign="top"><td><code>psi</code></td>
+<td>
+
+<p>An optional starting value for the breakpoint. If missing a starting value is obtained via the nadir estimate of a quadratic fit.
+When provided it may be a single numeric value or a vector of length equal to the number of clusters (i.e. subjects).
+</p>
+</td></tr>
+<tr valign="top"><td><code>z.psi</code></td>
+<td>
+
+<p>Optional. A one-sided formula meaning the covariates in the sub-regression model for the changepoint parameter. Default to <code>~1</code>. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>x.diff</code></td>
+<td>
+
+<p>Optional. A one-sided formula meaning the covariates in the sub-regression model for the difference-in-slopes parameter. 
+Default to <code>~1</code> for no covariate for the difference-in-slope parameter.
+</p>
+</td></tr>
+<tr valign="top"><td><code>npsi</code></td>
+<td>
+
+<p>Ignored. Currently only <code>npsi=1</code> is allowed.
+</p>
+</td></tr>
+<tr valign="top"><td><code>fixed.psi</code></td>
+<td>
+
+<p>Ignored.
+</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+
+<p>A list returned by <code><a href="../../segmented/help/seg.control.html">seg.control</a></code>, in particular <code>display</code>, <code>n.boot</code> for the bootstrap restarting.
+</p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+
+<p>Ignored.
+</p>
+</td></tr>
+<tr valign="top"><td><code>random</code></td>
+<td>
+
+<p>A list, as the one supplied in <code>random</code> of <code>lme()</code> including the random effects. Default to <code>NULL</code>,
+meaning that the same random effect structure of the initial lme fit supplied in <code>obj</code> should be used. 
+When specified, this list could include the variables '<code>G0</code>' and '<code>U</code>'. 
+<code>G0</code> means random effects in the breakpoints and <code>U</code> means random effects in the
+slope-difference parameter. Assuming <code>id</code> is the the cluster variable and <code>x</code> the segmented variable, some examples are
+</p>
+<p><code>random = list(id = pdDiag(~1 + x + U))</code> #ind. random eff. (changepoint fixed)
+</p>
+<p><code>random = list(id = pdDiag(~1 + x + U + G0))</code> #ind. random eff. (in the changepoint too) 
+</p>
+<p><code>random = list(id=pdBlocked(list(pdSymm(~1+x), pdSymm(~U+G0-1))))</code> #block diagonal 
+</p>
+</td></tr>
+<tr valign="top"><td><code>random.noG</code></td>
+<td>
+
+<p>Ignored.
+</p>
+</td></tr>
+<tr valign="top"><td><code>start.pd</code></td>
+<td>
+
+<p>An optional starting value for the variances of the random effects. It should be coherent with the
+specification in <code>random</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>psi.link</code></td>
+<td>
+
+<p>The link function used to specify the sub-regression model for the breakpoint <i>psi</i>.
+The identity (default) assumes
+</p>
+<p style="text-align: center;"><i>&psi;_i=&eta;_i</i></p>
+
+<p>while the logit link is
+</p>
+<p style="text-align: center;"><i>&psi;_i=(m+M*exp(&eta;_i))/(1+exp(&eta;_i))</i></p>
+
+<p>where <i>m</i> and <i>M</i> are the observed minimum and maximum of the segmented variable in <code>seg.Z</code>.
+In each case the &lsquo;linear predictor&rsquo; is <i>&eta;_i=&kappa;_0+z_i^T&kappa;_1+k_i</i>, where <i>z^T</i> includes the covariates 
+specified in <code>z.psi</code> and the <i>k_i</i>s are the changepoint random effects 
+included by means of <code>G0</code> in the <code>random</code> argument.
+</p>
+</td></tr>
+</table>
+
+
+
+
+
+
+
+
+<table summary="R argblock">
+<tr valign="top"><td><code>start</code></td>
+<td>
+
+<p>An optional list including the <em>starting values</em> for the difference-in-slopes parameter, delta0 and delta,
+and the changepoint parameter, kappa and kappa0. When provided, 'kappa0' overwrites 'psi'.
+</p>
+<p>If provided, the components 'delta' and 'kappa' should be <em>named</em> vectors with length and names
+matching length and names in <code>x.diff</code> and <code>z.psi</code> respectively. The component <code>delta0</code> can be
+a scalar or a vector with length equal to the number of clusters (subjects).
+</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+
+<p>the dataframe where the variables are stored. If missing, the dataframe of the <code>"lme"</code> fit <code>obj</code> is assumed.
+</p>
+</td></tr>
+<tr valign="top"><td><code>fixed.parms</code></td>
+<td>
+
+<p>An optional <em>named</em> vector representing the coefficients <em>of the changepoint</em> to be maintained <em>fixed</em>
+during the estimation process. Allowed names are &quot;G0&quot; or any variable (in the dataframe) supposed to
+affect the location of breakpoints.
+For instance <code>fixed.parms=c(G0=.3)</code> implies a fixed value for the changepoint.
+Notice if you use the same variable in <code>fixed.parms</code> and in <code>z.psi</code>, for instance
+<code>fixed.parms=c(x2=.3)</code> and <code>z.psi=~x2</code>, a warning is printed and the
+coefficient &quot;G.x2&quot; is estimated to maximize the log likelihood <em>given</em> that fixed value. As an example, suppose the 
+unconstrained estimated coefficient for x2, say, in <code>z.psi</code> is 0.5; if in a new call both <code>fixed.parms=c(x2=.4)</code> and 
+<code>z.psi=~x2</code> are included, the estimate of &quot;G.x2&quot; will be (approximately) 0.1.
+Essentially, if you really want to fix the parameters in <code>fixed.parms</code>, then 
+do not include the same covariates in <code>z.psi</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>Ignored
+</p>
+</td></tr>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+<h3>Details</h3>
+
+<p>The function fits segmented mixed regression models, i.e. segmented models with random effects also in the slope-difference and change-point parameters. 
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of class <code>segmented.lme</code> with several components. The most relevant are 
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>lme.fit </code></td>
+<td>
+<p>The fitted lme object at convergence</p>
+</td></tr>
+<tr valign="top"><td><code>lme.fit.noG </code></td>
+<td>
+<p>The fitted lme object at convergence assuming known the breakpoints</p>
+</td></tr>
+<tr valign="top"><td><code>psi.i</code></td>
+<td>
+<p>The subject/cluster-specific change points (fixed + random). It includes 2 attributes: <code>attr(,"ni")</code> for the number of measurements in each 'cluster', and <code>attr(,"is.break")</code> a vector of logicals indicating if the breakpoint for each subject i can be reliable (<code>TRUE</code>) or not (<code>FALSE</code>). Here 'reliable' simply means within the covariate range (for subject i). See also argument <code>nq</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>fixed.eta.psi</code></td>
+<td>
+<p>The fixed-effect linear predictor for the change points regression equation. These values will different among 'clusters' only if at least one covariate has been specified in <code>z.psi</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>fixed.eta.delta</code></td>
+<td>
+<p>The fixed-effect linear predictor of the slope difference regression equation. These values will different among 'clusters' only if at least one covariate has been specified in <code>x.diff</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Warning </h3>
+
+<p>The function deals with estimation with a <em>single</em> breakpoint only.
+
+</p>
+
+
+<h3>Note</h3>
+
+<p>Currently only one breakpoint (with or without random effects) can be estimated. If <code>fit</code> is the segmented.lme fit, use <code>VarCorr(fit$lme.fit)</code> to extract the random effect covariance matrix.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Vito M.R. Muggeo <a href="mailto:vito.muggeo@unipa.it">vito.muggeo@unipa.it</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Muggeo V., Atkins D.C., Gallop R.J., Dimidjian S. (2014) 
+Segmented mixed models with random changepoints: a maximum likelihood approach 
+with application to treatment for depression study. Statistical Modelling, 14, 293-313.
+</p>
+<p>Muggeo V. (2016) 
+Segmented mixed models with random changepoints in R.  
+Working paper available on RG. doi: 10.13140/RG.2.1.4180.8402
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../segmented/help/plot.segmented.lme.html">plot.segmented.lme</a></code> for the plotting method and <code><a href="../../segmented/help/segmented.default.html">segmented.default</a></code> (example 2) for segmented models with no random effects in breakpoints or slope difference.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## Not run: 
+library(nlme)
+data(Cefamandole)
+Cefamandole$lTime &lt;-log(Cefamandole$Time)
+Cefamandole$lconc &lt;-log(Cefamandole$conc)
+
+o&lt;-lme(lconc ~ lTime, random=~1|Subject, data=Cefamandole)
+
+os&lt;-segmented.lme(o, ~lTime, random=list(Subject=pdDiag(~1+lTime+U+G0)), 
+  control=seg.control(n.boot=0, display=TRUE))
+slope(os)
+
+
+####################################################
+# covariate effect on the changepoint and slope diff
+
+
+#let's assume a new subject-specific covariates..
+set.seed(69)
+Cefamandole$z &lt;- rep(runif(6), rep(14,6))
+Cefamandole$group &lt;- gl(2,42,labels=c('a','b'))
+
+#Here 'group' affects the slopes and 'z' affects the changepoint 
+
+o1 &lt;-lme(lconc ~ lTime*group, random=~1|Subject, data=Cefamandole)
+os1 &lt;- segmented(o1, ~lTime, x.diff=~group, z.psi=~z, 
+  random=list(Subject=pdDiag(~1+lTime+U+G0)))
+
+slope(os1, by=list(group="a")) #the slope estimates in group="a" (baseline level)
+slope(os1, by=list(group="b")) #the slope estimates in group="b" 
+
+
+###################################################
+# A somewhat "complicated" example:
+#     i)  strong heterogeneity in the changepoints
+#     ii) No changepoint for the Subject #7 (added) 
+
+d&lt;-Cefamandole
+d$x&lt;- d$lTime
+d$x[d$Subject==1]&lt;- d$lTime[d$Subject==1]+3
+d$x[d$Subject==5]&lt;- d$lTime[d$Subject==5]+5
+d$x[d$Subject==3]&lt;- d$lTime[d$Subject==3]-5
+d&lt;-rbind(d, d[71:76,])
+d$Subject &lt;- factor(d$Subject, levels=c(levels(d$Subject),"7")) 
+d$Subject[85:90] &lt;- rep("7",6)
+
+o&lt;-lme(lconc ~ x, random=~1|Subject, data=d)
+os2&lt;-segmented.lme(o, ~x, random=list(Subject=pdDiag(~1+x+U+G0)), 
+  control=seg.control(n.boot=5, display=TRUE))
+
+#plots with common x- and y- scales (to note heterogeneity in the changepoints)
+plot(os2, n.plot = c(3,3)) 
+os2$psi.i
+attr(os2$psi.i, "is.break") #it is FALSE for Subject #7
+
+#plots with subject-specific scales
+plot(os2, n.plot = c(3,3), xscale=-1, yscale = -1) 
+
+## End(Not run)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>segmented</em> version 2.1-0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

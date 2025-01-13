@@ -1,0 +1,335 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Map range coordinates between reads and genome space using...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mapToAlignments {GenomicAlignments}"><tr><td>mapToAlignments {GenomicAlignments}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Map range coordinates between reads and genome space using
+CIGAR alignments</h2>
+
+<h3>Description</h3>
+
+<p>Map range coordinates between reads (local) and genome (reference) space 
+using the CIGAR in a <code>GAlignments</code> object.
+</p>
+<p>See <code>?<a href="../../GenomicFeatures/help/mapToTranscripts.html">mapToTranscripts</a></code> in the 
+<span class="pkg">GenomicRanges</span> package for mapping coordinates between features
+in the transcriptome and genome space.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S4 method for signature 'GenomicRanges,GAlignments'
+mapToAlignments(x, alignments, ...) 
+## S4 method for signature 'GenomicRanges,GAlignments'
+pmapToAlignments(x, alignments, ...) 
+
+## S4 method for signature 'GenomicRanges,GAlignments'
+mapFromAlignments(x, alignments, ...) 
+## S4 method for signature 'GenomicRanges,GAlignments'
+pmapFromAlignments(x, alignments, ...) 
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+
+<p><code><a href="../../GenomicRanges/html/GRanges-class.html">GenomicRanges</a></code> object of positions to be mapped.
+<code>x</code> must have names when mapping to the genome.
+</p>
+</td></tr>
+<tr valign="top"><td><code>alignments</code></td>
+<td>
+
+<p>A <code><a href="../../GenomicAlignments/help/GAlignments-class.html">GAlignments</a></code> object that represents the alignment of
+<code>x</code> to the genome. The <code>aligments</code> object must have names. When
+mapping to the genome names are used to determine mapping pairs and in the
+reverse direction they are used as the seqlevels of the output object.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>Arguments passed to other methods.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>These methods use a <code>GAlignments</code> object to represent the alignment 
+between the ranges in <code>x</code> and the output. The following CIGAR 
+operations in the &quot;Extended CIGAR format&quot; are used in the mapping
+algorithm:
+</p>
+
+<ul>
+<li><p>M, X, = Sequence match or mismatch
+</p>
+</li>
+<li><p>I Insertion to the reference 
+</p>
+</li>
+<li><p>D Deletion from the reference 
+</p>
+</li>
+<li><p>N Skipped region from the reference
+</p>
+</li>
+<li><p>S Soft clip on the read
+</p>
+</li>
+<li><p>H Hard clip on the read
+</p>
+</li>
+<li><p>P Silent deletion from the padded reference
+</p>
+</li></ul>
+
+
+<ul>
+<li><p><code>mapToAlignments</code>, <code>pmapToAlignments</code>
+The CIGAR is used to map the genomic (reference) position <code>x</code> to 
+local coordinates. The mapped position starts at 
+</p>
+<pre>
+      start(x) - start(alignments) + 1
+      </pre>
+<p>and is incremented or decremented as the algorithm walks the length of 
+the CIGAR. A successful mapping in this direction requires that
+<code>x</code> fall within <code>alignments</code>.
+</p>
+<p>The seqlevels of the return object are taken from the 
+<code>alignments</code> object and will be a name descriptive of the read
+or aligned region. In this direction, mapping is attempted between all 
+elements of <code>x</code> and all elements of <code>alignments</code>.
+
+</p>
+</li>
+<li><p><code>mapFromAlignments</code>, <code>pmapFromAlignments</code>
+The CIGAR is used to map the local position <code>x</code> to genomic
+(reference) coordinates. The mapped position starts at
+</p>
+<pre>
+      start(x) + start(alignments) - 1
+      </pre> 
+<p>and is incremented or decremented as the algorithm walks the length of 
+the CIGAR. A successful mapping in this direction requires that the
+width of <code>alignments</code> is &lt;= the width of <code>x</code>.
+</p>
+<p>When mapping to the genome, name matching is used to determine the
+mapping pairs (vs attempting to match all possible pairs). Ranges in
+<code>x</code> are only mapped to ranges in <code>alignments</code> with the
+same name. Name matching is motivated by use cases such as
+differentially expressed regions where the expressed regions in
+<code>x</code> would only be related to a subset of regions in
+<code>alignments</code>, which may contains gene or transcript ranges.
+
+</p>
+</li>
+<li><p>element-wise versions
+<code>pmapToAlignments</code> and <code>pmapFromAlignments</code> are element-wise
+(aka 'parallel') versions of <code>mapToAlignments</code> and 
+<code>mapFromAlignments</code>. The i-th range in <code>x</code> is mapped to the 
+i-th range in <code>alignments</code>; <code>x</code> and <code>alignments</code> must 
+have the same length.
+</p>
+<p>Ranges in <code>x</code> that do not map (out of bounds) are returned as
+zero-width ranges starting at 0. These ranges are given the special
+seqname of &quot;UNMAPPED&quot;. Note the non-parallel methods do not return
+unmapped ranges so the &quot;UNMAPPED&quot; seqname is unique to
+<code>pmapToAlignments</code> and <code>pmapFromAlignments</code>.
+
+</p>
+</li>
+<li><p>strand
+By SAM convention, the CIGAR string is reported for mapped reads on the 
+forward genomic strand. There is no need to consider strand in these
+methods. The output of these methods will always be unstranded 
+(i.e., &quot;*&quot;).
+
+</p>
+</li></ul>
+
+
+
+<h3>Value</h3>
+
+<p>An object the same class as <code>x</code>.
+</p>
+<p>Parallel methods return an object the same shape as <code>x</code>. Ranges that
+cannot be mapped (out of bounds) are returned as zero-width ranges starting 
+at 0 with a seqname of &quot;UNMAPPED&quot;.
+</p>
+<p>Non-parallel methods return an object that varies in length similar to a
+Hits object. The result only contains mapped records, out of bound ranges 
+are not returned. <code>xHits</code> and <code>alignmentsHits</code> metadata columns 
+indicate the elements of <code>x</code> and <code>alignments</code> used in the mapping.
+</p>
+<p>When present, names from <code>x</code> are propagated to the output. When
+mapping locally, the seqlevels of the output are the names on the 
+<code>alignment</code> object. When mapping globally, the output seqlevels are 
+the seqlevels of <code>alignment</code> which are usually chromosome names.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>V. Obenchain, M. Lawrence and H. Pagès</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><code>?<a href="../../GenomicFeatures/help/mapToTranscripts.html">mapToTranscripts</a></code> in the 
+in the <span class="pkg">GenomicFeatures</span> package for methods mapping between
+transcriptome and genome space.
+</p>
+</li>
+<li> <p><a href="http://samtools.sourceforge.net/">http://samtools.sourceforge.net/</a> for a description of
+the Extended CIGAR format.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## ---------------------------------------------------------------------
+## A. Basic use 
+## ---------------------------------------------------------------------
+
+## 1. Map to local space with mapToAlignments()
+## ---------------------------------------------------------------------
+
+## Mapping to local coordinates requires 'x' to be within 'alignments'.
+## In this 'x', the second range is too long and can't be mapped.
+alignments &lt;- GAlignments("chr1", 10L, "11M", strand("*"), names="read_A")
+x &lt;- GRanges("chr1", IRanges(c(12, 12), width=c(6, 20)))
+mapToAlignments(x, alignments)
+
+## The element-wise version of the function returns unmapped ranges
+## as zero-width ranges with a seqlevel of "UNMAPPED":
+pmapToAlignments(x, c(alignments, alignments))
+
+## Mapping the same range through different alignments demonstrates 
+## how the CIGAR operations affect the outcome.
+ops &lt;- c("no-op", "junction", "insertion", "deletion")
+x &lt;- GRanges(rep("chr1", 4), IRanges(rep(12, 4), width=rep(6, 4), names=ops)) 
+alignments &lt;- GAlignments(rep("chr1", 4), rep(10L, 4), 
+                          cigar = c("11M", "5M2N4M", "5M2I4M", "5M2D4M"),
+                          strand = strand(rep("*", 4)),
+                          names = paste0("region_", 1:4))
+pmapToAlignments(x, alignments)
+
+## 2. Map to genome space with mapFromAlignments()
+## ---------------------------------------------------------------------
+
+## One of the criteria when mapping to genomic coordinates is that the
+## shifted 'x' range falls within 'alignments'. Here the first 'x' 
+## range has a shifted start value of 14 (5 + 10 - 1 = 14) with a width of 
+## 2 and so is successfully mapped. The second has a shifted start of 29
+## (20 + 10 - 1 = 29) which is outside the range of 'alignments'.
+x &lt;- GRanges("chr1", IRanges(c(5, 20), width=2, names=rep("region_A", 2)))
+alignments &lt;- GAlignments("chr1", 10L, "11M", strand("*"), names="region_A")
+mapFromAlignments(x, alignments)
+
+## Another characteristic of mapping this direction is the name matching
+## used to determine pairs. Mapping is only attempted between ranges in 'x' 
+## and 'alignments' with the same name. If we change the name of the first 'x' 
+## range, only the second will be mapped to 'alignment'. We know the second
+## range fails to map so we get an empty result.
+names(x) &lt;- c("region_B", "region_A")
+mapFromAlignments(x, alignments)
+
+## CIGAR operations: insertions reduce the width of the output while
+## junctions and deletions increase it.
+ops &lt;- c("no-op", "junction", "insertion", "deletion")
+x &lt;- GRanges(rep("chr1", 4), IRanges(rep(3, 4), width=rep(5, 4), names=ops)) 
+alignments &lt;- GAlignments(rep("chr1", 4), rep(10L, 4), 
+                         cigar = c("11M", "5M2N4M", "5M2I4M", "5M2D4M"),
+                         strand = strand(rep("*", 4)))
+pmapFromAlignments(x, alignments)
+
+## ---------------------------------------------------------------------
+## B. TATA box motif: mapping from read -&gt; genome -&gt; transcript
+## ---------------------------------------------------------------------
+
+## The TATA box motif is a conserved DNA sequence in the core promoter
+## region. Many eukaryotic genes have a TATA box located approximately
+## 25-35 base pairs upstream of the transcription start site. The motif is 
+## the binding site of general transcription factors or histones and
+## plays a key role in transcription.
+
+## In this example, the position of the TATA box motif (if present) is 
+## located in the DNA sequence corresponding to read ranges. The local 
+## motif positions are mapped to genome coordinates and then mapped
+## to gene features such as promoters regions.
+
+## Load reads from chromosome 4 of D. melanogaster (dm3):
+library(pasillaBamSubset)
+fl &lt;- untreated1_chr4()
+gal &lt;- readGAlignments(fl)
+
+## Extract DNA sequences corresponding to the read ranges:
+library(GenomicFeatures)
+library(BSgenome.Dmelanogaster.UCSC.dm3)
+dna &lt;- extractTranscriptSeqs(BSgenome.Dmelanogaster.UCSC.dm3, grglist(gal))
+
+## Search for the consensus motif TATAAA in the sequences:
+box &lt;- vmatchPattern("TATAAA", dna)
+
+## Some sequences had more than one match:
+table(elementNROWS(box))
+
+## The element-wise function we'll use for mapping to genome coordinates
+## requires the two input argument to have the same length. We need to
+## replicate the read ranges to match the number of motifs found.
+
+## Expand the read ranges to match motifs found:
+motif &lt;- elementNROWS(box) != 0
+alignments &lt;- rep(gal[motif], elementNROWS(box)[motif])
+
+## We make the IRanges into a GRanges object so the seqlevels can
+## propagate to the output. Seqlevels are needed in the last mapping step.
+readCoords &lt;- GRanges(seqnames(alignments), unlist(box, use.names=FALSE))
+
+## Map the local position of the motif to genome coordinates:
+genomeCoords &lt;- pmapFromAlignments(readCoords, alignments) 
+genomeCoords
+
+## We are interested in the location of the TATA box motifs in the
+## promoter regions. To perform the mapping we need the promoter ranges 
+## as a GRanges or GRangesList.
+
+## Extract promoter regions 50 bp upstream from the transcription start site:
+library(TxDb.Dmelanogaster.UCSC.dm3.ensGene)
+txdb &lt;- TxDb.Dmelanogaster.UCSC.dm3.ensGene
+promoters &lt;- promoters(txdb, upstream=50, downstream=0)
+
+## Map the genome coordinates to the promoters:
+names(promoters) &lt;- mcols(promoters)$tx_name  ## must be named 
+mapToTranscripts(genomeCoords, promoters) 
+
+
+
+
+
+
+
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GenomicAlignments</em> version 1.30.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

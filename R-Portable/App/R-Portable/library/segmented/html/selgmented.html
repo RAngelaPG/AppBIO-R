@@ -1,0 +1,235 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Selecting the number of breakpoints in segmented regression</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for selgmented {segmented}"><tr><td>selgmented {segmented}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Selecting the number of breakpoints in segmented regression
+</h2>
+
+<h3>Description</h3>
+
+<p>This function selects (and estimates) the number of breakpoints of the segmented relationship according to the BIC/AIC criterion or sequential hypothesis testing.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+selgmented(olm, seg.Z, Kmax=2, type = c("score", "bic", "davies", "aic"), 
+  alpha = 0.05, control = seg.control(), refit = FALSE, stop.if = 5, 
+  return.fit = TRUE, bonferroni = FALSE, msg = TRUE, plot.ic = FALSE, th = NULL, 
+  G = 1, check.dslope = TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>olm</code></td>
+<td>
+
+<p>A starting <code>lm</code> or <code>glm</code> object, or a simple numerical vector meaning the response variable.
+</p>
+</td></tr>
+<tr valign="top"><td><code>seg.Z</code></td>
+<td>
+
+<p>A one-side formula for the segmented variable. Only one term can be included, and it can be omitted if <code>olm</code> is a (g)lm fit including just one covariate.
+</p>
+</td></tr>
+<tr valign="top"><td><code>Kmax</code></td>
+<td>
+
+<p>The maximum number of breakpoints being tested. If <code>type='bic'</code> or <code>type='aic'</code>, any integer value can be specified; otherwise at most <code>Kmax=2</code> breakpoints can be tested via the Score or Davies statistics.
+</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+
+<p>Which criterion should be used? Options <code>"score"</code> and <code>"davies"</code> allow to carry out sequential hypothesis testing with no more than 2 breakpoints (<code>Kmax=2</code>). Alternatively, the number of breakpoints can be selected via the BIC (or AIC) with virtually no upper bound for <code>Kmax</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>alpha</code></td>
+<td>
+
+<p>The fixed type I error probability when sequential hypothesis testing is carried out (i.e. <code>type='score'</code> or <code>'davies'</code>). It is also used when <code>type='bic'</code> (or <code>type='aic'</code>) and <code>check.dslope=TRUE</code> to remove the breakpoints based on the slope diffence t-value.
+</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+
+<p>See <code><a href="../../segmented/help/seg.control.html">seg.control</a></code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>refit</code></td>
+<td>
+
+<p>If <code>TRUE</code>, the final selected model is re-fitted using arguments in <code>control</code>, typically with bootstrap restarting. Set <code>refit=FALSE</code> to speed up computation (and possibly accepting near-optimal estimates). It is always <code>TRUE</code> if <code>type='score'</code> or <code>type='davies'</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>stop.if</code></td>
+<td>
+
+<p>An integer. If, when trying models with an increasing (when <code>G=1</code>) or decreasing (when <code>G&gt;1</code>) number of breakpoints, <code>stop.if</code> consecutive fits exhibit higher AIC/BIC values, the search is interrupted. Set a large number, larger then <code>Kmax</code> say, if you want to assess the fits for all breakpoints <code>0, 1, 2, ..., Kmax</code>. Ignored if <code>type='score'</code> or <code>type='davies'</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>return.fit</code></td>
+<td>
+
+<p>If <code>TRUE</code>, the fitted model (with the number of breakpoints selected according to <code>type</code>) is returned.
+</p>
+</td></tr>
+<tr valign="top"><td><code>bonferroni</code></td>
+<td>
+
+<p>If <code>TRUE</code>, the Bonferroni correction is employed, i.e. <code>alpha/Kmax</code> (rather than <code>alpha</code>) is always taken as threshold value to reject or not. If <code>FALSE</code>, <code>alpha</code> is used in the second level of hypothesis testing. It is also effective when <code>type="bic"</code> (or <code>'aic'</code>) and <code>check.dslope=TRUE</code>, see Details. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>msg</code></td>
+<td>
+
+<p>If <code>FALSE</code> the final fit is returned silently with the selected number of breakpoints, otherwise the messages about the selection procedure (i.e. the BIC values), and possible warnings are also printed.
+</p>
+</td></tr>
+<tr valign="top"><td><code>plot.ic</code></td>
+<td>
+
+<p>If <code>TRUE</code> the information criterion values with respect to the number of breakpoints are plotted. Ignored if <code>type='score'</code> or <code>type='davies'</code> or <code>G&gt;1</code>. Note that if <code>check.dslope=TRUE</code>, the final number of breakpoints could differ from the one selected by the BIC/AIC leading to an inconsistent plot of the information criterion, see Note below.   
+</p>
+</td></tr>
+<tr valign="top"><td><code>th</code></td>
+<td>
+
+<p>When a large number of breakpoints is being tested, it could happen that 2 estimated breakpoints are too close each other, and only one can be retained. Thus if the difference between two breakpoints is less or equal to <code>th</code>, one (the first) breakpoint is removed. Of course, <code>th</code> depends on the <code>x</code> scale: Integers, like 5 or 10, are appropriate if the covariate is the observation index. Default (<code>NULL</code>) means <code>th=diff(range(x))/100</code>. Set <code>th=0</code> if you are willing to consider even breakpoints very clode each other. Ignored if <code>type='score'</code> or <code>type='davies'</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>G</code></td>
+<td>
+
+<p>Number of sub-intervals to consider to search for the breakpoints when <code>type='bic'</code> or <code>'aic'</code>. See Details.
+</p>
+</td></tr>
+<tr valign="top"><td><code>check.dslope</code></td>
+<td>
+
+<p>Logical. Effective only if <code>type='bic'</code> or <code>'aic'</code>. After the optimal number of breakpoints has been selected (via AIC/BIC), should the <i>t</i> values of the slope differences be checked? If <code>TRUE</code>, the breakpoints corresponding to slope differences with a 'low' <i>t</i> values will be removed. Note the model is re-fitted at each removal and a new check is performed. Simulation evidence suggests that such strategy leads to better results. See Details.
+</p>
+</td></tr>
+</table>
+
+
+
+
+
+<h3>Details</h3>
+
+<p>The function uses properly the functions <code>segmented</code>, <code>pscore.test</code> or <code>davies.test</code> to select the 'optimal' number of breakpoints <code>0,1,...,Kmax</code>. If <code>type='bic'</code> or <code>'aic'</code>, the procedure stops if the last <code>stop.if</code> fits have increasing values of the information criterion. Moreover, a breakpoint is removed if too close to other, actually if the difference between two consecutive estimates is less then <code>th</code>. Finally, if <code>check.dslope=TRUE</code>, breakpoints whose corresponding slope difference estimate is &lsquo;small&rsquo; (i.e. <i>p</i>-value larger then <code>alpha</code> or <code>alpha/Kmax</code>) are also removed. 
+</p>
+<p>When <i>G&gt;1</i> the dataset is split into <i>G</i> groups, and the search is carried out separately within each group. This approach is fruitful when there are many breakpoints not evenly spaced in the covariate range and/or concentrated in some sub-intervals. <code>G=3</code> or <code>4</code> is recommended based on simulation evidence. 
+</p>
+<p>Note <code>Kmax</code> is always tacitely reduced in order to have at least 1 residual df in the model with <code>Kmax</code> changepoints. Namely, if <i>n=20</i>, the maximal segmented model has <code>2*(Kmax + 1)</code> parameters, and therefore the largest <code>Kmax</code> allowed is 8.
+</p>
+<p>When <code>type='score'</code> or <code>'davies'</code>, the function also returns the 'overall p-value' coming from combing the single p-values using the Fisher method. The pooled p-value, however, does not affect the final result which depends on the single p-values only. 
+</p>
+
+
+<h3>Value</h3>
+
+<p>The returned object depends on argument <code>return.fit</code>. If <code>FALSE</code>, the returned object is a list with some information on the compared models (i.e. the BIC values), otherwise a classical <code>'segmented'</code> object (see <code><a href="../../segmented/help/segmented.html">segmented</a></code> for details) with the component <code>selection.psi</code> including the A/BIC values and<br />
+- if <code>refit=TRUE</code>, <code>psi.no.refit</code> that represents the breakpoint values before the last fit (with boot restarting)<br />
+- if <code>G&gt;1</code>, <code>cutvalues</code> including the cutoffs values used to split the data.
+</p>
+
+
+
+
+
+<h3>Note</h3>
+
+<p>If <code>check.dslope=TRUE</code>, there is no guarantee that the final model has the lowest AIC/BIC. Namely the model with the best A/BIC could have &lsquo;non-significant&rsquo; slope differences which will be removed (with the corresponding breakpoints) by the final model. Hence the possible plot (obtained via <code>plot.ic=TRUE</code>) could be misleading. See Example 1 below.   
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Vito M. R. Muggeo
+</p>
+
+
+<h3>References</h3>
+
+<p>Muggeo V (2020) Selecting number of breakpoints in segmented regression: implementation in the R package segmented
+https://www.researchgate.net/publication/343737604
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../segmented/help/segmented.html">segmented</a></code>, <code><a href="../../segmented/help/pscore.test.html">pscore.test</a></code>, <code><a href="../../segmented/help/davies.test.html">davies.test</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+set.seed(12)
+xx&lt;-1:100
+zz&lt;-runif(100)
+yy&lt;-2+1.5*pmax(xx-35,0)-1.5*pmax(xx-70,0)+15*pmax(zz-.5,0)+rnorm(100,0,2)
+dati&lt;-data.frame(x=xx,y=yy,z=zz)
+out.lm&lt;-lm(y~x,data=dati)
+
+os &lt;-selgmented(out.lm) #selection (Kmax=2) via the Score test (default)
+
+os &lt;-selgmented(out.lm, type="bic", Kmax=3) #BIC-based selection
+
+## Not run: 
+########################################
+#Example 1: selecting a large number of breakpoints
+
+b &lt;- c(-1,rep(c(1.5,-1.5),l=15))
+psi &lt;- seq(.1,.9,l=15)
+n &lt;- 2000
+x &lt;- 1:n/n
+X &lt;- cbind(x, outer(x,psi,function(x,y)pmax(x-y,0)))
+mu &lt;- drop(tcrossprod(X,t(b)))
+set.seed(113)
+y&lt;- mu + rnorm(n)*.022 
+par(mfrow=c(1,2))
+
+#select number of breakpoints via the BIC (and plot it)
+o&lt;-selgmented(y, Kmax=20, type='bic', plot.ic=TRUE, check.dslope = FALSE) 
+plot(o, res=TRUE, col=2, lwd=3)
+points(o)
+# select via the BIC + check on the slope differences (default)
+o1 &lt;-selgmented(y, Kmax=20, type='bic', plot.ic=TRUE) #check.dslope = TRUE by default
+#note the plot of BIC is misleading.. But the number of psi is correct 
+plot(o1, add=TRUE, col=3)
+points(o1, col=3, pch=3)
+
+##################################################
+#Example 2: a large number of breakpoints not evenly spaced.  
+
+b &lt;- c(-1,rep(c(2,-2),l=10))
+psi &lt;- seq(.5,.9,l=10)
+n &lt;- 2000
+x &lt;- 1:n/n
+X &lt;- cbind(x, outer(x,psi,function(x,y)pmax(x-y,0)))
+mu &lt;- drop(tcrossprod(X,t(b)))
+y&lt;- mu + rnorm(n)*.02 
+
+#run selgmented with G&gt;1. G=3 or 4 recommended. 
+#note G=1 does not return the right number of breaks  
+o1 &lt;-selgmented(y, type="bic", Kmax=20, G=4)
+
+## End(Not run)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>segmented</em> version 2.1-0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

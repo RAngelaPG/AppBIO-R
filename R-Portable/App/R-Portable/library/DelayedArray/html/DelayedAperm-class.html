@@ -1,0 +1,167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: DelayedAperm objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for DelayedAperm-class {DelayedArray}"><tr><td>DelayedAperm-class {DelayedArray}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>DelayedAperm objects</h2>
+
+<h3>Description</h3>
+
+<p>NOTE: This man page is about <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> internals and is provided
+for developers and advanced users only.
+</p>
+<p>The DelayedAperm class provides a formal representation of a
+<em>delayed &quot;extended <code>aperm()</code>&quot; operation</em>, that is, of a delayed
+<code><a href="../../base/help/aperm.html">aperm</a>()</code> that can drop and/or add <em>ineffective</em>
+dimensions. Note that since only <em>ineffective</em> dimensions (i.e.
+dimensions with an extent of 1) can be dropped or added, the length of
+the output array is guaranteed to be the same as the length of the input
+array.
+</p>
+<p>DelayedAperm is a concrete subclass of the <a href="../../DelayedArray/help/DelayedUnaryOp.html">DelayedUnaryOp</a> virtual
+class, which itself is a subclass of the <a href="../../DelayedArray/help/DelayedOp.html">DelayedOp</a> virtual class:
+</p>
+<pre>
+                          DelayedOp
+                              ^
+                              |
+                        DelayedUnaryOp
+                              ^
+                              |
+                         DelayedAperm
+  </pre>
+<p>DelayedAperm objects are used inside a <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> object to
+represent the <em>delayed &quot;extended <code>aperm()</code>&quot; operations</em> carried
+by the object. They're never exposed to the end user and are not intended
+to be manipulated directly.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S4 method for signature 'DelayedAperm'
+is_noop(x)
+
+## S4 method for signature 'DelayedAperm'
+summary(object, ...)
+
+## ~ ~ ~ Seed contract ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+## S4 method for signature 'DelayedAperm'
+dim(x)
+
+## S4 method for signature 'DelayedAperm'
+dimnames(x)
+
+## S4 method for signature 'DelayedAperm'
+extract_array(x, index)
+
+## ~ ~ ~ Propagation of sparsity ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+## S4 method for signature 'DelayedAperm'
+is_sparse(x)
+
+## S4 method for signature 'DelayedAperm'
+extract_sparse_array(x, index)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x, object</code></td>
+<td>
+
+<p>A DelayedAperm object.
+</p>
+</td></tr>
+<tr valign="top"><td><code>index</code></td>
+<td>
+
+<p>See <code>?<a href="../../DelayedArray/help/extract_array.html">extract_array</a></code> for a description of the <code>index</code>
+argument.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>Not used.
+</p>
+</td></tr>
+</table>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><a href="../../DelayedArray/help/DelayedOp.html">DelayedOp</a> objects.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/showtree.html">showtree</a></code> to visualize the nodes and access the
+leaves in the tree of delayed operations carried by a
+<a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> object.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/extract_array.html">extract_array</a></code> and <code><a href="../../DelayedArray/help/extract_sparse_array.html">extract_sparse_array</a></code>.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## DelayedAperm extends DelayedUnaryOp which extends DelayedOp:
+extends("DelayedAperm")
+
+## ---------------------------------------------------------------------
+## BASIC EXAMPLES
+## ---------------------------------------------------------------------
+a0 &lt;- array(1:20, dim=c(1, 10, 2))
+A0 &lt;- DelayedArray(a0)
+showtree(A0)
+
+A &lt;- aperm(A0, perm=c(2, 3, 1))
+showtree(A)
+class(A@seed)       # a DelayedAperm object
+
+M1 &lt;- drop(A0)
+showtree(M1)
+class(M1@seed)      # a DelayedAperm object
+
+M2 &lt;- t(M1)
+showtree(M2)
+class(M2@seed)      # a DelayedAperm object
+
+## ---------------------------------------------------------------------
+## PROPAGATION OF SPARSITY
+## ---------------------------------------------------------------------
+## DelayedAperm objects always propagate sparsity.
+
+sa0 &lt;- as(a0, "SparseArraySeed")
+SA0 &lt;- DelayedArray(sa0)
+showtree(SA0)
+is_sparse(SA0)      # TRUE
+
+SA &lt;- aperm(SA0, perm=c(2, 3, 1))
+showtree(SA)
+class(SA@seed)      # a DelayedAperm object
+is_sparse(SA@seed)  # TRUE
+
+## ---------------------------------------------------------------------
+## SANITY CHECKS
+## ---------------------------------------------------------------------
+stopifnot(class(A@seed) == "DelayedAperm")
+stopifnot(class(M1@seed) == "DelayedAperm")
+stopifnot(class(M2@seed) == "DelayedAperm")
+stopifnot(class(SA@seed) == "DelayedAperm")
+stopifnot(is_sparse(SA@seed))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>DelayedArray</em> version 0.20.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

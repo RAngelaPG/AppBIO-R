@@ -1,0 +1,697 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Write blocks of data to a RealizationSink</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for write_block {DelayedArray}"><tr><td>write_block {DelayedArray}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Write blocks of data to a RealizationSink</h2>
+
+<h3>Description</h3>
+
+<p>Use <code>write_block()</code> to write a block of array data to a
+RealizationSink derivative.
+</p>
+<p><code>sinkApply()</code> is a convenience function for walking on a
+RealizationSink derivative, typically for the purpose of filling it
+with blocks of data.
+</p>
+<p>Note that <code>write_block()</code> is typically used inside the callback
+function passed to <code>sinkApply()</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+write_block(sink, viewport, block)
+
+## Walk on a RealizationSink derivative:
+sinkApply(sink, FUN, ..., grid=NULL, verbose=NA)
+
+## Backend-agnostic RealizationSink constructor:
+AutoRealizationSink(dim, dimnames=NULL, type="double", as.sparse=FALSE)
+
+## Get/set the "automatic realization backend":
+getAutoRealizationBackend()
+setAutoRealizationBackend(BACKEND=NULL)
+supportedRealizationBackends()
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>sink</code></td>
+<td>
+
+<p>A **writable** array-like object, typically a RealizationSink derivative.
+Some important notes:
+</p>
+
+<ul>
+<li> <p><a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> objects are NEVER writable, even when they
+don't carry delayed operations (e.g. <a href="../../HDF5Array/help/HDF5Array.html">HDF5Array</a>
+objects from the <span class="pkg">HDF5Array</span> package), and even when they
+don't carry delayed operations **and** have all their data in
+memory (e.g. <a href="../../DelayedArray/help/RleArray.html">RleArray</a> objects). In other words, there are
+NO exceptions.
+</p>
+</li>
+<li><p> RealizationSink is a **virtual** class so <code>sink</code> will always
+be a RealizationSink **derivative**, that is, an object that
+belongs to a **concrete** subclass of the RealizationSink class
+(e.g. an <a href="../../HDF5Array/help/HDF5RealizationSink.html">HDF5RealizationSink</a> object from the
+<span class="pkg">HDF5Array</span> package).
+</p>
+</li>
+<li><p> RealizationSink derivatives are considered array-like objects
+i.e. they have dimensions and possibly dimnames.
+</p>
+</li></ul>
+
+<p>Although <code>write_block()</code> and <code>sinkApply()</code> will typically be
+used on a RealizationSink derivative, they can also be used on an ordinary
+array or other writable in-memory array-like objects like dgCMatrix objects
+from the <span class="pkg">Matrix</span> package.
+</p>
+</td></tr>
+<tr valign="top"><td><code>viewport</code></td>
+<td>
+
+<p>An <a href="../../DelayedArray/help/ArrayViewport.html">ArrayViewport</a> object compatible with <code>sink</code>, that is,
+such that <code>refdim(viewport)</code> is identical to <code>dim(sink)</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>block</code></td>
+<td>
+
+<p>An ordinary (dense) array or <a href="../../DelayedArray/help/SparseArraySeed.html">SparseArraySeed</a> object of the
+same dimensions as <code>viewport</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>FUN</code></td>
+<td>
+
+<p>The callback function to apply to each **viewport** of the grid used
+to walk on <code>sink</code>. <code>sinkApply()</code> will perform
+<code>sink &lt;- FUN(sink, viewport, ...)</code> on each viewport, so <code>FUN</code>
+must take at least two arguments, typically <code>sink</code> and <code>viewport</code>
+(but the exact names can differ).
+</p>
+<p>The function is expected to return its 1st argument (<code>sink</code>) possibly
+modified (e.g. when <code>FUN</code> contains a call to <code>write_block()</code>,
+which is typically the case).
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>Additional arguments passed to <code>FUN</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>grid</code></td>
+<td>
+
+<p>The grid used for the walk, that is, an <a href="../../DelayedArray/help/ArrayGrid.html">ArrayGrid</a> object that
+defines the viewports to walk on. It must be compatible with the
+geometry of <code>sink</code>. If not specified, an automatic grid is
+created by calling <code><a href="../../DelayedArray/help/defaultSinkAutoGrid.html">defaultSinkAutoGrid</a>(sink)</code>, and used.
+See <code>?<a href="../../DelayedArray/help/defaultSinkAutoGrid.html">defaultSinkAutoGrid</a></code> for more information.
+</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+
+<p>Whether block processing progress should be displayed or not.
+If set to <code>NA</code> (the default), verbosity is controlled
+by <code>DelayedArray:::get_verbose_block_processing()</code>.
+Setting <code>verbose</code> to <code>TRUE</code> or <code>FALSE</code> overrides this.
+</p>
+</td></tr>
+<tr valign="top"><td><code>dim</code></td>
+<td>
+
+<p>The dimensions (specified as an integer vector) of the RealizationSink
+derivative to create.
+</p>
+</td></tr>
+<tr valign="top"><td><code>dimnames</code></td>
+<td>
+
+<p>The dimnames (specified as a list of character vectors or NULLs) of
+the RealizationSink derivative to create.
+</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+
+<p>The type of the data that will be written to the RealizationSink
+derivative to create.
+</p>
+</td></tr>
+<tr valign="top"><td><code>as.sparse</code></td>
+<td>
+
+<p>Whether the data should be written as sparse or not to the
+RealizationSink derivative to create. Not all <em>realization
+backends</em> support this.
+</p>
+</td></tr>
+<tr valign="top"><td><code>BACKEND</code></td>
+<td>
+
+<p><code>NULL</code> (the default), or a single string specifying the name of
+a realization backend e.g. <code>"HDF5Array"</code> or <code>"RleArray"</code>
+etc...
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>*** The RealizationSink API ***
+</p>
+<p>The DelayedArray package provides a simple API for writing blocks
+of array data to disk (or to memory): the &quot;RealizationSink API&quot;.
+This API allows the developper to write code that is agnostic about
+the particular on-disk (or in-memory) format being used to store
+the data.
+</p>
+<p>Here is how to use it:
+</p>
+
+<ol>
+<li><p> Create a realization sink.
+</p>
+</li>
+<li><p> Write blocks of array data to the realization sink with
+one or several calls to <code>write_block()</code>.
+</p>
+</li>
+<li><p> Close the realization sink with <code>close()</code>.
+</p>
+</li>
+<li><p> Coerce the realization sink to <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a>.
+</p>
+</li></ol>
+
+<p>A realization sink is formally represented by a RealizationSink derivative.
+Note that RealizationSink is a virtual class with various concrete
+subclasses like <a href="../../HDF5Array/help/HDF5RealizationSink.html">HDF5RealizationSink</a> from the
+<span class="pkg">HDF5Array</span> package, or <a href="../../DelayedArray/help/RleRealizationSink.html">RleRealizationSink</a>.
+Each subclass implements the &quot;RealizationSink API&quot; for a specific
+realization backend.
+</p>
+<p>To create a realization sink, use the specific constructor function.
+This function should be named as the class itself e.g.
+<code><a href="../../HDF5Array/help/HDF5RealizationSink.html">HDF5RealizationSink</a>()</code>.
+</p>
+<p>To create a realization sink in a backend-agnostic way, use
+<code>AutoRealizationSink()</code>. It will create a RealizationSink derivative
+for the current <em>automatic realization backend</em> (see below).
+</p>
+<p>Once writing to the realization sink is completed, the RealizationSink
+derivative must be closed (with <code>close(sink)</code>), then coerced to
+<a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> (with <code>as(sink, "DelayedArray")</code>. What
+specific <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> derivative this coercion will return
+depends on the specific class of the RealizationSink derivative. For
+example, if <code>sink</code> is an <a href="../../HDF5Array/help/HDF5RealizationSink.html">HDF5RealizationSink</a>
+object from the <span class="pkg">HDF5Array</span> package, then <code>as(sink, "DelayedArray")</code>
+will return an <a href="../../HDF5Array/help/HDF5Array.html">HDF5Array</a> instance (the
+<a href="../../HDF5Array/help/HDF5Array.html">HDF5Array</a> class is a <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> subclass).
+</p>
+<p>*** The <em>automatic realization backend</em> ***
+</p>
+<p>The <em>automatic realization backend</em> is a user-controlled global
+setting that indicates what specific RealizationSink derivative
+<code>AutoRealizationSink()</code> should return.
+In the context of block processing of a <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> object,
+this controls where/how realization happens e.g. as an ordinary array
+if not set (i.e. set to <code>NULL</code>), or as an <a href="../../HDF5Array/help/HDF5Array.html">HDF5Array</a>
+object if set to <code>"HDF5Array"</code>, or as an <a href="../../DelayedArray/help/RleArray.html">RleArray</a> object
+if set to <code>"RleArray"</code>, etc...
+</p>
+<p>Use <code>getAutoRealizationBackend()</code> or <code>setAutoRealizationBackend()</code>
+to get or set the <em>automatic realization backend</em>.
+</p>
+<p>Use <code>supportedRealizationBackends()</code> to get the list of realization
+backends that are currently supported.
+</p>
+<p>*** Cross realization backend compatibility ***
+</p>
+<p>Two important things to keep in mind for developers aiming at writing
+code that is compatible across realization backends:
+</p>
+
+<ul>
+<li><p> Realization backends don't necessarily support concurrent
+writing.
+</p>
+<p>More precisely: Even though it is safe to assume that any
+<a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> object will support concurrent
+<code>read_block()</code> calls, it is not so safe to assume that
+any RealizationSink derivative will support concurrent calls
+to <code>write_block()</code>. For example, at the moment,
+<a href="../../HDF5Array/help/HDF5RealizationSink.html">HDF5RealizationSink</a> objects do not
+support concurrent writing.
+</p>
+<p>This means that in order to remain compatible across realization
+backends, code that contains calls to <code>write_block()</code> should
+NOT be parallelized.
+</p>
+</li>
+<li><p> Some realization backends are &quot;linear write only&quot;, that is,
+they don't support <em>random write access</em>, only
+<em>linear write access</em>.
+</p>
+<p>Such backends will provide a relization sink where the blocks
+of data must be written in linear order (i.e. by ascending rank).
+Furthermore, the geometry of the blocks must also be
+compatible with <em>linear write access</em>, that is, they must
+have a &quot;first-dim-grows-first&quot; shape. Concretely this means
+that the grid used to walk on the relization sink must be
+created with something like:
+</p>
+<pre>    colAutoGrid(sink)</pre>
+<p>for a two-dimensional sink, or with something like:
+</p>
+<pre>    defaultSinkAutoGrid(sink)</pre>
+<p>for a sink with an arbitrary number of dimensions.
+</p>
+<p>See <code>?<a href="../../DelayedArray/help/defaultSinkAutoGrid.html">defaultSinkAutoGrid</a></code> for more information.
+</p>
+<p>For obvious reasons, &quot;linear write only&quot; realization
+backends do not support concurrent writing.
+</p>
+</li></ul>
+
+
+
+<h3>Value</h3>
+
+<p>For <code>write_block()</code>, the modified array-like object <code>sink</code>.
+</p>
+<p>For <code>sinkApply()</code>, its 1st argument (<code>sink</code>) possibly
+modified (e.g. when callback function <code>FUN</code> contains a call to
+<code>write_block()</code>, which is typically the case).
+</p>
+<p>For <code>AutoRealizationSink()</code>, a RealizationSink derivative with the
+class associated with the current <em>automatic realization backend</em>.
+</p>
+<p>For <code>getAutoRealizationBackend</code>, <code>NULL</code> (no backend set yet)
+or a single string specifying the name of the <em>automatic realization
+backend</em> currently in use.
+</p>
+<p>For <code>supportedRealizationBackends</code>, a data frame with 1 row
+per supported realization backend.
+</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><code><a href="../../DelayedArray/help/defaultSinkAutoGrid.html">defaultSinkAutoGrid</a></code> to create an automatic grid
+on a RealizationSink derivative.
+</p>
+</li>
+<li> <p><a href="../../DelayedArray/help/ArrayGrid.html">ArrayGrid</a> for the formal representation of grids and
+viewports.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/read_block.html">read_block</a></code>.
+</p>
+</li>
+<li> <p><a href="../../DelayedArray/help/SparseArraySeed.html">SparseArraySeed</a> objects.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/blockApply.html">blockApply</a></code> and family for convenient block
+processing of an array-like object.
+</p>
+</li>
+<li> <p><a href="../../HDF5Array/help/HDF5RealizationSink.html">HDF5RealizationSink</a> objects in the
+<span class="pkg">HDF5Array</span> package.
+</p>
+</li>
+<li> <p><a href="../../HDF5Array/help/HDF5-dump-management.html">HDF5-dump-management</a> in the <span class="pkg">HDF5Array</span>
+package to control the location and physical properties of
+automatically created HDF5 datasets.
+</p>
+</li>
+<li> <p><a href="../../DelayedArray/help/RleArray.html">RleArray</a> objects.
+</p>
+</li>
+<li> <p><a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> objects.
+</p>
+</li>
+<li> <p><a href="../../base/help/array.html">array</a> objects in base R.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## ---------------------------------------------------------------------
+## USING THE "RealizationSink API": EXAMPLE 1
+## ---------------------------------------------------------------------
+
+## -- STEP 1 --
+## Create a realization sink. Note that instead of creating a
+## realization sink by calling a backend-specific sink constructor
+## (e.g. HDF5Array::HDF5RealizationSink), we set the "automatic
+## realization backend" to "HDF5Array" and use backend-agnostic
+## constructor AutoRealizationSink():
+setAutoRealizationBackend("HDF5Array")
+sink &lt;- AutoRealizationSink(c(35L, 50L, 8L))
+dim(sink)
+
+## -- STEP 2 --
+## Define the grid of viewports to walk on. Here we define a grid made
+## of very small viewports on 'sink'. Note that, for real-world use cases,
+## block processing will typically use grids made of much bigger
+## viewports, usually obtained with defaultSinkAutoGrid().
+## Also please note that this grid would not be compatible with "linear
+## write only" realization backends. See "Cross realization backend
+## compatibility" above in this man page for more information.
+sink_grid &lt;- RegularArrayGrid(dim(sink), spacings=c(20, 20, 4))
+
+## -- STEP 3 --
+## Walk on the grid, and, for each of viewport, write random data to it.
+for (bid in seq_along(sink_grid)) {
+    viewport &lt;- sink_grid[[bid]]
+    block &lt;- array(runif(length(viewport)), dim=dim(viewport))
+    sink &lt;- write_block(sink, viewport, block)
+}
+
+## -- An alternative to STEP 3 --
+FUN &lt;- function(sink, viewport) {
+    block &lt;- array(runif(length(viewport)), dim=dim(viewport))
+    write_block(sink, viewport, block)
+}
+sink &lt;- sinkApply(sink, FUN, grid=sink_grid, verbose=TRUE)
+
+## -- STEP 4 --
+## Close the sink and turn it into a DelayedArray object:
+close(sink)
+A &lt;- as(sink, "DelayedArray")
+A
+
+setAutoRealizationBackend()  # unset automatic realization backend
+
+## ---------------------------------------------------------------------
+## USING THE "RealizationSink API": EXAMPLE 2
+## ---------------------------------------------------------------------
+
+## Say we have a 3D array and want to collapse its 3rd dimension by
+## summing the array elements that are stacked vertically, that is, we
+## want to compute the matrix M obtained by doing sum(A[i, j, ]) for all
+## valid i and j. This is very easy to do with an ordinary array:
+collapse_3rd_dim &lt;- function(a) apply(a, MARGIN=1:2, sum)
+
+## or, in a slightly more efficient way:
+collapse_3rd_dim &lt;- function(a) {
+    m &lt;- matrix(0, nrow=nrow(a), ncol=ncol(a))
+    for (z in seq_len(dim(a)[[3]]))
+        m &lt;- m + a[ , , z]
+    m
+}
+
+## With a toy 3D array:
+a &lt;- array(runif(8000), dim=c(25, 40, 8))
+dim(collapse_3rd_dim(a))
+stopifnot(identical(sum(a), sum(collapse_3rd_dim(a))))  # sanity check
+
+## Now say that A is so big that even M wouldn't fit in memory. This is
+## a situation where we'd want to compute M block by block:
+
+## -- STEP 1 --
+## Create the 2D realization sink:
+setAutoRealizationBackend("HDF5Array")
+sink &lt;- AutoRealizationSink(dim(a)[1:2])
+dim(sink)
+
+## -- STEP 2 --
+## Define two grids: one for 'sink' and one for 'a'. Since we're going
+## to walk on the two grids simultaneously, read a block from 'a' and
+## write it to 'sink', we need to make sure that we define grids that
+## are "aligned". More precisely the two grids must have the same number
+## of viewports and the viewports in one must correspond to the viewports
+## in the other one:
+sink_grid &lt;- colAutoGrid(sink, ncol=10)
+a_spacings &lt;- c(dim(sink_grid[[1L]]), dim(a)[[3]])
+a_grid &lt;- RegularArrayGrid(dim(a), spacings=a_spacings)
+dims(sink_grid)  # dimensions of the individual viewports
+dims(a_grid)     # dimensions of the individual viewports
+
+## Here is how to check that the two grids are "aligned":
+stopifnot(identical(length(sink_grid), length(a_grid)))
+stopifnot(identical(dims(sink_grid), dims(a_grid)[ , -3]))
+
+## -- STEP 3 --
+## Walk on the two grids simultaneously:
+for (bid in seq_along(sink_grid)) {
+    ## Read block from 'a'.
+    a_viewport &lt;- a_grid[[bid]]
+    block &lt;- read_block(a, a_viewport)
+    ## Collapse it.
+    block &lt;- collapse_3rd_dim(block)
+    ## Write the collapsed block to 'sink'.
+    sink_viewport &lt;- sink_grid[[bid]]
+    sink &lt;- write_block(sink, sink_viewport, block)
+}
+
+## -- An alternative to STEP 3 --
+FUN &lt;- function(sink, sink_viewport) {
+    ## Read block from 'a'.
+    bid &lt;- currentBlockId()
+    a_viewport &lt;- a_grid[[bid]]
+    block &lt;- read_block(a, a_viewport)
+    ## Collapse it.
+    block &lt;- collapse_3rd_dim(block)
+    ## Write the collapsed block to 'sink'.
+    write_block(sink, sink_viewport, block)
+}
+sink &lt;- sinkApply(sink, FUN, grid=sink_grid, verbose=TRUE)
+
+## -- STEP 4 --
+## Close the sink and turn it into a DelayedArray object:
+close(sink)
+M &lt;- as(sink, "DelayedArray")
+M
+
+## Sanity check:
+stopifnot(identical(collapse_3rd_dim(a), as.array(M)))
+
+setAutoRealizationBackend()  # unset automatic realization backend
+
+## ---------------------------------------------------------------------
+## USING THE "RealizationSink API": AN ADVANCED EXAMPLE
+## ---------------------------------------------------------------------
+
+## Say we have 2 matrices with the same number of columns. Each column
+## represents a biological sample:
+library(HDF5Array)
+R &lt;- as(matrix(runif(75000), ncol=1000), "HDF5Array")   # 75 rows
+G &lt;- as(matrix(runif(250000), ncol=1000), "HDF5Array")  # 250 rows
+
+## Say we want to compute the matrix U obtained by applying the same
+## binary functions FUN() to all samples i.e. U is defined as:
+##
+##   U[ , j] &lt;- FUN(R[ , j], G[ , j]) for 1 &lt;= j &lt;= 1000
+##
+## Note that FUN() should return a vector of constant length, say 200,
+## so U will be a 200x1000 matrix. A naive implementation would be:
+##
+##   pFUN &lt;- function(r, g) {
+##       stopifnot(ncol(r) == ncol(g))  # sanity check
+##       sapply(seq_len(ncol(r)), function(j) FUN(r[ , j], g[ , j]))
+##   }
+##
+## But because U is going to be too big to fit in memory, we can't
+## just do pFUN(R, G). So we want to compute U block by block and
+## write the blocks to disk as we go. The blocks will be made of full
+## columns. Also since we need to walk on 2 matrices at the same time
+## (R and G), we can't use blockApply() or blockReduce() so we'll use
+## a "for" loop.
+
+## Before we get to the "for" loop, we need 4 things:
+
+## 1. Two grids of blocks, one on R and one on G. The blocks in the
+##    two grids must contain the same number of columns. We arbitrarily
+##    choose to use blocks of 150 columns:
+R_grid &lt;- colAutoGrid(R, ncol=150)
+G_grid &lt;- colAutoGrid(G, ncol=150)
+
+## 2. The function pFUN(). It will take 2 blocks as input, 1 from R
+##    and 1 from G, apply FUN() to all the samples in the blocks,
+##    and return a matrix with one columns per sample:
+pFUN &lt;- function(r, g) {
+    stopifnot(ncol(r) == ncol(g))  # sanity check
+    ## Return a matrix with 200 rows with random values. Completely
+    ## artificial sorry. A realistic example would actually need to
+    ## apply the same binary function to r[ ,j] and g[ , j] for
+    ## 1 &lt;= j &lt;= ncol(r).
+    matrix(runif(200 * ncol(r)), nrow=200)
+}
+
+## 3. A RealizationSink derivative where to write the matrices returned
+##    by pFUN() as we go:
+setAutoRealizationBackend("HDF5Array")
+U_sink &lt;- AutoRealizationSink(c(200L, 1000L))
+
+## 4. Finally, we create a grid on U_sink with viewports that contain
+##    the same number of columns as the corresponding blocks in R and G:
+U_grid &lt;- colAutoGrid(U_sink, ncol=150)
+
+## Note that the three grids should have the same number of viewports:
+stopifnot(length(U_grid) == length(R_grid))
+stopifnot(length(U_grid) == length(G_grid))
+
+## 5. Now we can proceed. We use a "for" loop to walk on R and G
+##    simultaneously, block by block, apply pFUN(), and write the
+##    output of pFUN() to U_sink:
+for (bid in seq_along(U_grid)) {
+    R_block &lt;- read_block(R, R_grid[[bid]])
+    G_block &lt;- read_block(G, G_grid[[bid]])
+    U_block &lt;- pFUN(R_block, G_block)
+    U_sink &lt;- write_block(U_sink, U_grid[[bid]], U_block)
+}
+
+## An alternative to the "for" loop is to use sinkApply():
+FUN &lt;- function(U_sink, U_viewport) {
+    bid &lt;- currentBlockId()
+    R_block &lt;- read_block(R, R_grid[[bid]])
+    G_block &lt;- read_block(G, G_grid[[bid]])
+    U_block &lt;- pFUN(R_block, G_block)
+    write_block(U_sink, U_viewport, U_block)
+}
+U_sink &lt;- sinkApply(U_sink, FUN, grid=U_grid, verbose=TRUE)
+
+close(U_sink)
+U &lt;- as(U_sink, "DelayedArray")
+U
+
+setAutoRealizationBackend()  # unset automatic realization backend
+
+## ---------------------------------------------------------------------
+## VERY BASIC (BUT ALSO VERY ARTIFICIAL) USAGE OF THE
+## read_block()/write_block() COMBO
+## ---------------------------------------------------------------------
+
+###### On an ordinary matrix ######
+m1 &lt;- matrix(1:30, ncol=5)
+
+## Define a viewport on 'm1':
+block1_dim &lt;- c(4, 3)
+viewport1 &lt;- ArrayViewport(dim(m1), IRanges(c(3, 2), width=block1_dim))
+
+## Read/tranform/write:
+block1 &lt;- read_block(m1, viewport1)
+write_block(m1, viewport1, block1 + 1000L)
+
+## Define another viewport on 'm1':
+viewport1b &lt;- ArrayViewport(dim(m1), IRanges(c(1, 3), width=block1_dim))
+
+## Read/tranform/write:
+write_block(m1, viewport1b, block1 + 1000L)
+
+## No-op:
+m &lt;- write_block(m1, viewport1, read_block(m1, viewport1))
+stopifnot(identical(m1, m))
+
+########## On a 3D array ##########
+a3 &lt;- array(1:60, 5:3)
+
+## Define a viewport on 'a3':
+block3_dim &lt;- c(2, 4, 1)
+viewport3 &lt;- ArrayViewport(dim(a3), IRanges(c(1, 1, 3), width=block3_dim))
+
+## Read/tranform/write:
+block3 &lt;- read_block(a3, viewport3)
+write_block(a3, viewport3, block3 + 1000L)
+
+## Define another viewport on 'a3':
+viewport3b &lt;- ArrayViewport(dim(a3), IRanges(c(3, 1, 3), width=block3_dim))
+
+## Read/tranform/write:
+write_block(a3, viewport3b, block3 + 1000L)
+
+## No-op:
+a &lt;- write_block(a3, viewport3, read_block(a3, viewport3))
+stopifnot(identical(a3, a))
+
+## ---------------------------------------------------------------------
+## LESS BASIC (BUT STILL VERY ARTIFICIAL) USAGE OF THE
+## read_block()/write_block() COMBO
+## ---------------------------------------------------------------------
+
+grid1 &lt;- RegularArrayGrid(dim(m1), spacings=c(3L, 2L))
+grid1
+length(grid1)  # number of blocks defined by the grid
+read_block(m1, grid1[[3L]])  # read 3rd block
+read_block(m1, grid1[[1L, 3L]])
+
+## Walk on the grid, colum by column:
+m1a &lt;- m1
+for (bid in seq_along(grid1)) {
+    viewport &lt;- grid1[[bid]]
+    block &lt;- read_block(m1a, viewport)
+    block &lt;- bid * 1000L + block
+    m1a &lt;- write_block(m1a, viewport, block)
+}
+m1a
+
+## Walk on the grid, row by row:
+m1b &lt;- m1
+for (i in seq_len(dim(grid1)[[1]])) {
+  for (j in seq_len(dim(grid1)[[2]])) {
+    viewport &lt;- grid1[[i, j]]
+    block &lt;- read_block(m1b, viewport)
+    block &lt;- (i * 10L + j) * 1000L + block
+    m1b &lt;- write_block(m1b, viewport, block)
+  }
+}
+m1b
+
+## ---------------------------------------------------------------------
+## supportedRealizationBackends() AND FAMILY
+## ---------------------------------------------------------------------
+
+getAutoRealizationBackend()  # no backend set yet
+
+supportedRealizationBackends()
+setAutoRealizationBackend("HDF5Array")
+getAutoRealizationBackend()  # backend is set to "HDF5Array"
+supportedRealizationBackends()
+
+getHDF5DumpChunkLength()
+setHDF5DumpChunkLength(500L)
+getHDF5DumpChunkShape()
+
+sink &lt;- AutoRealizationSink(c(120L, 50L))
+class(sink)  # HDF5-specific realization sink
+dim(sink)
+chunkdim(sink)
+
+grid &lt;- defaultSinkAutoGrid(sink, block.length=600)
+for (bid in seq_along(grid)) {
+    viewport &lt;- grid[[bid]]
+    block &lt;- 101 * bid + runif(length(viewport))
+    dim(block) &lt;- dim(viewport)
+    sink &lt;- write_block(sink, viewport, block)
+}
+
+close(sink)
+A &lt;- as(sink, "DelayedArray")
+A
+
+setAutoRealizationBackend()  # unset automatic realization backend
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>DelayedArray</em> version 0.20.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

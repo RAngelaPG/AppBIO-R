@@ -1,0 +1,269 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: BigWig Import and Export</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for BigWigFile-class {rtracklayer}"><tr><td>BigWigFile-class {rtracklayer}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>BigWig Import and Export</h2>
+
+<h3>Description</h3>
+
+<p>These functions support the import and export of the UCSC BigWig
+format, a compressed, binary form of WIG/BEDGraph with a spatial index
+and precomputed summaries. These functions do not work on Windows.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S4 method for signature 'BigWigFile,ANY,ANY'
+import(con, format, text,
+                   selection = BigWigSelection(which, ...),
+                   which = con,
+                   as = c("GRanges", "RleList", "NumericList"), ...)
+import.bw(con, ...)
+
+## S4 method for signature 'ANY,BigWigFile,ANY'
+export(object, con, format, ...)
+## S4 method for signature 'GenomicRanges,BigWigFile,ANY'
+export(object, con, format,
+                   dataFormat = c("auto", "variableStep", "fixedStep",
+                     "bedGraph"), compress = TRUE, fixedSummaries = FALSE)
+export.bw(object, con, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>con</code></td>
+<td>
+<p>A path, URL or <code>BigWigFile</code> object. Connections are
+not supported. For the functions ending in <code>.bw</code>, the file
+format is indicated by the function name. For the <code>export</code>
+and <code>import</code> methods, the format must be indicated another
+way. If <code>con</code> is a path, or URL, either the file
+extension or the <code>format</code> argument needs to be &ldquo;bigWig&rdquo;
+or &ldquo;bw&rdquo;.
+</p>
+</td></tr>
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>The object to export, should be an <code>RleList</code>,
+<code>IntegerList</code>, <code>NumericList</code>,
+<code>GRanges</code> or something coercible to a <code>GRanges</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>format</code></td>
+<td>
+<p>If not missing, should be &ldquo;bigWig&rdquo; or &ldquo;bw&rdquo;
+(case insensitive).
+</p>
+</td></tr>
+<tr valign="top"><td><code>text</code></td>
+<td>
+<p>Not supported.
+</p>
+</td></tr>
+<tr valign="top"><td><code>as</code></td>
+<td>
+<p>Specifies the class of the return object. Default is
+<code>GRanges</code>, which has one range per range in the file, and a
+score column holding the value for each range. For
+<code>NumericList</code>, one numeric vector is returned for each range in
+the <code>selection</code> argument. For <code>RleList</code>, there is one
+<code>Rle</code> per sequence, and that <code>Rle</code> spans the entire
+sequence.
+</p>
+</td></tr>
+<tr valign="top"><td><code>selection</code></td>
+<td>
+<p>A <code><a href="../../rtracklayer/help/BigWigSelection-class.html">BigWigSelection</a></code> object
+indicating the ranges to load.
+</p>
+</td></tr>
+<tr valign="top"><td><code>which</code></td>
+<td>
+<p>A range data structure coercible to <code>IntegerRangesList</code>,
+like a <code>GRanges</code>, or a <code>BigWigFile</code>. Only the intervals in
+the file overlapping the given ranges are returned. By default, the
+value is the <code>BigWigFile</code> itself. Its <code>Seqinfo</code> object is
+extracted and coerced to a <code>IntegerRangesList</code> that represents the
+entirety of the file.
+</p>
+</td></tr>
+<tr valign="top"><td><code>dataFormat</code></td>
+<td>
+<p>Probably best left to &ldquo;auto&rdquo;. Exists only
+for historical reasons.
+</p>
+</td></tr>
+<tr valign="top"><td><code>compress</code></td>
+<td>
+<p>If <code>TRUE</code>, compress the data. No reason to change this.
+</p>
+</td></tr>
+<tr valign="top"><td><code>fixedSummaries</code></td>
+<td>
+<p>If <code>TRUE</code>, compute summaries at fixed
+resolutions corresponding to the default zoom levels in the Ensembl
+genome browser (with some extrapolation): 30X, 65X, 130X, 260X,
+450X, 648X, 950X, 1296X, 4800X, 19200X. Otherwise, the resolutions
+are dynamically determined by an algorithm that computes an initial
+summary size by initializing to 10X the size of the smallest feature
+and doubling the size as needed until the size of the summary is
+less than half that of the data (or there are no further gains). It
+then computes up to 10 more levels of summary, quadrupling the size
+each time, until the summaries start to exceed the sequence size.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Arguments to pass down to methods to other methods. For
+import, the flow eventually reaches the <code>BigWigFile</code> method on
+<code>import</code>.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A <code>GRanges</code> (default), <code>RleList</code> or <code>NumericList</code>.
+<code>GRanges</code> return ranges with non-zero score values in a <code>score</code>
+metadata column. The length of the <code>NumericList</code> is the same length
+as the <code>selection</code> argument (one list element per range).
+The return order in the  <code>NumericList</code> matches the order of the
+<code>BigWigSelection</code> object. 
+</p>
+
+
+<h3><code>BigWigFile</code> objects</h3>
+
+<p>A <code>BigWigFile</code> object, an extension of
+<code><a href="../../BiocIO/help/BiocFile-class.html">BiocFile</a></code> is a reference to a BigWig file.
+To cast a path, URL or connection to a <code>BigWigFile</code>, pass it to the
+<code>BigWigFile</code> constructor.
+</p>
+<p>BigWig files are more complex than most track files, and there are a
+number of methods on <code>BigWigFile</code> for accessing the additional
+information:
+</p>
+
+<dl>
+<dt></dt><dd>
+<p><code>seqinfo(x)</code>:
+Gets the <code><a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a></code> object
+indicating the lengths of the sequences for the intervals in the
+file. No circularity or genome information is available.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>summary(ranges = as(seqinfo(object), "GenomicRanges"), size
+        = 1L, type = c("mean", "min", "max", "coverage", "sd"),
+        defaultValue = NA_real_),
+	as = c("GRangesList", "RleList", "matrix"), ...</code>:
+Aggregates the intervals in the file
+that fall into <code>ranges</code>, which should be something
+coercible to <code>GRanges</code>.  The aggregation essentially
+compresses each sequence to a length of <code>size</code>. The
+algorithm is specified by <code>type</code>; available algorithms
+include the mean, min, max, coverage (percent sequence covered
+by at least one feature), and standard deviation. When a window
+contains no features, <code>defaultValue</code> is assumed. The result
+type depends on <code>as</code>, and can be a GRangesList, RleList or
+matrix, where the number elements (or rows) is equal to the
+length of <code>ranges</code>. For <code>as="matrix"</code>, there must be
+one unique value of <code>size</code>, which is equal to the number of
+columns in the result. The <code>as="matrix"</code> case is the only
+one that supports a <code>size</code> greater than the width of the
+corresponding element in <code>ranges</code>, where values are
+interpolated to yield the matrix result. The
+driving use case for this is visualization of coverage when the
+screen space is small compared to the viewed portion of the
+sequence. The operation is very fast, as it leverages cached
+multi-level summaries present in every BigWig file.
+</p>
+<p>If a summary statistic is not available / cannot be computed
+for a given range a warning is thrown and the defaultValue
+<code>NA_real_</code> is returned.
+</p>
+</dd>
+</dl>
+
+<p>When accessing remote data, the UCSC library caches data in the
+&lsquo;<span class="file">/tmp/udcCache</span>&rsquo; directory. To clean the cache, call
+<code>cleanBigWigCache(maxDays)</code>, where any files older than
+<code>maxDays</code> days old will be deleted.
+</p>
+
+
+<h3><code>BigWigFileList</code> objects</h3>
+
+<p>A <code>BigWigFileList()</code> provides a convenient way of managing a list 
+of <code>BigWigFile</code> instances.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Michael Lawrence</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../rtracklayer/help/wigToBigWig.html">wigToBigWig</a></code> for converting a WIG file to BigWig.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+if (.Platform$OS.type != "windows") {
+  test_path &lt;- system.file("tests", package = "rtracklayer")
+  test_bw &lt;- file.path(test_path, "test.bw")
+
+  ## GRanges
+  ## Returns ranges with non-zero scores.
+  gr &lt;- import(test_bw)
+  gr 
+
+  which &lt;- GRanges(c("chr2", "chr2"), IRanges(c(1, 300), c(400, 1000)))
+  import(test_bw, which = which)
+
+  ## RleList
+  ## Scores returned as an RleList is equivalent to the coverage.
+  ## Best option when 'which' or 'selection' contain many small ranges.
+  mini &lt;- narrow(unlist(tile(which, 50)), 2)
+  rle &lt;- import(test_bw, which = mini, as = "RleList")
+  rle 
+
+  ## NumericList
+  ## The 'which' is stored as metadata:
+  track &lt;- import(test_bw, which = which, as = "NumericList")
+  metadata(track)
+
+## Not run: 
+  test_bw_out &lt;- file.path(tempdir(), "test_out.bw")
+  export(test, test_bw_out)
+
+## End(Not run)
+
+  bwf &lt;- BigWigFile(test_bw)
+  track &lt;- import(bwf)
+
+  seqinfo(bwf)  
+
+  summary(bwf) # for each sequence, average all values into one
+  summary(bwf, range(head(track))) # just average the first few features
+  summary(bwf, size = seqlengths(bwf) / 10) # 10X reduction
+  summary(bwf, type = "min") # min instead of mean
+  summary(bwf, track, size = 10, as = "matrix") # each feature 10 windows
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rtracklayer</em> version 1.54.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: freq_peak</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for freq_peak {vcfR}"><tr><td>freq_peak {vcfR}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>freq_peak</h2>
+
+<h3>Description</h3>
+
+<p>Find density peaks in frequency data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+freq_peak(myMat, pos, winsize = 10000L, bin_width = 0.02, lhs = TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>myMat</code></td>
+<td>
+<p>a matrix of frequencies [0-1].</p>
+</td></tr>
+<tr valign="top"><td><code>pos</code></td>
+<td>
+<p>a numeric vector describing the position of variants in myMat.</p>
+</td></tr>
+<tr valign="top"><td><code>winsize</code></td>
+<td>
+<p>sliding window size.</p>
+</td></tr>
+<tr valign="top"><td><code>bin_width</code></td>
+<td>
+<p>Width of bins to summarize ferequencies in (0-1].</p>
+</td></tr>
+<tr valign="top"><td><code>lhs</code></td>
+<td>
+<p>logical specifying whether the search for the bin of greatest density should favor values from the left hand side.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Noisy data, such as genomic data, lack a clear consensus.
+Summaries may be made in an attempt to 'clean it up.'
+Common summaries, such as the mean, rely on an assumption of normalicy.
+An assumption that frequently can be violated.
+This leaves a conundrum as to how to effectively summarize these data.
+</p>
+<p>Here we implement an attempt to summarize noisy data through binning the data and selecting the bin containing the greatest density of data.
+The data are first divided into parameter sized windows.
+Next the data are categorized by parameterizable bin widths.
+Finally, the bin with the greatest density, the greatest count of data, is used as a summary.
+Because this method is based on binning the data it does not rely on a distributional assumption.
+</p>
+<p>The parameter <code>lhs</code> specifyies whether the search for the bin of greatest density should be performed from the left hand side.
+The default value of TRUE starts at the left hand side, or zero, and selects a new bin as having the greatest density only if a new bin has a greater density.
+If the new bin has an equal density then no update is made.
+This causees the analysis to select lower frequencies.
+When this parameter is set to FALSE ties result in an update of the bin of greatest density.
+This causes the analysis to select higher frequencies.
+It is recommended that when testing the most abundant allele (typically [0.5-1]) to use the default of TRUE so that a low value is preferred.
+Similarly, when testing the less abundant alleles it is recommended to set this value at FALSE to preferentially select high values.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A freq_peak object (a list) containing:
+</p>
+
+<ul>
+<li><p> The window size
+</p>
+</li>
+<li><p> The binwidth used for peak binning
+</p>
+</li>
+<li><p> a matrix containing window coordinates
+</p>
+</li>
+<li><p> a matrix containing peak locations
+</p>
+</li>
+<li><p> a matrix containing the counts of variants for each sample in each window
+</p>
+</li></ul>
+
+<p>The window matrix contains start and end coordinates for each window, the rows of the original matrix that demarcate each window and the position of the variants that begin and end each window.
+</p>
+<p>The matrix of peak locations contains the midpoint for the bin of greatest density for each sample and each window.
+Alternatively, if 'count = TRUE' the number of non-missing values in each window is reported.
+The number of non-mising values in each window may be used to censor windows containing low quantities of data.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>peak_to_ploid,
+freq_peak_plot
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(vcfR_example)
+gt &lt;- extract.gt(vcf)
+hets &lt;- is_het(gt)
+# Censor non-heterozygous positions.
+is.na(vcf@gt[,-1][!hets]) &lt;- TRUE
+# Extract allele depths.
+ad &lt;- extract.gt(vcf, element = "AD")
+ad1 &lt;- masplit(ad, record = 1)
+ad2 &lt;- masplit(ad, record = 2)
+freq1 &lt;- ad1/(ad1+ad2)
+freq2 &lt;- ad2/(ad1+ad2)
+myPeaks1 &lt;- freq_peak(freq1, getPOS(vcf))
+is.na(myPeaks1$peaks[myPeaks1$counts &lt; 20]) &lt;- TRUE
+myPeaks2 &lt;- freq_peak(freq2, getPOS(vcf), lhs = FALSE)
+is.na(myPeaks2$peaks[myPeaks2$counts &lt; 20]) &lt;- TRUE
+myPeaks1
+
+# Visualize
+mySample &lt;- "P17777us22"
+myWin &lt;- 2
+hist(freq1[myPeaks1$wins[myWin,'START_row']:myPeaks1$wins[myWin,'END_row'], mySample], 
+     breaks=seq(0,1,by=0.02), col="#A6CEE3", main="", xlab="", xaxt="n")
+hist(freq2[myPeaks2$wins[myWin,'START_row']:myPeaks2$wins[myWin,'END_row'], mySample], 
+     breaks=seq(0,1,by=0.02), col="#1F78B4", main="", xlab="", xaxt="n", add = TRUE)
+axis(side=1, at=c(0,0.25,0.333,0.5,0.666,0.75,1), 
+     labels=c(0,'1/4','1/3','1/2','2/3','3/4',1), las=3)
+abline(v=myPeaks1$peaks[myWin,mySample], col=2, lwd=2)
+abline(v=myPeaks2$peaks[myWin,mySample], col=2, lwd=2)
+
+# Visualize #2
+mySample &lt;- "P17777us22"
+plot(getPOS(vcf), freq1[,mySample], ylim=c(0,1), type="n", yaxt='n', 
+     main = mySample, xlab = "POS", ylab = "Allele balance")
+axis(side=2, at=c(0,0.25,0.333,0.5,0.666,0.75,1), 
+     labels=c(0,'1/4','1/3','1/2','2/3','3/4',1), las=1)
+abline(h=c(0.25,0.333,0.5,0.666,0.75), col=8)
+points(getPOS(vcf), freq1[,mySample], pch = 20, col= "#A6CEE3")
+points(getPOS(vcf), freq2[,mySample], pch = 20, col= "#1F78B4")
+segments(x0=myPeaks1$wins[,'START_pos'], y0=myPeaks1$peaks[,mySample],
+         x1=myPeaks1$wins[,'END_pos'], lwd=3)
+segments(x0=myPeaks1$wins[,'START_pos'], y0=myPeaks2$peaks[,mySample],
+         x1=myPeaks1$wins[,'END_pos'], lwd=3)
+
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>vcfR</em> version 1.15.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

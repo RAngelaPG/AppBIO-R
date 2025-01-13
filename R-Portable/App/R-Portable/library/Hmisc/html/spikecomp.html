@@ -1,0 +1,100 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: spikecomp</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for spikecomp {Hmisc}"><tr><td>spikecomp {Hmisc}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>spikecomp</h2>
+
+<h3>Description</h3>
+
+<p>Compute Elements of a Spike Histogram
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+spikecomp(
+  x,
+  method = c("tryactual", "simple", "grid"),
+  lumptails = 0.01,
+  normalize = TRUE,
+  y,
+  trans = NULL,
+  tresult = c("list", "segments", "roundeddata")
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>a numeric variable</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>specifies the binning and output method.  The default is <code>'tryactual'</code> and is intended to be used for spike histograms plotted in a way that allows for random x-coordinates and data gaps.  No binning is done if there are less than 100 distinct values and the closest distinct <code>x</code> values are distinguishable (not with 1/500th of the data range of each other).  Binning uses <code>pretty</code>.  When <code>trans</code> is specified to transform <code>x</code> to reduce long tails due to outliers, <code>pretty</code> rounding is not done, and <code>lumptails</code> is ignored.  <code>method='grid'</code> is intended for sparkline spike histograms drawn with bar charts, where plotting is done in a way that x-coordinates must be equally spaced.  For this method, extensive binning information is returned.  For either <code>'tryactual'</code> or <code>'grid'</code>, the default if <code>trans</code> is omitted is to put all values beyond the 0.01 or 0.99 quantiles into a single bin so that outliers will not create long nearly empty tails.  When <code>y</code> is specified, <code>method</code> is ignored.</p>
+</td></tr>
+<tr valign="top"><td><code>lumptails</code></td>
+<td>
+<p>the quantile to use for lumping values into a single left and a single right bin for two of the methods.  When outer quantiles using <code>lumptails</code> equal outer quantiles using <code>2*lumptails</code>, <code>lumptails</code> is ignored as this indicates a large number of ties in the tails of the distribution.</p>
+</td></tr>
+<tr valign="top"><td><code>normalize</code></td>
+<td>
+<p>set to <code>FALSE</code> to not divide frequencies by maximum frequency</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>a vector of frequencies corresponding to <code>x</code> if you want the (<code>x</code>, <code>y</code>) pairs to be taken as a possibly irregular-spaced frequency tabulation for which you want to convert to a regularly-spaced tabulation like <code>count='tabulate'</code> produces.  If there is a constant gap between <code>x</code> values, the original pairs are return, with possible removal of <code>NA</code>s.</p>
+</td></tr>
+<tr valign="top"><td><code>trans</code></td>
+<td>
+<p>a list with three elements: the name of a transformation to make on <code>x</code>, the transformation function, and the inverse transformation function.  The latter is used for <code>method='grid'</code>.  When <code>trans</code> is given <code>lumptails</code> is ignored.  <code>trans</code> applies only to <code>method='tryactual'</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>tresult</code></td>
+<td>
+<p>applies only to <code>method='tryactual'</code>.  The default <code>'list'</code> returns a list with elements <code>x</code>, <code>y</code>, and <code>roundedTo</code>.  <code>method='segments'</code> returns a list suitable for drawing line segments, with elements <code style="white-space: pre;">x, y1, y2</code>.  <code>method='roundeddata'</code> returns a list with elements <code>x</code> (non-tabulated rounded data vector after excluding <code>NA</code>s) and vector <code>roundedTo</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Derives the line segment coordinates need to draw a spike histogram.  This is useful for adding elements to <code>ggplot2</code> plots and for the <code>describe</code> function to construct spike histograms.  Date/time variables are handled by doing calculations on the underlying numeric scale then converting back to the original class.  For them the left endpoint of the first bin is taken as the minimal data value instead of rounded using <code>pretty()</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>when <code>y</code> is specified, a list with elements <code>x</code> and <code>y</code>.  When <code>method='tryactual'</code> the returned value depends on <code>tresult</code>.  For <code>method='grid'</code>, a list with elements <code>x</code> and <code>y</code> and scalar element <code>roundedTo</code> containing the typical bin width.  Here <code>x</code> is a character string.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Frank Harrell
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+spikecomp(1:1000)
+spikecomp(1:1000, method='grid')
+## Not run: 
+On a data.table d use ggplot2 to make spike histograms by country and sex groups
+s &lt;- d[, spikecomp(x, tresult='segments'), by=.(country, sex)]
+ggplot(s) + geom_segment(aes(x=x, y=y1, xend=x, yend=y2, alpha=I(0.3))) +
+   scale_y_continuous(breaks=NULL, labels=NULL) + ylab('') +
+   facet_grid(country ~ sex)
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>Hmisc</em> version 5.1-2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

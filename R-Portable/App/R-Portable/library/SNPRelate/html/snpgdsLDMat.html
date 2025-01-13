@@ -1,0 +1,172 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Linkage Disequilibrium (LD) analysis</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for snpgdsLDMat {SNPRelate}"><tr><td>snpgdsLDMat {SNPRelate}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Linkage Disequilibrium (LD) analysis
+</h2>
+
+<h3>Description</h3>
+
+<p>Return a LD matrix for SNP pairs.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+snpgdsLDMat(gdsobj, sample.id=NULL, snp.id=NULL, slide=250L,
+    method=c("composite", "r", "dprime", "corr", "cov"), mat.trim=FALSE,
+    num.thread=1L, with.id=TRUE, verbose=TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>gdsobj</code></td>
+<td>
+<p>an object of class <code><a href="../../SNPRelate/help/SNPGDSFileClass.html">SNPGDSFileClass</a></code>,
+a SNP GDS file</p>
+</td></tr>
+<tr valign="top"><td><code>sample.id</code></td>
+<td>
+<p>a vector of sample id specifying selected samples;
+if NULL, all samples are used</p>
+</td></tr>
+<tr valign="top"><td><code>snp.id</code></td>
+<td>
+<p>a vector of snp id specifying selected SNPs;
+if NULL, all SNPs are used</p>
+</td></tr>
+<tr valign="top"><td><code>slide</code></td>
+<td>
+<p># of SNPs, the size of sliding window; if <code>slide &lt; 0</code>,
+return a full LD matrix; see details</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>&quot;composite&quot;, &quot;r&quot;, &quot;dprime&quot;, &quot;corr&quot;, &quot;cov&quot;, see details</p>
+</td></tr>
+<tr valign="top"><td><code>mat.trim</code></td>
+<td>
+<p>if <code>TRUE</code>, trim the matrix when <code>slide &gt; 0</code>:
+the function returns a <code>"num_slide x (n_snp - slide)"</code> matrix</p>
+</td></tr>
+<tr valign="top"><td><code>num.thread</code></td>
+<td>
+<p>the number of (CPU) cores used; if <code>NA</code>, detect
+the number of cores automatically</p>
+</td></tr>
+<tr valign="top"><td><code>with.id</code></td>
+<td>
+<p>if <code>TRUE</code>, the returned value with <code>sample.id</code> and
+<code>sample.id</code></p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>if TRUE, show information</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Four methods can be used to calculate linkage disequilibrium values:
+&quot;composite&quot; for LD composite measure, &quot;r&quot; for R coefficient (by EM algorithm
+assuming HWE, it could be negative), &quot;dprime&quot; for D', and &quot;corr&quot; for
+correlation coefficient. The method &quot;corr&quot; is equivalent to &quot;composite&quot;,
+when SNP genotypes are coded as: 0 &ndash; BB, 1 &ndash; AB, 2 &ndash; AA.
+</p>
+<p>If <code>slide &lt;= 0</code>, the function returns a n-by-n LD matrix where the
+value of i row and j column is LD of i and j SNPs. If <code>slide &gt; 0</code>, it
+returns a m-by-n LD matrix where n is the number of SNPs, m is the size of
+sliding window, and the value of i row and j column is LD of j and j+i SNPs.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Return a list:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>sample.id</code></td>
+<td>
+<p>the sample ids used in the analysis</p>
+</td></tr>
+<tr valign="top"><td><code>snp.id</code></td>
+<td>
+<p>the SNP ids used in the analysis</p>
+</td></tr>
+<tr valign="top"><td><code>LD</code></td>
+<td>
+<p>a matrix of LD values</p>
+</td></tr>
+<tr valign="top"><td><code>slide</code></td>
+<td>
+<p>the size of sliding window</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Xiuwen Zheng</p>
+
+
+<h3>References</h3>
+
+<p>Weir B: Inferences about linkage disequilibrium. Biometrics 1979;
+35: 235-254.
+</p>
+<p>Weir B: Genetic Data Analysis II. Sunderland, MA: Sinauer Associates, 1996.
+</p>
+<p>Weir BS, Cockerham CC: Complete characterization of disequilibrium at two
+loci; in Feldman MW (ed): Mathematical Evolutionary Theory. Princeton, NJ:
+Princeton University Press, 1989.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../SNPRelate/help/snpgdsLDpair.html">snpgdsLDpair</a></code>, <code><a href="../../SNPRelate/help/snpgdsLDpruning.html">snpgdsLDpruning</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# open an example dataset (HapMap)
+genofile &lt;- snpgdsOpen(snpgdsExampleFileName())
+
+# missing proportion and MAF
+ff &lt;- snpgdsSNPRateFreq(genofile)
+
+# chromosome 15
+snpset &lt;- read.gdsn(index.gdsn(genofile, "snp.id"))[
+    ff$MissingRate==0 &amp; ff$MinorFreq&gt;0 &amp;
+    read.gdsn(index.gdsn(genofile, "snp.chromosome"))==15]
+length(snpset)
+
+
+# LD matrix without sliding window
+ld.noslide &lt;- snpgdsLDMat(genofile, snp.id=snpset, slide=-1, method="composite")
+# plot
+image(t(ld.noslide$LD^2), col=terrain.colors(16))
+
+# LD matrix with a sliding window
+ld.slide &lt;- snpgdsLDMat(genofile, snp.id=snpset, method="composite")
+# plot
+image(t(ld.slide$LD^2), col=terrain.colors(16))
+
+
+# close the genotype file
+snpgdsClose(genofile)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>SNPRelate</em> version 1.28.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

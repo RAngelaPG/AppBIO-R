@@ -1,0 +1,157 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: DelayedSubset objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for DelayedSubset-class {DelayedArray}"><tr><td>DelayedSubset-class {DelayedArray}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>DelayedSubset objects</h2>
+
+<h3>Description</h3>
+
+<p>NOTE: This man page is about <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> internals and is provided
+for developers and advanced users only.
+</p>
+<p>The DelayedSubset class provides a formal representation of a <em>delayed
+multi-dimensional single bracket subsetting operation</em>. It is a concrete
+subclass of the <a href="../../DelayedArray/help/DelayedUnaryOp.html">DelayedUnaryOp</a> virtual class, which itself is a
+subclass of the <a href="../../DelayedArray/help/DelayedOp.html">DelayedOp</a> virtual class:
+</p>
+<pre>
+                          DelayedOp
+                              ^
+                              |
+                        DelayedUnaryOp
+                              ^
+                              |
+                        DelayedSubset
+  </pre>
+<p>DelayedSubset objects are used inside a <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> object to
+represent the <em>delayed multi-dimensional single bracket subsetting
+operations</em> carried by the object. They're never exposed to the end user
+and are not intended to be manipulated directly.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S4 method for signature 'DelayedSubset'
+is_noop(x)
+
+## S4 method for signature 'DelayedSubset'
+summary(object, ...)
+
+## ~ ~ ~ Seed contract ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+## S4 method for signature 'DelayedSubset'
+dim(x)
+
+## S4 method for signature 'DelayedSubset'
+dimnames(x)
+
+## S4 method for signature 'DelayedSubset'
+extract_array(x, index)
+
+## ~ ~ ~ Propagation of sparsity ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+## S4 method for signature 'DelayedSubset'
+is_sparse(x)
+
+## S4 method for signature 'DelayedSubset'
+extract_sparse_array(x, index)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x, object</code></td>
+<td>
+
+<p>A DelayedSubset object.
+</p>
+</td></tr>
+<tr valign="top"><td><code>index</code></td>
+<td>
+
+<p>See <code>?<a href="../../DelayedArray/help/extract_array.html">extract_array</a></code> for a description of the <code>index</code>
+argument.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>Not used.
+</p>
+</td></tr>
+</table>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><a href="../../DelayedArray/help/DelayedOp.html">DelayedOp</a> objects.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/showtree.html">showtree</a></code> to visualize the nodes and access the
+leaves in the tree of delayed operations carried by a
+<a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> object.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/extract_array.html">extract_array</a></code> and <code><a href="../../DelayedArray/help/extract_sparse_array.html">extract_sparse_array</a></code>.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## DelayedSubset extends DelayedUnaryOp which extends DelayedOp:
+extends("DelayedSubset")
+
+## ---------------------------------------------------------------------
+## BASIC EXAMPLE
+## ---------------------------------------------------------------------
+a0 &lt;- array(1:60, dim=5:3)
+A0 &lt;- DelayedArray(a0)
+showtree(A0)
+
+A &lt;- A0[2:1, -4, 3, drop=FALSE]
+showtree(A)
+class(A@seed)        # a DelayedSubset object
+
+## ---------------------------------------------------------------------
+## PROPAGATION OF SPARSITY
+## ---------------------------------------------------------------------
+sm0 &lt;- sparseMatrix(i=c(1, 4), j=c(1, 3), x=c(11, 43), dims=4:3)
+SM0 &lt;- DelayedArray(sm0)
+showtree(SM0)
+is_sparse(SM0)       # TRUE
+
+SM1 &lt;- SM0[-1, 3:2, drop=FALSE]
+showtree(SM1)
+class(SM1@seed)      # a DelayedSubset object
+is_sparse(SM1@seed)  # TRUE
+
+## Duplicated indices break structural sparsity.
+M2 &lt;- SM0[-1, c(3:2, 2), drop=FALSE]
+showtree(M2)
+class(M2@seed)       # a DelayedSubset object
+is_sparse(M2@seed)   # FALSE
+
+## ---------------------------------------------------------------------
+## SANITY CHECKS
+## ---------------------------------------------------------------------
+stopifnot(class(A@seed) == "DelayedSubset")
+stopifnot(class(SM1@seed) == "DelayedSubset")
+stopifnot(is_sparse(SM1@seed))
+stopifnot(class(M2@seed) == "DelayedSubset")
+stopifnot(!is_sparse(M2@seed))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>DelayedArray</em> version 0.20.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

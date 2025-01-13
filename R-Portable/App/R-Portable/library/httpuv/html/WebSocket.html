@@ -1,0 +1,236 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: WebSocket class</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for WebSocket {httpuv}"><tr><td>WebSocket {httpuv}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>WebSocket class</h2>
+
+<h3>Description</h3>
+
+<p>A <code>WebSocket</code> object represents a single WebSocket connection. The
+object can be used to send messages and close the connection, and to receive
+notifications when messages are received or the connection is closed.
+</p>
+
+
+<h3>Details</h3>
+
+<p>Note that this WebSocket class is different from the one provided by the
+package named websocket. This class is meant to be used on the server side,
+whereas the one in the websocket package is to be used as a client. The
+WebSocket class in httpuv has an older API than the one in the websocket
+package.
+</p>
+<p>WebSocket objects should never be created directly. They are obtained by
+passing an <code>onWSOpen</code> function to <code><a href="../../httpuv/help/startServer.html">startServer</a></code>.
+</p>
+
+
+<h3>Fields</h3>
+
+
+<dl>
+<dt><code>request</code></dt><dd>
+<p>The Rook request environment that opened the connection. This can be
+used to inspect HTTP headers, for example.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Methods</h3>
+
+
+<dl>
+<dt><code>onMessage(func)</code></dt><dd>
+<p>Registers a callback function that will be invoked whenever a message
+is received on this connection. The callback function will be invoked
+with two arguments. The first argument is <code>TRUE</code> if the message
+is binary and <code>FALSE</code> if it is text. The second argument is either
+a raw vector (if the message is binary) or a character vector.
+</p>
+</dd>
+<dt><code>onClose(func)</code></dt><dd>
+<p>Registers a callback function that will be invoked when the connection
+is closed.
+</p>
+</dd>
+<dt><code>send(message)</code></dt><dd>
+<p>Begins sending the given message over the websocket. The message must
+be either a raw vector, or a single-element character vector that is
+encoded in UTF-8.
+</p>
+</dd>
+<dt><code>close()</code></dt><dd>
+<p>Closes the websocket connection.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Methods</h3>
+
+
+
+<h4>Public methods</h4>
+
+
+<ul>
+<li> <p><a href="#method-WebSocket-new"><code>WebSocket$new()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-WebSocket-onMessage"><code>WebSocket$onMessage()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-WebSocket-onClose"><code>WebSocket$onClose()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-WebSocket-send"><code>WebSocket$send()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-WebSocket-close"><code>WebSocket$close()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-WebSocket-clone"><code>WebSocket$clone()</code></a>
+</p>
+</li></ul>
+
+
+<hr>
+<a id="method-WebSocket-new"></a>
+
+
+
+<h4>Method <code>new()</code></h4>
+
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>WebSocket$new(handle, req)</pre></div>
+
+
+<hr>
+<a id="method-WebSocket-onMessage"></a>
+
+
+
+<h4>Method <code>onMessage()</code></h4>
+
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>WebSocket$onMessage(func)</pre></div>
+
+
+<hr>
+<a id="method-WebSocket-onClose"></a>
+
+
+
+<h4>Method <code>onClose()</code></h4>
+
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>WebSocket$onClose(func)</pre></div>
+
+
+<hr>
+<a id="method-WebSocket-send"></a>
+
+
+
+<h4>Method <code>send()</code></h4>
+
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>WebSocket$send(message)</pre></div>
+
+
+<hr>
+<a id="method-WebSocket-close"></a>
+
+
+
+<h4>Method <code>close()</code></h4>
+
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>WebSocket$close(code = 1000L, reason = "")</pre></div>
+
+
+<hr>
+<a id="method-WebSocket-clone"></a>
+
+
+
+<h4>Method <code>clone()</code></h4>
+
+<p>The objects of this class are cloneable with this method.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>WebSocket$clone(deep = FALSE)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>deep</code></dt><dd><p>Whether to make a deep clone.</p>
+</dd>
+</dl>
+
+</div>
+
+
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## Not run: 
+# A WebSocket echo server that listens on port 8080
+startServer("0.0.0.0", 8080,
+  list(
+    onHeaders = function(req) {
+      # Print connection headers
+      cat(capture.output(str(as.list(req))), sep = "\n")
+    },
+    onWSOpen = function(ws) {
+      cat("Connection opened.\n")
+
+      ws$onMessage(function(binary, message) {
+        cat("Server received message:", message, "\n")
+        ws$send(message)
+      })
+      ws$onClose(function() {
+        cat("Connection closed.\n")
+      })
+
+    }
+  )
+)
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>httpuv</em> version 1.6.15 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

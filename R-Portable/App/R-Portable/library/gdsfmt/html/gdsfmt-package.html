@@ -1,0 +1,139 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: R Interface to CoreArray Genomic Data Structure (GDS) files</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for gdsfmt-package {gdsfmt}"><tr><td>gdsfmt-package {gdsfmt}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>R Interface to CoreArray Genomic Data Structure (GDS) files</h2>
+
+<h3>Description</h3>
+
+<p>This package provides a high-level R interface to CoreArray Genomic Data
+Structure (GDS) data files, which are portable across platforms and include
+hierarchical structure to store multiple scalable array-oriented data sets
+with metadata information. It is suited for large-scale datasets, especially
+for data which are much larger than the available random-access memory. The
+gdsfmt package offers the efficient operations specifically designed for
+integers with less than 8 bits, since a single genetic/genomic variant, such
+like single-nucleotide polymorphism, usually occupies fewer bits than a byte.
+It is also allowed to read a GDS file in parallel with multiple R processes
+supported by the parallel package.
+</p>
+
+
+<h3>Details</h3>
+
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: left;">
+    Package: </td><td style="text-align: left;"> gdsfmt</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+    Type: </td><td style="text-align: left;"> R/Bioconductor Package</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+    License: </td><td style="text-align: left;"> LGPL version 3</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+</td>
+</tr>
+
+</table>
+
+<p>R interface of CoreArray GDS is based on the CoreArray project initiated
+and developed from 2007 (<a href="http://corearray.sourceforge.net">http://corearray.sourceforge.net</a>). The CoreArray
+project is to develop portable, scalable, bioinformatic data visualization
+and storage technologies.
+</p>
+<p>R is the most popular statistical environment, but one not necessarily
+optimized for high performance or parallel computing which ease the burden of
+large-scale calculations. To support efficient data management in parallel for
+numerical genomic data, we developed the Genomic Data Structure (GDS) file
+format. <code>gdsfmt</code> provides fundamental functions to support accessing data
+in parallel, and allows future R packages to call these functions.
+</p>
+<p>Webpage: <a href="http://corearray.sourceforge.net">http://corearray.sourceforge.net</a>,
+<a href="http://github.com/zhengxwen/gdsfmt">http://github.com/zhengxwen/gdsfmt</a>
+</p>
+<p>Copyright notice:
+The package includes the sources of CoreArray C++ library written by
+Xiuwen Zheng (LGPL-3), zlib written by Jean-loup Gailly and Mark Adler
+(zlib license), and LZ4 written by Yann Collet (simplified BSD).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Xiuwen Zheng <a href="mailto:zhengx@u.washington.edu">zhengx@u.washington.edu</a></p>
+
+
+<h3>References</h3>
+
+<p><a href="http://corearray.sourceforge.net">http://corearray.sourceforge.net</a>,
+<a href="http://github.com/zhengxwen/gdsfmt">http://github.com/zhengxwen/gdsfmt</a>
+</p>
+<p>Xiuwen Zheng, David Levine, Jess Shen, Stephanie M. Gogarten, Cathy Laurie,
+Bruce S. Weir. A High-performance Computing Toolset for Relatedness and
+Principal Component Analysis of SNP Data. Bioinformatics 2012;
+doi: 10.1093/bioinformatics/bts606.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# cteate a GDS file
+f &lt;- createfn.gds("test.gds")
+L &lt;- -2500:2499
+
+# commom types
+add.gdsn(f, "label", NULL)
+add.gdsn(f, "int", val=1:10000, compress="ZIP", closezip=TRUE)
+add.gdsn(f, "int.matrix", val=matrix(L, nrow=100, ncol=50))
+add.gdsn(f, "mat", val=matrix(1:(10*6), nrow=10))
+add.gdsn(f, "double", val=seq(1, 1000, 0.4))
+add.gdsn(f, "character", val=c("int", "double", "logical", "factor"))
+add.gdsn(f, "logical", val=rep(c(TRUE, FALSE, NA), 50))
+add.gdsn(f, "factor", val=as.factor(c(letters, NA, "AA", "CC")))
+add.gdsn(f, "NA", val=rep(NA, 10))
+add.gdsn(f, "NaN", val=c(rep(NaN, 20), 1:20))
+add.gdsn(f, "bit2-matrix", val=matrix(L[1:5000], nrow=50, ncol=100),
+    storage="bit2")
+# list and data.frame
+add.gdsn(f, "list", val=list(X=1:10, Y=seq(1, 10, 0.25)))
+add.gdsn(f, "data.frame", val=data.frame(X=1:19, Y=seq(1, 10, 0.5)))
+
+# save a .RData object
+obj &lt;- list(X=1:10, Y=seq(1, 10, 0.1))
+save(obj, file="tmp.RData")
+addfile.gdsn(f, "tmp.RData", filename="tmp.RData")
+
+f
+
+read.gdsn(index.gdsn(f, "list"))
+read.gdsn(index.gdsn(f, "list/Y"))
+read.gdsn(index.gdsn(f, "data.frame"))
+read.gdsn(index.gdsn(f, "mat"))
+
+# Apply functions over columns of matrix
+tmp &lt;- apply.gdsn(index.gdsn(f, "mat"), margin=2, FUN=function(x) print(x))
+tmp &lt;- apply.gdsn(index.gdsn(f, "mat"), margin=2,
+    selection = list(rep(c(TRUE, FALSE), 5), rep(c(TRUE, FALSE), 3)),
+    FUN=function(x) print(x))
+
+# close the GDS file
+closefn.gds(f)
+
+
+# delete the temporary file
+unlink("test.gds", force=TRUE)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>gdsfmt</em> version 1.30.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Querying UCSC Tables</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for UCSCTableQuery-class {rtracklayer}"><tr><td>UCSCTableQuery-class {rtracklayer}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Querying UCSC Tables</h2>
+
+<h3>Description</h3>
+
+<p>The UCSC genome browser is backed by a large database,
+which is exposed by the Table Browser web interface. Tracks are
+stored as tables, so this is also the mechanism for retrieving tracks. The
+<code>UCSCTableQuery</code> class represents a query against the Table
+Browser. Storing the query fields in a formal class facilitates
+incremental construction and adjustment of a query.</p>
+
+
+<h3>Details</h3>
+
+<p>There are six supported fields for a table query:
+</p>
+
+<dl>
+<dt>provider</dt><dd>
+<p>The provider should be a session, a genome identifier, or a TrackHub URI.
+<code>session</code>: The <code><a href="../../rtracklayer/help/UCSCSession-class.html">UCSCSession</a></code> instance from
+the tables are retrieved. Although all sessions are based on the
+same database, the set of user-uploaded tracks, which are represented
+as tables, is not the same, in general.
+</p>
+</dd>
+<dt>tableName</dt><dd><p>The name of the specific table to retrieve. May be
+<code>NULL</code>, in which case the behavior depends on how the query
+is executed, see below.
+</p>
+</dd>
+<dt>range</dt><dd><p>A genome identifier, a
+<code><a href="../../GenomicRanges/help/GRanges.html">GRanges</a></code> or 
+a <code><a href="../../IRanges/help/IntegerRangesList.html">IntegerRangesList</a></code> indicating
+the portion of the table to retrieve, in genome coordinates.
+Simply specifying the genome string is the easiest way to download
+data for the entire genome, and <code><a href="../../rtracklayer/help/GRangesForUCSCGenome.html">GRangesForUCSCGenome</a></code>
+facilitates downloading data for e.g. an entire chromosome.
+</p>
+</dd>
+<dt>hubUrl</dt><dd><p>The URI of the specific TrackHub</p>
+</dd>
+<dt>genome</dt><dd><p>A genome identifier of the specific TrackHub, only need to provide it if the provider is up of TrackHub URI.</p>
+</dd>
+<dt>names</dt><dd><p>Names/accessions of the desired features</p>
+</dd>
+</dl>
+ 
+<p>A common workflow for querying the UCSC database is to create an
+instance of <code>UCSCTableQuery</code> using the <code>ucscTableQuery</code>
+constructor, invoke <code>tableNames</code> to list the available tables for
+a track, and finally to retrieve the desired table either as a
+<code>data.frame</code> via <code>getTable</code> or as a track
+via <code>track</code>. See the examples.
+</p>
+<p>The reason for a formal query class is to facilitate multiple queries
+when the differences between the queries are small. For example, one
+might want to query multiple tables within the track and/or same
+genomic region, or query the same table for multiple regions. The
+<code>UCSCTableQuery</code> instance can be incrementally adjusted for each
+new query. Some caching is also performed, which enhances performance. 
+</p>
+
+
+<h3>Constructor</h3>
+
+
+<dl>
+<dt></dt><dd>
+<p><code>ucscTableQuery(x, range = seqinfo(x), table = NULL,
+        names = NULL, hubUrl = NULL, genome = NULL)</code>: Creates a <code>UCSCTableQuery</code> with the
+<code>UCSCSession</code>, genome identifier or TrackHub URI given as <code>x</code> and
+the table name given by the single string <code>table</code>. <code>range</code> should
+be a genome string identifier, a <code>GRanges</code> instance or
+<code>IntegerRangesList</code> instance, and it effectively defaults to
+<code>genome(x)</code>. If the genome is missing, it is taken from the
+provider. Feature names, such as gene identifiers, may be
+passed via <code>names</code> as a character vector.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Executing Queries</h3>
+
+<p>Below, <code>object</code> is a <code>UCSCTableQuery</code> instance.
+</p>
+
+<dl>
+<dt></dt><dd>
+<p><code>track(object)</code>:
+Retrieves the indicated table as a track, i.e. a <code>GRanges</code>
+object. Note that not all tables are available as tracks.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>getTable(object)</code>: Retrieves the indicated table as a
+<code>data.frame</code>. Note that not all tables are output in
+parseable form, and that UCSC will truncate responses if they
+exceed certain limits (usually around 100,000 records). The safest
+(and most efficient) bet for large queries is to download the file
+via FTP and query it locally.
+</p>
+</dd>
+<dt></dt><dd>
+<p><code>tableNames(object)</code>: Gets the names of the tables available
+for the provider, table and range specified by the query.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Accessor methods</h3>
+
+<p>In the code snippets below, <code>x</code>/<code>object</code> is a
+<code>UCSCTableQuery</code> object.
+</p>
+
+<dl>
+<dt></dt><dd><p><code>genome(x)</code>, <code>genome(x) &lt;- value</code>: Gets or sets
+the genome identifier (e.g. &ldquo;hg18&rdquo;) of the object.
+</p>
+</dd>
+<dt></dt><dd><p><code>hubUrl(x)</code>, <code>hubUrl(x) &lt;- value</code>: Gets or sets
+the TrackHub URI.
+</p>
+</dd>
+<dt></dt><dd><p><code>tableName(x)</code>, <code>tableName(x) &lt;- value</code>: Get or
+set the single string indicating the name of the table to
+retrieve. May be <code>NULL</code>, in which case the table is
+automatically determined.
+</p>
+</dd>
+<dt></dt><dd><p><code>range(x)</code>, <code>range(x) &lt;- value</code>: Get or set the
+<code>GRanges</code> indicating the portion of the table to retrieve in
+genomic coordinates. Any missing information, such as the genome
+identifier, is filled in using <code>range(browserSession(x))</code>. It
+is also possible to set the genome identifier string or
+a <code>IntegerRangesList</code>.
+</p>
+</dd>
+<dt></dt><dd><p><code>names(x)</code>, <code>names(x) &lt;- value</code>: Get or set the
+names of the features to retrieve. If <code>NULL</code>, this filter is
+disabled.
+</p>
+</dd>
+<dt></dt><dd><p><code>ucscSchema(x)</code>: Get
+the <code><a href="../../rtracklayer/help/UCSCSchema-class.html">UCSCSchema</a></code> object describing the selected table.</p>
+</dd>
+<dt></dt><dd><p><code>ucscTables(genome, track)</code>: Get the list of tables for the 
+specified track(e.g. &ldquo;Assembly&rdquo;) and genome identifier (e.g. &ldquo;hg19&rdquo;).
+Here <code>genome</code> and <code>track</code> must be a single non-NA string.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Author(s)</h3>
+
+<p> Michael Lawrence </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+# query using `session` provider
+session &lt;- browserSession()
+genome(session) &lt;- "mm9"
+## choose the phastCons30way table for a portion of mm9 chr1
+query &lt;- ucscTableQuery(session, table = "phastCons30way",
+                        range = GRangesForUCSCGenome("mm9", "chr12",
+                                             IRanges(57795963, 57815592)))
+## list the table names
+tableNames(query)
+## retrieve the track data
+track(query)  # a GRanges object
+## get the multiz30waySummary track
+tableName(query) &lt;- "multiz30waySummary"
+## get a data.frame summarizing the multiple alignment
+getTable(query)
+
+# query using `genome identifier` provider
+query &lt;- ucscTableQuery("hg18", table = "snp129",
+                        names = c("rs10003974", "rs10087355", "rs10075230"))
+ucscSchema(query)
+getTable(query)
+
+# query using `TrackHub URI` provider
+query &lt;- ucscTableQuery("https://ftp.ncbi.nlm.nih.gov/snp/population_frequency/TrackHub/20200227123210/",
+                        genome = "hg19", table = "ALFA_GLB")
+getTable(query)
+# get the list of tables for 'Assembly' track and 'hg19' genome identifier
+ucscTables("hg19", "Assembly")
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rtracklayer</em> version 1.54.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

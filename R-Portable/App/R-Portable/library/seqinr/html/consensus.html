@@ -1,0 +1,158 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Consensus and profiles for sequence alignments</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for consensus {seqinr}"><tr><td>consensus {seqinr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Consensus and profiles for sequence alignments</h2>
+
+<h3>Description</h3>
+
+<p>This function returns a consensus using variuous methods (see details)
+or a profile from a sequence alignment.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+consensus(matali, method = c( "majority", "threshold", "IUPAC", "profile"), 
+  threshold = 0.60, warn.non.IUPAC = FALSE, type = c("DNA", "RNA"))
+con(matali, method = c( "majority", "threshold", "IUPAC", "profile"), 
+  threshold = 0.60, warn.non.IUPAC = FALSE, type = c("DNA", "RNA"))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>matali</code></td>
+<td>
+<p>an object of class <code>alignment</code> as returned by 
+<code><a href="../../seqinr/help/read.alignment.html">read.alignment</a></code>, or a matrix of characters.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>select the method to use, see details.</p>
+</td></tr>
+<tr valign="top"><td><code>threshold</code></td>
+<td>
+<p>for the <code>threshold</code> method, a numeric value beteen 0 and 1
+indicating the minimum relative frequency for a character to be returned
+as the consensus character. If none, NA is returned.</p>
+</td></tr>
+<tr valign="top"><td><code>warn.non.IUPAC</code></td>
+<td>
+<p>for the <code>IUPAC</code> method this argument is passed 
+to <code><a href="../../seqinr/help/bma.html">bma</a></code> with a default value set to FALSE to avoid warnings due 
+to gap characters in the alignment.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>for the <code>IUPAC</code> method this argument is passed 
+to <code><a href="../../seqinr/help/bma.html">bma</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+
+<dl>
+<dt>&quot;majority&quot;</dt><dd><p>The character with the higher frequency is returned as the
+consensus character.</p>
+</dd>
+<dt>&quot;threshold&quot;</dt><dd><p>As above but in addition the character relative frequency
+must be higher than the value controled by the <code>threshold</code> argument.
+If none, NA id returned.</p>
+</dd>
+<dt>&quot;IUPAC&quot;</dt><dd><p>Make sense only for nucleic acid sequences (DNA or RNA).
+The consensus character is defined if possible by an IUPAC symbol by
+function <code><a href="../../seqinr/help/bma.html">bma</a></code>. If this is not possible, when there is a gap
+character for instance, NA is returned.</p>
+</dd>
+<dt>&quot;profile&quot;</dt><dd><p>With this method a matrix with the count of each possible
+character at each position is returned.</p>
+</dd>
+</dl>
+
+<p><code>con</code> is a short form for <code>consensus</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Either a vector of single characters with possible NA or a matrix with
+the method <code>profile</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>J.R. Lobry</p>
+
+
+<h3>References</h3>
+
+ 
+<p><code>citation("seqinr")</code>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>See <code><a href="../../seqinr/help/read.alignment.html">read.alignment</a></code> to import alignment from files.</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+#
+# Read 5 aligned DNA sequences at 42 sites:
+#
+  phylip &lt;- read.alignment(file = system.file("sequences/test.phylip", 
+    package = "seqinr"), format = "phylip")
+#
+# Show data in a matrix form:
+#
+  (matali &lt;- as.matrix(phylip))
+#
+# With the majority rule:
+#
+  res &lt;- consensus(phylip)
+  stopifnot(c2s(res) == "aaaccctggccgttcagggtaaaccgtggccgggcagggtat")
+#
+# With a threshold:
+#
+  res.thr &lt;- consensus(phylip, method = "threshold")
+  res.thr[is.na(res.thr)] &lt;- "." # change NA into dots
+# stopifnot(c2s(res.thr) == "aa.c..t.gc.gtt..g..t.a.cc..ggccg.......ta.")
+  stopifnot(c2s(res.thr) == "aa.cc.tggccgttcagggtaaacc.tggccgg.cagggtat")
+#
+# With an IUPAC summary:
+#
+  res.iup &lt;- consensus(phylip, method = "IUPAC")
+  stopifnot(c2s(res.iup) == "amvsbnkkgcmkkkmmgsktrmrssndkgcmrkdmmvskyaw")
+  # replace 3 and 4-fold symbols by dots:
+  res.iup[match(res.iup, s2c("bdhvn"), nomatch = 0) &gt; 0] &lt;- "."
+  stopifnot(c2s(res.iup) == "am.s..kkgcmkkkmmgsktrmrss..kgcmrk.mm.skyaw")
+#
+# With a profile method:
+#
+  (res &lt;- consensus(phylip, method = "profile"))
+#
+# Show the connection between the profile and some consensus:
+#
+  bxc &lt;- barplot(res, col = c("green", "blue", "orange", "white", "red"), border = NA,
+  space = 0, las = 2, ylab = "Base count",
+  main = "Profile of a DNA sequence alignment",
+  xlab = "sequence position", xaxs = "i")
+  
+  text(x = bxc, y = par("usr")[4],lab = res.thr, pos = 3, xpd = NA)
+  text(x = bxc, y = par("usr")[1],lab = res.iup, pos = 1, xpd = NA)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>seqinr</em> version 4.2-36 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Initialize an R package containing Java code</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for jpackage {rJava}"><tr><td>jpackage {rJava}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Initialize an R package containing Java code
+</h2>
+
+<h3>Description</h3>
+
+<p><code>.jpackage</code> initializes the Java Virtual Machine (JVM) for an R
+package. In addition to starting the JVM it also registers Java
+classes and native code contained in the package with the JVM.
+function must be called before any rJava functions can be used.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+.jpackage(name, jars='*', morePaths='', nativeLibrary=FALSE,
+          lib.loc=NULL, parameters = getOption("java.parameters"),
+          own.loader = FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>name</code></td>
+<td>
+<p>name of the package. It should correspond to the
+<code>pkgname</code> parameter of <code>.onLoad</code> or <code>.First.lib</code>
+function.</p>
+</td></tr>
+<tr valign="top"><td><code>jars</code></td>
+<td>
+<p>Java archives in the <code>java</code> directory of the package
+that should be added to the class path. The paths must be relative
+to package's <code>java</code> directory. A special value of
+<code>'*'</code> adds all <code>.jar</code> files from the <code>java</code> the
+directory.</p>
+</td></tr>
+<tr valign="top"><td><code>morePaths</code></td>
+<td>
+<p>vector listing any additional entries that should
+be added to the class path.</p>
+</td></tr>
+<tr valign="top"><td><code>nativeLibrary</code></td>
+<td>
+<p>a logical determining whether rJava should look
+for native code in the R package's shared object or not.</p>
+</td></tr>
+<tr valign="top"><td><code>lib.loc</code></td>
+<td>
+<p>a character vector with path names of R libraries, or
+<code>NULL</code> (see <code><a href="../../base/html/system.file.html">system.file</a></code> and examples below).</p>
+</td></tr>
+<tr valign="top"><td><code>parameters</code></td>
+<td>
+<p>optional JVM initialization parameters which will be
+used if JVM is not initilized yet (see <code><a href="../../rJava/help/.jinit.html">.jinit</a></code>).</p>
+</td></tr>
+<tr valign="top"><td><code>own.loader</code></td>
+<td>
+<p>if <code>TRUE</code> then a new, separate class loader
+will be initilized for the package and assigned to the
+<code>.pkg.class.loader</code> variable in the package namespace. New
+packages should make use of this feature.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>.jpackage</code> initializes a Java R package as follows: first the
+JVM is initialized via <code><a href="../../rJava/help/.jinit.html">.jinit</a></code> (if it is not running
+already). Then the <code>java</code> directory of the package is added to
+the class path. Then <code>.jpackage</code> prepends <code>jars</code> with the
+path to the <code>java</code> directory of the package and adds them to the
+class path (or all <code>.jar</code> files if <code>'*'</code> was specified).
+Finally the <code>morePaths</code> parameter (if set) is passed to a call
+to <code><a href="../../rJava/help/.jaddClassPath.html">.jaddClassPath</a></code>.
+</p>
+<p>Therefore the easiest way to create a Java package is to add
+<code>.jpackage(pkgname, lib.loc=libname)</code> in <code>.onLoad</code> or
+<code>.First.lib</code>, and copy all necessary classes to a JAR file(s)
+which is placed in the <code>inst/java/</code> directory of the source
+package.
+</p>
+<p>If a package needs special Java parameters, <code>"java.parameters"</code>
+option can be used to set them on initialization. Note, however, that
+Java parameters can only be used during JVM initialization and other
+package may have intialized JVM already.
+</p>
+<p>Since rJava 0.9-14 there is support of package-specific class
+loaders using the <code>own.loader=TRUE</code> option. This is important for
+packages that may be using classes that conflict with other packages
+are therefore is highly recommended for new packages. Before this
+feature, there was only one global class loader which means that the
+class path was shared for all class look ups. If two packages
+use the same (fully qualified) class name, even in a dependency, they
+are likely to clash with each if they don't use exactly the same
+version. Therefore it is safer for each package use use a private
+class loader for its classes to guarantee that the only the classes
+supplied with the package will be used. To do that, a package will set
+<code>own.loader=TRUE</code> which instructs rJava to not change the global
+loader, but instead create a separate one for the package and assign
+it to <code>.rJava.class.loader</code> in the package namespace. Then if
+package wants to instantiate a new class, it would use
+<code>.jnew("myClass", class.loader=.rJava.class.loader)</code> to use its
+own loader instead of the global one. The global loader's class path
+won't be touched, so it won't find the package's classes. It is
+possible to get the loader used in a package using
+<code>.jclassLoader(package="foo")</code> which will return the global one if
+the package has not registered its own. Similarly, to retrieve the
+class path used by a package, one would use
+<code>.jclassPath(.jclassLoader(package="foo"))</code>.
+</p>
+<p>Note that with the advent of multiple class loaders the value of the
+<code>java.class.path</code> property is no longer meaningful as it can
+reflect only one of the loaders.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The return value is an invisible TRUE if the initialization was successful.  
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../rJava/help/.jinit.html">.jinit</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+.onLoad &lt;- function(libname, pkgname) {
+  .jpackage(pkgname, lib.loc=libname, own.loader=TRUE)
+  ## do not use, just an illustration of the concept:
+  cat("my Java class path: ")
+  print(.jclassPath(.jclassLoader(package=pkgname)))
+}
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rJava</em> version 1.0-11 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,199 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Control the geometry of automatic blocks</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for AutoBlock-global-settings {DelayedArray}"><tr><td>AutoBlock-global-settings {DelayedArray}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Control the geometry of automatic blocks</h2>
+
+<h3>Description</h3>
+
+<p>A family of utilities to control the automatic block size (or
+length) and shape.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+getAutoBlockSize()
+setAutoBlockSize(size=1e8)
+
+getAutoBlockLength(type)
+
+getAutoBlockShape()
+setAutoBlockShape(shape=c("hypercube",
+                          "scale",
+                          "first-dim-grows-first",
+                          "last-dim-grows-first"))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>size</code></td>
+<td>
+
+<p>The <em>auto block size</em> (automatic block size) in bytes. Note that,
+except when the type of the array data is <code>"character"</code> or
+<code>"list"</code>, the size of a block is its length multiplied by the
+size of an array element. For example, a block of 500 x 1000 x 500
+doubles has a length of 250 million elements and a size of 2 Gb (each
+double occupies 8 bytes of memory).
+</p>
+<p>The <em>auto block size</em> is set to 100 Mb at package startup and can
+be reset anytime to this value by calling <code>setAutoBlockSize()</code>
+with no argument.
+</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+
+<p>A string specifying the type of the array data.
+</p>
+</td></tr>
+<tr valign="top"><td><code>shape</code></td>
+<td>
+
+<p>A string specifying the <em>auto block shape</em> (automatic block shape).
+See <code><a href="../../DelayedArray/help/makeCappedVolumeBox.html">makeCappedVolumeBox</a></code> for a description of the
+supported shapes.
+</p>
+<p>The <em>auto block shape</em> is set to <code>"hypercube"</code> at
+package startup and can be reset anytime to this value by calling
+<code>setAutoBlockShape()</code> with no argument.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><em>block size</em> != <em>block length</em>
+</p>
+<p><em>block length</em> = number of array elements in a block
+(i.e. <code>prod(dim(block))</code>).
+</p>
+<p><em>block size</em> = <em>block length</em> * size of the individual elements
+in memory.
+</p>
+<p>For example, for an integer array, <em>block size</em> (in bytes) is
+going to be 4 x <em>block length</em>. For a numeric array <code>x</code>
+(i.e. <code>type(x) == "double"</code>), it's going to be 8 x <em>block length</em>.
+</p>
+<p>In its current form, block processing in the <span class="pkg">DelayedArray</span> package
+must decide the geometry of the blocks before starting the walk on the
+blocks. It does this based on several criteria. Two of them are:
+</p>
+
+<ul>
+<li><p> The <em>auto block size</em>: maximum size (in bytes) of a block
+once loaded in memory.
+</p>
+</li>
+<li><p> The <code>type()</code> of the array (e.g. <code>integer</code>, <code>double</code>,
+<code>complex</code>, etc...)
+</p>
+</li></ul>
+
+<p>The <em>auto block size</em> setting and <code>type(x)</code> control the maximum
+length of the blocks. Other criteria control their shape. So for example
+if you set the <em>auto block size</em> to 8GB, this will cap the length of
+the blocks to 2e9 if your DelayedArray object <code>x</code> is of type
+<code>integer</code>, and to 1e9 if it's of type <code>double</code>.
+</p>
+<p>Note that this simple relationship between <em>block size</em> and
+<em>block length</em> assumes that blocks are loaded in memory as
+ordinary (a.k.a. dense) matrices or arrays. With sparse blocks,
+all bets are off. But the max block length is always taken to be
+the <em>auto block size</em> divided by <code>get_type_size(type())</code>
+whether the blocks are going to be loaded as dense or sparse arrays.
+If they are going to be loaded as sparse arrays, their memory footprint
+is very likely to be smaller than if they were loaded as dense arrays
+so this is safe (although probably not optimal).
+</p>
+<p>It's important to keep in mind that the <em>auto block size</em> setting
+is a simple way for the user to put a cap on the memory footprint of
+the blocks. Nothing more. In particular it doesn't control the maximum
+amount of memory used by the block processing algorithm. Other variables
+can impact dramatically memory usage like parallelization (where more than
+one block is loaded in memory at any given time), what the algorithm is
+doing with the blocks (e.g. something like <code>blockApply(x, identity)</code>
+will actually load the entire array data in memory), what delayed
+operations are on <code>x</code>, etc... It would be awesome to have a way to
+control the maximum amount of memory used by a block processing algorithm
+as a whole but we don't know how to do that.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>getAutoBlockSize</code>: The current <em>auto block size</em> in bytes
+as a single numeric value.
+</p>
+<p><code>setAutoBlockSize</code>: The new <em>auto block size</em> in bytes as an
+invisible single numeric value.
+</p>
+<p><code>getAutoBlockLength</code>: The <em>auto block length</em> as a single
+integer value.
+</p>
+<p><code>getAutoBlockShape</code>: The current <em>auto block shape</em> as a
+single string.
+</p>
+<p><code>setAutoBlockShape</code>: The new <em>auto block shape</em> as an invisible
+single string.
+</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><code><a href="../../DelayedArray/help/defaultAutoGrid.html">defaultAutoGrid</a></code> and family to create automatic
+grids to use for block processing of array-like objects.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/blockApply.html">blockApply</a></code> and family for convenient block
+processing of an array-like object.
+</p>
+</li>
+<li><p> The <code><a href="../../DelayedArray/help/makeCappedVolumeBox.html">makeCappedVolumeBox</a></code> utility to make
+<em>capped volume boxes</em>.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+getAutoBlockSize()
+
+getAutoBlockLength("double")
+getAutoBlockLength("integer")
+getAutoBlockLength("logical")
+getAutoBlockLength("raw")
+
+m &lt;- matrix(runif(600), ncol=12)
+setAutoBlockSize(140)
+getAutoBlockLength(type(m))
+defaultAutoGrid(m)
+lengths(defaultAutoGrid(m))
+dims(defaultAutoGrid(m))
+
+getAutoBlockShape()
+setAutoBlockShape("scale")
+defaultAutoGrid(m)
+lengths(defaultAutoGrid(m))
+dims(defaultAutoGrid(m))
+
+## Reset the auto block size and shape to factory settings:
+setAutoBlockSize()
+setAutoBlockShape()
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>DelayedArray</em> version 0.20.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

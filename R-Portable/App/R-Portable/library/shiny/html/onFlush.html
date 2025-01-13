@@ -1,0 +1,140 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Add callbacks for Shiny session events</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for onFlush {shiny}"><tr><td>onFlush {shiny}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Add callbacks for Shiny session events</h2>
+
+<h3>Description</h3>
+
+<p>These functions are for registering callbacks on Shiny session events.
+<code>onFlush</code> registers a function that will be called before Shiny flushes the
+reactive system. <code>onFlushed</code> registers a function that will be called after
+Shiny flushes the reactive system. <code>onUnhandledError</code> registers a function to
+be called when an unhandled error occurs before the session is closed.
+<code>onSessionEnded</code> registers a function to be called after the client has
+disconnected.
+</p>
+<p>These functions should be called within the application's server function.
+</p>
+<p>All of these functions return a function which can be called with no
+arguments to cancel the registration.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+onFlush(fun, once = TRUE, session = getDefaultReactiveDomain())
+
+onFlushed(fun, once = TRUE, session = getDefaultReactiveDomain())
+
+onSessionEnded(fun, session = getDefaultReactiveDomain())
+
+onUnhandledError(fun, session = getDefaultReactiveDomain())
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>fun</code></td>
+<td>
+<p>A callback function.</p>
+</td></tr>
+<tr valign="top"><td><code>once</code></td>
+<td>
+<p>Should the function be run once, and then cleared, or should it
+re-run each time the event occurs. (Only for <code>onFlush</code> and
+<code>onFlushed</code>.)</p>
+</td></tr>
+<tr valign="top"><td><code>session</code></td>
+<td>
+<p>A shiny session object.</p>
+</td></tr>
+</table>
+
+
+<h3>Unhandled Errors</h3>
+
+<p>Unhandled errors are errors that aren't otherwise handled by Shiny or by the
+application logic. In other words, they are errors that will either cause the
+application to crash or will result in &quot;Error&quot; output in the UI.
+</p>
+<p>You can use <code>onUnhandledError()</code> to register a function that will be called
+when an unhandled error occurs. This function will be called with the error
+object as its first argument. If the error is fatal and will result in the
+session closing, the error condition will have the <code>shiny.error.fatal</code> class.
+</p>
+<p>Note that the <code>onUnhandledError()</code> callbacks cannot be used to prevent the
+app from closing or to modify the error condition. Instead, they are intended
+to give you an opportunity to log the error or perform other cleanup
+operations.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../shiny/help/onStop.html">onStop()</a></code> for registering callbacks that will be
+invoked when the application exits, or when a session ends.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+library(shiny)
+
+ui &lt;- fixedPage(
+  markdown(c(
+    "Set the number to 8 or higher to cause an error",
+    "in the `renderText()` output."
+  )),
+  sliderInput("number", "Number", 0, 10, 4),
+  textOutput("text"),
+  hr(),
+  markdown(c(
+    "Click the button below to crash the app with an unhandled error",
+    "in an `observe()` block."
+  )),
+  actionButton("crash", "Crash the app!")
+)
+
+log_event &lt;- function(level, ...) {
+  ts &lt;- strftime(Sys.time(), " [%F %T] ")
+  message(level, ts, ...)
+}
+
+server &lt;- function(input, output, session) {
+  log_event("INFO", "Session started")
+
+  onUnhandledError(function(err) {
+    # log the unhandled error
+    level &lt;- if (inherits(err, "shiny.error.fatal")) "FATAL" else "ERROR"
+    log_event(level, conditionMessage(err))
+  })
+
+  onStop(function() {
+    log_event("INFO", "Session ended")
+  })
+
+  observeEvent(input$crash, stop("Oops, an unhandled error happened!"))
+
+  output$text &lt;- renderText({
+    if (input$number &gt; 7) {
+      stop("that's too high!")
+    }
+    sprintf("You picked number %d.", input$number)
+  })
+}
+
+shinyApp(ui, server)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>shiny</em> version 1.8.1.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

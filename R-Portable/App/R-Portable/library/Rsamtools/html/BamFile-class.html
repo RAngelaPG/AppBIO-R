@@ -1,0 +1,476 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Maintain and use BAM files</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for BamFile {Rsamtools}"><tr><td>BamFile {Rsamtools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Maintain and use BAM files</h2>
+
+<h3>Description</h3>
+
+<p>Use <code>BamFile()</code> to create a reference to a BAM file (and
+optionally its index). The reference remains open across calls to
+methods, avoiding costly index re-loading.
+</p>
+<p><code>BamFileList()</code> provides a convenient way of managing a list of
+<code>BamFile</code> instances.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+
+## Constructors
+
+BamFile(file, index=file, ..., yieldSize=NA_integer_, obeyQname=FALSE,
+        asMates=FALSE, qnamePrefixEnd=NA, qnameSuffixStart=NA)
+BamFileList(..., yieldSize=NA_integer_, obeyQname=FALSE, asMates=FALSE,
+            qnamePrefixEnd=NA, qnameSuffixStart=NA)
+
+## Opening / closing
+
+## S3 method for class 'BamFile'
+open(con, ...)
+## S3 method for class 'BamFile'
+close(con, ...)
+
+## accessors; also path(), index(), yieldSize()
+
+## S4 method for signature 'BamFile'
+isOpen(con, rw="")
+## S4 method for signature 'BamFile'
+isIncomplete(con)
+## S4 method for signature 'BamFile'
+obeyQname(object, ...)
+obeyQname(object, ...) &lt;- value
+## S4 method for signature 'BamFile'
+asMates(object, ...)
+asMates(object, ...) &lt;- value
+## S4 method for signature 'BamFile'
+qnamePrefixEnd(object, ...)
+qnamePrefixEnd(object, ...) &lt;- value
+## S4 method for signature 'BamFile'
+qnameSuffixStart(object, ...)
+qnameSuffixStart(object, ...) &lt;- value
+
+## actions
+
+## S4 method for signature 'BamFile'
+scanBamHeader(files, ..., what=c("targets", "text"))
+## S4 method for signature 'BamFile'
+seqinfo(x)
+## S4 method for signature 'BamFileList'
+seqinfo(x)
+## S4 method for signature 'BamFile'
+filterBam(file, destination, index=file, ...,
+    filter=FilterRules(), indexDestination=TRUE,
+    param=ScanBamParam(what=scanBamWhat()))
+## S4 method for signature 'BamFile'
+indexBam(files, ...)
+## S4 method for signature 'BamFile'
+sortBam(file, destination, ..., byQname=FALSE, maxMemory=512)
+## S4 method for signature 'BamFileList'
+mergeBam(files, destination, ...)
+
+## reading
+
+## S4 method for signature 'BamFile'
+scanBam(file, index=file, ..., param=ScanBamParam(what=scanBamWhat()))
+
+## counting
+
+## S4 method for signature 'BamFile'
+idxstatsBam(file, index=file, ...)
+## S4 method for signature 'BamFile'
+countBam(file, index=file, ..., param=ScanBamParam())
+## S4 method for signature 'BamFileList'
+countBam(file, index=file, ..., param=ScanBamParam())
+## S4 method for signature 'BamFile'
+quickBamFlagSummary(file, ..., param=ScanBamParam(), main.groups.only=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Additional arguments.
+</p>
+<p>For <code>BamFileList</code>, this can either be a single character vector
+of paths to BAM files, or several instances of <code>BamFile</code>
+objects. When a character vector of paths, a second named argument
+&lsquo;index&rsquo; can be a <code>character()</code> vector of length equal to
+the first argument specifying the paths to the index files, or
+<code>character()</code> to indicate that no index file is available. See
+<code><a href="../../Rsamtools/help/BamFile.html">BamFile</a></code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>con</code></td>
+<td>
+<p>An instance of <code>BamFile</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>x, object, file, files</code></td>
+<td>
+<p>A character vector of BAM file paths
+(for <code>BamFile</code>) or a <code>BamFile</code> instance (for other
+methods).</p>
+</td></tr>
+<tr valign="top"><td><code>index</code></td>
+<td>
+<p>character(1); the BAM index file path (for
+<code>BamFile</code>); ignored for all other methods on this page.</p>
+</td></tr>
+<tr valign="top"><td><code>yieldSize</code></td>
+<td>
+<p>Number of records to yield each time the file
+is read from with <code>scanBam</code>. See &lsquo;Fields&rsquo;
+section for details.</p>
+</td></tr>
+<tr valign="top"><td><code>asMates</code></td>
+<td>
+<p>Logical indicating if records should be paired
+as mates. See &lsquo;Fields&rsquo; section for details.</p>
+</td></tr>
+<tr valign="top"><td><code>qnamePrefixEnd</code></td>
+<td>
+<p>Single character (or NA) marking the 
+end of the qname prefix. When specified, all characters prior to 
+and including the <code>qnamePrefixEnd</code> are removed from the qname.
+If the prefix is not found in the qname the qname is not trimmed.
+Currently only implemented for mate-pairing (i.e., when
+<code>asMates=TRUE</code> in a BamFile.</p>
+</td></tr>
+<tr valign="top"><td><code>qnameSuffixStart</code></td>
+<td>
+<p>Single character (or NA) marking the 
+start of the qname suffix. When specified, all characters following
+and including the <code>qnameSuffixStart</code> are removed from the qname.
+If the suffix is not found in the qname the qname is not trimmmed.
+Currently only implemented for mate-pairing (i.e., when
+<code>asMates=TRUE</code> in a BamFile.</p>
+</td></tr>
+<tr valign="top"><td><code>obeyQname</code></td>
+<td>
+<p>Logical indicating if the BAM file is sorted
+by <code>qname</code>. In Bioconductor &gt; 2.12 paired-end files do
+not need to be sorted by <code>qname</code>. Instead use
+<code>asMates=TRUE</code> for reading paired-end data. See 
+&lsquo;Fields&rsquo; section for details.</p>
+</td></tr>
+<tr valign="top"><td><code>value</code></td>
+<td>
+<p>Logical value for setting <code>asMates</code> and
+<code>obeyQname</code> in a BamFile instance.</p>
+</td></tr>
+<tr valign="top"><td><code>what</code></td>
+<td>
+<p>For <code>scanBamHeader</code>, a character vector specifying
+that either or both of <code>c("targets", "text")</code> are to be
+extracted from the header; see <code><a href="../../Rsamtools/help/scanBam.html">scanBam</a></code> for
+additional detail.</p>
+</td></tr>
+<tr valign="top"><td><code>filter</code></td>
+<td>
+<p>A <code><a href="../../S4Vectors/html/FilterRules-class.html">FilterRules</a></code> instance. Functions in the
+<code>FilterRules</code> instance should expect a single <code>DataFrame</code>
+argument representing all information specified by
+<code>param</code>. Each function must return a <code>logical</code> vector,
+usually of length equal to the number of rows of the
+<code>DataFrame</code>. Return values are used to include (when
+<code>TRUE</code>) corresponding records in the filtered BAM file.</p>
+</td></tr>
+<tr valign="top"><td><code>destination</code></td>
+<td>
+<p>character(1) file path to write filtered reads to.</p>
+</td></tr>
+<tr valign="top"><td><code>indexDestination</code></td>
+<td>
+<p>logical(1) indicating whether the destination
+file should also be indexed.</p>
+</td></tr>
+<tr valign="top"><td><code>byQname, maxMemory</code></td>
+<td>
+<p>See <code><a href="../../Rsamtools/help/sortBam.html">sortBam</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>param</code></td>
+<td>
+<p>An optional <code><a href="../../Rsamtools/help/ScanBamParam-class.html">ScanBamParam</a></code> instance to
+further influence scanning, counting, or filtering.</p>
+</td></tr>
+<tr valign="top"><td><code>rw</code></td>
+<td>
+<p>Mode of file; ignored.</p>
+</td></tr>
+<tr valign="top"><td><code>main.groups.only</code></td>
+<td>
+<p>See <code><a href="../../Rsamtools/help/quickBamFlagSummary.html">quickBamFlagSummary</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Objects from the Class</h3>
+
+<p>Objects are created by calls of the form <code>BamFile()</code>.
+</p>
+
+
+<h3>Fields</h3>
+
+<p>The <code>BamFile</code> class inherits fields from the
+<code><a href="../../Rsamtools/help/RsamtoolsFile-class.html">RsamtoolsFile</a></code> class and has fields:
+</p>
+
+<dl>
+<dt>yieldSize: </dt><dd><p>Number of records to yield each time the file is
+read from using <code>scanBam</code> or, when <code>length(bamWhich())
+      != 0</code>, a threshold which yields records in complete ranges whose
+sum first exceeds <code>yieldSize</code>. Setting <code>yieldSize</code> on a
+<code>BamFileList</code> does not alter existing yield sizes set on the
+individual <code>BamFile</code> instances.</p>
+</dd>
+<dt>asMates: </dt><dd><p>A logical indicating if the records should be
+returned as mated pairs. When <code>TRUE</code> <code>scanBam</code> attempts
+to mate (pair) the records and returns two additional fields
+<code>groupid</code> and <code>mate_status</code>. <code>groupid</code> is an integer
+vector of unique group ids; <code>mate_status</code> is a factor with level
+<code>mated</code> for records successfully paired by the algorithm,
+<code>ambiguous</code> for records that are possibly mates but cannot be
+assigned unambiguously, or <code>unmated</code> for reads that did not
+have valid mates.
+</p>
+<p>Mate criteria:
+</p>
+
+<ul>
+<li><p> Bit 0x40 and 0x80: Segments are a pair of first/last OR
+neither segment is marked first/last
+</p>
+</li>
+<li><p> Bit 0x100: Both segments are secondary OR both not secondary
+</p>
+</li>
+<li><p> Bit 0x10 and 0x20: Segments are on opposite strands
+</p>
+</li>
+<li><p> mpos match:
+segment1 mpos matches segment2 pos AND
+segment2 mpos matches segment1 pos
+</p>
+</li>
+<li><p> tid match
+</p>
+</li></ul>
+
+<p>Flags, tags and ranges may be specified in the <code>ScanBamParam</code>
+for fine tuning of results.</p>
+</dd>
+<dt>obeyQname: </dt><dd><p>A logical(0) indicating if the file was sorted by 
+qname. In Bioconductor &gt; 2.12 paired-end files do not need to be 
+sorted by <code>qname</code>. Instead set <code>asMates=TRUE</code> in the
+<code>BamFile</code> when using the <code>readGAlignmentsList</code>
+function from the <span class="pkg">GenomicAlignments</span> package.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Functions and methods</h3>
+
+<p><code>BamFileList</code> inherits additional methods from
+<code><a href="../../Rsamtools/help/RsamtoolsFileList.html">RsamtoolsFileList</a></code> and <code><a href="../../S4Vectors/html/SimpleList-class.html">SimpleList</a></code>.
+</p>
+<p>Opening / closing:
+</p>
+
+<dl>
+<dt>open.BamFile</dt><dd><p>Opens the (local or remote) <code>path</code> and
+<code>index</code> (if <code>bamIndex</code> is not <code>character(0)</code>),
+files.  Returns a <code>BamFile</code> instance.</p>
+</dd>
+<dt>close.BamFile</dt><dd><p>Closes the <code>BamFile</code> <code>con</code>; returning
+(invisibly) the updated <code>BamFile</code>. The instance may be
+re-opened with <code>open.BamFile</code>.</p>
+</dd>
+<dt>isOpen</dt><dd><p>Tests whether the <code>BamFile</code> <code>con</code> has been
+opened for reading.</p>
+</dd>
+<dt>isIncomplete</dt><dd><p>Tests whether the <code>BamFile</code> <code>con</code> is
+niether closed nor at the end of the file.</p>
+</dd>
+</dl>
+
+<p>Accessors: 
+</p>
+
+<dl>
+<dt>path</dt><dd><p>Returns a character(1) vector of BAM path names.</p>
+</dd>
+<dt>index</dt><dd><p>Returns a character(0) or character(1) vector of BAM
+index path names.</p>
+</dd>
+<dt>yieldSize, yieldSize&lt;-</dt><dd><p>Return or set an integer(1) vector
+indicating yield size.</p>
+</dd>
+<dt>obeyQname, obeyQname&lt;-</dt><dd><p>Return or set a logical(0)
+indicating if the file was sorted by qname.</p>
+</dd>
+<dt>asMates, asMates&lt;-</dt><dd><p>Return or set a logical(0)
+indicating if the records should be returned as mated pairs.</p>
+</dd>
+</dl>
+
+<p>Methods:
+</p>
+
+<dl>
+<dt>scanBamHeader</dt><dd><p>Visit the path in <code>path(file)</code>, returning
+the information contained in the file header; see
+<code><a href="../../Rsamtools/help/scanBamHeader.html">scanBamHeader</a></code>.</p>
+</dd>
+<dt>seqinfo, seqnames, seqlength</dt><dd><p>Visit the path in
+<code>path(file)</code>, returning a <code><a href="../../GenomeInfoDb/html/Seqinfo-class.html">Seqinfo</a></code>,
+character, or named integer vector containing information on the
+anmes and / or lengths of each sequence. Seqnames are ordered
+as they appear in the file.</p>
+</dd>
+<dt>scanBam</dt><dd><p>Visit the path in <code>path(file)</code>, returning the
+result of <code><a href="../../Rsamtools/help/scanBam.html">scanBam</a></code> applied to the specified path.</p>
+</dd>
+<dt>countBam</dt><dd><p>Visit the path(s) in <code>path(file)</code>, returning
+the result of <code><a href="../../Rsamtools/help/countBam.html">countBam</a></code> applied to the specified
+path.</p>
+</dd>
+<dt>idxstatsBam</dt><dd><p>Visit the index in <code>index(file)</code>, quickly
+returning a <code>data.frame</code> with columns <code>seqnames</code>,
+<code>seqlength</code>, <code>mapped</code> (number of mapped reads on
+<code>seqnames</code>) and <code>unmapped</code> (number of unmapped reads).</p>
+</dd>
+<dt>filterBam</dt><dd><p>Visit the path in <code>path(file)</code>, returning the
+result of <code><a href="../../Rsamtools/help/filterBam.html">filterBam</a></code> applied to the specified
+path. A single file can be filtered to one or several
+destinations, as described in <code><a href="../../Rsamtools/help/filterBam.html">filterBam</a></code>.</p>
+</dd>
+<dt>indexBam</dt><dd><p>Visit the path in <code>path(file)</code>, returning
+the result of <code><a href="../../Rsamtools/help/indexBam.html">indexBam</a></code> applied to the specified
+path.</p>
+</dd>
+<dt>sortBam</dt><dd><p>Visit the path in <code>path(file)</code>, returning the
+result of <code><a href="../../Rsamtools/help/sortBam.html">sortBam</a></code> applied to the specified path.</p>
+</dd>
+<dt>mergeBam</dt><dd><p>Merge several BAM files into a single BAM file. See
+<code><a href="../../Rsamtools/help/mergeBam.html">mergeBam</a></code> for details; additional arguments supported
+by <code>mergeBam,character-method</code> are also available for
+<code>BamFileList</code>.</p>
+</dd>
+<dt>show</dt><dd><p>Compactly display the object.</p>
+</dd>
+</dl>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Martin Morgan and Marc Carlson</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li><p> The <code><a href="../../GenomicAlignments/help/readGAlignments.html">readGAlignments</a></code>,
+<code><a href="../../GenomicAlignments/help/readGAlignmentPairs.html">readGAlignmentPairs</a></code>,
+and <code><a href="../../GenomicAlignments/help/readGAlignmentsList.html">readGAlignmentsList</a></code>
+functions defined in the <span class="pkg">GenomicAlignments</span> package.
+</p>
+</li>
+<li> <p><code><a href="../../GenomicAlignments/help/summarizeOverlaps.html">summarizeOverlaps</a></code> and
+<a href="../../GenomicAlignments/help/findSpliceOverlaps-methods.html">findSpliceOverlaps-methods</a> in the
+<span class="pkg">GenomicAlignments</span> package for methods that work on a
+<a href="../../Rsamtools/help/BamFile.html">BamFile</a> and <a href="../../Rsamtools/help/BamFileList.html">BamFileList</a> objects.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+
+##
+## BamFile options.
+##
+
+fl &lt;- system.file("extdata", "ex1.bam", package="Rsamtools")
+bf &lt;- BamFile(fl)
+bf
+
+## When 'asMates=TRUE' scanBam() reads the data in as
+## pairs. See 'asMates' above for details of the pairing
+## algorithm.
+asMates(bf) &lt;- TRUE
+
+## When 'yieldSize' is set, scanBam() will iterate
+## through the file in chunks.
+yieldSize(bf) &lt;- 500 
+
+## Some applications append a filename (e.g., NCBI Sequence Read 
+## Archive (SRA) toolkit) or allele identifier to the sequence qname.
+## This may result in a unique qname for each record which presents a
+## problem when mating paired-end reads (identical qnames is one
+## criteria for paired-end mating). 'qnamePrefixEnd' and 
+## 'qnameSuffixStart' can be used to trim an unwanted prefix or suffix.
+qnamePrefixEnd(bf) &lt;- "/"
+qnameSuffixStart(bf) &lt;- "." 
+
+##
+## Reading Bam files.
+##
+
+fl &lt;- system.file("extdata", "ex1.bam", package="Rsamtools",
+                  mustWork=TRUE)
+(bf &lt;- BamFile(fl))
+head(seqlengths(bf))                    # sequences and lengths in BAM file
+
+if (require(RNAseqData.HNRNPC.bam.chr14)) {
+    bfl &lt;- BamFileList(RNAseqData.HNRNPC.bam.chr14_BAMFILES)
+    bfl
+    bfl[1:2]                            # subset
+    bfl[[1]]                            # select first element -- BamFile
+    ## merged across BAM files
+    seqinfo(bfl)
+    head(seqlengths(bfl))
+}
+
+
+length(scanBam(fl)[[1]][[1]])  # all records
+
+bf &lt;- open(BamFile(fl))        # implicit index
+bf
+identical(scanBam(bf), scanBam(fl))
+close(bf)
+
+## Use 'yieldSize' to iterate through a file in chunks.
+bf &lt;- open(BamFile(fl, yieldSize=1000)) 
+while (nrec &lt;- length(scanBam(bf)[[1]][[1]]))
+    cat("records:", nrec, "\n")
+close(bf)
+
+## Repeatedly visit multiple ranges in the BamFile. 
+rng &lt;- GRanges(c("seq1", "seq2"), IRanges(1, c(1575, 1584)))
+bf &lt;- open(BamFile(fl))
+sapply(seq_len(length(rng)), function(i, bamFile, rng) {
+    param &lt;- ScanBamParam(which=rng[i], what="seq")
+    bam &lt;- scanBam(bamFile, param=param)[[1]]
+    alphabetFrequency(bam[["seq"]], baseOnly=TRUE, collapse=TRUE)
+}, bf, rng)
+close(bf)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>Rsamtools</em> version 2.10.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

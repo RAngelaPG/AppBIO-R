@@ -1,0 +1,211 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Prediction of origin and terminus of replication in bacteria.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for oriloc {seqinr}"><tr><td>oriloc {seqinr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Prediction of origin and terminus of replication in bacteria.</h2>
+
+<h3>Description</h3>
+
+<p>This program finds the putative origin and terminus of
+replication in procaryotic genomes. The program discriminates
+between codon positions.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+oriloc(seq.fasta = system.file("sequences/ct.fasta.gz", package = "seqinr"),
+ g2.coord = system.file("sequences/ct.predict", package = "seqinr"),
+ glimmer.version = 3,
+oldoriloc = FALSE, gbk = NULL, clean.tmp.files = TRUE, rot = 0)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>seq.fasta</code></td>
+<td>
+<p>Character: the name of a file which contains the DNA sequence
+of a bacterial chromosome in fasta format. The default value,
+<code>system.file("sequences/ct.fasta.gz", package ="seqinr")</code> is
+the fasta file <code>ct.fasta.gz</code>. This is the file
+for the complete genome sequence of <em>Chlamydia trachomatis</em>
+that was used in Frank and Lobry (2000). You can replace
+this by something like <code>seq.fasta = "myseq.fasta"</code> to work
+with your own data if the file <code>myseq.fasta</code> is present in
+the current working directory (see <code><a href="../../base/html/getwd.html">getwd</a></code>), or give
+a full path access to the sequence file (see <code><a href="../../base/html/file.choose.html">file.choose</a></code>).</p>
+</td></tr>
+<tr valign="top"><td><code>g2.coord</code></td>
+<td>
+<p>Character: the name of file which contains the output of
+glimmer program (<code>*.predict</code> in glimmer version 3)</p>
+</td></tr>
+<tr valign="top"><td><code>glimmer.version</code></td>
+<td>
+<p>Numeric: glimmer version used, could be 2 or 3</p>
+</td></tr>
+<tr valign="top"><td><code>oldoriloc</code></td>
+<td>
+<p>Logical: to be set at TRUE to reproduce the
+(deprecated) outputs of previous (publication date: 2000) version
+of the oriloc program.</p>
+</td></tr>
+<tr valign="top"><td><code>gbk</code></td>
+<td>
+<p>Character: the URL of a file in GenBank format. When provided
+<code>oriloc</code> use as input a single GenBank file instead of the <code>seq.fasta</code>
+and the <code>g2.coord</code>. A local temporary copy of the GenBank file is
+made with <code><a href="../../utils/html/download.file.html">download.file</a></code> if <code>gbk</code> starts with
+<code>http://</code> or <code>ftp://</code> or <code>file://</code> and whith
+<code><a href="../../base/html/files.html">file.copy</a></code> otherwise. The local copy is then used as
+input for <code><a href="../../seqinr/help/gb2fasta.html">gb2fasta</a></code> and <code><a href="../../seqinr/help/gbk2g2.html">gbk2g2</a></code> to produce
+a fasta file and a glimmer-like (version 2) file, respectively, to be used
+by oriloc instead of <code>seq.fasta</code> and <code>g2.coord</code> .</p>
+</td></tr>
+<tr valign="top"><td><code>clean.tmp.files</code></td>
+<td>
+<p>Logical: if TRUE temporary files generated when
+working with a GenBank file are removed.</p>
+</td></tr>
+<tr valign="top"><td><code>rot</code></td>
+<td>
+<p>Integer, with zero default value, used to permute circurlarly the genome. </p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The method builds on the fact that there are compositional asymmetries between
+the leading and the lagging strand for replication. The programs works only
+with third codon positions so as to increase the signal/noise ratio.
+To discriminate between codon positions, the program use as input either
+an annotated genbank file, either a fasta file and a glimmer2.0 (or
+glimmer3.0) output
+file.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data.frame with seven columns: <code>g2num</code> for the CDS number in
+the <code>g2.coord</code> file, <code>start.kb</code> for the start position of CDS
+expressed in Kb (this is the position of the first occurence of a
+nucleotide in a CDS <em>regardless</em> of its orientation), <code>end.kb</code>
+for the last position of a CDS, <code>CDS.excess</code> for the DNA walk for
+gene orientation (+1 for a CDS in the direct strand, -1 for a CDS in
+the reverse strand) cummulated over genes, <code>skew</code> for the cummulated
+composite skew in third codon positions, <code>x</code> for the cummulated
+T - A skew in third codon position, <code>y</code> for the cummulated C - G
+skew in third codon positions.
+</p>
+
+
+<h3>Note</h3>
+
+<p> The method works only for genomes having a single origin of replication
+from which the replication is bidirectional. To detect the composition changes,
+a DNA-walk is performed. In a 2-dimensional DNA walk, a C in the sequence
+corresponds to the movement in the positive y-direction and G to a movement
+in the negative y-direction. T and A are mapped by analogous steps along the
+x-axis. When there is a strand asymmetry, this will form a trajectory that
+turns at the origin and terminus of replication. Each step is the sum of
+nucleotides in a gene in third codon positions. Then orthogonal regression is
+used to find a line through this trajectory. Each point in the trajectory will
+have a corresponding point on the line, and the coordinates of each are
+calculated. Thereafter, the distances from each of these points to the origin
+(of the plane), are calculated. These distances will represent a form of
+cumulative skew. This permets us to make a plot with the gene position (gene
+number, start or end position) on the x-axis and the cumulative skew (distance)
+at the y-axis. Depending on where the sequence starts, such a plot will display
+one or two peaks. Positive peak means origin, and negative means terminus.
+In the case of only one peak, the sequence starts at the origin or terminus
+site. </p>
+
+
+<h3>Author(s)</h3>
+
+<p>J.R. Lobry, A.C. Frank</p>
+
+
+<h3>References</h3>
+
+<p>More illustrated explanations to help understand oriloc outputs
+are available there:
+<a href="https://pbil.univ-lyon1.fr/software/Oriloc/howto.html">https://pbil.univ-lyon1.fr/software/Oriloc/howto.html</a>.<br />
+</p>
+<p>Examples of oriloc outputs on real sequence data are there:
+<a href="https://pbil.univ-lyon1.fr/software/Oriloc/index.html">https://pbil.univ-lyon1.fr/software/Oriloc/index.html</a>.<br />
+</p>
+<p>The original paper for oriloc:<br />
+Frank, A.C., Lobry, J.R. (2000) Oriloc: prediction of replication
+boundaries in unannotated bacterial chromosomes. <em>Bioinformatics</em>,
+<b>16</b>:566-567.<br />
+doi: <a href="https://doi.org/10.1093/bioinformatics/16.6.560">10.1093/bioinformatics/16.6.560</a><br /><br />
+</p>
+<p>A simple informal introduction to DNA-walks:<br />
+Lobry, J.R. (1999) Genomic landscapes. <em>Microbiology Today</em>,
+<b>26</b>:164-165.<br />
+<a href="https://seqinr.r-forge.r-project.org/MicrTod_1999_26_164.pdf">https://seqinr.r-forge.r-project.org/MicrTod_1999_26_164.pdf</a><br /><br />
+</p>
+<p>An early and somewhat historical application of DNA-walks:<br />
+Lobry, J.R. (1996) A simple vectorial representation of DNA sequences
+for the detection of replication origins in bacteria. <em>Biochimie</em>,
+<b>78</b>:323-326.<br />
+</p>
+<p>Glimmer, a very efficient open source software for the prediction of CDS from scratch
+in prokaryotic genome, is decribed at <a href="http://ccb.jhu.edu/software/glimmer/index.shtml">http://ccb.jhu.edu/software/glimmer/index.shtml</a>.<br />
+For a description of Glimmer 1.0 and 2.0 see:<br />
+</p>
+<p>Delcher, A.L., Harmon, D., Kasif, S., White, O., Salzberg, S.L. (1999)
+Improved microbial gene identification with GLIMMER,
+<em>Nucleic Acids Research</em>, <b>27</b>:4636-4641.<br />
+</p>
+<p>Salzberg, S., Delcher, A., Kasif, S., White, O. (1998)
+Microbial gene identification using interpolated Markov models,
+<em>Nucleic Acids Research</em>, <b>26</b>:544-548.<br />
+</p>
+<p><code>citation("seqinr")</code>
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../seqinr/help/draw.oriloc.html">draw.oriloc</a></code>, <code><a href="../../seqinr/help/rearranged.oriloc.html">rearranged.oriloc</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+#
+# A little bit too long for routine checks because oriloc() is already
+# called in draw.oriloc.Rd documentation file. Try example(draw.oriloc)
+# instead, or copy/paste the following code:
+#
+out &lt;- oriloc()
+plot(out$st, out$sk, type = "l", xlab = "Map position in Kb",
+    ylab = "Cumulated composite skew",
+    main = expression(italic(Chlamydia~~trachomatis)~~complete~~genome))
+#
+# Example with a single GenBank file:
+#
+out2 &lt;- oriloc(gbk="https://pbil.univ-lyon1.fr/datasets/seqinr/data/ct.gbk")
+draw.oriloc(out2)
+#
+# (some warnings are generated because of join in features and a gene that
+# wrap around the genome)
+#
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>seqinr</em> version 4.2-36 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

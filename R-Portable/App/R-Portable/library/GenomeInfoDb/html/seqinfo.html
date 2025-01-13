@@ -1,0 +1,485 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Accessing/modifying sequence information</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for seqinfo {GenomeInfoDb}"><tr><td>seqinfo {GenomeInfoDb}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Accessing/modifying sequence information</h2>
+
+<h3>Description</h3>
+
+<p>A set of generic functions for getting/setting/modifying the sequence
+information stored in an object.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+seqinfo(x)
+seqinfo(x,
+        new2old=NULL,
+        pruning.mode=c("error", "coarse", "fine", "tidy")) &lt;- value
+
+seqnames(x)
+seqnames(x) &lt;- value
+
+seqlevels(x)
+seqlevels(x,
+          pruning.mode=c("error", "coarse", "fine", "tidy")) &lt;- value
+sortSeqlevels(x, X.is.sexchrom=NA)
+seqlevelsInUse(x)
+seqlevels0(x)
+
+seqlengths(x)
+seqlengths(x) &lt;- value
+
+isCircular(x)
+isCircular(x) &lt;- value
+
+genome(x)
+genome(x) &lt;- value
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+
+<p>Any object containing sequence information i.e. with a <code>seqinfo()</code>
+component.
+</p>
+</td></tr>
+<tr valign="top"><td><code>new2old</code></td>
+<td>
+
+<p>The <code>new2old</code> argument allows the user to rename, drop, add and/or
+reorder the &quot;sequence levels&quot; in <code>x</code>.
+</p>
+<p><code>new2old</code> can be <code>NULL</code> or an integer vector with one element
+per entry in <a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> object <code>value</code> (i.e. <code>new2old</code> and
+<code>value</code> must have the same length) describing how the &quot;new&quot; sequence
+levels should be mapped to the &quot;old&quot; sequence levels, that is, how the
+entries in <code>value</code> should be mapped to the entries in
+<code>seqinfo(x)</code>.
+The values in <code>new2old</code> must be &gt;= 1 and &lt;= <code>length(seqinfo(x))</code>.
+<code>NA</code>s are allowed and indicate sequence levels that are being added.
+Old sequence levels that are not represented in <code>new2old</code> will be
+dropped, but this will fail if those levels are in use (e.g. if <code>x</code>
+is a <a href="../../GenomicRanges/help/GRanges.html">GRanges</a> object with ranges defined on those
+sequence levels) unless a pruning mode is specified via the
+<code>pruning.mode</code> argument (see below).
+</p>
+<p>If <code>new2old=NULL</code>, then sequence levels can only be added to the
+existing ones, that is, <code>value</code> must have at least as many entries
+as <code>seqinfo(x)</code> (i.e. <code>length(values) &gt;= length(seqinfo(x))</code>)
+and also <code>seqlevels(values)[seq_len(length(seqlevels(x)))]</code> must be
+identical to <code>seqlevels(x)</code>.
+</p>
+<p>Note that most of the times it's easier to proceed in 2 steps:
+</p>
+
+<ol>
+<li><p> First align the seqlevels on the left (<code>seqlevels(x)</code>)
+with the seqlevels on the right.
+</p>
+</li>
+<li><p> Then call <code>seqinfo(x) &lt;- value</code>. Because
+<code>seqlevels(x)</code> and <code>seqlevels(value)</code> now are
+identical, there's no need to specify <code>new2old</code>.
+</p>
+</li></ol>
+
+<p>This 2-step approach will typically look like this:
+</p>
+<pre>    seqlevels(x) &lt;- seqlevels(value)  # align seqlevels
+    seqinfo(x) &lt;- seqinfo(value)  # guaranteed to work
+    </pre>
+<p>Or, if <code>x</code> has seqlevels not in <code>value</code>, it will look
+like this:
+</p>
+<pre>    seqlevels(x, pruning.mode="coarse") &lt;- seqlevels(value)
+    seqinfo(x) &lt;- seqinfo(value)  # guaranteed to work
+    </pre>
+<p>The <code>pruning.mode</code> argument will control what happens to <code>x</code>
+when some of its seqlevels get droppped. See below for more information.
+</p>
+</td></tr>
+<tr valign="top"><td><code>pruning.mode</code></td>
+<td>
+
+<p>When some of the seqlevels to drop from <code>x</code> are in use (i.e. have
+ranges on them), the ranges on these sequences need to be removed before
+the seqlevels can be dropped. We call this <em>pruning</em>. The
+<code>pruning.mode</code> argument controls how to <em>prune</em> <code>x</code>.
+Four pruning modes are currently defined: <code>"error"</code>, <code>"coarse"</code>,
+<code>"fine"</code>, and <code>"tidy"</code>. <code>"error"</code> is the default. In this
+mode, no pruning is done and an error is raised. The other pruning modes
+do the following:
+</p>
+
+<ul>
+<li> <p><code>"coarse"</code>: Remove the elements in <code>x</code> where the
+seqlevels to drop are in use. Typically reduces the length of
+<code>x</code>. Note that if <code>x</code> is a list-like object (e.g.
+<a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a>,
+<a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a>, or
+<a href="../../GenomicAlignments/help/GAlignmentsList.html">GAlignmentsList</a>), then any list
+element in <code>x</code> where at least one of the sequence levels
+to drop is in use is <em>fully</em> removed. In other words,
+when <code>pruning.mode="coarse"</code>, the <code>seqlevels</code> setter
+will keep or remove <em>full list elements</em> and not try to
+change their content. This guarantees that the exact ranges
+(and their order) inside the individual list elements are
+preserved. This can be a desirable property when the list
+elements represent compound features like exons grouped by
+transcript (stored in a <a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a>
+object as returned by
+<code><a href="../../GenomicFeatures/help/exonsBy.html">exonsBy</a>( , by="tx")</code>),
+or paired-end or fusion reads, etc...
+</p>
+</li>
+<li> <p><code>"fine"</code>: Supported on list-like objects only. Removes
+the ranges that are on the sequences to drop. This removal is
+done within each list element of the original object <code>x</code>
+and doesn't affect its length or the order of its list elements.
+In other words, the pruned object is guaranteed to be
+<em>parallel</em> to the original object.
+</p>
+</li>
+<li> <p><code>"tidy"</code>: Like the <code>"fine"</code> pruning above but also
+removes the list elements that become empty as the result of
+the pruning. Note that this pruning mode is particularly well
+suited on a <a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> object that
+contains transcripts grouped by gene, as returned by
+<code><a href="../../GenomicFeatures/help/transcriptsBy.html">transcriptsBy</a>( , by="gene")</code>.
+Finally note that, as a convenience, this pruning mode is
+supported on non list-like objects (e.g.
+<a href="../../GenomicRanges/help/GRanges.html">GRanges</a> or
+<a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> objects) and, in this
+case, is equivalent to the <code>"coarse"</code> mode.
+</p>
+</li></ul>
+
+<p>See the &quot;B. DROP SEQLEVELS FROM A LIST-LIKE OBJECT&quot; section in the examples
+below for an extensive illustration of these pruning modes.
+</p>
+</td></tr>
+<tr valign="top"><td><code>value</code></td>
+<td>
+
+<p>Typically a <a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> object for the <code>seqinfo</code> setter.
+</p>
+<p>Either a named or unnamed character vector for the <code>seqlevels</code>
+setter.
+</p>
+<p>A vector containing the sequence information to store for the other
+setters.
+</p>
+</td></tr>
+<tr valign="top"><td><code>X.is.sexchrom</code></td>
+<td>
+
+<p>A logical indicating whether X refers to the sexual chromosome
+or to chromosome with Roman Numeral X. If <code>NA</code>, <code>sortSeqlevels</code>
+does its best to &quot;guess&quot;.
+</p>
+</td></tr>
+</table>
+
+
+<h3>It all revolves around Seqinfo objects</h3>
+
+<p>The <a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> class plays a central role for the functions described
+in this man page because:
+</p>
+
+<ol>
+<li><p> All these functions (except <code>seqinfo</code>, <code>seqlevelsInUse</code>,
+and <code>seqlevels0</code>) work on a <a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> object.
+</p>
+</li>
+<li><p> For classes that implement it, the <code>seqinfo</code> getter should
+return a <a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> object.
+</p>
+</li>
+<li><p> Default <code>seqlevels</code>, <code>seqlengths</code>, <code>isCircular</code>,
+and <code>genome</code> getters and setters are provided.
+By default, <code>seqlevels(x)</code> does <code>seqlevels(seqinfo(x))</code>,
+<code>seqlengths(x)</code> does <code>seqlengths(seqinfo(x))</code>,
+<code>isCircular(x)</code> does <code>isCircular(seqinfo(x))</code>,
+and <code>genome(x)</code> does <code>genome(seqinfo(x))</code>.
+So any class with a <code>seqinfo</code> getter will have all the above
+getters work out-of-the-box. If, in addition, the class defines
+a <code>seqinfo</code> setter, then all the corresponding setters will
+also work out-of-the-box.
+</p>
+<p>Examples of containers that have a <code>seqinfo</code> getter
+and setter:
+</p>
+
+<ul>
+<li><p> the <a href="../../GenomicRanges/help/GRanges.html">GRanges</a> and
+<a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> classes
+in the <span class="pkg">GenomicRanges</span> package;
+</p>
+</li>
+<li><p> the <a href="../../SummarizedExperiment/help/SummarizedExperiment.html">SummarizedExperiment</a>
+class in the <span class="pkg">SummarizedExperiment</span> package;
+</p>
+</li>
+<li><p> the <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a>,
+<a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a>,
+and <a href="../../GenomicAlignments/help/GAlignmentsList.html">GAlignmentsList</a> classes
+in the <span class="pkg">GenomicAlignments</span> package;
+</p>
+</li>
+<li><p> the <a href="../../GenomicFeatures/help/TxDb.html">TxDb</a> class in the
+<span class="pkg">GenomicFeatures</span> package;
+</p>
+</li>
+<li><p> the <a href="../../BSgenome/help/BSgenome.html">BSgenome</a> class in the
+<span class="pkg">BSgenome</span> package;
+</p>
+</li>
+<li><p> and more...
+</p>
+</li></ul>
+
+</li></ol>
+
+
+
+<h3>Note</h3>
+
+<p>The full list of methods defined for a given generic function can be seen
+with e.g. <code>showMethods("seqinfo")</code> or <code>showMethods("seqnames")</code>
+(for the getters), and <code>showMethods("seqinfo&lt;-")</code> or
+<code>showMethods("seqnames&lt;-")</code> (for the setters a.k.a.
+<em>replacement methods</em>). Please be aware that this shows only methods
+defined in packages that are currently attached.
+</p>
+<p>The <span class="pkg">GenomicRanges</span> package defines <code>seqinfo</code> and <code>seqinfo&lt;-</code>
+methods for these low-level data types: <a href="../../S4Vectors/help/List.html">List</a> and
+<a href="../../IRanges/help/IntegerRangesList.html">IntegerRangesList</a>. Those objects do not have the means
+to formally store sequence information. Thus, the wrappers simply store
+the <a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> object within <code>metadata(x)</code>. Initially, the
+metadata is empty, so there is some effort to generate a reasonable
+default <a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a>. The names of any <a href="../../S4Vectors/help/List.html">List</a> are
+taken as the <code>seqnames</code>, and the <code>universe</code> of
+<a href="../../IRanges/help/IntegerRangesList.html">IntegerRangesList</a> is taken as the <code>genome</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>H. Pagès</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li><p> The <a href="../../GenomeInfoDb/help/seqlevelsStyle.html">seqlevelsStyle</a> generic getter and setter for
+conveniently renaming the seqlevels of an object according
+to a given naming convention (e.g. NCBI or UCSC).
+</p>
+</li>
+<li> <p><a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> objects.
+</p>
+</li>
+<li> <p><a href="../../GenomicRanges/help/GRanges.html">GRanges</a> and <a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a>
+objects in the <span class="pkg">GenomicRanges</span> package.
+</p>
+</li>
+<li> <p><a href="../../SummarizedExperiment/help/SummarizedExperiment.html">SummarizedExperiment</a> objects in the
+<span class="pkg">SummarizedExperiment</span> package.
+</p>
+</li>
+<li> <p><a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a>,
+<a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a>,
+and <a href="../../GenomicAlignments/help/GAlignmentsList.html">GAlignmentsList</a> objects in the
+<span class="pkg">GenomicAlignments</span> package.
+</p>
+</li>
+<li> <p><a href="../../GenomicFeatures/help/TxDb.html">TxDb</a> objects in the
+<span class="pkg">GenomicFeatures</span> package.
+</p>
+</li>
+<li> <p><a href="../../BSgenome/help/BSgenome.html">BSgenome</a> objects in the <span class="pkg">BSgenome</span> package.
+</p>
+</li>
+<li> <p><a href="../../GenomeInfoDb/help/seqlevels-wrappers.html">seqlevels-wrappers</a> for convenience wrappers to the
+<code>seqlevels</code> getter and setter.
+</p>
+</li>
+<li> <p><code><a href="../../GenomeInfoDb/help/rankSeqlevels.html">rankSeqlevels</a></code>, on which <code>sortSeqlevels</code> is
+based.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## ---------------------------------------------------------------------
+## A. BASIC USAGE OF THE seqlevels() GETTER AND SETTER
+## ---------------------------------------------------------------------
+## Operations between 2 or more objects containing genomic ranges (e.g.
+## finding overlaps, comparing, or matching) only make sense if the
+## operands have the same seqlevels. So before performing such
+## operations, it is often necessary to adjust the seqlevels in
+## the operands so that they all have the same seqlevels. This is
+## typically done with the seqlevels() setter. The setter can be used
+## to rename, drop, add and/or reorder seqlevels of an object. The
+## examples below show how to mofify the seqlevels of a GRanges object
+## but the same would apply to any object containing sequence
+## information (i.e. with a seqinfo() component).
+library(GenomicRanges)
+
+gr &lt;- GRanges(rep(c("chr2", "chr3", "chrM"), 2), IRanges(1:6, 10))
+
+## Add new seqlevels:
+seqlevels(gr) &lt;- c("chr1", seqlevels(gr), "chr4")
+seqlevels(gr)
+seqlevelsInUse(gr)
+
+## Reorder existing seqlevels:
+seqlevels(gr) &lt;- rev(seqlevels(gr))
+seqlevels(gr)
+
+## Drop all unused seqlevels:
+seqlevels(gr) &lt;- seqlevelsInUse(gr)
+
+## Drop some seqlevels in use:
+seqlevels(gr, pruning.mode="coarse") &lt;- setdiff(seqlevels(gr), "chr3")
+gr
+
+## Rename, add, and reorder the seqlevels all at once:
+seqlevels(gr) &lt;- c("chr1", chr2="chr2", chrM="Mitochondrion")
+seqlevels(gr)
+
+## ---------------------------------------------------------------------
+## B. DROP SEQLEVELS FROM A LIST-LIKE OBJECT
+## ---------------------------------------------------------------------
+
+grl0 &lt;- GRangesList(A=GRanges("chr2", IRanges(3:2, 5)),
+                    B=GRanges(c("chr2", "chrMT"), IRanges(7:6, 15)),
+                    C=GRanges(c("chrY", "chrMT"), IRanges(17:16, 25)),
+                    D=GRanges())
+grl0
+
+grl1 &lt;- grl0
+seqlevels(grl1, pruning.mode="coarse") &lt;- c("chr2", "chr5")
+grl1  # grl0[[2]] was fully removed! (even if it had a range on chr2)
+
+## If what is desired is to remove the 2nd range in grl0[[2]] only (i.e.
+## the chrMT:6-15 range), or, more generally speaking, to remove the
+## ranges within each list element that are located on the seqlevels to
+## drop, then use pruning.mode="fine" or pruning.mode="tidy":
+grl2 &lt;- grl0
+seqlevels(grl2, pruning.mode="fine") &lt;- c("chr2", "chr5")
+grl2  # grl0[[2]] not removed, but chrMT:6-15 range removed from it
+
+## Like pruning.mode="fine" but also removes grl0[[3]].
+grl3 &lt;- grl0
+seqlevels(grl3, pruning.mode="tidy") &lt;- c("chr2", "chr5")
+grl3
+
+library(TxDb.Dmelanogaster.UCSC.dm3.ensGene)
+txdb &lt;- TxDb.Dmelanogaster.UCSC.dm3.ensGene
+## Pruning mode "coarse" is particularly well suited on a GRangesList
+## object that contains exons grouped by transcript:
+ex_by_tx &lt;- exonsBy(txdb, by="tx")
+seqlevels(ex_by_tx)
+seqlevels(ex_by_tx, pruning.mode="coarse") &lt;- "chr2L"
+seqlevels(ex_by_tx)
+## Pruning mode "tidy" is particularly well suited on a GRangesList
+## object that contains transcripts grouped by gene:
+tx_by_gene &lt;- transcriptsBy(txdb, by="gene")
+seqlevels(tx_by_gene)
+seqlevels(tx_by_gene, pruning.mode="tidy") &lt;- "chr2L"
+seqlevels(tx_by_gene)
+
+## ---------------------------------------------------------------------
+## C. RENAME THE SEQLEVELS OF A TxDb OBJECT
+## ---------------------------------------------------------------------
+
+library(TxDb.Dmelanogaster.UCSC.dm3.ensGene)
+txdb &lt;- TxDb.Dmelanogaster.UCSC.dm3.ensGene
+seqlevels(txdb)
+
+seqlevels(txdb) &lt;- sub("chr", "", seqlevels(txdb))
+seqlevels(txdb)
+
+seqlevels(txdb) &lt;- paste0("CH", seqlevels(txdb))
+seqlevels(txdb)
+
+seqlevels(txdb)[seqlevels(txdb) == "CHM"] &lt;- "M"
+seqlevels(txdb)
+
+## Restore original seqlevels:
+seqlevels(txdb) &lt;- seqlevels0(txdb)
+seqlevels(txdb)
+
+## ---------------------------------------------------------------------
+## D. SORT SEQLEVELS IN "NATURAL" ORDER
+## ---------------------------------------------------------------------
+
+sortSeqlevels(c("11", "Y", "1", "10", "9", "M", "2"))
+
+seqlevels &lt;- c("chrXI", "chrY", "chrI", "chrX", "chrIX", "chrM", "chrII")
+sortSeqlevels(seqlevels)
+sortSeqlevels(seqlevels, X.is.sexchrom=TRUE)
+sortSeqlevels(seqlevels, X.is.sexchrom=FALSE)
+
+seqlevels &lt;- c("chr2RHet", "chr4", "chrUextra", "chrYHet",
+               "chrM", "chrXHet", "chr2LHet", "chrU",
+               "chr3L", "chr3R", "chr2R", "chrX")
+sortSeqlevels(seqlevels)
+
+gr &lt;- GRanges()
+seqlevels(gr) &lt;- seqlevels
+sortSeqlevels(gr)
+
+## ---------------------------------------------------------------------
+## E. SUBSET OBJECTS BY SEQLEVELS
+## ---------------------------------------------------------------------
+
+tx &lt;- transcripts(txdb)
+seqlevels(tx)
+
+## Drop 'M', keep all others.
+seqlevels(tx, pruning.mode="coarse") &lt;- seqlevels(tx)[seqlevels(tx) != "M"]
+seqlevels(tx)
+
+## Drop all except 'ch3L' and 'ch3R'.
+seqlevels(tx, pruning.mode="coarse") &lt;- c("ch3L", "ch3R")
+seqlevels(tx)
+
+## ---------------------------------------------------------------------
+## F. FINDING METHODS
+## ---------------------------------------------------------------------
+
+showMethods("seqinfo")
+showMethods("seqinfo&lt;-")
+
+showMethods("seqnames")
+showMethods("seqnames&lt;-")
+
+showMethods("seqlevels")
+showMethods("seqlevels&lt;-")
+
+if (interactive()) {
+  library(GenomicRanges)
+  ?`GRanges-class`
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GenomeInfoDb</em> version 1.30.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

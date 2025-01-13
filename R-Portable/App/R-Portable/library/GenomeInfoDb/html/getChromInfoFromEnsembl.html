@@ -1,0 +1,443 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Get chromosome information for an Ensembl species</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for getChromInfoFromEnsembl {GenomeInfoDb}"><tr><td>getChromInfoFromEnsembl {GenomeInfoDb}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Get chromosome information for an Ensembl species
+</h2>
+
+<h3>Description</h3>
+
+<p><code>getChromInfoFromEnsembl</code> returns chromosome information like
+sequence names, lengths and circularity flags for a given Ensembl
+species e.g. Human, Cow, Saccharomyces cerevisiae, etc...
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+getChromInfoFromEnsembl(species,
+                        release=NA, division=NA, use.grch37=FALSE,
+                        assembled.molecules.only=FALSE,
+                        include.non_ref.sequences=FALSE,
+                        include.contigs=FALSE,
+                        include.clones=FALSE,
+                        map.NCBI=FALSE,
+                        recache=FALSE,
+                        as.Seqinfo=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>species</code></td>
+<td>
+
+<p>A single string specifying the name of an Ensembl species e.g.
+<code>"human"</code>, <code>"hsapiens"</code>, or <code>"Homo sapiens"</code>.
+Case is ignored.
+</p>
+<p>Alternatively the name of an assembly (e.g. <code>"GRCh38"</code>)
+or a taxonomy id (e.g. 9606) can be supplied.
+</p>
+</td></tr>
+<tr valign="top"><td><code>release</code></td>
+<td>
+
+<p>The Ensembl release to query e.g. 89. If set to <code>NA</code> (the
+default), the current release is used.
+</p>
+</td></tr>
+<tr valign="top"><td><code>division</code></td>
+<td>
+
+<p><code>NA</code> (the default) or one of the EnsemblGenomes marts i.e.
+<code>"bacteria"</code>, <code>"fungi"</code>, <code>"metazoa"</code>, <code>"plants"</code>,
+or <code>"protists"</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>use.grch37</code></td>
+<td>
+
+<p>NOT TESTED YET!
+</p>
+<p><code>TRUE</code> or <code>FALSE</code> (the default).
+</p>
+</td></tr>
+<tr valign="top"><td><code>assembled.molecules.only</code></td>
+<td>
+
+<p>NOT IMPLEMENTED YET!
+</p>
+</td></tr>
+<tr valign="top"><td><code>include.non_ref.sequences</code></td>
+<td>
+
+<p>TODO: DOCUMENT THIS!
+</p>
+</td></tr>
+<tr valign="top"><td><code>include.contigs</code></td>
+<td>
+
+<p>Whether or not sequences for which <code>coord_system</code> is set to
+<code>"contig"</code> should be included. They are not included by
+default. Note that the dataset for Human contains more than one
+hundred thousands <em>contigs</em>!
+</p>
+</td></tr>
+<tr valign="top"><td><code>include.clones</code></td>
+<td>
+
+<p>Whether or not sequences for which <code>coord_system</code> is set to
+<code>"clone"</code> should be included. They are not included by
+default. Note that the dataset for Human contains more than one
+hundred thousands <em>clones</em>!
+</p>
+</td></tr>
+<tr valign="top"><td><code>map.NCBI</code></td>
+<td>
+
+<p><code>TRUE</code> or <code>FALSE</code> (the default).
+</p>
+<p>If <code>TRUE</code> then NCBI chromosome information is bound to
+the result. This information is retrieved from NCBI by calling
+<code><a href="../../GenomeInfoDb/help/getChromInfoFromNCBI.html">getChromInfoFromNCBI</a></code> on the NCBI assembly that
+the Ensembl species is based on. Then the data frame returned
+by <code><a href="../../GenomeInfoDb/help/getChromInfoFromNCBI.html">getChromInfoFromNCBI</a></code> (&quot;NCBI chrom info&quot;) is
+<em>mapped</em> and bound to the data frame returned by
+<code>getChromInfoFromEnsembl</code> (&quot;Ensembl chrom info&quot;).
+This &quot;map and bind&quot; operation is similar to a <code>JOIN</code> in SQL.
+</p>
+<p>Note that not all rows in the &quot;Ensembl chrom info&quot; data frame are
+necessarily mapped to a row in the &quot;NCBI chrom info&quot; data frame.
+For the unmapped rows the NCBI columns in the final data frame
+are filled with NAs (<code>LEFT JOIN</code> in SQL).
+</p>
+<p>The primary use case for using <code>map.NCBI=TRUE</code> is to map
+Ensembl sequence names to NCBI sequence names.
+</p>
+</td></tr>
+<tr valign="top"><td><code>recache</code></td>
+<td>
+
+<p><code>getChromInfoFromEnsembl</code> uses a cache mechanism so the
+chromosome information of a given dataset only gets downloaded
+once during the current R session (note that the caching is done
+in memory so cached information does NOT persist across sessions).
+Setting <code>recache</code> to <code>TRUE</code> forces a new download (and
+recaching) of the chromosome information for the specified dataset.
+</p>
+</td></tr>
+<tr valign="top"><td><code>as.Seqinfo</code></td>
+<td>
+
+<p><code>TRUE</code> or <code>FALSE</code> (the default). If <code>TRUE</code> then a
+<a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> object is returned instead of a data frame. Note that
+only the <code>name</code>, <code>length</code>, and <code>circular</code> columns of
+the data frame are used to make the <a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> object. All the
+other columns are ignored (and lost).
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>COMING SOON...
+</p>
+
+
+<h3>Value</h3>
+
+<p>For <code>getChromInfoFromEnsembl</code>: By default, a 7-column data frame
+with columns:
+</p>
+
+<ol>
+<li> <p><code>name</code>: character.
+</p>
+</li>
+<li> <p><code>length</code>: integer.
+</p>
+</li>
+<li> <p><code>coord_system</code>: factor.
+</p>
+</li>
+<li> <p><code>synonyms</code>: list.
+</p>
+</li>
+<li> <p><code>toplevel</code>: logical.
+</p>
+</li>
+<li> <p><code>non_ref</code>: logical.
+</p>
+</li>
+<li> <p><code>circular</code>: logical.
+</p>
+</li></ol>
+
+<p>and with attribute <code>species_info</code> which contains details about
+the species that was used to obtaine the data.
+</p>
+<p>If <code>map.NCBI</code> is <code>TRUE</code>, then 7 &quot;NCBI columns&quot; are added
+to the result:
+</p>
+
+<ul>
+<li> <p><code>NCBI.SequenceName</code>: character.
+</p>
+</li>
+<li> <p><code>NCBI.SequenceRole</code>: factor.
+</p>
+</li>
+<li> <p><code>NCBI.AssignedMolecule</code>: factor.
+</p>
+</li>
+<li> <p><code>NCBI.GenBankAccn</code>: character.
+</p>
+</li>
+<li> <p><code>NCBI.Relationship</code>: factor.
+</p>
+</li>
+<li> <p><code>NCBI.RefSeqAccn</code>: character.
+</p>
+</li>
+<li> <p><code>NCBI.AssemblyUnit</code>: factor.
+</p>
+</li></ul>
+
+<p>Note that the names of the &quot;NCBI columns&quot; are those returned
+by <code><a href="../../GenomeInfoDb/help/getChromInfoFromNCBI.html">getChromInfoFromNCBI</a></code> but with the <code>NCBI.</code>
+prefix added to them.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>H. Pagès
+</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><code><a href="../../GenomeInfoDb/help/getChromInfoFromNCBI.html">getChromInfoFromNCBI</a></code> and
+<code><a href="../../GenomeInfoDb/help/getChromInfoFromUCSC.html">getChromInfoFromUCSC</a></code> for getting chromosome
+information for an NCBI assembly or UCSC genome.
+</p>
+</li>
+<li> <p><a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> objects.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## ---------------------------------------------------------------------
+## A. BASIC EXAMPLES
+## ---------------------------------------------------------------------
+
+## Internet access required!
+
+## === Worm ===
+## https://uswest.ensembl.org/Caenorhabditis_elegans
+
+celegans &lt;- getChromInfoFromEnsembl("celegans")
+attr(celegans, "species_info")
+
+getChromInfoFromEnsembl("celegans", as.Seqinfo=TRUE)
+
+celegans &lt;- getChromInfoFromEnsembl("celegans", map.NCBI=TRUE)
+
+## === Yeast ===
+## https://uswest.ensembl.org/Saccharomyces_cerevisiae
+
+scerevisiae &lt;- getChromInfoFromEnsembl("scerevisiae")
+attr(scerevisiae, "species_info")
+
+getChromInfoFromEnsembl("scerevisiae", as.Seqinfo=TRUE)
+
+scerevisiae &lt;- getChromInfoFromEnsembl("scerevisiae", map.NCBI=TRUE)
+
+## Arabidopsis thaliana:
+athaliana &lt;- getChromInfoFromEnsembl("athaliana", division="plants",
+                                     map.NCBI=TRUE)
+attr(athaliana, "species_info")
+
+## ---------------------------------------------------------------------
+## Temporary stuff that needs to go away...
+## ---------------------------------------------------------------------
+
+## TODO: Check all species for which an NCBI assembly is registered!
+## Checked so far (with current Ensembl release i.e. 99):
+## - celegans       OK
+## - scerevisiae    OK
+## - athaliana      OK
+## - btaurus        OK
+## - sscrofa        OK
+
+## Not run: 
+## WORK IN PROGRESS!!!
+library(GenomeInfoDb)
+
+.do_join &lt;- GenomeInfoDb:::.do_join
+.map_Ensembl_seqlevels_to_NCBI_seqlevels &lt;-
+    GenomeInfoDb:::.map_Ensembl_seqlevels_to_NCBI_seqlevels
+
+.map_Ensembl_seqlevels_to_NCBI_seqlevels(
+    paste0("ENS_", 1:26),
+    CharacterList(c(list(c(aa="INSDC1", bb="GNBK7"), c("INSDC2", "RefSeq3")),
+                    rep(list(NULL), 23), list("NCBI_7"))),
+    paste0("NCBI_", 1:10),
+    paste0("GNBK", c(1:8, NA, 9)),
+    c(paste0("REFSEQ", c(1:7, 1, 1)), NA),
+    verbose=TRUE
+)
+
+map_to_NCBI &lt;- function(Ensembl_chrom_info, NCBI_chrom_info,
+                        special_mappings=NULL)
+{
+    .map_Ensembl_seqlevels_to_NCBI_seqlevels(
+         Ensembl_chrom_info[ , "name"],
+         Ensembl_chrom_info[ , "synonyms"],
+         NCBI_chrom_info[ , "SequenceName"],
+         NCBI_chrom_info[ , "GenBankAccn"],
+         NCBI_chrom_info[ , "RefSeqAccn"],
+         special_mappings=special_mappings,
+         verbose=TRUE)
+}
+
+## ------------------------------------------------------------------------
+## Human
+## https://uswest.ensembl.org/Homo_sapiens/
+## Based on GRCh38.p13 (GCA_000001405.28)
+
+## Return 944 rows
+human_chrom_info &lt;- getChromInfoFromEnsembl("hsapiens")
+#                 1 id: 131550  &lt;- ref chromosome
+# CHR_HSCHR1_1_CTG3 id: 131561  &lt;- non-ref chromosome
+#     HSCHR1_1_CTG3 id: 131562  &lt;- scaffold (no scaffold is non_ref)
+
+## Map to NCBI
+## Summary:
+## - 639/640 NCBI sequences are reverse-mapped.
+## - Restricted mapping is one-to-one.
+GRCh38.p13 &lt;- getChromInfoFromNCBI("GRCh38.p13")
+L2R &lt;- map_to_NCBI(human_chrom_info, GRCh38.p13)
+## The only sequence in GRCh38.p13 that cannot be mapped to Ensembl is
+## HG2139_PATCH (was introduced in GRCh38.p2)! Why? What's special about
+## this patch?
+GRCh38.p13$mapped &lt;- tabulate(L2R, nbins=nrow(GRCh38.p13)) != 0L
+table(GRCh38.p13$SequenceRole, GRCh38.p13$mapped)
+#                        FALSE TRUE
+#   assembled-molecule       0   25
+#   alt-scaffold             0  261
+#   unlocalized-scaffold     0   42
+#   unplaced-scaffold        0  127
+#   pseudo-scaffold          0    0
+#   fix-patch                1  112
+#   novel-patch              0   72
+human_chrom_info &lt;- .do_join(human_chrom_info, GRCh38.p13, L2R)
+table(human_chrom_info$SequenceRole, human_chrom_info$toplevel)
+#                       FALSE TRUE
+#  assembled-molecule       0   25
+#  alt-scaffold           261    0
+#  unlocalized-scaffold     0   42
+#  unplaced-scaffold        0  127
+#  pseudo-scaffold          0    0
+#  fix-patch              112    0
+#  novel-patch             72    0
+
+#hsa_seqlevels &lt;- readRDS("hsapiens_gene_ensembl_txdb_seqlevels.rds")
+
+## ------------------------------------------------------------------------
+## Mouse
+## https://uswest.ensembl.org/Mus_musculus/
+## Based on GRCm38.p6 (GCA_000001635.8)
+
+## Return 258 rows
+mouse_chrom_info &lt;- getChromInfoFromEnsembl("mmusculus")
+
+## Map to NCBI
+## Summary:
+## - 139/239 NCBI sequences are reverse-mapped.
+## - Restricted mapping is NOT one-to-one: 2 Ensembl sequences (NC_005089.1
+##   and MT) are both mapped to NCBI MT.
+GRCm38.p6 &lt;- getChromInfoFromNCBI("GRCm38.p6")
+L2R &lt;- map_to_NCBI(mouse_chrom_info, GRCm38.p6)
+## 100 sequences in GRCm38.p6 are not mapped:
+GRCm38.p6$mapped &lt;- tabulate(L2R, nbins=nrow(GRCm38.p6)) != 0L
+table(GRCm38.p6$SequenceRole, GRCm38.p6$mapped)
+#                        FALSE TRUE
+#   assembled-molecule       0   22
+#   alt-scaffold            99    0
+#   unlocalized-scaffold     0   22
+#   unplaced-scaffold        0   22
+#   pseudo-scaffold          0    0
+#   fix-patch                1   64
+#   novel-patch              0    9
+## OK so Ensembl doesn't include the alt-scaffolds for Mouse. BUT WHAT
+## HAPPENED TO THIS ONE fix-patch SEQUENCE (MG4237_PATCH) THAT IS NOT
+## MAPPED? Found it in seq_region_synonym table! It's seq_region_id=100405.
+## Hey but that seq_region_id is **NOT** in the seq_region table!!! THIS
+## VIOLATES FOREIGN KEY CONSTRAINT!!!!
+mouse_chrom_info &lt;- .do_join(mouse_chrom_info, GRCm38.p6, L2R)
+## Ensembl does NOT comsider NC_005089.1 (duplicate entry for MT) toplevel:
+mouse_chrom_info[mouse_chrom_info$SequenceName 
+#            name length coord_system                      synonyms toplevel
+# 184 NC_005089.1  16299     scaffold                                  FALSE
+# 201          MT  16299   chromosome NC_005089.1, chrM, AY172335.1     TRUE
+#     SequenceName GenBankAccn  RefSeqAccn
+# 184           MT  AY172335.1 NC_005089.1
+# 201           MT  AY172335.1 NC_005089.1
+
+## ------------------------------------------------------------------------
+## Rat
+## https://uswest.ensembl.org/Rattus_norvegicus/
+## Based on Rnor_6.0 (GCA_000001895.4)
+
+# Return 1418 rows
+rat_chrom_info &lt;- getChromInfoFromEnsembl("rnorvegicus")
+
+## Map to NCBI
+## Summary:
+## - 955/955 NCBI sequences are reverse-mapped.
+## - Reverse mapping is one-to-many: 2 Ensembl sequences (NC_001665.2 and MT)
+##   are mapped to NCBI MT.
+Rnor_6.0 &lt;- getChromInfoFromNCBI("Rnor_6.0")
+L2R &lt;- map_to_NCBI(rat_chrom_info, Rnor_6.0)
+rat_chrom_info &lt;- .do_join(rat_chrom_info, Rnor_6.0, L2R)
+
+## Ensembl does NOT comsider NC_001665.2 (duplicate entry for MT) toplevel:
+rat_chrom_info[rat_chrom_info$SequenceName 
+#             name length coord_system                      synonyms toplevel
+# 1417 NC_001665.2  16313     scaffold                                  FALSE
+# 1418          MT  16313   chromosome NC_001665.2, AY172581.1, chrM     TRUE
+#      SequenceName GenBankAccn  RefSeqAccn
+# 1417           MT  AY172581.1 NC_001665.2
+# 1418           MT  AY172581.1 NC_001665.2
+
+table(rat_chrom_info$SequenceRole, rat_chrom_info$toplevel)
+#                        FALSE TRUE
+#   assembled-molecule       1   23
+#   alt-scaffold             0    0
+#   unlocalized-scaffold     0  354
+#   unplaced-scaffold        0  578
+#   pseudo-scaffold          0    0
+#   fix-patch                0    0
+#   novel-patch              0    0
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GenomeInfoDb</em> version 1.30.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

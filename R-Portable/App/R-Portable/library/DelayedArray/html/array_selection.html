@@ -1,0 +1,262 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Manipulation of array selections</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for array selection {DelayedArray}"><tr><td>array selection {DelayedArray}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Manipulation of array selections</h2>
+
+<h3>Description</h3>
+
+<p>NOTE: The tools documented in this man page are primarily intended
+for developers or advanced users curious about the internals of the
+<span class="pkg">DelayedArray</span> package. End users typically don't need them for
+their regular use of <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> objects.
+</p>
+<p>An <em>array selection</em> is just an index into an array-like object that
+contains the information of which array elements are selected. This index
+can take various forms but 3 special forms are particularly useful and
+extensively used thoughout the <span class="pkg">DelayedArray</span> framework:
+<em>linear index</em> (also referred to as <em>L-index</em> or <em>Lindex</em>),
+<em>matrix index</em> (also referred to as <em>M-index</em> or <em>Mindex</em>),
+<em>N-dimensional index</em> (also referred to as <em>N-index</em> or
+<em>Nindex</em>). See Details section below for more information.
+</p>
+<p>Two utility functions are provided at the moment to convert back and forth
+between <em>L-indices</em> and <em>M-indices</em>. More will be added in the
+future to convert between other types of array indices.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## Convert back and forth between L-indices and M-indices:
+Lindex2Mindex(Lindex, dim, use.names=FALSE)
+Mindex2Lindex(Mindex, dim, use.names=FALSE, as.integer=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>Lindex</code></td>
+<td>
+
+<p>An <em>L-index</em>. See Details section below.
+</p>
+</td></tr>
+<tr valign="top"><td><code>Mindex</code></td>
+<td>
+
+<p>An <em>M-index</em>. See Details section below.
+</p>
+<p>For convenience, <code>Mindex</code> can also be specified as an integer vector
+with one element per dimension in the underlying array, in which case it
+will be treated like a 1-row matrix.
+</p>
+</td></tr>
+<tr valign="top"><td><code>dim</code></td>
+<td>
+
+<p>An integer vector containing the dimensions of the underlying array.
+</p>
+<p>Note that <code>dim</code> can also be an integer matrix, in which case
+it must have one row per element in <code>Lindex</code> (or per row in
+<code>Mindex</code>) and one column per dimension in the underlying array.
+</p>
+</td></tr>
+<tr valign="top"><td><code>use.names</code></td>
+<td>
+
+<p>Should the names (or rownames) on the input be propagated to the output?
+</p>
+</td></tr>
+<tr valign="top"><td><code>as.integer</code></td>
+<td>
+
+<p>Set to <code>TRUE</code> to force <code>Mindex2Lindex</code> to return the L-index
+as an integer vector. Dangerous!
+</p>
+<p>By default, i.e. when <code>as.integer=FALSE</code>, <code>Mindex2Lindex</code> will
+return the L-index either as an integer or numeric vector. It will choose
+the former only if it's safe, that is, only if all the values in the
+L-index &quot;fit&quot; in the integer type. More precisely:
+</p>
+
+<ul>
+<li><p> If <code>dim</code> is not a matrix (i.e. is a vector) or if it's a
+matrix with a single row: <code>Mindex2Lindex</code> returns an integer
+or numeric vector depending on whether <code>prod(dim)</code> is &lt;=
+<code>.Machine$integer.max</code> (2^31 - 1) or not.
+</p>
+</li>
+<li><p> Otherwise <code>Mindex2Lindex</code> returns a numeric vector.
+</p>
+</li></ul>
+
+<p>Note that with these rules, <code>Mindex2Lindex</code> can return a numeric
+vector even if an integer vector could have been used.
+</p>
+<p>Use <code>as.integer=TRUE</code> only in situations where you know that all
+the L-index values are going to &quot;fit&quot; in the integer type.
+<code>Mindex2Lindex</code> will return garbage if they don't.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The 3 special forms of array indices extensively used thoughout the
+<span class="pkg">DelayedArray</span> framework:
+</p>
+
+<ol>
+<li> <p><em>Linear index</em> (or <em>L-index</em> or <em>Lindex</em>):
+A numeric vector with no NAs where each value is &gt;= 1 and &lt;=
+the length of the array-like object.
+When using an L-index to subset an array-like object, the returned
+value is a vector-like object (i.e. no dimensions) of the same
+length as the L-index.
+</p>
+<p>Example:
+</p>
+<pre>
+            a &lt;- array(101:124, 4:2)
+            Lindex &lt;- c(7, 2, 24, 2)
+            a[Lindex]
+          </pre>
+</li>
+<li> <p><em>Matrix index</em> (or <em>M-index</em> or <em>Mindex</em>):
+An integer matrix with one column per dimension in the array-like
+object and one row per array element in the selection. No NAs.
+The values in each column must be &gt;= 1 and &lt;= the extent of the
+array-like object along the corresponding dimension.
+When using an M-index to subset an array-like object, the returned
+value is a vector-like object (i.e. no dimensions) of length the
+number of rows in the M-index.
+</p>
+<p>Example:
+</p>
+<pre>
+            a &lt;- array(101:124, 4:2)
+            Mindex &lt;- rbind(c(3, 2, 1),
+                            c(2, 1, 1),
+                            c(4, 3, 2),
+                            c(2, 1, 1))
+            a[Mindex]
+          </pre>
+<p>Note that this is the type of index returned by
+<code>base::<a href="../../base/help/arrayInd.html">arrayInd</a></code>.
+</p>
+</li>
+<li> <p><em>N-dimensional</em> (or <em>N-index</em> or <em>Nindex</em>):
+A list with one list element per dimension in the array-like object.
+Each list element must be a subscript describing the selection along
+the corresponding dimension of the array-like object.
+IMPORTANT: A <code>NULL</code> subscript is interpreted as a <em>missing</em>
+subscript (&quot;missing&quot; like in <code>a[ , , 1:2]</code>), that is, as a
+subscript that runs along the full extend of the corresponding
+dimension of the array-like object. This means that before an
+N-index can be used in a call to <code>[</code>, <code>[&lt;-</code>, <code>[[</code>
+or <code>[[&lt;-</code>, the <code>NULL</code> list elements in it must be
+replaced with objects of class <code>"name"</code>.
+When using an N-index to subset an array-like object, the returned
+value is another array-like object of dimensions the lengths of the
+selections along each dimensions.
+</p>
+<p>Examples:
+</p>
+<pre>
+            a &lt;- array(101:124, 4:2)
+
+            ## Normalized N-index:
+
+            Nindex &lt;- list(c(1, 4, 1), NULL, 1)
+            ## Same as a[c(1, 4, 1), , 1, drop=FALSE]:
+            DelayedArray:::subset_by_Nindex(a, Nindex)
+
+            Nindex &lt;- list(integer(0), NULL, 1)
+            ## Same as a[integer(0), , 1, drop=FALSE]:
+            DelayedArray:::subset_by_Nindex(a, Nindex)
+
+            ## Non-normalized N-index:
+
+            Nindex &lt;- list(-3, NULL, 1)
+            Nindex &lt;- DelayedArray:::normalizeNindex(Nindex, a)
+            ## Same as a[-3, , 1, drop=FALSE]:
+            DelayedArray:::subset_by_Nindex(a, Nindex)
+
+            Nindex &lt;- list(IRanges(2, 4), NULL, 1)
+            Nindex &lt;- DelayedArray:::normalizeNindex(Nindex, a)
+            ## Same as a[2:4, , 1, drop=FALSE]:
+            DelayedArray:::subset_by_Nindex(a, Nindex)
+
+            dimnames(a)[[1]] &lt;- LETTERS[1:4]
+            Nindex &lt;- list(c("D", "B"), NULL, 1)
+            Nindex &lt;- DelayedArray:::normalizeNindex(Nindex, a)
+            ## Same as a[c("D", "B"), , 1, drop=FALSE]:
+            DelayedArray:::subset_by_Nindex(a, Nindex)
+          </pre>
+</li></ol>
+
+
+
+<h3>Value</h3>
+
+<p><code>Lindex2Mindex</code> returns an M-index.
+</p>
+<p><code>Mindex2Lindex</code> returns an L-index.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../base/help/arrayInd.html">arrayInd</a></code> in the <span class="pkg">base</span> package.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+dim &lt;- 4:2
+Mindex2Lindex(c(4, 3, 1), dim)
+Mindex2Lindex(c(4, 3, 2), dim)
+
+Mindex &lt;- rbind(c(1, 1, 1),
+                c(2, 1, 1),
+                c(3, 1, 1),
+                c(4, 1, 1),
+                c(1, 2, 1),
+                c(1, 1, 2),
+                c(4, 3, 2))
+
+Mindex2Lindex(Mindex, dim)
+
+## With a matrix of dimensions:
+
+dims &lt;- rbind(c(4L, 3L),
+              c(5L, 3L),
+              c(6L, 3L))
+
+Mindex &lt;- rbind(c(1,  2),
+                c(1,  2),
+                c(1,  2))
+
+Mindex2Lindex(Mindex, dims)
+
+## Sanity checks:
+
+dim &lt;- c(33:30, 45L, 30L)
+stopifnot(Mindex2Lindex(rep(1, 6), dim) == 1)
+stopifnot(Mindex2Lindex(dim, dim) == prod(dim))
+
+stopifnot(identical(Mindex2Lindex(arrayInd(1:120, 6:4), 6:4), 1:120))
+stopifnot(identical(Mindex2Lindex(arrayInd(840:1, 4:7), 4:7), 840:1))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>DelayedArray</em> version 0.20.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

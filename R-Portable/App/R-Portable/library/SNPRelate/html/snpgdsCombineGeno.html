@@ -1,0 +1,142 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Merge SNP datasets</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for snpgdsCombineGeno {SNPRelate}"><tr><td>snpgdsCombineGeno {SNPRelate}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Merge SNP datasets
+</h2>
+
+<h3>Description</h3>
+
+<p>To merge GDS files of SNP genotypes into a single GDS file
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+snpgdsCombineGeno(gds.fn, out.fn, method=c("position", "exact"),
+    compress.annotation="ZIP_RA.MAX", compress.geno="ZIP_RA",
+    same.strand=FALSE, snpfirstdim=FALSE, verbose=TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>gds.fn</code></td>
+<td>
+<p>a character vector of GDS file names to be merged</p>
+</td></tr>
+<tr valign="top"><td><code>out.fn</code></td>
+<td>
+<p>the name of output GDS file</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p><code>"exact"</code>: matching by all snp.id, chromosomes, positions
+and alleles; <code>"position"</code>: matching by chromosomes and positions</p>
+</td></tr>
+<tr valign="top"><td><code>compress.annotation</code></td>
+<td>
+<p>the compression method for the variables except
+<code>genotype</code></p>
+</td></tr>
+<tr valign="top"><td><code>compress.geno</code></td>
+<td>
+<p>the compression method for the variable
+<code>genotype</code></p>
+</td></tr>
+<tr valign="top"><td><code>same.strand</code></td>
+<td>
+<p>if TRUE, assuming the alleles on the same strand</p>
+</td></tr>
+<tr valign="top"><td><code>snpfirstdim</code></td>
+<td>
+<p>if TRUE, genotypes are stored in the individual-major
+mode, (i.e, list all SNPs for the first individual, and then list all
+SNPs for the second individual, etc)</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>if TRUE, show information</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This function calls <code><a href="../../SNPRelate/help/snpgdsSNPListIntersect.html">snpgdsSNPListIntersect</a></code> internally to
+determine the common SNPs. Allele definitions are taken from the first GDS file.
+</p>
+
+
+<h3>Value</h3>
+
+<p>None.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Xiuwen Zheng</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../SNPRelate/help/snpgdsCreateGeno.html">snpgdsCreateGeno</a></code>, <code><a href="../../SNPRelate/help/snpgdsCreateGenoSet.html">snpgdsCreateGenoSet</a></code>,
+<code><a href="../../SNPRelate/help/snpgdsSNPList.html">snpgdsSNPList</a></code>, <code><a href="../../SNPRelate/help/snpgdsSNPListIntersect.html">snpgdsSNPListIntersect</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# get the file name of a gds file
+fn &lt;- snpgdsExampleFileName()
+
+f &lt;- snpgdsOpen(fn)
+samp_id &lt;- read.gdsn(index.gdsn(f, "sample.id"))
+snp_id &lt;- read.gdsn(index.gdsn(f, "snp.id"))
+geno &lt;- read.gdsn(index.gdsn(f, "genotype"), start=c(1,1), count=c(-1, 3000))
+snpgdsClose(f)
+
+
+# split the GDS file with different samples
+snpgdsCreateGenoSet(fn, "t1.gds", sample.id=samp_id[1:10],
+    snp.id=snp_id[1:3000])
+snpgdsCreateGenoSet(fn, "t2.gds", sample.id=samp_id[11:30],
+    snp.id=snp_id[1:3000])
+
+# combine with different samples
+snpgdsCombineGeno(c("t1.gds", "t2.gds"), "test.gds", same.strand=TRUE)
+f &lt;- snpgdsOpen("test.gds")
+g &lt;- read.gdsn(index.gdsn(f, "genotype"))
+snpgdsClose(f)
+
+identical(geno[1:30, ], g)  # TRUE
+
+
+# split the GDS file with different SNPs
+snpgdsCreateGenoSet(fn, "t1.gds", snp.id=snp_id[1:100])
+snpgdsCreateGenoSet(fn, "t2.gds", snp.id=snp_id[101:300])
+
+# combine with different SNPs
+snpgdsCombineGeno(c("t1.gds", "t2.gds"), "test.gds")
+f &lt;- snpgdsOpen("test.gds")
+g &lt;- read.gdsn(index.gdsn(f, "genotype"))
+snpgdsClose(f)
+
+identical(geno[, 1:300], g)  # TRUE
+
+
+# delete the temporary files
+unlink(c("t1.gds", "t2.gds", "t3.gds", "t4.gds", "test.gds"), force=TRUE)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>SNPRelate</em> version 1.28.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

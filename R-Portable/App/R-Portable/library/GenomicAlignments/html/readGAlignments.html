@@ -1,0 +1,551 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Reading genomic alignments from a file</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for readGAlignments {GenomicAlignments}"><tr><td>readGAlignments {GenomicAlignments}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Reading genomic alignments from a file</h2>
+
+<h3>Description</h3>
+
+<p>Read genomic alignments from a file (typically a BAM file) into a
+<a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a>, <a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a>, <a href="../../GenomicAlignments/help/GAlignmentsList.html">GAlignmentsList</a>,
+or <a href="../../GenomicAlignments/help/GappedReads.html">GappedReads</a> object.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+readGAlignments(file, index=file, use.names=FALSE, param=NULL,
+                      with.which_label=FALSE)
+
+readGAlignmentPairs(file, index=file, use.names=FALSE, param=NULL,
+                          with.which_label=FALSE, strandMode=1)
+
+readGAlignmentsList(file, index=file, use.names=FALSE,
+                          param=ScanBamParam(), with.which_label=FALSE)
+
+readGappedReads(file, index=file, use.names=FALSE, param=NULL,
+                      with.which_label=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>file</code></td>
+<td>
+
+<p>The path to the file to read or a <a href="../../Rsamtools/help/BamFile.html">BamFile</a> object.
+Can also be a <a href="../../Rsamtools/help/BamViews.html">BamViews</a> object for
+<code>readGAlignments</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>index</code></td>
+<td>
+
+<p>The path to the index file of the BAM file to read.
+Must be given <em>without</em> the '.bai' extension.
+See <code><a href="../../Rsamtools/help/scanBam.html">scanBam</a></code> in the <span class="pkg">Rsamtools</span> packages
+for more information.
+</p>
+</td></tr>
+<tr valign="top"><td><code>use.names</code></td>
+<td>
+
+<p><code>TRUE</code> or <code>FALSE</code>. By default (i.e. <code>use.names=FALSE</code>),
+the resulting object has no names. If <code>use.names</code> is <code>TRUE</code>,
+then the names are constructed from the query template names (QNAME
+field in a SAM/BAM file). Note that the 2 records in a pair (when using
+<code>readGAlignmentPairs</code> or the records in a group (when using
+<code>readGAlignmentsList</code>) have the same QNAME.
+</p>
+</td></tr>
+<tr valign="top"><td><code>param</code></td>
+<td>
+<p><code>NULL</code> or a <a href="../../Rsamtools/help/ScanBamParam.html">ScanBamParam</a> object.
+Like for <code><a href="../../Rsamtools/help/scanBam.html">scanBam</a></code>, this influences what fields
+and which records are imported. However, note that the fields specified
+thru this <a href="../../Rsamtools/help/ScanBamParam.html">ScanBamParam</a> object will be loaded
+<em>in addition</em> to any field required for generating the returned
+object (<a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a>, <a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a>,
+or <a href="../../GenomicAlignments/help/GappedReads.html">GappedReads</a> object),
+but only the fields requested by the user will actually be kept as
+metadata columns of the object.
+</p>
+<p>By default (i.e. <code>param=NULL</code> or <code>param=ScanBamParam()</code>), no 
+additional field is loaded. The flag used is 
+<code>scanBamFlag(isUnmappedQuery=FALSE)</code> for
+<code>readGAlignments</code>, <code>readGAlignmentsList</code>, and
+<code>readGappedReads</code>.
+(i.e. only records corresponding to mapped reads are loaded),
+and <code>scanBamFlag(isUnmappedQuery=FALSE, isPaired=TRUE,
+    hasUnmappedMate=FALSE)</code> for <code>readGAlignmentPairs</code>
+(i.e. only records corresponding to paired-end reads with both ends
+mapped are loaded).
+</p>
+</td></tr>
+<tr valign="top"><td><code>with.which_label</code></td>
+<td>
+<p><code>TRUE</code> or <code>FALSE</code> (the default).
+If <code>TRUE</code> and if <code>param</code> has a <code>which</code> component,
+a <code>"which_label"</code> metadata column is added to the returned
+<a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> or <a href="../../GenomicAlignments/help/GappedReads.html">GappedReads</a> object,
+or to the <code><a href="../../GenomicAlignments/help/first.html">first</a></code> and <code><a href="../../GenomicAlignments/help/last.html">last</a></code> components
+of the returned <a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> object.
+In the case of <code>readGAlignmentsList</code>, it's added as an
+<em>inner</em> metadata column, that is, the metadata column is placed
+on the <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> object obtained by unlisting
+the returned <a href="../../GenomicAlignments/help/GAlignmentsList.html">GAlignmentsList</a> object.
+</p>
+<p>The purpose of this metadata column is to unambiguously identify
+the range in <code>which</code> where each element in the returned object
+originates from. The labels used to identify the ranges are normally
+of the form <code>"seq1:12250-246500"</code>, that is, they're the same as
+the names found on the outer list that <code><a href="../../Rsamtools/html/scanBam.html">scanBam</a></code> would
+return if called with the same <code>param</code> argument. If some ranges
+are duplicated, then the labels are made unique by appending a unique
+suffix to all of them. The <code>"which_label"</code> metadata column is
+represented as a factor-<a href="../../S4Vectors/help/Rle.html">Rle</a>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>strandMode</code></td>
+<td>
+
+<p>Strand mode to set on the returned <a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> object.
+See <code>?<a href="../../GenomicAlignments/help/strandMode.html">strandMode</a></code> for more information.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+
+<ul>
+<li> <p><code>readGAlignments</code> reads a file containing aligned reads as a
+<a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> object. See <code>?<a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a></code> for a
+description of <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> objects.
+</p>
+<p>When <code>file</code> is a <a href="../../Rsamtools/help/BamViews.html">BamViews</a> object,
+<code>readGAlignments</code> visits each path in <code>bamPaths(file)</code>,
+returning the result of <code>readGAlignments</code> applied to the
+specified path. When <code>index</code> is missing, it is set equal to
+<code>bamIndicies(file)</code>. Only reads in <code>bamRanges(file)</code> are
+returned (if <code>param</code> is supplied, <code>bamRanges(file)</code> takes
+precedence over <code>bamWhich(param)</code>). The return value is a
+<a href="../../S4Vectors/help/SimpleList.html">SimpleList</a> object, with elements of the list
+corresponding to each path. <code>bamSamples(file)</code> is available
+as metadata columns (accessed with <code>mcols</code>) of the returned
+<a href="../../S4Vectors/help/SimpleList.html">SimpleList</a> object.
+</p>
+</li>
+<li> <p><code>readGAlignmentPairs</code> reads a file containing aligned paired-end
+reads as a <a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> object.
+See <code>?<a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a></code> for a description of
+<a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> objects.
+</p>
+</li>
+<li> <p><code>readGAlignmentsList</code> reads a file containing aligned reads as
+a <a href="../../GenomicAlignments/help/GAlignmentsList.html">GAlignmentsList</a> object. See <code>?<a href="../../GenomicAlignments/help/GAlignmentsList.html">GAlignmentsList</a></code> 
+for a description of <a href="../../GenomicAlignments/help/GAlignmentsList.html">GAlignmentsList</a> objects.
+<code>readGAlignmentsList</code> pairs records into mates according to the
+pairing criteria described below. The 1st mate will always be 1st in
+the <a href="../../GenomicAlignments/help/GAlignmentsList.html">GAlignmentsList</a> list elements that have mate_status set to
+<code>"mated"</code>, and the 2nd mate will always be 2nd.
+</p>
+<p>A <code>GAlignmentsList</code> is returned with a &lsquo;mate_status&rsquo;
+metadata column on the outer list elements. <code>mate_status</code> is a
+factor with 3 levels indicating mate status, &lsquo;mated&rsquo;,
+&lsquo;ambiguous&rsquo; or &lsquo;unmated&rsquo;:
+</p>
+
+<ul>
+<li><p>mated: primary or non-primary pairs 
+</p>
+</li>
+<li><p>ambiguous: multiple segments matching to the
+same location (indistinguishable) 
+</p>
+</li>
+<li><p>unmated: mate does not exist or is unmapped
+</p>
+</li></ul>
+
+<p>When the &lsquo;file&rsquo; argument is a BamFile, &lsquo;asMates=TRUE&rsquo;
+must be set, otherwise the data are treated as single-end reads. 
+See the &lsquo;asMates&rsquo; section of <code>?<a href="../../Rsamtools/help/BamFile.html">BamFile</a></code>
+in the <span class="pkg">Rsamtools</span> package for details. 
+</p>
+</li>
+<li> <p><code>readGappedReads</code> reads a file containing aligned reads as a
+<a href="../../GenomicAlignments/help/GappedReads.html">GappedReads</a> object. See <code>?<a href="../../GenomicAlignments/help/GappedReads.html">GappedReads</a></code> for a
+description of <a href="../../GenomicAlignments/help/GappedReads.html">GappedReads</a> objects.
+</p>
+</li></ul>
+
+<p>For all these functions, flags, tags and ranges may be specified in the
+supplied <a href="../../Rsamtools/help/ScanBamParam.html">ScanBamParam</a> object for fine tuning of results.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> object for <code>readGAlignments</code>.
+</p>
+<p>A <a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> object for <code>readGAlignmentPairs</code>.
+Note that a BAM (or SAM) file can in theory contain a mix of single-end
+and paired-end reads, but in practise it seems that single-end and
+paired-end are not mixed. In other words, the value of flag bit 0x1
+(<code>isPaired</code>) is the same for all the records in a file.
+So if <code>readGAlignmentPairs</code> returns a <a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> object
+of length zero, this almost always means that the BAM (or SAM) file
+contains alignments for single-end reads (although it could also mean that
+the user-supplied <code><a href="../../Rsamtools/html/ScanBamParam-class.html">ScanBamParam</a></code> is filtering out
+everything, or that the file is empty, or that all the records in the file
+correspond to unmapped reads).
+</p>
+<p>A <a href="../../GenomicAlignments/help/GAlignmentsList.html">GAlignmentsList</a> object for <code>readGAlignmentsList</code>. 
+When the list contains paired-end reads a metadata data column of
+<code>mate_status</code> is added to the object. See details in the 
+&lsquo;Bam specific back-ends&rsquo; section on this man page. 
+</p>
+<p>A <a href="../../GenomicAlignments/help/GappedReads.html">GappedReads</a> object for <code>readGappedReads</code>.
+</p>
+
+
+<h3>Pairing criteria</h3>
+
+<p>This section describes the pairing criteria used by
+<code>readGAlignmentsList</code> and <code>readGAlignmentPairs</code>.
+</p>
+
+<ul>
+<li><p> First, only records with flag bit 0x1 (multiple segments) set to 1,
+flag bit 0x4 (segment unmapped) set to 0, and flag bit 0x8 (next
+segment in the template unmapped) set to 0, are candidates for
+pairing (see the SAM Spec for a description of flag bits and fields).
+Records that correspond to single-end reads, or records that
+correspond to paired-end reads where one or both ends are unmapped,
+will remain unmated.
+</p>
+</li>
+<li><p> Then the following fields and flag bits are considered:
+</p>
+
+<ul>
+<li><p> (A) QNAME
+</p>
+</li>
+<li><p> (B) RNAME, RNEXT
+</p>
+</li>
+<li><p> (C) POS, PNEXT
+</p>
+</li>
+<li><p> (D) Flag bits Ox10 (segment aligned to minus strand)
+and 0x20 (next segment aligned to minus strand)
+</p>
+</li>
+<li><p> (E) Flag bits 0x40 (first segment in template) and 0x80 (last
+segment in template)
+</p>
+</li>
+<li><p> (F) Flag bit 0x2 (proper pair)
+</p>
+</li>
+<li><p> (G) Flag bit 0x100 (secondary alignment)
+</p>
+</li></ul>
+
+<p>2 records rec1 and rec2 are considered mates iff all the following
+conditions are satisfied:
+</p>
+
+<ul>
+<li><p> (A) QNAME(rec1) == QNAME(rec2)
+</p>
+</li>
+<li><p> (B) RNEXT(rec1) == RNAME(rec2) and RNEXT(rec2) == RNAME(rec1)
+</p>
+</li>
+<li><p> (C) PNEXT(rec1) == POS(rec2) and PNEXT(rec2) == POS(rec1)
+</p>
+</li>
+<li><p> (D) Flag bit 0x20 of rec1 == Flag bit 0x10 of rec2 and
+Flag bit 0x20 of rec2 == Flag bit 0x10 of rec1
+</p>
+</li>
+<li><p> (E) rec1 corresponds to the first segment in the template and
+rec2 corresponds to the last segment in the template, OR,
+rec2 corresponds to the first segment in the template and
+rec1 corresponds to the last segment in the template
+</p>
+</li>
+<li><p> (F) rec1 and rec2 have same flag bit 0x2
+</p>
+</li>
+<li><p> (G) rec1 and rec2 have same flag bit 0x100
+</p>
+</li></ul>
+
+</li></ul>
+
+<p>Note that this is actually the pairing criteria used by
+<code><a href="../../Rsamtools/help/scanBam.html">scanBam</a></code> (when the <a href="../../Rsamtools/help/BamFile.html">BamFile</a>
+passed to it has the <code>asMates</code> toggle set to <code>TRUE</code>), which
+<code>readGAlignmentsList</code> and <code>readGAlignmentPairs</code> call behind
+the scene. It is also the pairing criteria used by
+<code><a href="../../GenomicAlignments/help/findMateAlignment.html">findMateAlignment</a></code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>BAM records corresponding to unmapped reads are always ignored.
+</p>
+<p>Starting with Rsamtools 1.7.1 (BioC 2.10), PCR or optical duplicates
+are loaded by default (use <code>scanBamFlag(isDuplicate=FALSE)</code> to
+drop them).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Hervé Pagès and Valerie Obenchain</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><code><a href="../../Rsamtools/help/scanBam.html">scanBam</a></code> and
+<code><a href="../../Rsamtools/help/ScanBamParam.html">ScanBamParam</a></code> in the <span class="pkg">Rsamtools</span>
+package.
+</p>
+</li>
+<li> <p><a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a>, <a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a>, <a href="../../GenomicAlignments/help/GAlignmentsList.html">GAlignmentsList</a>,
+and <a href="../../GenomicAlignments/help/GappedReads.html">GappedReads</a> objects.
+</p>
+</li>
+<li> <p><a href="../../IRanges/help/IRangesList.html">IRangesList</a> objects (used in the examples
+below to specify the <code>which</code> regions) in the <span class="pkg">IRanges</span>
+package.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## ---------------------------------------------------------------------
+## A. readGAlignments()
+## ---------------------------------------------------------------------
+
+## Simple use:
+bamfile &lt;- system.file("extdata", "ex1.bam", package="Rsamtools",
+                       mustWork=TRUE)
+gal1 &lt;- readGAlignments(bamfile)
+gal1
+names(gal1)
+
+## Using the 'use.names' arg:
+gal2 &lt;- readGAlignments(bamfile, use.names=TRUE)
+gal2
+head(names(gal2))
+
+## Using the 'param' arg to drop PCR or optical duplicates as well as
+## secondary alignments, and to load additional BAM fields:
+param &lt;- ScanBamParam(flag=scanBamFlag(isDuplicate=FALSE,
+                                       isSecondaryAlignment=FALSE),
+                      what=c("qual", "flag"))
+gal3 &lt;- readGAlignments(bamfile, param=param)
+gal3
+mcols(gal3)
+
+## Using the 'param' arg to load alignments from particular regions.
+which &lt;- IRangesList(seq1=IRanges(1000, 1100),
+                     seq2=IRanges(c(1546, 1555, 1567), width=10))
+param &lt;- ScanBamParam(which=which)
+gal4 &lt;- readGAlignments(bamfile, use.names=TRUE, param=param)
+gal4
+
+## IMPORTANT NOTE: A given record is loaded one time for each region
+## it overlaps with. We call this "duplicated record selection" (this
+## is a scanBam() feature, readGAlignments() is based on scanBam()):
+which &lt;- IRangesList(seq2=IRanges(c(1555, 1567), width=10))
+param &lt;- ScanBamParam(which=which)
+gal5 &lt;- readGAlignments(bamfile, use.names=TRUE, param=param)
+gal5  # record EAS114_26:7:37:79:581 was loaded twice
+
+## This becomes clearer if we use 'with.which_label=TRUE' to identify
+## the region in 'which' where each element in 'gal5' originates from.
+gal5 &lt;- readGAlignments(bamfile, use.names=TRUE, param=param,
+                                 with.which_label=TRUE)
+gal5
+
+## Not surprisingly, we also get "duplicated record selection" when
+## 'which' contains repeated or overlapping regions. Using the same
+## regions as we did for 'gal4' above, except that now we're
+## repeating the region on seq1:
+which &lt;- IRangesList(seq1=rep(IRanges(1000, 1100), 2),
+                     seq2=IRanges(c(1546, 1555, 1567), width=10))
+param &lt;- ScanBamParam(which=which)
+gal4b &lt;- readGAlignments(bamfile, use.names=TRUE, param=param)
+length(gal4b)  # &gt; length(gal4), because all the records overlapping
+               # with bases 1000 to 1100 on seq1 are now duplicated
+
+## The "duplicated record selection" will artificially increase the
+## coverage or affect other downstream results. It can be mitigated
+## (but not completely eliminated) by first "reducing" the set of
+## regions:
+which &lt;- reduce(which)
+which
+param &lt;- ScanBamParam(which=which)
+gal4c &lt;- readGAlignments(bamfile, use.names=TRUE, param=param)
+length(gal4c)  # &lt; length(gal4), because the 2 first original regions
+               # on seq2 were merged into a single one
+
+## Note that reducing the set of regions didn't completely eliminate
+## "duplicated record selection". Records that overlap the 2 reduced
+## regions on seq2 (which$seq2) are loaded twice (like for 'gal5'
+## above). See example D. below for how to completely eliminate
+## "duplicated record selection".
+
+## Using the 'param' arg to load tags. Except for MF and Aq, the tags
+## specified below are predefined tags (see the SAM Spec for the list
+## of predefined tags and their meaning).
+param &lt;- ScanBamParam(tag=c("MF", "Aq", "NM", "UQ", "H0", "H1"),
+                      what="isize")
+gal6 &lt;- readGAlignments(bamfile, param=param)
+mcols(gal6)  # "tag" cols always after "what" cols
+
+## With a BamViews object:
+fls &lt;- system.file("extdata", "ex1.bam", package="Rsamtools",
+                   mustWork=TRUE)
+bv &lt;- BamViews(fls,
+               bamSamples=DataFrame(info="test", row.names="ex1"),
+               auto.range=TRUE)
+## Note that the "readGAlignments" method for BamViews objects
+## requires the ShortRead package to be installed.
+aln &lt;- readGAlignments(bv)
+aln
+aln[[1]]
+aln[colnames(bv)]
+mcols(aln)
+
+## ---------------------------------------------------------------------
+## B. readGAlignmentPairs()
+## ---------------------------------------------------------------------
+galp1 &lt;- readGAlignmentPairs(bamfile)
+head(galp1)
+names(galp1)
+
+## Here we use the 'param' arg to filter by proper pair, drop PCR /
+## optical duplicates, and drop secondary alignments. Filtering by
+## proper pair and dropping secondary alignments can help make the
+## pairing algorithm run significantly faster:
+param &lt;- ScanBamParam(flag=scanBamFlag(isProperPair=TRUE,
+                                       isDuplicate=FALSE,
+                                       isSecondaryAlignment=FALSE))
+galp2 &lt;- readGAlignmentPairs(bamfile, use.names=TRUE, param=param)
+galp2
+head(galp2)
+head(names(galp2))
+
+## ---------------------------------------------------------------------
+## C. readGAlignmentsList()
+## ---------------------------------------------------------------------
+library(pasillaBamSubset)
+
+## 'file' as character.
+bam &lt;- untreated3_chr4() 
+galist1 &lt;- readGAlignmentsList(bam)
+galist1[1:3]
+length(galist1)
+table(elementNROWS(galist1))
+
+## When 'file' is a BamFile, 'asMates' must be TRUE. If FALSE,
+## the data are treated as single-end and each list element of the
+## GAlignmentsList will be of length 1. For single-end data 
+## use readGAlignments().
+bamfile &lt;- BamFile(bam, yieldSize=3, asMates=TRUE)
+readGAlignmentsList(bamfile)
+
+## Use a 'param' to fine tune the results.
+param &lt;- ScanBamParam(flag=scanBamFlag(isProperPair=TRUE))
+galist2 &lt;- readGAlignmentsList(bam, param=param)
+length(galist2)
+
+## ---------------------------------------------------------------------
+## D. COMPARING 4 STRATEGIES FOR LOADING THE ALIGNMENTS THAT OVERLAP
+##    WITH THE EXONIC REGIONS ON FLY CHROMMOSOME 4
+## ---------------------------------------------------------------------
+library(pasillaBamSubset)
+bam &lt;- untreated1_chr4()
+
+library(TxDb.Dmelanogaster.UCSC.dm3.ensGene)
+txdb &lt;- TxDb.Dmelanogaster.UCSC.dm3.ensGene
+ex &lt;- exons(txdb)
+seqlevels(ex, pruning.mode="coarse") &lt;- "chr4"
+length(ex)
+
+## Some of the exons overlap with each other:
+isDisjoint(ex)  # FALSE
+exonic_regions &lt;- reduce(ex)
+isDisjoint(exonic_regions)  # no more overlaps
+length(exonic_regions)
+
+## Strategy #1: slow and loads a lot of records more than once (see
+## "duplicated record selection" in example A. above).
+param1 &lt;- ScanBamParam(which=ex)
+gal1 &lt;- readGAlignments(bam, param=param1)
+length(gal1)  # many "duplicated records"
+
+## Strategy #2: faster and generates less duplicated records but
+## doesn't eliminate them.
+param2 &lt;- ScanBamParam(which=exonic_regions)
+gal2 &lt;- readGAlignments(bam, param=param2)
+length(gal2)  # less "duplicated records"
+
+## Strategy #3: fast and completely eliminates duplicated records.
+gal0 &lt;- readGAlignments(bam)
+gal3 &lt;- subsetByOverlaps(gal0, exonic_regions, ignore.strand=TRUE)
+length(gal3)  # no "duplicated records"
+
+## Note that, in this case using 'exonic_regions' or 'ex' makes no
+## difference:
+gal3b &lt;- subsetByOverlaps(gal0, ex, ignore.strand=TRUE)
+stopifnot(identical(gal3, gal3b))
+
+## Strategy #4: strategy #3 however can require a lot of memory if the
+## file is big because we load all the alignments into memory before we
+## select those that overlap with the exonic regions. Strategy #4
+## addresses this by loading the file by chunks.
+bamfile &lt;- BamFile(bam, yieldSize=50000)
+open(bamfile)
+while (length(chunk0 &lt;- readGAlignments(bamfile))) {
+    chunk &lt;- subsetByOverlaps(chunk0, ex, ignore.strand=TRUE)
+    cat("chunk0:", length(chunk0), "- chunk:", length(chunk), "\n")
+    ## ... do something with 'chunk' ...
+}
+close(bamfile)
+
+## ---------------------------------------------------------------------
+## E. readGappedReads()
+## ---------------------------------------------------------------------
+greads1 &lt;- readGappedReads(bamfile)
+greads1
+names(greads1)
+qseq(greads1)
+greads2 &lt;- readGappedReads(bamfile, use.names=TRUE)
+head(greads2)
+head(names(greads2))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GenomicAlignments</em> version 1.30.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Extract elements from vcfR objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for extract.gt {vcfR}"><tr><td>extract.gt {vcfR}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Extract elements from vcfR objects</h2>
+
+<h3>Description</h3>
+
+<p>Extract elements from the 'gt' slot, convert extracted genotypes to their allelic state, extract indels from the data structure or extract elements from the INFO column of the 'fix' slot.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+extract.gt(
+  x,
+  element = "GT",
+  mask = FALSE,
+  as.numeric = FALSE,
+  return.alleles = FALSE,
+  IDtoRowNames = TRUE,
+  extract = TRUE,
+  convertNA = TRUE
+)
+
+extract.haps(x, mask = FALSE, unphased_as_NA = TRUE, verbose = TRUE)
+
+is.indel(x)
+
+extract.indels(x, return.indels = FALSE)
+
+extract.info(x, element, as.numeric = FALSE, mask = FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>An object of class chromR or vcfR</p>
+</td></tr>
+<tr valign="top"><td><code>element</code></td>
+<td>
+<p>element to extract from vcf genotype data. Common options include &quot;DP&quot;, &quot;GT&quot; and &quot;GQ&quot;</p>
+</td></tr>
+<tr valign="top"><td><code>mask</code></td>
+<td>
+<p>a logical indicating whether to apply the mask (TRUE) or return all variants (FALSE). Alternatively, a vector of logicals may be provided.</p>
+</td></tr>
+<tr valign="top"><td><code>as.numeric</code></td>
+<td>
+<p>logical, should the matrix be converted to numerics</p>
+</td></tr>
+<tr valign="top"><td><code>return.alleles</code></td>
+<td>
+<p>logical indicating whether to return the genotypes (0/1) or alleles (A/T)</p>
+</td></tr>
+<tr valign="top"><td><code>IDtoRowNames</code></td>
+<td>
+<p>logical specifying whether to use the ID column from the FIX region as rownames</p>
+</td></tr>
+<tr valign="top"><td><code>extract</code></td>
+<td>
+<p>logical indicating whether to return the extracted element or the remaining string</p>
+</td></tr>
+<tr valign="top"><td><code>convertNA</code></td>
+<td>
+<p>logical indicating whether to convert &quot;.&quot; to NA.</p>
+</td></tr>
+<tr valign="top"><td><code>unphased_as_NA</code></td>
+<td>
+<p>logical specifying how to handle unphased genotypes</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>should verbose output be generated</p>
+</td></tr>
+<tr valign="top"><td><code>return.indels</code></td>
+<td>
+<p>logical indicating whether to return indels or not</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The function <strong>extract.gt</strong> isolates elements from the 'gt' portion of vcf data.
+Fields available for extraction are listed in the FORMAT column of the 'gt' slot.
+Because different vcf producing software produce different fields the options will vary by software.
+The mask parameter allows the mask to be implemented when using a chromR object.
+The 'as.numeric' option will convert the results from a character to a numeric.
+Note that if the data is not actually numeric, it will result in a numeric result which may not be interpretable.
+The 'return.alleles' option allows the default behavior of numerically encoded genotypes (e.g., 0/1) to be converted to their nucleic acid representation (e.g., A/T).
+Note that this is not used for a regular expression as similar parameters are used in other functions.
+Extract allows the user to extract just the specified element (TRUE) or every element except the one specified.
+</p>
+<p>Note that when 'as.numeric' is set to 'TRUE' but the data are not actually numeric, unexpected results will likely occur.
+For example, the genotype field will typically be populated with values such as &quot;0/1&quot; or &quot;1|0&quot;.
+Although these may appear numeric, they contain a delimiter (the forward slash or the pipe) that is non-numeric.
+This means that there is no straight forward conversion to a numeric and unexpected values should be expected.
+</p>
+<p>The function <strong>extract.haps</strong> uses extract.gt to isolate genotypes.
+It then uses the information in the REF and ALT columns as well as an allele delimiter (gt_split) to split genotypes into their allelic state.
+Ploidy is determined by the first non-NA genotype in the first sample.
+</p>
+<p>The VCF specification allows for genotypes to be delimited with a '|' when they are phased and a '/' when unphased.
+This becomes important when dividing a genotype into two haplotypes.
+When the alleels are phased this is straight forward.
+When the alleles are unphased it presents a decision.
+The default is to handle unphased data by converting them to NAs.
+When unphased_as_NA is set to TRUE the alleles will be returned in the order they appear in the genotype.
+This does not assign each allele to it's correct chromosome.
+It becomes the user's responsibility to make informed decisions at this point.
+</p>
+<p>The function <strong>is.indel</strong> returns a logical vector indicating which variants are indels (variants where an allele is greater than one character).
+</p>
+<p>The function <strong>extract.indels</strong> is used to remove indels from SNPs.
+The function queries the 'REF' and 'ALT' columns of the 'fix' slot to see if any alleles are greater than one character in length.
+When the parameter return_indels is FALSE only SNPs will be returned.
+When the parameter return_indels is TRUE only indels will be returned.
+</p>
+<p>The function <strong>extract.info</strong> is used to isolate elements from the INFO column of vcf data.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>is.polymorphic</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(vcfR_test)
+gt &lt;- extract.gt(vcfR_test)
+gt &lt;- extract.gt(vcfR_test, return.alleles = TRUE)
+
+data(vcfR_test)
+is.indel(vcfR_test)
+
+
+data(vcfR_test)
+getFIX(vcfR_test)
+vcf &lt;- extract.indels(vcfR_test)
+getFIX(vcf)
+vcf@fix[nrow(vcf@fix),'ALT'] &lt;- ".,A"
+vcf &lt;- extract.indels(vcf)
+getFIX(vcf)
+
+data(vcfR_test)
+vcfR_test@fix[1,'ALT'] &lt;- "&lt;NON_REF&gt;"
+vcf &lt;- extract.indels(vcfR_test)
+getFIX(vcf)
+
+data(vcfR_test)
+extract.haps(vcfR_test, unphased_as_NA = FALSE)
+extract.haps(vcfR_test)
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>vcfR</em> version 1.15.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

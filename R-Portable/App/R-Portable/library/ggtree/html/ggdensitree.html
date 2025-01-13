@@ -1,0 +1,121 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: ggdensitree</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for ggdensitree {ggtree}"><tr><td>ggdensitree {ggtree}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>ggdensitree</h2>
+
+<h3>Description</h3>
+
+<p>drawing phylogenetic trees from list of phylo objects
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+ggdensitree(
+  data = NULL,
+  mapping = NULL,
+  layout = "slanted",
+  tip.order = "mode",
+  align.tips = TRUE,
+  jitter = 0,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>a list of phylo objects or any object with an as.phylo and fortify method</p>
+</td></tr>
+<tr valign="top"><td><code>mapping</code></td>
+<td>
+<p>aesthetic mapping</p>
+</td></tr>
+<tr valign="top"><td><code>layout</code></td>
+<td>
+<p>one of 'slanted', 'rectangluar', 'fan', 'circular' or 'radial' (default: 'slanted')</p>
+</td></tr>
+<tr valign="top"><td><code>tip.order</code></td>
+<td>
+<p>the order of the tips by a character vector of taxa names; or an integer, N, to order the tips by the order of the tips in the Nth tree; 'mode' to order the tips by the most common order; 'mds' to order the tips based on MDS of the path length between the tips;  or 'mds_dist' to order the tips based on MDS of the distance between the tips (default: 'mode')</p>
+</td></tr>
+<tr valign="top"><td><code>align.tips</code></td>
+<td>
+<p>TRUE to align trees by their tips and FALSE to align trees by their root (default: TRUE)</p>
+</td></tr>
+<tr valign="top"><td><code>jitter</code></td>
+<td>
+<p>deviation to jitter tips</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>additional parameters passed to fortify, ggtree and geom_tree</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>tree layer
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Yu Guangchuang, Bradley R. Jones
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+require(ape)
+require(dplyr)
+require(tidyr)
+
+# Plot multiple trees with aligned tips
+trees &lt;- list(read.tree(text="((a:1,b:1):1.5,c:2.5);"), read.tree(text="((a:1,c:1):1,b:2);"));
+ggdensitree(trees) + geom_tiplab()
+
+# Plot multiple trees with aligned tips with tip labels and separate tree colors
+trees.fort &lt;- list(trees[[1]] %&gt;% fortify %&gt;% mutate(tree="a"), trees[[2]] %&gt;% fortify %&gt;% mutate(tree="b"));
+ggdensitree(trees.fort, aes(colour=tree)) + geom_tiplab(colour='black')
+
+
+# Generate example data
+set.seed(1)
+random.trees &lt;- rmtree(5, 10)
+time.trees &lt;- lapply(seq_along(random.trees), function(i) {
+ 	tree &lt;- random.trees[[i]]
+ 	tree$tip.label &lt;- paste0("t", 1:10)
+	dates &lt;- estimate.dates(tree, 1:10, mu=1, nsteps=1)
+	tree$edge.length &lt;- dates[tree$edge[, 2]] - dates[tree$edge[, 1]]
+	fortify(tree) %&gt;% mutate(tree=factor(i, levels=as.character(1:10)))
+})
+
+# Plot multiple trees with aligned tips from multiple time points
+ggdensitree(time.trees, aes(colour=tree), tip.order=paste0("t", 1:10)) + geom_tiplab(colour='black')
+
+
+# Read example data
+example.trees &lt;- read.tree(system.file("examples", "ggdensitree_example.tree", package="ggtree"))
+
+# Compute OTU
+grp &lt;- list(A = c("a.t1", "a.t2", "a.t3", "a.t4"), B = c("b.t1", "b.t2", "b.t3", "b.t4"), C = c("c.t1", "c.t2", "c.t3", "c.t4"))
+otu.trees &lt;- lapply(example.trees, groupOTU, grp)
+
+# Plot multiple trees colored by OTU
+ggdensitree(otu.trees, aes(colour=group), alpha=1/6, tip.order='mds') + scale_colour_manual(values=c("black", "red", "green", "blue"))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ggtree</em> version 3.2.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

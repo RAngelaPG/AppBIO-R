@@ -1,0 +1,113 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: pK values for the side chain of charged amino acids from...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for pK {seqinr}"><tr><td>pK {seqinr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>pK values for the side chain of charged amino acids from various sources</h2>
+
+<h3>Description</h3>
+
+<p>This compilation of pK values is from Joanna Kiraga (2008).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>data(pK)</pre>
+
+
+<h3>Format</h3>
+
+<p>A data frame with the seven charged amino-acid in row and
+six sources in column. The rownames are the one-letter code
+for amino-acids.
+</p>
+
+
+<h3>Source</h3>
+
+<p>Table 2 in Kiraga (2008).
+</p>
+
+
+<h3>References</h3>
+
+<p>Kiraga, J. (2008) Analysis and computer simulations of variability of
+isoelectric point of proteins in the proteomes. PhD thesis, University
+of Wroclaw, Poland.
+</p>
+<p>Bjellqvist, B., Hughes, G.J., Pasquali, Ch., Paquet, N., Ravier, F., Sanchez,  J.Ch.,
+Frutige,r S., Hochstrasser D. (1993) The focusing positions of polypeptides in
+immobilized pH gradients can be predicted from their amino acid sequences.
+<em>Electrophoresis</em>, <b>14</b>:1023-1031.
+</p>
+<p>EMBOSS data were from release 5.0 and were still the same in release 6.6
+<a href="https://emboss.sourceforge.net/apps/release/6.6/emboss/apps/iep.html">https://emboss.sourceforge.net/apps/release/6.6/emboss/apps/iep.html</a>
+last visited 2016-06-03.
+</p>
+<p>Murray, R.K., Granner, D.K., Rodwell, V.W. (2006)
+<em>Harper's illustrated Biochemistry.</em>
+27th edition. Published by The McGraw-Hill Companies.
+</p>
+<p>Sillero, A., Maldonado, A. (2006) Isoelectric point determination of proteins
+and other macromolecules: oscillating method.
+<em>Comput Biol Med.</em>, <b>36</b>:157-166.
+</p>
+<p>Solomon, T.W.G. (1998) <em>Fundamentals of Organic Chemistry</em>, 5th edition.
+Published by Wiley.
+</p>
+<p>Stryer L. (1999) <em>Biochemia</em>. czwarta edycja. Wydawnictwo Naukowe PWN.
+</p>
+<p><code>citation("seqinr")</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(pK)
+data(SEQINR.UTIL) # for N and C terminal pK values
+prot &lt;- s2c("ACDEFGHIKLMNPQRSTVWY")
+compoAA &lt;- table(factor(prot, levels = LETTERS))
+nTermR &lt;- which(LETTERS == prot[1])
+cTermR &lt;- which(LETTERS == prot[length(seq)])
+
+computeCharge &lt;- function(pH, compoAA, pK, nTermResidue, cTermResidue){
+  cter &lt;- 10^(-SEQINR.UTIL$pk[cTermResidue,1]) /
+     (10^(-SEQINR.UTIL$pk[cTermResidue,1]) + 10^(-pH))
+  nter &lt;- 10^(-pH) / (10^(-SEQINR.UTIL$pk[nTermResidue,2]) + 10^(-pH))
+  carg &lt;- as.vector(compoAA['R'] * 10^(-pH) / (10^(-pK['R']) + 10^(-pH)))
+  chis &lt;- as.vector(compoAA['H'] * 10^(-pH) / (10^(-pK['H']) + 10^(-pH)))
+  clys &lt;- as.vector(compoAA['K'] * 10^(-pH) / (10^(-pK['K']) + 10^(-pH)))
+  casp &lt;- as.vector(compoAA['D'] * 10^(-pK['D']) /(10^(-pK['D']) + 10^(-pH)))
+  cglu &lt;- as.vector(compoAA['E'] * 10^(-pK['E']) / (10^(-pK['E']) + 10^(-pH)))
+  ccys &lt;- as.vector(compoAA['C'] * 10^(-pK['C']) / (10^(-pK['C']) + 10^(-pH)))
+  ctyr &lt;- as.vector(compoAA['Y'] * 10^(-pK['Y']) / (10^(-pK['Y']) + 10^(-pH)))
+  charge &lt;- carg + clys + chis + nter - (casp + cglu + ctyr + ccys + cter)
+  return(charge)
+}
+
+pHseq &lt;- seq(from = 0, to = 14, by = 0.1)
+Bje &lt;- pK$Bjellqvist
+names(Bje) &lt;- rownames(pK)
+res &lt;- computeCharge(pHseq, compoAA, Bje, nTermR, cTermR)
+plot(pHseq, res, type = "l", ylab = "Charge", las = 1,
+  main = paste("Charge of protein\n",c2s(prot)),
+  xlab = "pH")
+for(j in 2:ncol(pK)){
+  src &lt;- pK[,j]
+  names(src) &lt;- rownames(pK)
+  res &lt;- computeCharge(pHseq, compoAA, src, nTermR, cTermR)
+  lines(pHseq, res, lty = j, col = rainbow(5)[j])
+}
+
+abline(h=0)
+abline(v=computePI(prot))
+legend("bottomleft", inset = 0.01, colnames(pK), lty = 1:6, col = c("black", rainbow(5)))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>seqinr</em> version 4.2-36 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

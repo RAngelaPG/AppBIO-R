@@ -1,0 +1,32 @@
+#############################################################
+#
+# DESCRIPTION: run all examples in gdsfmt
+#
+
+library(gdsfmt)
+
+
+#############################################################
+#
+# test functions
+#
+
+notest.examples <- function()
+{
+	function.list <- readRDS(
+		system.file("Meta", "Rd.rds", package="gdsfmt"))$Name
+
+	sapply(function.list, FUN = function(func.name)
+		{
+			args <- list(
+				topic=func.name,
+				package="gdsfmt",
+				echo=FALSE, verbose=FALSE, ask=FALSE
+			)
+			cat("FUNCTION: ", func.name, "\n", sep="")
+			suppressWarnings(do.call(example, args))
+			NULL
+		})
+
+	invisible()
+}

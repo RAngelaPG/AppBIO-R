@@ -1,0 +1,130 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: create hash function digests</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for digest.gdsn {gdsfmt}"><tr><td>digest.gdsn {gdsfmt}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>create hash function digests</h2>
+
+<h3>Description</h3>
+
+<p>Create hash function digests for a GDS node.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+digest.gdsn(node, algo=c("md5", "sha1", "sha256", "sha384", "sha512"),
+    action=c("none", "Robject", "add", "add.Robj", "clear", "verify", "return"))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>node</code></td>
+<td>
+<p>an object of class <code><a href="../../gdsfmt/help/gdsn.class.html">gdsn.class</a></code>, a GDS node</p>
+</td></tr>
+<tr valign="top"><td><code>algo</code></td>
+<td>
+<p>the algorithm to be used; currently available choices are
+&quot;md5&quot; (by default), &quot;sha1&quot;, &quot;sha256&quot;, &quot;sha384&quot;, &quot;sha512&quot;</p>
+</td></tr>
+<tr valign="top"><td><code>action</code></td>
+<td>
+<p>&quot;none&quot;: nothing (by default); &quot;Robject&quot;: convert to R object,
+i.e., raw, integer, double or character before applying hash digests;
+&quot;add&quot;: add a barcode attribute; &quot;add.Robj&quot;: add a barcode attribute
+generated from R object; &quot;clear&quot;: remove all hash barcodes;
+&quot;verify&quot;: verify data integrity if there is any hash code in the
+attributes, and stop if any fails; &quot;return&quot;: compare the existing hash
+code in the attributes, and return <code>FALSE</code> if fails, <code>NA</code> if
+no hash code, and <code>TRUE</code> if the verification succeeds</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The R package <code>digest</code> should be installed to perform hash function
+digests.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A character or <code>NA_character_</code> when the hash algorithm is not
+available.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Xiuwen Zheng</p>
+
+
+<h3>References</h3>
+
+<p><a href="http://github.com/zhengxwen/gdsfmt">http://github.com/zhengxwen/gdsfmt</a></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(digest)
+library(tools)
+
+# cteate a GDS file
+f &lt;- createfn.gds("test.gds")
+
+val &lt;- as.raw(rep(1:128, 1024))
+n1 &lt;- add.gdsn(f, "raw1", val)
+n2 &lt;- add.gdsn(f, "int1", as.integer(val))
+n3 &lt;- add.gdsn(f, "int2", as.integer(val), compress="ZIP", closezip=TRUE)
+
+digest.gdsn(n1)
+digest.gdsn(n1, action="Robject")
+digest.gdsn(n1, action="add")
+digest.gdsn(n1, action="add.Robj")
+writeBin(read.gdsn(n1, .useraw=TRUE), con="test1.bin")
+
+write.gdsn(n1, 0, start=1027, count=1)
+digest.gdsn(n1, action="add")
+digest.gdsn(n1, action="add.Robj")
+digest.gdsn(n1, "sha1", action="add")
+digest.gdsn(n1, "sha256", action="add")
+# digest.gdsn(n1, "sha384", action="add")  ## digest_0.6.11 does not work
+digest.gdsn(n1, "sha512", action="add")
+writeBin(read.gdsn(n1, .useraw=TRUE), con="test2.bin")
+
+print(n1, attribute=TRUE)
+digest.gdsn(n1, action="verify")
+
+digest.gdsn(n1, action="clear")
+print(n1, attribute=TRUE)
+
+
+digest.gdsn(n2)
+digest.gdsn(n2, action="Robject")
+
+# using R object
+digest.gdsn(n2) == digest.gdsn(n3)  # FALSE
+digest.gdsn(n2, action="Robject") == digest.gdsn(n3, action="Robject")  # TRUE
+
+# close the GDS file
+closefn.gds(f)
+
+# check with other program
+md5sum(c("test1.bin", "test2.bin"))
+
+
+# delete the temporary file
+unlink(c("test.gds", "test1.bin", "test2.bin"), force=TRUE)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>gdsfmt</em> version 1.30.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

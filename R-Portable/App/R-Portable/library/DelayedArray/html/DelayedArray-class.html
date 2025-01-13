@@ -1,0 +1,409 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: DelayedArray objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for DelayedArray-class {DelayedArray}"><tr><td>DelayedArray-class {DelayedArray}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>DelayedArray objects</h2>
+
+<h3>Description</h3>
+
+<p>Wrapping an array-like object (typically an on-disk object) in a
+DelayedArray object allows one to perform common array operations on it
+without loading the object in memory. In order to reduce memory usage and
+optimize performance, operations on the object are either <em>delayed</em>
+or executed using a block processing mechanism.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+DelayedArray(seed)  # constructor function
+type(x)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>seed</code></td>
+<td>
+
+<p>An array-like object.
+</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+
+<p>Typically a DelayedArray object. More generally <code>type()</code> is
+expected to work on any array-like object (that is, any object for
+which <code>dim(x)</code> is not NULL), or any ordinary vector (i.e.
+atomic or non-atomic).
+</p>
+</td></tr>
+</table>
+
+
+<h3>In-memory versus on-disk realization</h3>
+
+<p>To <em>realize</em> a DelayedArray object (i.e. to trigger execution of the
+delayed operations carried by the object and return the result as an
+ordinary array), call <code>as.array</code> on it. However this realizes the
+full object at once <em>in memory</em> which could require too much memory
+if the object is big. A big DelayedArray object is preferrably realized
+<em>on disk</em> e.g. by calling <code><a href="../../HDF5Array/help/writeHDF5Array.html">writeHDF5Array</a></code> on
+it (this function is defined in the <span class="pkg">HDF5Array</span> package) or coercing it
+to an <a href="../../HDF5Array/help/HDF5Array.html">HDF5Array</a> object with <code>as(x, "HDF5Array")</code>.
+Other on-disk backends can be supported. This uses a block processing
+strategy so that the full object is not realized at once in memory. Instead
+the object is processed block by block i.e. the blocks are realized in
+memory and written to disk one at a time.
+See <code>?<a href="../../HDF5Array/help/writeHDF5Array.html">writeHDF5Array</a></code> in the <span class="pkg">HDF5Array</span> package
+for more information about this.
+</p>
+
+
+<h3>Accessors</h3>
+
+<p>DelayedArray objects support the same set of getters as ordinary arrays
+i.e. <code>dim()</code>, <code>length()</code>, and <code>dimnames()</code>.
+In addition, they support <code>type()</code>, <code><a href="../../DelayedArray/help/nseed.html">nseed</a>()</code>,
+<code><a href="../../DelayedArray/help/seed.html">seed</a>()</code>, and <code><a href="../../DelayedArray/help/path.html">path</a>()</code>.
+</p>
+<p><code>type()</code> is the DelayedArray equivalent of <code>typeof()</code> (or
+<code>storage.mode()</code>) for ordinary arrays and vectors. Note that, for
+convenience and consistency, <code>type()</code> also supports ordinary arrays
+and vectors. It should also support any array-like object, that is, any
+object <code>x</code> for which <code>dim(x)</code> is not NULL.
+</p>
+<p><code>dimnames()</code>, <code><a href="../../DelayedArray/help/seed.html">seed</a>()</code>, and <code><a href="../../DelayedArray/help/path.html">path</a>()</code> also
+work as setters.
+</p>
+
+
+<h3>Subsetting</h3>
+
+<p>A DelayedArray object can be subsetted with <code>[</code> like an ordinary array,
+but with the following differences:
+</p>
+
+<ul>
+<li> <p><em>N-dimensional single bracket subsetting</em> (i.e. subsetting
+of the form <code>x[i_1, i_2, ..., i_n]</code> with one (possibly missing)
+subscript per dimension) returns a DelayedArray object where the
+subsetting is actually <em>delayed</em>. So it's a very light
+operation. One notable exception is when <code>drop=TRUE</code> and the
+result has only one dimension, in which case it is <em>realized</em>
+as an ordinary vector (atomic or list).
+Note that NAs in the subscripts are not supported.
+</p>
+</li>
+<li> <p><em>1D-style single bracket subsetting</em> (i.e. subsetting of the
+form <code>x[i]</code>) only works if the subscript <code>i</code> is a numeric
+or logical vector, or a logical array-like object with the same
+dimensions as <code>x</code>, or a numeric matrix with one column per
+dimension in <code>x</code>. When <code>i</code> is a numeric vector, all the
+indices in it must be &gt;= 1 and &lt;= <code>length(x)</code>. NAs in the
+subscripts are not supported.
+This is NOT a delayed operation (block processing is triggered)
+i.e. the result is <em>realized</em> as an ordinary vector (atomic
+or list). One exception is when <code>x</code> has only one dimension
+and <code>drop</code> is set to <code>FALSE</code>, in which case the subsetting
+is <em>delayed</em>.
+</p>
+</li></ul>
+
+<p>Subsetting with <code>[[</code> is supported but only the 1D-style form of it
+at the moment, that is, subsetting of the form <code>x[[i]]</code> where <code>i</code>
+is a <em>single</em> numeric value &gt;= 1 and &lt;= <code>length(x)</code>. It is
+equivalent to <code>x[i][[1]]</code>.
+</p>
+<p>Subassignment to a DelayedArray object with <code>[&lt;-</code> is also supported
+like with an ordinary array, but with the following restrictions:
+</p>
+
+<ul>
+<li> <p><em>N-dimensional subassignment</em> (i.e. subassignment of the
+form <code>x[i_1, i_2, ..., i_n] &lt;- value</code> with one (possibly
+missing) subscript per dimension) only accepts a replacement
+value (a.k.a. right value) that is an array-like object (e.g.
+ordinary array, dgCMatrix object, DelayedArray object, etc...)
+or an ordinary vector (atomic or list) of length 1.
+</p>
+</li>
+<li> <p><em>1D-style subassignment</em> (a.k.a. 1D-style subassignment, that
+is, subassignment of the form <code>x[i] &lt;- value</code>) only works if
+the subscript <code>i</code> is a logical DelayedArray object of the same
+dimensions as <code>x</code> and if the replacement value is an ordinary
+vector (atomic or list) of length 1.
+</p>
+</li>
+<li> <p><em>Filling with a vector</em>, that is, subassignment of the form
+<code>x[] &lt;- v</code> where <code>v</code> is an ordinary vector (atomic or
+list), is only supported if the length of the vector is a divisor
+of <code>nrow(x)</code>.
+</p>
+</li></ul>
+
+<p>These 3 forms of subassignment are implemented as <em>delayed</em> operations
+so are very light.
+</p>
+<p>Single value replacement (<code>x[[...]] &lt;- value</code>) is not supported yet.
+</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><code><a href="../../DelayedArray/help/showtree.html">showtree</a></code> for <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> accessors
+<code>nseed</code>, <code>seed</code>, and <code>path</code>.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/realize.html">realize</a></code> for realizing a DelayedArray object in memory
+or on disk.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/blockApply.html">blockApply</a></code> and family for convenient block
+processing of an array-like object.
+</p>
+</li>
+<li> <p><a href="../../DelayedArray/help/DelayedArray-utils.html">DelayedArray-utils</a> for common operations on
+DelayedArray objects.
+</p>
+</li>
+<li> <p><a href="../../DelayedArray/help/DelayedMatrix-utils.html">DelayedMatrix-utils</a> for common operations on
+DelayedMatrix objects.
+</p>
+</li>
+<li> <p><a href="../../DelayedArray/help/DelayedArray-stats.html">DelayedArray-stats</a> for statistical functions on
+DelayedArray objects.
+</p>
+</li>
+<li> <p><a href="../../DelayedArray/help/DelayedMatrix-stats.html">DelayedMatrix-stats</a> for DelayedMatrix row/col
+summarization.
+</p>
+</li>
+<li> <p><a href="../../DelayedArray/help/ConstantArray.html">ConstantArray</a> objects for mimicking an array containing
+a constant value, without actually creating said array in memory.
+</p>
+</li>
+<li> <p><a href="../../DelayedArray/help/RleArray.html">RleArray</a> objects for representing in-memory Run Length
+Encoded array-like datasets.
+</p>
+</li>
+<li> <p><a href="../../HDF5Array/help/HDF5Array.html">HDF5Array</a> objects in the <span class="pkg">HDF5Array</span> package.
+</p>
+</li>
+<li> <p><a href="../../S4Vectors/help/DataFrame.html">DataFrame</a> objects in the <span class="pkg">S4Vectors</span> package.
+</p>
+</li>
+<li> <p><a href="../../base/help/array.html">array</a> objects in base R.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## ---------------------------------------------------------------------
+## A. WRAP AN ORDINARY ARRAY IN A DelayedArray OBJECT
+## ---------------------------------------------------------------------
+a &lt;- array(runif(1500000), dim=c(10000, 30, 5))
+A &lt;- DelayedArray(a)
+A
+## The seed of a DelayedArray object is **always** treated as a
+## "read-only" object so will never be modified by the operations
+## we perform on A:
+stopifnot(identical(a, seed(A)))
+type(A)
+
+## N-dimensional single bracket subsetting:
+m &lt;- a[11:20 , 5, -3]  # an ordinary matrix
+M &lt;- A[11:20 , 5, -3]  # a DelayedMatrix object
+stopifnot(identical(m, as.array(M)))
+
+## 1D-style single bracket subsetting:
+A[11:20]
+A[A &lt;= 1e-5]
+stopifnot(identical(a[a &lt;= 1e-5], A[A &lt;= 1e-5]))
+
+## Subassignment:
+A[A &lt; 0.2] &lt;- NA
+a[a &lt; 0.2] &lt;- NA
+stopifnot(identical(a, as.array(A)))
+
+A[2:5, 1:2, ] &lt;- array(1:40, c(4, 2, 5))
+a[2:5, 1:2, ] &lt;- array(1:40, c(4, 2, 5))
+stopifnot(identical(a, as.array(A)))
+
+## Other operations:
+crazy &lt;- function(x) (5 * x[ , , 1] ^ 3 + 1L) * log(x[, , 2])
+b &lt;- crazy(a)
+head(b)
+
+B &lt;- crazy(A)  # very fast! (all operations are delayed)
+B
+
+cs &lt;- colSums(b)
+CS &lt;- colSums(B)
+stopifnot(identical(cs, CS))
+
+## ---------------------------------------------------------------------
+## B. WRAP A DataFrame OBJECT IN A DelayedArray OBJECT
+## ---------------------------------------------------------------------
+## Generate random coverage and score along an imaginary chromosome:
+cov &lt;- Rle(sample(20, 5000, replace=TRUE), sample(6, 5000, replace=TRUE))
+score &lt;- Rle(sample(100, nrun(cov), replace=TRUE), runLength(cov))
+
+DF &lt;- DataFrame(cov, score)
+A2 &lt;- DelayedArray(DF)
+A2
+seed(A2)  # 'DF'
+
+## Coercion of a DelayedMatrix object to DataFrame produces a DataFrame
+## object with Rle columns:
+as(A2, "DataFrame")
+stopifnot(identical(DF, as(A2, "DataFrame")))
+
+t(A2)  # transposition is delayed so is very fast and memory-efficient
+colSums(A2)
+
+## ---------------------------------------------------------------------
+## C. AN HDF5Array OBJECT IS A (PARTICULAR KIND OF) DelayedArray OBJECT
+## ---------------------------------------------------------------------
+library(HDF5Array)
+A3 &lt;- as(a, "HDF5Array")   # write 'a' to an HDF5 file
+A3
+is(A3, "DelayedArray")     # TRUE
+seed(A3)                   # an HDF5ArraySeed object
+
+B3 &lt;- crazy(A3)            # very fast! (all operations are delayed)
+B3                         # not an HDF5Array object anymore because
+                           # now it carries delayed operations
+CS3 &lt;- colSums(B3)
+stopifnot(identical(cs, CS3))
+
+## ---------------------------------------------------------------------
+## D. PERFORM THE DELAYED OPERATIONS
+## ---------------------------------------------------------------------
+as(B3, "HDF5Array")        # "realize" 'B3' on disk
+
+## If this is just an intermediate result, you can either keep going
+## with B3 or replace it with its "realized" version:
+B3 &lt;- as(B3, "HDF5Array")  # no more delayed operations on new 'B3'
+seed(B3)
+path(B3)
+
+## For convenience, realize() can be used instead of explicit coercion.
+## The current "automatic realization backend" controls where
+## realization happens e.g. in memory if set to NULL or in an HDF5
+## file if set to "HDF5Array":
+D &lt;- cbind(B3, exp(B3))
+D
+setAutoRealizationBackend("HDF5Array")
+D &lt;- realize(D)
+D
+## See '?setAutoRealizationBackend' for more information about
+## "realization backends".
+
+## ---------------------------------------------------------------------
+## E. MODIFY THE PATH OF A DelayedArray OBJECT
+## ---------------------------------------------------------------------
+## This can be useful if the file containing the array data is on a
+## shared partition but the exact path to the partition depends on the
+## machine from which the data is being accessed.
+## For example:
+
+## Not run: 
+library(HDF5Array)
+A &lt;- HDF5Array("/path/to/lab_data/my_precious_data.h5")
+path(A)
+
+## Operate on A...
+## Now A carries delayed operations.
+## Make sure path(A) still works:
+path(A)
+
+## Save A:
+save(A, file="A.rda")
+
+## A.rda should be small (it doesn't contain the array data).
+## Send it to a co-worker that has access to my_precious_data.h5.
+
+## Co-worker loads it:
+load("A.rda")
+path(A)
+
+## A is broken because path(A) is incorrect for co-worker:
+A  # error!
+
+## Co-worker fixes the path (in this case this is better done using the
+## dirname() setter rather than the path() setter):
+dirname(A) &lt;- "E:/other/path/to/lab_data"
+
+## A "works" again:
+A
+
+## End(Not run)
+
+## ---------------------------------------------------------------------
+## F. WRAP A SPARSE MATRIX IN A DelayedArray OBJECT
+## ---------------------------------------------------------------------
+## Not run: 
+M &lt;- 75000L
+N &lt;- 1800L
+p &lt;- sparseMatrix(sample(M, 9000000, replace=TRUE),
+                  sample(N, 9000000, replace=TRUE),
+                  x=runif(9000000), dims=c(M, N))
+P &lt;- DelayedArray(p)
+P
+p2 &lt;- as(P, "sparseMatrix")
+stopifnot(identical(p, p2))
+
+## The following is based on the following post by Murat Tasan on the
+## R-help mailing list:
+##   https://stat.ethz.ch/pipermail/r-help/2017-May/446702.html
+
+## As pointed out by Murat, the straight-forward row normalization
+## directly on sparse matrix 'p' would consume too much memory:
+row_normalized_p &lt;- p / rowSums(p^2)  # consumes too much memory
+## because the rowSums() result is being recycled (appropriately) into a
+## *dense* matrix with dimensions equal to dim(p).
+
+## Murat came up with the following solution that is very fast and
+## memory-efficient:
+row_normalized_p1 &lt;- Diagonal(x=1/sqrt(Matrix::rowSums(p^2))) 
+
+## With a DelayedArray object, the straight-forward approach uses a
+## block processing strategy behind the scene so it doesn't consume
+## too much memory.
+
+## First, let's see block processing in action:
+DelayedArray:::set_verbose_block_processing(TRUE)
+## and check the automatic block size:
+getAutoBlockSize()
+
+row_normalized_P &lt;- P / sqrt(DelayedArray::rowSums(P^2))
+
+## Increasing the block size increases the speed but also memory usage:
+setAutoBlockSize(2e8)
+row_normalized_P2 &lt;- P / sqrt(DelayedArray::rowSums(P^2))
+stopifnot(all.equal(row_normalized_P, row_normalized_P2))
+
+## Back to sparse representation:
+DelayedArray:::set_verbose_block_processing(FALSE)
+row_normalized_p2 &lt;- as(row_normalized_P, "sparseMatrix")
+stopifnot(all.equal(row_normalized_p1, row_normalized_p2))
+
+setAutoBlockSize()  # reset automatic block size to factory settings
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>DelayedArray</em> version 0.20.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

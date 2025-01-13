@@ -1,0 +1,236 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Classify ranges (reads) as compatible with existing genomic...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for findSpliceOverlaps-methods {GenomicAlignments}"><tr><td>findSpliceOverlaps-methods {GenomicAlignments}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Classify ranges (reads) as compatible with existing genomic annotations
+or as having novel splice events</h2>
+
+<h3>Description</h3>
+
+<p>The <code>findSpliceOverlaps</code> function identifies ranges (reads) that are
+compatible with a specific transcript isoform. The non-compatible ranges are
+analyzed for the presence of novel splice events.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+findSpliceOverlaps(query, subject, ignore.strand=FALSE, ...)
+
+## S4 method for signature 'GRangesList,GRangesList'
+findSpliceOverlaps(query, subject, ignore.strand=FALSE, ..., cds=NULL)
+
+## S4 method for signature 'GAlignments,GRangesList'
+findSpliceOverlaps(query, subject, ignore.strand=FALSE, ..., cds=NULL)
+
+## S4 method for signature 'GAlignmentPairs,GRangesList'
+findSpliceOverlaps(query, subject, ignore.strand=FALSE, ..., cds=NULL)
+
+## S4 method for signature 'BamFile,ANY'
+findSpliceOverlaps(query, subject, ignore.strand=FALSE, ...,
+                   param=ScanBamParam(), singleEnd=TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>query</code></td>
+<td>
+
+<p>A <a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a>, <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a>,
+<a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a>, or <a href="../../Rsamtools/help/BamFile.html">BamFile</a> object
+containing the reads.
+Can also be a single string containing the path to a BAM file.
+</p>
+<p>Single or paired-end reads are specified with the <code>singleEnd</code> 
+argument (default FALSE). Paired-end reads can be supplied in a BAM
+file or <a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> object. Single-end are
+expected to be in a BAM file, <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> or 
+<a href="../../GenomicRanges/help/GRanges.html">GRanges</a> object.
+</p>
+</td></tr>
+<tr valign="top"><td><code>subject</code></td>
+<td>
+
+<p>A <a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> containing the annotations.
+This list is expected to contain exons grouped by transcripts. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>ignore.strand</code></td>
+<td>
+
+<p>When set to <code>TRUE</code>, strand information is ignored in the
+overlap calculations.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>Additional arguments such as <code>param</code> and <code>singleEnd</code> used
+in the method for <a href="../../Rsamtools/help/BamFile.html">BamFile</a> objects. See below.
+</p>
+</td></tr>
+<tr valign="top"><td><code>cds</code></td>
+<td>
+
+<p>Optional <a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> of coding regions for
+each transcript in the <code>subject</code>. If provided, the &quot;coding&quot;
+output column will be a <code>logical</code> vector indicating if the
+read falls in a coding region. When not provided, the &quot;coding&quot;
+output is <code>NA</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>param</code></td>
+<td>
+
+<p>An optional <code><a href="../../Rsamtools/help/ScanBamParam.html">ScanBamParam</a></code> instance to
+further influence scanning, counting, or filtering.
+</p>
+</td></tr>
+<tr valign="top"><td><code>singleEnd</code></td>
+<td>
+
+<p>A logical value indicating if reads are single or paired-end.
+See <code><a href="../../GenomicAlignments/help/summarizeOverlaps.html">summarizeOverlaps</a></code> for more information.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>When a read maps compatibly and uniquely to a transcript isoform we
+can quantify the expression and look for shifts in the balance of
+isoform expression. If a read does not map in compatible way, novel
+splice events such as splice junctions, novel exons or retentions
+can be quantified and compared across samples.
+</p>
+<p><code>findSpliceOverlaps</code> detects which reads (query) match to
+transcripts (subject) in a compatible fashion. Compatibility is based
+on both the transcript bounds and splicing pattern. Assessing the
+splicing pattern involves comparision of the read splices (i.e., the
+N operations in the CIGAR) with the transcript introns. For paired-end
+reads, the inter-read gap is not considered a splice junction. The analysis
+of non-compatible reads for novel splice events is under construction.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The output is a <a href="../../S4Vectors/help/Hits.html">Hits</a> object with
+the metadata columns defined below. Each column is a <code>logical</code>
+indicating if the read (query) met the criteria.
+</p>
+
+<ul>
+<li><p>compatible: Every splice (N) in a read alignment matches
+an intron in an annotated transcript. The read does not
+extend into an intron or outside the transcript bounds.
+
+</p>
+</li>
+<li><p>unique: The read is compatible with only one annotated
+transcript.
+
+</p>
+</li>
+<li><p>strandSpecific: The query (read) was stranded.
+
+</p>
+</li></ul>
+
+
+
+<h3>Note</h3>
+
+<p>WARNING: The current implementation of <code>findSpliceOverlaps</code>
+doesn't work properly on paired-end reads where the 2 ends overlap!
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Michael Lawrence and Valerie Obenchain</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> objects in the
+<span class="pkg">GenomicRanges</span> package.
+</p>
+</li>
+<li> <p><a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> and <a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> objects.
+</p>
+</li>
+<li> <p><a href="../../Rsamtools/help/BamFile.html">BamFile</a> objects in the <span class="pkg">Rsamtools</span> package.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## ----------------------------------------------------------------------- 
+## Isoform expression :
+## ----------------------------------------------------------------------- 
+## findSpliceOverlaps() can assist in quantifying isoform expression
+## by identifying reads that map compatibly and uniquely to a 
+## transcript isoform.
+library(TxDb.Dmelanogaster.UCSC.dm3.ensGene)
+library(pasillaBamSubset)
+se &lt;- untreated1_chr4() ## single-end reads
+txdb &lt;- TxDb.Dmelanogaster.UCSC.dm3.ensGene
+exbytx &lt;- exonsBy(txdb, "tx")
+cdsbytx &lt;- cdsBy(txdb, "tx")
+param &lt;- ScanBamParam(which=GRanges("chr4", IRanges(1e5,3e5)))
+sehits &lt;- findSpliceOverlaps(se, exbytx, cds=cdsbytx, param=param)
+
+## Tally the reads by category to get an idea of read distribution.
+lst &lt;- lapply(mcols(sehits), table)
+nms &lt;- names(lst) 
+tbl &lt;- do.call(rbind, lst[nms]) 
+tbl
+
+## Reads compatible with one or more transcript isoforms.
+rnms &lt;- rownames(tbl)
+tbl[rnms == "compatible","TRUE"]/sum(tbl[rnms == "compatible",])
+
+## Reads compatible with a single isoform. 
+tbl[rnms == "unique","TRUE"]/sum(tbl[rnms == "unique",])
+
+## All reads fall in a coding region as defined by 
+## the txdb annotation.
+lst[["coding"]] 
+
+## Check : Total number of reads should be the same across categories.
+lapply(lst, sum)
+ 
+## ----------------------------------------------------------------------- 
+## Paired-end reads :
+## ----------------------------------------------------------------------- 
+## 'singleEnd' is set to FALSE for a BAM file with paired-end reads.
+pe &lt;- untreated3_chr4()
+hits2 &lt;- findSpliceOverlaps(pe, exbytx, singleEnd=FALSE, param=param)
+ 
+## In addition to BAM files, paired-end reads can be supplied in a 
+## GAlignmentPairs object. 
+genes &lt;- GRangesList(
+    GRanges("chr1", IRanges(c(5, 20), c(10, 25)), "+"),
+    GRanges("chr1", IRanges(c(5, 22), c(15, 25)), "+"))
+galp &lt;- GAlignmentPairs(
+    GAlignments("chr1", 5L, "11M4N6M", strand("+")),
+    GAlignments("chr1", 50L, "6M", strand("-")))
+findSpliceOverlaps(galp, genes)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GenomicAlignments</em> version 1.30.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

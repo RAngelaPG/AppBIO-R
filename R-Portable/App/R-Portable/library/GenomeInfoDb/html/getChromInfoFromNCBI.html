@@ -1,0 +1,236 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Get chromosome information for an NCBI assembly</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for getChromInfoFromNCBI {GenomeInfoDb}"><tr><td>getChromInfoFromNCBI {GenomeInfoDb}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Get chromosome information for an NCBI assembly
+</h2>
+
+<h3>Description</h3>
+
+<p><code>getChromInfoFromNCBI</code> returns chromosome information
+like sequence names, lengths and circularity flags for a given
+NCBI assembly e.g. for GRCh38, ARS-UCD1.2, R64, etc...
+</p>
+<p>Note that <code>getChromInfoFromNCBI</code> behaves slightly differently
+depending on whether the assembly is <em>registered</em> in the
+<span class="pkg">GenomeInfoDb</span> package or not. See below for the details.
+</p>
+<p>Use <code>registered_NCBI_assemblies</code> to list all the NCBI assemblies
+currently registered in the <span class="pkg">GenomeInfoDb</span> package.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+getChromInfoFromNCBI(assembly,
+                     assembled.molecules.only=FALSE,
+                     assembly.units=NULL,
+                     recache=FALSE,
+                     as.Seqinfo=FALSE)
+
+registered_NCBI_assemblies()
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>assembly</code></td>
+<td>
+
+<p>A single string specifying the name of an NCBI assembly (e.g.
+<code>"GRCh38"</code>).
+Alternatively, an assembly accession (GenBank or RefSeq) can be
+supplied (e.g. <code>"GCF_000001405.12"</code>).
+</p>
+</td></tr>
+<tr valign="top"><td><code>assembled.molecules.only</code></td>
+<td>
+
+<p>If <code>FALSE</code> (the default) then chromosome information is returned
+for all the sequences in the assembly (unless <code>assembly.units</code>
+is specified, see below), that is, for all the chromosomes, plasmids,
+and scaffolds.
+</p>
+<p>If <code>TRUE</code> then chromosome information is returned only for the
+<em>assembled molecules</em>. These are the chromosomes (including the
+mitochondrial chromosome) and plasmids only. No scaffolds.
+</p>
+</td></tr>
+<tr valign="top"><td><code>assembly.units</code></td>
+<td>
+
+<p>If <code>NULL</code> (the default) then chromosome information is returned
+for all the sequences in the assembly (unless
+<code>assembled.molecules.only</code> is set to <code>TRUE</code>, see above),
+that is, for all the chromosomes, plasmids, and scaffolds.
+</p>
+<p><code>assembly.units</code> can be set to a character vector containing
+the names of <em>Assembly Units</em> (e.g. <code>"non-nuclear"</code>) in
+which case chromosome information is returned only for the sequences
+that belong to these Assembly Units.
+</p>
+</td></tr>
+<tr valign="top"><td><code>recache</code></td>
+<td>
+
+<p><code>getChromInfoFromNCBI</code> uses a cache mechanism so the
+chromosome information of a given assembly only gets downloaded
+once during the current R session (note that the caching is done
+in memory so cached information does NOT persist across sessions).
+Setting <code>recache</code> to <code>TRUE</code> forces a new download (and
+recaching) of the chromosome information for the specified assembly.
+</p>
+</td></tr>
+<tr valign="top"><td><code>as.Seqinfo</code></td>
+<td>
+
+<p><code>TRUE</code> or <code>FALSE</code> (the default). If <code>TRUE</code> then a
+<a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> object is returned instead of a data frame. Note that
+only the <code>SequenceName</code>, <code>SequenceLength</code>, and <code>circular</code>
+columns of the data frame are used to make the <a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> object.
+All the other columns are ignored (and lost).
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><em>registered</em> vs <em>unregistered</em> NCBI assemblies:
+</p>
+
+<ul>
+<li><p> All NCBI assemblies can be looked up by assembly accession
+(GenBank or RefSeq) but only <em>registered</em> assemblies
+can also be looked up by assembly name.
+</p>
+</li>
+<li><p> For <em>registered</em> assemblies, the returned
+circularity flags are guaranteed to be accurate.
+For <em>unregistered</em> assemblies, a heuristic is
+used to determine the circular sequences.
+</p>
+</li></ul>
+
+<p>Please contact the maintainer of the <span class="pkg">GenomeInfoDb</span> package to
+request registration of additional assemblies.
+</p>
+
+
+<h3>Value</h3>
+
+<p>For <code>getChromInfoFromNCBI</code>: By default, a 10-column data frame
+with columns:
+</p>
+
+<ol>
+<li> <p><code>SequenceName</code>: character.
+</p>
+</li>
+<li> <p><code>SequenceRole</code>: factor.
+</p>
+</li>
+<li> <p><code>AssignedMolecule</code>: factor.
+</p>
+</li>
+<li> <p><code>GenBankAccn</code>: character.
+</p>
+</li>
+<li> <p><code>Relationship</code>: factor.
+</p>
+</li>
+<li> <p><code>RefSeqAccn</code>: character.
+</p>
+</li>
+<li> <p><code>AssemblyUnit</code>: factor.
+</p>
+</li>
+<li> <p><code>SequenceLength</code>: integer. Note that this column **can**
+contain NAs! For example this is the case in assembly Amel_HAv3.1
+where the length of sequence MT is missing or in assembly
+Release 5 where the length of sequence Un is missing.
+</p>
+</li>
+<li> <p><code>UCSCStyleName</code>: character.
+</p>
+</li>
+<li> <p><code>circular</code>: logical.
+</p>
+</li></ol>
+
+<p>For <code>registered_NCBI_assemblies</code>: A data frame summarizing all the
+NCBI assemblies currently <em>registered</em> in the <span class="pkg">GenomeInfoDb</span>
+package.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>H. Pagès
+</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><code><a href="../../GenomeInfoDb/help/getChromInfoFromUCSC.html">getChromInfoFromUCSC</a></code> for getting chromosome
+information for a UCSC genome.
+</p>
+</li>
+<li> <p><code><a href="../../GenomeInfoDb/help/getChromInfoFromEnsembl.html">getChromInfoFromEnsembl</a></code> for getting chromosome
+information for an Ensembl species.
+</p>
+</li>
+<li> <p><a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> objects.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## Internet access required!
+
+getChromInfoFromNCBI("GRCh37")
+
+getChromInfoFromNCBI("GRCh37", as.Seqinfo=TRUE)
+
+getChromInfoFromNCBI("GRCh37", assembled.molecules.only=TRUE)
+
+getChromInfoFromNCBI("TAIR10.1")
+
+getChromInfoFromNCBI("TAIR10.1", assembly.units="non-nuclear")
+
+## List of NCBI assemblies currently registered in the package:
+registered_NCBI_assemblies()
+
+## The GRCh38.p13 assembly only adds "patch sequences" to the GRCh38
+## assembly:
+GRCh38 &lt;- getChromInfoFromNCBI("GRCh38")
+table(GRCh38$SequenceRole)
+GRCh38.p13 &lt;- getChromInfoFromNCBI("GRCh38.p13")
+table(GRCh38.p13$SequenceRole)  # 185 patch sequences (113 fix + 72 novel)
+
+## Sanity checks:
+idx &lt;- match(GRCh38$SequenceName, GRCh38.p13$SequenceName)
+stopifnot(!anyNA(idx))
+tmp1 &lt;- GRCh38.p13[idx, ]
+rownames(tmp1) &lt;- NULL
+tmp2 &lt;- GRCh38.p13[-idx, ]
+stopifnot(
+  identical(tmp1[ , -(5:7)], GRCh38[ , -(5:7)]),
+  identical(tmp2, GRCh38.p13[GRCh38.p13$AssemblyUnit == "PATCHES", ])
+)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GenomeInfoDb</em> version 1.30.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

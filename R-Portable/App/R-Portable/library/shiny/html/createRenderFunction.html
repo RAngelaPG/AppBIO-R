@@ -1,0 +1,267 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Implement custom render functions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for createRenderFunction {shiny}"><tr><td>createRenderFunction {shiny}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Implement custom render functions</h2>
+
+<h3>Description</h3>
+
+<p>Developer-facing utilities for implementing a custom <code>renderXXX()</code> function.
+Before using these utilities directly, consider using the <a href="http://www.htmlwidgets.org/develop_intro.html"><code>htmlwidgets</code> package</a> to implement custom
+outputs (i.e., custom <code>renderXXX()</code>/<code>xxxOutput()</code> functions). That said,
+these utilities can be used more directly if a full-blown htmlwidget isn't
+needed and/or the user-supplied reactive expression needs to be wrapped in
+additional call(s).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+createRenderFunction(
+  func,
+  transform = function(value, session, name, ...) value,
+  outputFunc = NULL,
+  outputArgs = NULL,
+  cacheHint = "auto",
+  cacheWriteHook = NULL,
+  cacheReadHook = NULL
+)
+
+quoToFunction(q, label = sys.call(-1)[[1]], ..stacktraceon = FALSE)
+
+installExprFunction(
+  expr,
+  name,
+  eval.env = parent.frame(2),
+  quoted = FALSE,
+  assign.env = parent.frame(1),
+  label = sys.call(-1)[[1]],
+  wrappedWithLabel = TRUE,
+  ..stacktraceon = FALSE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>func</code></td>
+<td>
+<p>A function without parameters, that returns user data. If the
+returned value is a promise, then the render function will proceed in async
+mode.</p>
+</td></tr>
+<tr valign="top"><td><code>transform</code></td>
+<td>
+<p>A function that takes four arguments: <code>value</code>,
+<code>session</code>, <code>name</code>, and <code>...</code> (for future-proofing). This
+function will be invoked each time a value is returned from <code>func</code>,
+and is responsible for changing the value into a JSON-ready value to be
+JSON-encoded and sent to the browser.</p>
+</td></tr>
+<tr valign="top"><td><code>outputFunc</code></td>
+<td>
+<p>The UI function that is used (or most commonly used) with
+this render function. This can be used in R Markdown documents to create
+complete output widgets out of just the render function.</p>
+</td></tr>
+<tr valign="top"><td><code>outputArgs</code></td>
+<td>
+<p>A list of arguments to pass to the <code>uiFunc</code>. Render
+functions should include <code>outputArgs = list()</code> in their own parameter list,
+and pass through the value to <code>markRenderFunction</code>, to allow app authors to
+customize outputs. (Currently, this is only supported for dynamically
+generated UIs, such as those created by Shiny code snippets embedded in R
+Markdown documents).</p>
+</td></tr>
+<tr valign="top"><td><code>cacheHint</code></td>
+<td>
+<p>One of <code>"auto"</code>, <code>FALSE</code>, or some other information to
+identify this instance for caching using <code><a href="../../shiny/help/bindCache.html">bindCache()</a></code>. If <code>"auto"</code>, it
+will try to automatically infer caching information. If <code>FALSE</code>, do not
+allow caching for the object. Some render functions (such as <a href="../../shiny/help/renderPlot.html">renderPlot</a>)
+contain internal state that makes them unsuitable for caching.</p>
+</td></tr>
+<tr valign="top"><td><code>cacheWriteHook</code></td>
+<td>
+<p>Used if the render function is passed to <code>bindCache()</code>.
+This is an optional callback function to invoke before saving the value
+from the render function to the cache. This function must accept one
+argument, the value returned from <code>renderFunc</code>, and should return the value
+to store in the cache.</p>
+</td></tr>
+<tr valign="top"><td><code>cacheReadHook</code></td>
+<td>
+<p>Used if the render function is passed to <code>bindCache()</code>.
+This is an optional callback function to invoke after reading a value from
+the cache (if there is a cache hit). The function will be passed one
+argument, the value retrieved from the cache. This can be useful when some
+side effect needs to occur for a render function to behave correctly. For
+example, some render functions call <code><a href="../../shiny/help/createWebDependency.html">createWebDependency()</a></code> so that Shiny
+is able to serve JS and CSS resources.</p>
+</td></tr>
+<tr valign="top"><td><code>q</code></td>
+<td>
+<p>Quosure of the expression <code>x</code>. When capturing expressions to create
+your quosure, it is recommended to use <code><a href="../../rlang/html/defusing-advanced.html">enquo0()</a></code> to not unquote the
+object too early. See <code><a href="../../rlang/html/defusing-advanced.html">enquo0()</a></code> for more details.</p>
+</td></tr>
+<tr valign="top"><td><code>label</code></td>
+<td>
+<p>A label for the object to be shown in the debugger. Defaults to
+the name of the calling function.</p>
+</td></tr>
+<tr valign="top"><td><code>expr</code></td>
+<td>
+<p>A quoted or unquoted expression, or a quosure.</p>
+</td></tr>
+<tr valign="top"><td><code>name</code></td>
+<td>
+<p>The name the function should be given</p>
+</td></tr>
+<tr valign="top"><td><code>eval.env</code></td>
+<td>
+<p>The desired environment for the function. Defaults to the
+calling environment two steps back.</p>
+</td></tr>
+<tr valign="top"><td><code>quoted</code></td>
+<td>
+<p>Is the expression quoted?</p>
+</td></tr>
+<tr valign="top"><td><code>assign.env</code></td>
+<td>
+<p>The environment in which the function should be assigned.</p>
+</td></tr>
+<tr valign="top"><td><code>wrappedWithLabel, ..stacktraceon</code></td>
+<td>
+<p>Advanced use only. For stack manipulation purposes; see
+<code><a href="../../shiny/help/stacktrace.html">stacktrace()</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>To implement a custom <code>renderXXX()</code> function, essentially 2 things are needed:
+</p>
+
+<ol>
+<li><p> Capture the user's reactive expression as a function.
+</p>
+
+<ul>
+<li><p> New <code>renderXXX()</code> functions can use <code>quoToFunction()</code> for this, but
+already existing <code>renderXXX()</code> functions that contain <code>env</code> and <code>quoted</code>
+parameters may want to continue using <code>installExprFunction()</code> for better
+legacy support (see examples).
+</p>
+</li></ul>
+
+</li>
+<li><p> Flag the resulting function (from 1) as a Shiny rendering function and
+also provide a UI container for displaying the result of the rendering
+function.
+</p>
+
+<ul>
+<li> <p><code>createRenderFunction()</code> is currently recommended (instead of
+<code><a href="../../shiny/help/markRenderFunction.html">markRenderFunction()</a></code>) for this step (see examples).
+</p>
+</li></ul>
+
+</li></ol>
+
+
+
+<h3>Value</h3>
+
+<p>An annotated render function, ready to be assigned to an
+<code>output</code> slot.
+</p>
+
+
+<h3>Functions</h3>
+
+
+<ul>
+<li> <p><code>quoToFunction()</code>: convert a quosure to a function.
+</p>
+</li>
+<li> <p><code>installExprFunction()</code>: converts a user's reactive <code>expr</code> into a
+function that's assigned to a <code>name</code> in the <code>assign.env</code>.
+</p>
+</li></ul>
+
+
+<h3>Examples</h3>
+
+<pre>
+# A custom render function that repeats the supplied value 3 times
+renderTriple &lt;- function(expr) {
+  # Wrap user-supplied reactive expression into a function
+  func &lt;- quoToFunction(rlang::enquo0(expr))
+
+  createRenderFunction(
+    func,
+    transform = function(value, session, name, ...) {
+      paste(rep(value, 3), collapse=", ")
+    },
+    outputFunc = textOutput
+  )
+}
+
+# For better legacy support, consider using installExprFunction() over quoToFunction()
+renderTripleLegacy &lt;- function(expr, env = parent.frame(), quoted = FALSE) {
+  func &lt;- installExprFunction(expr, "func", env, quoted)
+
+  createRenderFunction(
+    func,
+    transform = function(value, session, name, ...) {
+      paste(rep(value, 3), collapse=", ")
+    },
+    outputFunc = textOutput
+  )
+}
+
+# Test render function from the console
+reactiveConsole(TRUE)
+
+v &lt;- reactiveVal("basic")
+r &lt;- renderTriple({ v() })
+r()
+#&gt; [1] "basic, basic, basic"
+
+# User can supply quoted code via rlang::quo(). Note that evaluation of the
+# expression happens when r2() is invoked, not when r2 is created.
+q &lt;- rlang::quo({ v() })
+r2 &lt;- rlang::inject(renderTriple(!!q))
+v("rlang")
+r2()
+#&gt; [1] "rlang, rlang, rlang"
+
+# Supplying quoted code without rlang::quo() requires installExprFunction()
+expr &lt;- quote({ v() })
+r3 &lt;- renderTripleLegacy(expr, quoted = TRUE)
+v("legacy")
+r3()
+#&gt; [1] "legacy, legacy, legacy"
+
+# The legacy approach also supports with quosures (env is ignored in this case)
+q &lt;- rlang::quo({ v() })
+r4 &lt;- renderTripleLegacy(q, quoted = TRUE)
+v("legacy-rlang")
+r4()
+#&gt; [1] "legacy-rlang, legacy-rlang, legacy-rlang"
+
+# Turn off reactivity in the console
+reactiveConsole(FALSE)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>shiny</em> version 1.8.1.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

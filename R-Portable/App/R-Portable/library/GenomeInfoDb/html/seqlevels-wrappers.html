@@ -1,0 +1,311 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Convenience wrappers to the seqlevels() getter and setter</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for seqlevels-wrappers {GenomeInfoDb}"><tr><td>seqlevels-wrappers {GenomeInfoDb}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Convenience wrappers to the seqlevels() getter and setter
+</h2>
+
+<h3>Description</h3>
+
+<p>Keep, drop or rename seqlevels in objects with a <a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> class.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+keepSeqlevels(x, value, pruning.mode=c("error", "coarse", "fine", "tidy"))
+dropSeqlevels(x, value, pruning.mode=c("error", "coarse", "fine", "tidy"))
+renameSeqlevels(x, value)
+restoreSeqlevels(x)
+standardChromosomes(x, species=NULL)
+keepStandardChromosomes(x, species=NULL,
+                        pruning.mode=c("error", "coarse", "fine", "tidy"))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+
+<p>Any object having a <a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> class in which the seqlevels will
+be kept, dropped or renamed.
+</p>
+</td></tr>
+<tr valign="top"><td><code>value</code></td>
+<td>
+
+<p>A named or unnamed character vector.
+</p>
+<p>Names are ignored by <code>keepSeqlevels</code> and <code>dropSeqlevels</code>. 
+Only the values in the character vector dictate which seqlevels to keep
+or drop.
+</p>
+<p>In the case of <code>renameSeqlevels</code>, the names are used to map new 
+sequence levels to the old (names correspond to the old levels). When 
+<code>value</code> is unnamed, the replacement vector must the same length
+and in the same order as the original <code>seqlevels(x)</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>pruning.mode</code></td>
+<td>
+
+<p>See <code>?seqinfo</code> for a description of the pruning modes.
+</p>
+</td></tr>
+<tr valign="top"><td><code>species</code></td>
+<td>
+
+<p>The genus and species of the organism. Supported species can be seen with 
+<code>names(genomeStyles())</code>.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Matching and overlap operations on range objects often require that the
+seqlevels match before a comparison can be made (e.g., <code>findOverlaps</code>).
+<code>keepSeqlevels</code>, <code>dropSeqlevels</code> and <code>renameSeqlevels</code> are 
+high-level convenience functions that wrap the low-level <code>seqlevels</code>
+setter.
+</p>
+
+<ul>
+<li>  <p><code>keepSeqlevels</code>, <code>dropSeqlevels</code>: Subsetting operations 
+that modify the size of <code>x</code>. <code>keepSeqlevels</code> keeps only
+the seqlevels in <code>value</code> and removes all others.
+<code>dropSeqlevels</code> drops the levels in <code>value</code> and retains
+all others. If <code>value</code> does not match any seqlevels in <code>x</code>
+an empty object is returned.
+</p>
+<p>When <code>x</code> is a GRangesList it is possible to have 'mixed'
+list elements that have ranges from different chromosomes.
+<code>keepSeqlevels</code> will not keep 'mixed' list elements 
+</p>
+</li>
+<li>  <p><code>renameSeqlevels</code>: Rename the seqlevels in <code>x</code> to those in 
+<code>value</code>. If <code>value</code> is a named character vector, the names
+are used to map the new seqlevels to the old. When <code>value</code> is
+unnamed, the replacement vector must be the same length and in the
+same order as the original <code>seqlevels(x)</code>.
+</p>
+</li>
+<li>  <p><code>restoreSeqlevels</code>: Perform 
+<code>seqlevels(txdb) &lt;- seqlevels0(txdb)</code>, that is, restore the
+seqlevels in <code>x</code> back to the original values.
+Applicable only when <code>x</code> is a TxDb object.
+</p>
+</li>
+<li>  <p><code>standardChromosomes</code>: Lists the 'standard' chromosomes defined
+as sequences in the assembly that are not scaffolds; also referred
+to as an 'assembly molecule' in NCBI.  <code>standardChromosomes</code>
+attempts to detect the seqlevel style and if more than one style is
+matched, e.g., 'UCSC' and 'Ensembl', the first is chosen.
+</p>
+<p><code>x</code> must have a Seqinfo object.  <code>species</code> can be
+specified as a character string; supported species are listed with
+<code>names(genomeStyles())</code>.
+</p>
+<p>When <code>x</code> contains seqlevels from multiple organisms all
+those considered standard will be kept. For example, if 
+seqlevels are &quot;chr1&quot; and &quot;chr3R&quot; from human and fly both will be
+kept. If <code>species="Homo sapiens"</code> is specified then only 
+&quot;chr1&quot; is kept.
+</p>
+</li>
+<li>  <p><code>keepStandardChromosomes</code>: Subsetting operation that returns 
+only the 'standard' chromosomes.
+</p>
+<p><code>x</code> must have a Seqinfo object.  <code>species</code> can be
+specified as a character string; supported species are listed with
+<code>names(genomeStyles())</code>.
+</p>
+<p>When <code>x</code> contains seqlevels from multiple organisms all
+those considered standard will be kept. For example, if 
+seqlevels are &quot;chr1&quot; and &quot;chr3R&quot; from human and fly both will be
+kept. If <code>species="Homo sapiens"</code> is specified then only 
+&quot;chr1&quot; is kept.
+</p>
+</li></ul>
+
+
+
+<h3>Value</h3>
+
+<p>The <code>x</code> object with seqlevels removed or renamed. If <code>x</code> has
+no seqlevels (empty object) or no replacement values match the current
+seqlevels in <code>x</code> the unchanged <code>x</code> is returned.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Valerie Obenchain, Sonali Arora</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><a href="../../GenomeInfoDb/help/seqinfo.html">seqinfo</a> ## Accessing sequence information
+</p>
+</li>
+<li> <p><a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> ## The Seqinfo class
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## ---------------------------------------------------------------------
+## keepSeqlevels / dropSeqlevels 
+## ---------------------------------------------------------------------
+
+##
+## GRanges / GAlignments:
+##
+
+library(GenomicRanges)
+gr &lt;- GRanges(c("chr1", "chr1", "chr2", "chr3"), IRanges(1:4, width=3))
+seqlevels(gr)
+## Keep only 'chr1'
+gr1 &lt;- keepSeqlevels(gr, "chr1", pruning.mode="coarse")
+## Drop 'chr1'. Both 'chr2' and 'chr3' are kept.
+gr2 &lt;- dropSeqlevels(gr, "chr1", pruning.mode="coarse")
+
+library(Rsamtools)  # for the ex1.bam file
+library(GenomicAlignments)  # for readGAlignments()
+
+fl &lt;- system.file("extdata", "ex1.bam", package="Rsamtools")
+gal &lt;- readGAlignments(fl)
+## If 'value' is named, the names are ignored.
+seq2 &lt;- keepSeqlevels(gal, c(foo="seq2"), pruning.mode="coarse")
+seqlevels(seq2)
+
+##
+## List-like objects:
+##
+
+grl0 &lt;- GRangesList(A=GRanges("chr2", IRanges(3:2, 5)),
+                    B=GRanges(c("chr2", "chrMT"), IRanges(7:6, 15)),
+                    C=GRanges(c("chrY", "chrMT"), IRanges(17:16, 25)),
+                    D=GRanges())
+## See ?seqinfo for a description of the pruning modes.
+keepSeqlevels(grl0, "chr2", pruning.mode="coarse")
+keepSeqlevels(grl0, "chr2", pruning.mode="fine")
+keepSeqlevels(grl0, "chr2", pruning.mode="tidy")
+
+library(TxDb.Dmelanogaster.UCSC.dm3.ensGene)
+txdb &lt;- TxDb.Dmelanogaster.UCSC.dm3.ensGene
+## Pruning mode "coarse" is particularly well suited on a GRangesList
+## object that contains exons grouped by transcript:
+ex_by_tx &lt;- exonsBy(txdb, by="tx")
+seqlevels(ex_by_tx)
+ex_by_tx2 &lt;- keepSeqlevels(ex_by_tx, "chr2L", pruning.mode="coarse")
+seqlevels(ex_by_tx2)
+## Pruning mode "tidy" is particularly well suited on a GRangesList
+## object that contains transcripts grouped by gene:
+tx_by_gene &lt;- transcriptsBy(txdb, by="gene")
+seqlevels(tx_by_gene)
+tx_by_gene2 &lt;- keepSeqlevels(tx_by_gene, "chr2L", pruning.mode="tidy")
+seqlevels(tx_by_gene2)
+
+## ---------------------------------------------------------------------
+## renameSeqlevels 
+## ---------------------------------------------------------------------
+
+##
+## GAlignments:
+##
+
+seqlevels(gal)
+## Rename 'seq2' to 'chr2' with a named vector.
+gal2a &lt;- renameSeqlevels(gal, c(seq2="chr2"))
+## Rename 'seq2' to 'chr2' with an unnamed vector that includes all 
+## seqlevels as they appear in the object.
+gal2b &lt;- renameSeqlevels(gal, c("seq1", "chr2"))
+## Names that do not match existing seqlevels are ignored.
+## This attempt at renaming does nothing.
+gal3 &lt;- renameSeqlevels(gal, c(foo="chr2"))
+stopifnot(identical(gal, gal3))
+
+##
+## TxDb:
+##
+
+seqlevels(txdb)
+## When the seqlevels of a TxDb are renamed, all future 
+## extractions reflect the modified seqlevels.
+renameSeqlevels(txdb, sub("chr", "CH", seqlevels(txdb)))
+renameSeqlevels(txdb, c(CHM="M"))
+seqlevels(txdb)
+
+transcripts &lt;- transcripts(txdb)
+identical(seqlevels(txdb), seqlevels(transcripts))
+
+## ---------------------------------------------------------------------
+## restoreSeqlevels 
+## ---------------------------------------------------------------------
+
+## Restore seqlevels in a TxDb to original values.
+## Not run: 
+txdb &lt;- restoreSeqlevels(txdb)
+seqlevels(txdb)
+
+## End(Not run)
+
+## ---------------------------------------------------------------------
+## keepStandardChromosomes
+## ---------------------------------------------------------------------
+
+##
+## GRanges:
+##
+gr &lt;- GRanges(c(paste0("chr",c(1:3)), "chr1_gl000191_random",
+              "chr1_gl000192_random"), IRanges(1:5, width=3))
+gr
+keepStandardChromosomes(gr, pruning.mode="coarse")
+
+##
+## List-like objects:
+##
+
+grl &lt;- GRangesList(GRanges("chr1", IRanges(1:2, 5)),
+                   GRanges(c("chr1_GL383519v1_alt", "chr1"), IRanges(5:6, 5)))
+## Use pruning.mode="coarse" to drop list elements with mixed seqlevels:
+keepStandardChromosomes(grl, pruning.mode="coarse")
+## Use pruning.mode="tidy" to keep all list elements with ranges on
+## standard chromosomes:
+keepStandardChromosomes(grl, pruning.mode="tidy")
+
+##
+## The set of standard chromosomes should not be affected by the
+## particular seqlevel style currently in use:
+##
+
+## NCBI
+worm &lt;- GRanges(c("I", "II", "foo", "X", "MT"), IRanges(1:5, width=5))
+keepStandardChromosomes(worm, pruning.mode="coarse")
+
+## UCSC
+seqlevelsStyle(worm) &lt;- "UCSC"
+keepStandardChromosomes(worm, pruning.mode="coarse")
+
+## Ensembl
+seqlevelsStyle(worm) &lt;- "Ensembl"
+keepStandardChromosomes(worm, pruning.mode="coarse")
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GenomeInfoDb</em> version 1.30.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

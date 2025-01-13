@@ -1,0 +1,321 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: stepmented relationships in regression models</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for stepmented {segmented}"><tr><td>stepmented {segmented}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+stepmented relationships in regression models
+</h2>
+
+<h3>Description</h3>
+
+<p>Fits regression models with stepmented (i.e. piecewise-constant) relationships between the response and one or more explanatory variables. Break-point estimates are provided.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+stepmented(obj, seg.Z, psi, npsi, fixed.psi=NULL, control = seg.control(), 
+   keep.class=FALSE, var.psi=FALSE, ...)
+
+## S3 method for class 'lm'
+stepmented(obj, seg.Z, psi, npsi, fixed.psi=NULL, control = seg.control(),
+   keep.class=FALSE, var.psi=FALSE, ...)
+
+## S3 method for class 'glm'
+stepmented(obj, seg.Z, psi, npsi, fixed.psi=NULL, control = seg.control(),
+    keep.class=FALSE, var.psi=FALSE, ...)
+
+## S3 method for class 'numeric'
+stepmented(obj, seg.Z, psi, npsi, fixed.psi=NULL, control = seg.control(),
+    keep.class=FALSE, var.psi=FALSE, ..., 
+    pertV=0, centerX=FALSE, adjX=NULL, weights=NULL)
+
+## S3 method for class 'ts'
+stepmented(obj, seg.Z, psi, npsi, fixed.psi=NULL, control = seg.control(),
+    keep.class=FALSE, var.psi=FALSE, ..., 
+    pertV=0, centerX=FALSE, adjX=NULL)
+
+
+
+
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>obj</code></td>
+<td>
+<p>A standard &lsquo;linear&rsquo; regression model of class &quot;lm&quot; or &quot;glm&quot;. Alternatively, a simple &quot;ts&quot; object or a simple data vector may be supplied. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>seg.Z</code></td>
+<td>
+<p> the stepmented variables(s), i.e. the numeric covariate(s) understood to have a piecewise-constant relationship with response. It is a formula with no response variable, such as <code>seg.Z=~x</code> or <code>seg.Z=~x1+x2</code>. Currently, formulas involving functions, 
+such as <code>seg.Z=~log(x1)</code>, or selection operators, such as <code>seg.Z=~d[,"x1"]</code> or <code>seg.Z=~d$x1</code>, are <em>not</em> allowed. Also, variable names formed by <code style="white-space: pre;">U</code> or <code style="white-space: pre;">V</code> only (with or without numbers ) are not permitted. If missing, the index variable <code>id=1,2,..,n</code> is used. For <code>stepmented.ts</code>, <code>seg.Z</code> is usually unspecified as the (time) covariate is obtained by the <code>ts</code> object itself.
+</p>
+</td></tr>
+<tr valign="top"><td><code>psi</code></td>
+<td>
+<p> starting values for the breakpoints to be estimated. If there is a single stepmented variable specified in <code>seg.Z</code>, <code>psi</code> can be a numeric vector, and it can be missing  when 1 breakpoint has to be estimated (and the median of the stepmented variable is used as a starting value). If <code>seg.Z</code> includes several covariates, <code>psi</code> has to be specified as a <em>named</em> list of vectors whose names have to match the variables in the <code>seg.Z</code> argument. Each vector of such list includes starting values for the break-point(s) for the corresponding variable in <code>seg.Z</code>. A <code>NA</code> value means that '<code>K</code>' quantiles (or equally spaced values) are used as starting values; <code>K</code> is fixed via the <code><a href="../../segmented/help/seg.control.html">seg.control</a></code> auxiliary function. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>npsi</code></td>
+<td>
+<p>A named vector or list meaning the <em>number</em> (and not locations) of breakpoints to be estimated. The starting values will be internally computed via the quantiles or equally spaced values, as specified in argument <code>quant</code> in <code><a href="../../segmented/help/seg.control.html">seg.control</a></code>. <code>npsi</code> can be missing and <code>npsi=1</code> is assumed for all variables specified in <code>seg.Z</code>. If <code>psi</code> is provided, <code>npsi</code> is ignored.</p>
+</td></tr>
+<tr valign="top"><td><code>fixed.psi</code></td>
+<td>
+<p>An optional named list including the breakpoint values to be kept fixed during the estimation procedure. The names should be a subset of (or even the same) variables specified in <code>seg.Z</code>. If there is a single variable in <code>seg.Z</code>, a simple numeric vector can be specified. Note that, in addition to the values specified here, <code>stepmented</code> will estimate additional breakpoints. To keep fixed all breakpoints (to be specified in <code>psi</code>) use <code>it.max=0</code> in <code><a href="../../segmented/help/seg.control.html">seg.control</a></code>
+</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+<p> a list of parameters for controlling the fitting process.
+See the documentation for <code><a href="../../segmented/help/seg.control.html">seg.control</a></code> for details. 
+</p>
+</td></tr>
+</table>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>keep.class</code></td>
+<td>
+<p>logical value indicating if the final fit returned by <code>stepmented.default</code> should keep the class '<code>stepmented</code>' (along with the class of the original fit <code>obj</code>). Ignored by the stepmented methods. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p> optional arguments (to be ignored safely). Notice specific arguments relevant to the original call (via <code>lm</code> or <code>glm</code> for instance), such as <code>weights</code> or <code>offet</code>, have to be included in the starting model <code>obj</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>pertV</code></td>
+<td>
+
+<p>Only for <code>stepmented.ts</code> and <code>stepmented.numeric</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>centerX</code></td>
+<td>
+
+<p>Only for <code>stepmented.ts</code> and <code>stepmented.numeric</code>. If <code>TRUE</code>, the covariate is centered before fitting.
+</p>
+</td></tr>
+<tr valign="top"><td><code>adjX</code></td>
+<td>
+
+<p>Only for <code>stepmented.ts</code> and <code>stepmented.numeric</code>. If the response vector leads to covariate with large values (such as years for ts objects), <code>adjX=TRUE</code> will shift the covariate to have a zero origin. Default is <code>NULL</code> which means <code>TRUE</code> if the minimum of covariate is 1000 or larger.
+</p>
+</td></tr>
+<tr valign="top"><td><code>var.psi</code></td>
+<td>
+
+<p>logical. If <code>TRUE</code>, the estimate covariance matrix is also computed via <code><a href="../../segmented/help/vcov.stepmented.html">vcov.stepmented</a></code>, thus the breakpoint standard errors are also included in the <code>psi</code> component of the returned object. Default is <code>FALSE</code>, as computing the estimate covariance matrix is somewhat time-consuming when the sample size is large. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+
+<p>possible weights to include in the estimation process (only for <code>stepmented.numeric</code>).
+</p>
+</td></tr>
+</table>
+
+
+
+
+
+
+<h3>Details</h3>
+
+<p>Given a linear regression model (usually of class &quot;lm&quot; or &quot;glm&quot;), stepmented tries to estimate
+a new regression model having piecewise-constant (i.e. step-function like) relationships with the variables specified in <code>seg.Z</code>.
+A <em>stepmented</em> relationship is defined by the mean level
+parameters and the break-points where the mean level changes. The number of breakpoints
+of each stepmented relationship depends on the <code>psi</code> argument, where initial
+values for the break-points must be specified. The model
+is estimated simultaneously yielding point estimates and relevant approximate
+standard errors of all the model parameters, including the break-points.
+</p>
+<p><code>stepmented</code> implements the algorithm described in Fasola et al. (2018) along with  bootstrap restarting (Wood, 2001) to escape local optima. The procedure turns out to be particularly appealing and probably efficient when there are two or more covariates exhibiting different change points to be estimated.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The returned object is of class &quot;stepmented&quot; which inherits
+from the class &quot;lm&quot; or &quot;glm&quot; depending on the class of <code>obj</code>. When <code>only.mean=FALSE</code>, it is a list having two 'stepmented' fits (for the mean and for the dispersion submodels). <br />
+</p>
+<p>An object of class &quot;stepmented&quot; is a list containing the components of the
+original object <code>obj</code> with additionally the followings:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>psi</code></td>
+<td>
+<p>estimated break-points and relevant (approximate) standard errors (on the continuum)</p>
+</td></tr>
+<tr valign="top"><td><code>psi.rounded</code></td>
+<td>
+<p>the rounded estimated break-points (see Note, below)</p>
+</td></tr>
+<tr valign="top"><td><code>it</code></td>
+<td>
+<p>number of iterations employed</p>
+</td></tr>
+<tr valign="top"><td><code>epsilon</code></td>
+<td>
+<p>difference in the objective function when the algorithm stops</p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>the model frame</p>
+</td></tr>
+<tr valign="top"><td><code>psi.history</code></td>
+<td>
+<p>a list or a vector including the breakpoint estimates at each step</p>
+</td></tr>
+<tr valign="top"><td><code>seed</code></td>
+<td>
+<p>the integer vector containing the seed just before the bootstrap resampling. 
+Returned only if bootstrap restart is employed</p>
+</td></tr>
+<tr valign="top"><td><code>..</code></td>
+<td>
+<p>Other components are not of direct interest of the user</p>
+</td></tr>
+</table>
+
+
+<h3>Note</h3>
+
+<p>The component <code>psi.rounded</code> of the fit object includes the rounded changepoint values which are usually taken as the final estimates. More specifically, each column of <code>psi.rounded</code> represents a changepoint and the corresponding rows are the range of the &lsquo;optimal&rsquo; interval. The first row, i.e. the lower bound of the interval, is taken as point estimate. <code>print.stepmented</code>, <code>print.summary.stepmented</code>, and <code>confint.stepmented</code> return the rounded (lower) value of the interval.
+</p>
+<p>Also:
+</p>
+
+<ol>
+<li><p> The algorithm will start if the <code>it.max</code> argument returned by <code>seg.control</code>
+is greater than zero. If <code>it.max=0</code> <code>stepmented</code> will estimate a new linear model with
+break-point(s) fixed at the starting values reported in <code>psi</code>. Alternatively, it is also possible to set <code>h=0</code> in <code>seg.control()</code>. In this case, bootstrap restarting is unncessary, then to have changepoints at <code>mypsi</code> type <br />
+</p>
+<p><code>stepmented(.., psi=mypsi, control=seg.control(h=0, n.boot=0, it.max=1))</code>
+</p>
+</li>
+<li><p> In the returned fit object, &lsquo;U.&rsquo; is put before the name of the stepmented 
+variable to indicate the difference in the mean levels. <code><a href="../../segmented/help/slope.html">slope</a></code> can be used to compute the actual mean levels corresponding to the different intervals.
+</p>
+</li>
+<li><p> Currently methods specific to the class <code>"stepmented"</code> are
+</p>
+
+<ul>
+<li> <p><code><a href="../../segmented/help/print.stepmented.html">print.stepmented</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../segmented/help/summary.stepmented.html">summary.stepmented</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../segmented/help/print.summary.stepmented.html">print.summary.stepmented</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../segmented/help/plot.stepmented.html">plot.stepmented</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../segmented/help/confint.stepmented.html">confint.stepmented</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../segmented/help/vcov.stepmented.html">vcov.stepmented</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../segmented/help/lines.stepmented.html">lines.stepmented</a></code>
+
+
+
+</p>
+</li></ul>
+
+<p>Others are inherited from the class <code>"lm"</code> or <code>"glm"</code> depending on the
+class of <code>obj</code>.
+</p>
+</li></ol>
+
+
+
+<h3>Author(s)</h3>
+
+<p> Vito M. R. Muggeo, <a href="mailto:vito.muggeo@unipa.it">vito.muggeo@unipa.it</a> (based on original code by Salvatore Fasola)</p>
+
+
+<h3>References</h3>
+
+<p>Fasola S, Muggeo VMR, Kuchenhoff H (2018) A heuristic, iterative algorithm for change-point detection in abrupt change models, <em>Computational Statistics</em> <b>33</b>,  997&ndash;1015
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../segmented/help/segmented.html">segmented</a></code> for segmented regression, <code><a href="../../stats/html/lm.html">lm</a></code>, <code><a href="../../stats/html/glm.html">glm</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+n=20
+x&lt;-1:n/n
+mu&lt;- 2+ 1*(x&gt;.6)
+y&lt;- mu + rnorm(n)*.8
+
+#fitting via regression model
+os &lt;-stepmented(lm(y~1),~x)
+
+y&lt;-ts(y)
+os1&lt;- stepmented(y)  #the 'ts' method
+os2&lt;- stepmented(y, npsi=2)
+#plot(y)
+#plot(os1, add=TRUE)
+#plot(os2, add=TRUE, col=3:5)
+
+
+### Example with (poisson) GLM
+y&lt;- rpois(n,exp(mu))
+o&lt;-stepmented(glm(y~1,family=poisson))
+plot(o, res=TRUE)
+
+## Not run: 
+
+## Example using the (well-known) Nile dataset
+data(Nile)
+plot(Nile)
+os&lt;- stepmented(Nile)
+plot(os, add=TRUE)
+
+
+### Example with (binary) GLM (example from the package stepR)
+set.seed(1234)
+y &lt;- rbinom(200, 1, rep(c(0.1, 0.7, 0.3, 0.9), each=50))
+o&lt;-stepmented(glm(y~1,family=binomial), npsi=3)
+plot(o, res=TRUE)
+
+### Two stepmented covariates (with 1 and 2 breakpoints); z has also an additional linear effect
+n=100
+x&lt;-1:n/n
+z&lt;-runif(n,2,5)
+mu&lt;- 2+ 1*(x&gt;.6)-2*(z&gt;3)+3*(z&gt;4)+z
+y&lt;- mu + rnorm(n)*.8
+
+os &lt;-stepmented(lm(y~z),~x+z, npsi=c(x=1,z=2))
+os
+summary(os)
+
+## see ?plot.stepmented
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>segmented</em> version 2.1-0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

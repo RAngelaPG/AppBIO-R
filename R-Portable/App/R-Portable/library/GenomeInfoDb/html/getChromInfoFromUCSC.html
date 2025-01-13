@@ -1,0 +1,311 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Get chromosome information for a UCSC genome</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for getChromInfoFromUCSC {GenomeInfoDb}"><tr><td>getChromInfoFromUCSC {GenomeInfoDb}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Get chromosome information for a UCSC genome
+</h2>
+
+<h3>Description</h3>
+
+<p><code>getChromInfoFromUCSC</code> returns chromosome information like
+sequence names, lengths and circularity flags for a given UCSC genome
+e.g. for hg19, panTro6, sacCer3, etc...
+</p>
+<p>Note that <code>getChromInfoFromUCSC</code> behaves slightly differently
+depending on whether a genome is <em>registered</em> in the
+<span class="pkg">GenomeInfoDb</span> package or not. See below for the details.
+</p>
+<p>Use <code>registered_UCSC_genomes</code> to list all the UCSC genomes
+currently registered in the <span class="pkg">GenomeInfoDb</span> package.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+getChromInfoFromUCSC(genome,
+                     assembled.molecules.only=FALSE,
+                     map.NCBI=FALSE,
+                     add.ensembl.col=FALSE,
+                     goldenPath.url=getOption("UCSC.goldenPath.url"),
+                     recache=FALSE,
+                     as.Seqinfo=FALSE)
+
+registered_UCSC_genomes()
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>genome</code></td>
+<td>
+
+<p>A single string specifying the name of a UCSC genome
+(e.g. <code>"panTro6"</code>).
+</p>
+</td></tr>
+<tr valign="top"><td><code>assembled.molecules.only</code></td>
+<td>
+
+<p>If <code>FALSE</code> (the default) then chromosome information is returned
+for all the sequences in the genome, that is, for all the chromosomes,
+plasmids, and scaffolds.
+</p>
+<p>If <code>TRUE</code> then chromosome information is returned only for the
+<em>assembled molecules</em>. These are the chromosomes (including the
+mitochondrial chromosome) and plasmids only. No scaffolds.
+</p>
+<p>Note that <code>assembled.molecules.only=TRUE</code> is supported only for
+<em>registered</em> genomes. When used on an <em>unregistered</em>
+genome, <code>assembled.molecules.only</code> is ignored with a warning.
+</p>
+</td></tr>
+<tr valign="top"><td><code>map.NCBI</code></td>
+<td>
+
+<p><code>TRUE</code> or <code>FALSE</code> (the default).
+</p>
+<p>If <code>TRUE</code> then NCBI chromosome information is bound to
+the result. This information is retrieved from NCBI by calling
+<code><a href="../../GenomeInfoDb/help/getChromInfoFromNCBI.html">getChromInfoFromNCBI</a></code> on the NCBI assembly that
+the UCSC genome is based on. Then the data frame returned
+by <code><a href="../../GenomeInfoDb/help/getChromInfoFromNCBI.html">getChromInfoFromNCBI</a></code> (&quot;NCBI chrom info&quot;) is
+<em>mapped</em> and bound to the data frame returned by
+<code>getChromInfoFromUCSC</code> (&quot;UCSC chrom info&quot;).
+This &quot;map and bind&quot; operation is similar to a <code>JOIN</code> in SQL.
+</p>
+<p>Note that not all rows in the &quot;UCSC chrom info&quot; data frame are
+necessarily mapped to a row in the &quot;NCBI chrom info&quot; data frame.
+For example chrM in hg19 has no corresponding sequence in the GRCh37
+assembly (the mitochondrial chromosome was omitted from GRCh37).
+For the unmapped rows the NCBI columns in the final data frame
+are filled with NAs (<code>LEFT JOIN</code> in SQL).
+</p>
+<p>The primary use case for using <code>map.NCBI=TRUE</code> is to map
+UCSC sequence names to NCBI sequence names.
+This is only supported for <em>registered</em> UCSC genomes based
+on an NCBI assembly!
+</p>
+</td></tr>
+<tr valign="top"><td><code>add.ensembl.col</code></td>
+<td>
+
+<p><code>TRUE</code> or <code>FALSE</code> (the default). Whether or not the
+Ensembl sequence names should be added to the result (in column
+<code>ensembl</code>).
+</p>
+</td></tr>
+<tr valign="top"><td><code>goldenPath.url</code></td>
+<td>
+
+<p>A single string specifying the URL to the UCSC goldenPath location
+where the chromosome sizes are expected to be found.
+</p>
+</td></tr>
+<tr valign="top"><td><code>recache</code></td>
+<td>
+
+<p><code>getChromInfoFromUCSC</code> uses a cache mechanism so the
+chromosome sizes of a given genome only get downloaded
+once during the current R session (note that the caching is done
+in memory so cached information does NOT persist across sessions).
+Setting <code>recache</code> to <code>TRUE</code> forces a new download (and
+recaching) of the chromosome sizes for the specified genome.
+</p>
+</td></tr>
+<tr valign="top"><td><code>as.Seqinfo</code></td>
+<td>
+
+<p><code>TRUE</code> or <code>FALSE</code> (the default). If <code>TRUE</code> then a
+<a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> object is returned instead of a data frame. Note that
+only the <code>chrom</code>, <code>size</code>, and <code>circular</code> columns of
+the data frame are used to make the <a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> object. All the
+other columns are ignored (and lost).
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><em>registered</em> vs <em>unregistered</em> UCSC genomes:
+</p>
+
+<ul>
+<li> <p><code>assembled.molecules.only=TRUE</code> is supported only for
+<em>registered</em> genomes. For <em>unregistered</em>
+genomes, the argument is ignored with a warning.
+</p>
+</li>
+<li><p> For <em>registered</em> genomes, the returned
+circularity flags are guaranteed to be accurate.
+For <em>unregistered</em> genomes, a heuristic is
+used to determine the circular sequences.
+</p>
+</li>
+<li><p> For <em>registered</em> genomes, special care is taken
+to make sure that the sequences are returned in a sensible order.
+For <em>unregistered</em> genomes, a heuristic is used
+to return the sequence in a sensible order.
+</p>
+</li></ul>
+
+<p>Please contact the maintainer of the <span class="pkg">GenomeInfoDb</span> package to
+request registration of additional genomes.
+</p>
+
+
+<h3>Value</h3>
+
+<p>For <code>getChromInfoFromUCSC</code>: By default, a 4-column data frame
+with columns:
+</p>
+
+<ol>
+<li> <p><code>chrom</code>: character.
+</p>
+</li>
+<li> <p><code>size</code>: integer.
+</p>
+</li>
+<li> <p><code>assembled</code>: logical.
+</p>
+</li>
+<li> <p><code>circular</code>: logical.
+</p>
+</li></ol>
+
+<p>If <code>map.NCBI</code> is <code>TRUE</code>, then 7 &quot;NCBI columns&quot; are added
+to the result:
+</p>
+
+<ul>
+<li> <p><code>NCBI.SequenceName</code>: character.
+</p>
+</li>
+<li> <p><code>NCBI.SequenceRole</code>: factor.
+</p>
+</li>
+<li> <p><code>NCBI.AssignedMolecule</code>: factor.
+</p>
+</li>
+<li> <p><code>NCBI.GenBankAccn</code>: character.
+</p>
+</li>
+<li> <p><code>NCBI.Relationship</code>: factor.
+</p>
+</li>
+<li> <p><code>NCBI.RefSeqAccn</code>: character.
+</p>
+</li>
+<li> <p><code>NCBI.AssemblyUnit</code>: factor.
+</p>
+</li></ul>
+
+<p>Note that the names of the &quot;NCBI columns&quot; are those returned
+by <code><a href="../../GenomeInfoDb/help/getChromInfoFromNCBI.html">getChromInfoFromNCBI</a></code> but with the <code>NCBI.</code>
+prefix added to them.
+</p>
+<p>If <code>add.ensembl.col</code> is <code>TRUE</code>, the column <code>ensembl</code>
+is added to the result.
+</p>
+<p>For <code>registered_UCSC_genomes</code>: A data frame summarizing all the UCSC
+genomes currently <em>registered</em> in the <span class="pkg">GenomeInfoDb</span> package.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>H. Pagès
+</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><code><a href="../../GenomeInfoDb/help/getChromInfoFromNCBI.html">getChromInfoFromNCBI</a></code> for getting chromosome
+information for an NCBI assembly.
+</p>
+</li>
+<li> <p><code><a href="../../GenomeInfoDb/help/getChromInfoFromEnsembl.html">getChromInfoFromEnsembl</a></code> for getting chromosome
+information for an Ensembl species.
+</p>
+</li>
+<li> <p><a href="../../GenomeInfoDb/help/Seqinfo.html">Seqinfo</a> objects.
+</p>
+</li>
+<li><p> The <code><a href="../../BSgenome/help/getBSgenome.html">getBSgenome</a></code> convenience utility in
+the <span class="pkg">BSgenome</span> package for getting a <a href="../../BSgenome/help/BSgenome.html">BSgenome</a>
+object from an installed BSgenome data package.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## ---------------------------------------------------------------------
+## A. BASIC EXAMPLES
+## ---------------------------------------------------------------------
+
+## Internet access required!
+
+getChromInfoFromUCSC("hg19")
+
+getChromInfoFromUCSC("hg19", as.Seqinfo=TRUE)
+
+getChromInfoFromUCSC("hg19", assembled.molecules.only=TRUE)
+
+getChromInfoFromUCSC("panTro6", assembled.molecules.only=TRUE)
+
+## Map the hg38 sequences to their corresponding sequences in
+## the GRCh38.p13 assembly:
+getChromInfoFromUCSC("hg38", map.NCBI=TRUE)[c(1, 5)]
+
+## Note that some NCBI-based UCSC assemblies contain sequences that
+## are not mapped. For example this is the case for chrM in hg19:
+hg19 &lt;- getChromInfoFromUCSC("hg19", map.NCBI=TRUE)
+hg19[is.na(hg19$NCBI.SequenceName), ]
+
+## Map the hg19 sequences to the Ensembl sequence names:
+getChromInfoFromUCSC("hg19", add.ensembl.col=TRUE)
+
+## List of UCSC genome assemblies currently registered in the package:
+registered_UCSC_genomes()
+
+## ---------------------------------------------------------------------
+## B. USING getChromInfoFromUCSC() TO SET UCSC SEQUENCE NAMES ON THE
+##    GRCh38 GENOME
+## ---------------------------------------------------------------------
+
+## Load the BSgenome.Hsapiens.NCBI.GRCh38 package:
+library(BSgenome)
+genome &lt;- getBSgenome("GRCh38")  # this loads the
+                                 # BSgenome.Hsapiens.NCBI.GRCh38 package
+genome
+
+## Get the chromosome info for the hg38 genome:
+hg38_chrom_info &lt;- getChromInfoFromUCSC("hg38", map.NCBI=TRUE)
+ncbi2ucsc &lt;- setNames(hg38_chrom_info$chrom,
+                      hg38_chrom_info$NCBI.SequenceName)
+
+## Set the UCSC sequence names on 'genome':
+seqlevels(genome) &lt;- ncbi2ucsc[seqlevels(genome)]
+genome
+
+## Sanity check: check that the sequence lengths in 'genome' are the same
+## as in 'hg38_chrom_info':
+m &lt;- match(seqlevels(genome), hg38_chrom_info$chrom)
+stopifnot(identical(unname(seqlengths(genome)), hg38_chrom_info$size[m]))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GenomeInfoDb</em> version 1.30.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

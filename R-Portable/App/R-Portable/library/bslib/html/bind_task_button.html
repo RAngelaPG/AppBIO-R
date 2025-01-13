@@ -1,0 +1,116 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Bind 'input_task_button' to 'ExtendedTask'</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for bind_task_button {bslib}"><tr><td>bind_task_button {bslib}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Bind <code>input_task_button</code> to <code>ExtendedTask</code></h2>
+
+<h3>Description</h3>
+
+<p>Sets up a <a href="../../shiny/help/ExtendedTask.html">shiny::ExtendedTask</a> to relay its state to an existing
+<code><a href="../../bslib/help/input_task_button.html">input_task_button()</a></code>, so the task button stays in its &quot;busy&quot; state for as
+long as the extended task is running.
+</p>
+<p>Note that <code>bind_task_button</code> does <em>not</em> automatically cause button presses to
+invoke the extended task; you still need to use <code><a href="../../shiny/help/bindEvent.html">shiny::bindEvent()</a></code> (or
+<code><a href="../../shiny/help/observeEvent.html">shiny::observeEvent()</a></code>) to cause the button press to trigger an invocation,
+as in the example below.
+</p>
+<p><code>bind_task_button</code> cannot be used to bind one task button to multiple
+<code>ExtendedTask</code> objects; if you attempt to do so, any bound <code>ExtendedTask</code>
+that completes will cause the button to return to &quot;ready&quot; state.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+bind_task_button(target, task_button_id, ...)
+
+## Default S3 method:
+bind_task_button(target, task_button_id, ...)
+
+## S3 method for class 'ExtendedTask'
+bind_task_button(target, task_button_id, ..., session = get_current_session())
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>target</code></td>
+<td>
+<p>The target object (i.e. <code>ExtendedTask</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>task_button_id</code></td>
+<td>
+<p>A string matching the <code>id</code> argument passed to the
+corresponding <code><a href="../../bslib/help/input_task_button.html">input_task_button()</a></code> call.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Further arguments passed to other methods.</p>
+</td></tr>
+<tr valign="top"><td><code>session</code></td>
+<td>
+<p>A Shiny session object (the default should almost always be
+used).</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>The <code>target</code> object that was passed in.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+
+library(shiny)
+library(bslib)
+library(future)
+plan(multisession)
+
+ui &lt;- page_sidebar(
+  sidebar = sidebar(
+    input_task_button("recalc", "Recalculate")
+  ),
+  textOutput("outval")
+)
+
+server &lt;- function(input, output) {
+  rand_task &lt;- ExtendedTask$new(function() {
+    future({
+      # Slow operation goes here
+      Sys.sleep(2)
+      runif(1)
+    }, seed = TRUE)
+  })
+
+  # Make button state reflect task.
+  # If using R &gt;=4.1, you can do this instead:
+  # rand_task &lt;- ExtendedTask$new(...) |&gt; bind_task_button("recalc")
+  bind_task_button(rand_task, "recalc")
+
+  observeEvent(input$recalc, {
+    rand_task$invoke()
+  })
+
+  output$outval &lt;- renderText({
+    rand_task$result()
+  })
+}
+
+shinyApp(ui, server)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>bslib</em> version 0.7.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

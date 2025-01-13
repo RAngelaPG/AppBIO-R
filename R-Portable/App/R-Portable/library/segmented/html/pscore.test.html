@@ -1,0 +1,173 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Testing for existence of one breakpoint</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for pscore.test {segmented}"><tr><td>pscore.test {segmented}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Testing for existence of one breakpoint</h2>
+
+<h3>Description</h3>
+
+<p>Given a (generalized) linear model, the (pseudo) Score statistic tests for the existence of one breakpoint.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+pscore.test(obj, seg.Z, k = 10, alternative = c("two.sided", "less", "greater"), 
+    values=NULL, dispersion=NULL, df.t=NULL, more.break=FALSE, n.break=1, 
+    only.term=FALSE, break.type=c("break","jump"))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>obj</code></td>
+<td>
+<p> a fitted model typically returned by <code>glm</code> or <code>lm</code>. Even an object returned by 
+<code>segmented</code> can be set. Offset and weights are allowed.</p>
+</td></tr>
+<tr valign="top"><td><code>seg.Z</code></td>
+<td>
+<p> a formula with no response variable, such as <code>seg.Z=~x1</code>, indicating the (continuous) segmented variable being tested. Only a single variable may be tested and an error is printed when <code>seg.Z</code> includes two or more terms. <code>seg.Z</code> can be omitted if i)<code>obj</code> is a segmented fit with a single segmented covariate (and that variable is taken), or ii)if it is a &quot;lm&quot; or &quot;glm&quot; fit with a single covariate (and that variable is taken).</p>
+</td></tr>
+<tr valign="top"><td><code>k</code></td>
+<td>
+<p> optional. Number of points (equi-spaced from the min to max) used to compute the pseudo Score statistic. See Details. </p>
+</td></tr>
+<tr valign="top"><td><code>alternative</code></td>
+<td>
+<p> a character string specifying the alternative hypothesis (relevant to the slope difference parameter). </p>
+</td></tr>
+<tr valign="top"><td><code>values</code></td>
+<td>
+<p> optional. The evaluation points where the Score test is computed. See Details for default values.</p>
+</td></tr>
+<tr valign="top"><td><code>dispersion</code></td>
+<td>
+<p> optional. the dispersion parameter for the family to be used to compute the test statistic.
+When <code>NULL</code> (the default), it is inferred from <code>obj</code>. Namely it is taken as <code>1</code> for the
+Binomial and Poisson families, and otherwise estimated by the residual Chi-squared statistic in the model <code>obj</code> (calculated from cases with non-zero weights divided by the residual degrees of freedom).</p>
+</td></tr>
+<tr valign="top"><td><code>df.t</code></td>
+<td>
+<p> optional. The degress-of-freedom used to compute the p-value. When <code>NULL</code>, the df extracted from <code>obj</code> are used.</p>
+</td></tr>
+<tr valign="top"><td><code>more.break</code></td>
+<td>
+<p> optional, logical. If <code>obj</code> is a 'segmented' fit, <code>more.break=FALSE</code> tests for the actual breakpoint for the variable 'seg.Z', 
+while <code>more.break=TRUE</code> tests for an <em>additional</em> breakpoint(s) for the variable 'seg.Z'. Ignored when <code>obj</code> is not a segmented fit.</p>
+</td></tr>
+<tr valign="top"><td><code>n.break</code></td>
+<td>
+<p>optional. Number of breakpoints postuled under the alternative hypothesis.</p>
+</td></tr>
+<tr valign="top"><td><code>only.term</code></td>
+<td>
+<p>logical. If <code>TRUE</code>, only the pseudo covariate(s) relevant to the testing for the breakpoint is returned, and no test is computed.</p>
+</td></tr>
+<tr valign="top"><td><code>break.type</code></td>
+<td>
+<p>The kind of breakpoint being tested. <code>"break"</code> is for piecewise-linear relationships, <code>"jump"</code> means piecewise-constant, i.e. a step-function, relationships.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>pscore.test</code> tests for a non-zero difference-in-slope parameter of a segmented
+relationship. Namely, the null hypothesis is <i>H_0:beta=0</i>, where <i>beta</i> is the difference-in-slopes, 
+i.e. the coefficient of the segmented function <i>beta*(x-psi)_+</i>. The hypothesis of interest 
+<i>beta=0</i> means no breakpoint. Simulation studies have shown that such Score test is more powerful than the Davies test (see reference) when the alternative hypothesis is &lsquo;one changepoint&rsquo;. If there are two or more breakpoints (for instance, a sinusoidal-like relationships), <code>pscore.test</code> can have lower power, and <code><a href="../../segmented/help/davies.test.html">davies.test</a></code> can perform better.
+</p>
+<p>The <code>dispersion</code> value, if unspecified, is taken from <code>obj</code>. If <code>obj</code> represents the fit under the null hypothesis (no changepoint), the dispersion parameter estimate will be usually larger, leading to a (potentially severe) loss of power.  
+</p>
+<p>The <code>k</code> evaluation points are <code>k</code> equally spaced values in the range of the segmented covariate. <code>k</code> should not be small. 
+Specific values can be set via <code>values</code>, although I have found no important difference due to number and location of the evaluation points, thus  default is <code>k=10</code> equally-spaced points. However, when the possible breakpoint is believed to lie into a specified narrower range, the user can specify <code>k</code> values in that range leading to higher power in detecting it, i.e. typically lower p-value.
+</p>
+<p>If <code>obj</code> is a (segmented) <em>lm</em> object, the returned p-value comes from the t-distribution with appropriate degrees of freedom. Otherwise, namely if <code>obj</code> is a (segmented) <em>glm</em> object, the p-value is computed wrt the Normal distribution.   
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with class '<code>htest</code>' containing the following components:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>title (character)</p>
+</td></tr>
+<tr valign="top"><td><code>data.name</code></td>
+<td>
+<p>the regression model and the segmented variable being tested</p>
+</td></tr>
+<tr valign="top"><td><code>statistic </code></td>
+<td>
+<p>the empirical value of the statistic</p>
+</td></tr>
+<tr valign="top"><td><code>parameter </code></td>
+<td>
+<p>number of evaluation points</p>
+</td></tr>
+<tr valign="top"><td><code>p.value </code></td>
+<td>
+<p>the p-value</p>
+</td></tr>
+<tr valign="top"><td><code>process</code></td>
+<td>
+<p>the alternative hypothesis set</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p> Vito M.R. Muggeo </p>
+
+
+<h3>References</h3>
+
+<p>Muggeo, V.M.R. (2016) Testing with a nuisance parameter present only under the alternative:
+a score-based approach with application to segmented modelling. 
+<em>J of Statistical Computation and Simulation</em>, <b>86</b>, 3059&ndash;3067. 
+</p>
+
+
+<h3>See Also</h3>
+
+<p>See also <code><a href="../../segmented/help/davies.test.html">davies.test</a></code>. </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+set.seed(20)
+z&lt;-runif(100)
+x&lt;-rnorm(100,2)
+y&lt;-2+10*pmax(z-.5,0)+rnorm(100,0,3)
+
+o&lt;-lm(y~z+x)
+
+#testing for one changepoint
+#use the simple null fit
+pscore.test(o,~z) #compare with davies.test(o,~z)..
+
+#use the segmented fit
+os&lt;-segmented(o, ~z)
+pscore.test(os,~z) #smaller p-value, as it uses the dispersion under the alternative (from 'os') 
+
+#test for the 2nd breakpoint in the variable z
+pscore.test(os,~z, more.break=TRUE) 
+
+  
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>segmented</em> version 2.1-0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

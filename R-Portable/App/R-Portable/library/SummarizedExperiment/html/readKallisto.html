@@ -1,0 +1,157 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Input kallisto or kallisto bootstrap results.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for readKallisto {SummarizedExperiment}"><tr><td>readKallisto {SummarizedExperiment}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Input kallisto or kallisto bootstrap results.
+</h2>
+
+<h3>Description</h3>
+
+<p>WARNING: <code>readKallisto()</code> is deprecated. Please use <code>tximeta()</code>
+from the <span class="pkg">tximeta</span> package instead.
+</p>
+<p><code>readKallisto</code> inputs several kallisto output files into a single
+<code>SummarizedExperiment</code> instance, with rows corresponding to
+estimated transcript abundance and columns to
+samples. <code>readKallistoBootstrap</code> inputs kallisto bootstrap
+replicates of a single sample into a matrix of transcript x bootstrap
+abundance estimates.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+readKallisto(files,
+    json = file.path(dirname(files), "run_info.json"), 
+    h5 = any(grepl("\\.h5$", files)), what = KALLISTO_ASSAYS,
+    as = c("SummarizedExperiment", "list", "matrix"))
+
+readKallistoBootstrap(file, i, j)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>files</code></td>
+<td>
+<p>character() paths to kallisto &lsquo;abundance.tsv&rsquo;
+output files. The assumption is that files are organized in the way
+implied by kallisto, with each sample in a distinct directory, and
+the directory containing files abundance.tsv, run_info.json, and
+perhaps abundance.h5.</p>
+</td></tr>
+<tr valign="top"><td><code>json</code></td>
+<td>
+<p>character() vector of the same length as <code>files</code>
+specifying the location of JSON files produced by kallisto and
+containing information on the run. The default assumes that json
+files are in the same directory as the corresponding abundance
+file.</p>
+</td></tr>
+<tr valign="top"><td><code>h5</code></td>
+<td>
+<p>character() vector of the same length as <code>files</code>
+specifying the location of HDF5 files produced by kallisto and
+containing bootstrap estimates. The default assumes that HDF5 files
+are in the same directory as the corresponding abundance file.</p>
+</td></tr>
+<tr valign="top"><td><code>what</code></td>
+<td>
+<p>character() vector of kallisto per-sample outputs to be
+input. See KALLISTO_ASSAYS for available values.</p>
+</td></tr>
+<tr valign="top"><td><code>as</code></td>
+<td>
+<p>character(1) specifying the output format. See <code>Value</code>
+for additional detail.</p>
+</td></tr>
+<tr valign="top"><td><code>file</code></td>
+<td>
+<p>character(1) path to a single HDF5 output file.</p>
+</td></tr>
+<tr valign="top"><td><code>i, j</code></td>
+<td>
+<p>integer() vector of row (<code>i</code>) and column (<code>j</code>)
+indexes to input.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A <code>SummarizedExperiment</code>, <code>list</code>, or <code>matrix</code>,
+depending on the value of argument <code>as</code>; by default a
+<code>SummarizedExperiment</code>. The <code>as="SummarizedExperiment"</code>
+<code>rowData(se)</code> the length of each transcript;
+<code>colData(se)</code> includes summary information on each sample,
+including the number of targets and bootstraps, the kallisto and index
+version, the start time and operating system call used to create the
+file. <code>assays()</code> contains one or more transcript x sample
+matrices of parameters estimated by kallisto (see
+<code>KALLISTO_ASSAYS</code>).
+</p>
+<p><code>as="list"</code> return value contains information simillar to
+<code>SummarizedExperiment</code> with row, column and assay data as
+elements of the list without coordination of row and column
+annotations into an integrated data container. <code>as="matrix"</code>
+returns the specified assay as a simple <em>R</em> matrix.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Martin Morgan <a href="martin.morgan@roswellpark.org">martin.morgan@roswellpark.org</a>
+</p>
+
+
+<h3>References</h3>
+
+<p><a href="http://pachterlab.github.io/kallisto">http://pachterlab.github.io/kallisto</a> software for quantifying
+transcript abundance.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+outputs &lt;- system.file(package="SummarizedExperiment", "extdata",
+    "kallisto")
+files &lt;- dir(outputs, pattern="abundance.tsv", full=TRUE, recursive=TRUE)
+stopifnot(all(file.exists(files)))
+
+## default: input 'est_counts'
+(se &lt;- readKallisto(files, as="SummarizedExperiment"))
+str(readKallisto(files, as="list"))
+str(readKallisto(files, as="matrix"))
+
+## available assays
+KALLISTO_ASSAYS
+## one or more assay
+readKallisto(files, what=c("tpm", "eff_length"))
+
+## alternatively: read hdf5 files
+files &lt;- sub(".tsv", ".h5", files, fixed=TRUE)
+readKallisto(files)
+
+## input all bootstraps
+xx &lt;- readKallistoBootstrap(files[1])
+ridx &lt;- head(which(rowSums(xx) != 0), 3)
+cidx &lt;- c(1:5, 96:100)
+xx[ridx, cidx]
+
+## selective input of rows (transcripts) and/or bootstraps
+readKallistoBootstrap(files[1], i=c(ridx, rev(ridx)), j=cidx)
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>SummarizedExperiment</em> version 1.24.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

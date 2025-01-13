@@ -1,0 +1,141 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Check for required values</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for req {shiny}"><tr><td>req {shiny}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Check for required values</h2>
+
+<h3>Description</h3>
+
+<p>Ensure that values are available (<a href="../../shiny/help/isTruthy.html">&quot;truthy&quot;</a>) before proceeding
+with a calculation or action. If any of the given values is not truthy, the
+operation is stopped by raising a &quot;silent&quot; exception (not logged by Shiny,
+nor displayed in the Shiny app's UI).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+req(..., cancelOutput = FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Values to check for truthiness.</p>
+</td></tr>
+<tr valign="top"><td><code>cancelOutput</code></td>
+<td>
+<p>If <code>TRUE</code> and an output is being evaluated, stop
+processing as usual but instead of clearing the output, leave it in
+whatever state it happens to be in. If <code>"progress"</code>, do the same as <code>TRUE</code>,
+but also keep the output in recalculating state; this is intended for cases
+when an in-progress calculation will not be completed in this reactive
+flush cycle, but is still expected to provide a result in the future.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The <code>req</code> function was designed to be used in one of two ways. The first
+is to call it like a statement (ignoring its return value) before attempting
+operations using the required values:
+</p>
+<div class="sourceCode"><pre>rv &lt;- reactiveValues(state = FALSE)
+r &lt;- reactive({
+  req(input$a, input$b, rv$state)
+  # Code that uses input$a, input$b, and/or rv$state...
+})
+</pre></div>
+<p>In this example, if <code>r()</code> is called and any of <code>input$a</code>,
+<code>input$b</code>, and <code>rv$state</code> are <code>NULL</code>, <code>FALSE</code>, <code>""</code>,
+etc., then the <code>req</code> call will trigger an error that propagates all the
+way up to whatever render block or observer is executing.
+</p>
+<p>The second is to use it to wrap an expression that must be truthy:
+</p>
+<div class="sourceCode"><pre>output$plot &lt;- renderPlot({
+  if (req(input$plotType) == "histogram") {
+    hist(dataset())
+  } else if (input$plotType == "scatter") {
+    qplot(dataset(), aes(x = x, y = y))
+  }
+})
+</pre></div>
+<p>In this example, <code>req(input$plotType)</code> first checks that
+<code>input$plotType</code> is truthy, and if so, returns it. This is a convenient
+way to check for a value &quot;inline&quot; with its first use.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The first value that was passed in.
+</p>
+
+
+<h3>Using <code>req(FALSE)</code></h3>
+
+<p>You can use <code>req(FALSE)</code> (i.e. no condition) if you've already performed
+all the checks you needed to by that point and just want to stop the reactive
+chain now. There is no advantage to this, except perhaps ease of readability
+if you have a complicated condition to check for (or perhaps if you'd like to
+divide your condition into nested <code>if</code> statements).
+</p>
+
+
+<h3>Using <code>cancelOutput = TRUE</code></h3>
+
+<p>When <code>req(..., cancelOutput = TRUE)</code> is used, the &quot;silent&quot; exception is
+also raised, but it is treated slightly differently if one or more outputs are
+currently being evaluated. In those cases, the reactive chain does not proceed
+or update, but the output(s) are left is whatever state they happen to be in
+(whatever was their last valid state).
+</p>
+<p>Note that this is always going to be the case if
+this is used inside an output context (e.g. <code>output$txt &lt;- ...</code>). It may
+or may not be the case if it is used inside a non-output context (e.g.
+<code><a href="../../shiny/help/reactive.html">reactive()</a></code>, <code><a href="../../shiny/help/observe.html">observe()</a></code> or <code><a href="../../shiny/help/observeEvent.html">observeEvent()</a></code>)
+&mdash; depending on whether or not there is an <code>output$...</code> that is triggered
+as a result of those calls. See the examples below for concrete scenarios.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Only run examples in interactive R sessions
+if (interactive()) {
+  ui &lt;- fluidPage(
+    textInput('data', 'Enter a dataset from the "datasets" package', 'cars'),
+    p('(E.g. "cars", "mtcars", "pressure", "faithful")'), hr(),
+    tableOutput('tbl')
+  )
+
+  server &lt;- function(input, output) {
+    output$tbl &lt;- renderTable({
+
+      ## to require that the user types something, use: `req(input$data)`
+      ## but better: require that input$data is valid and leave the last
+      ## valid table up
+      req(exists(input$data, "package:datasets", inherits = FALSE),
+          cancelOutput = TRUE)
+
+      head(get(input$data, "package:datasets", inherits = FALSE))
+    })
+  }
+
+  shinyApp(ui, server)
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>shiny</em> version 1.8.1.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

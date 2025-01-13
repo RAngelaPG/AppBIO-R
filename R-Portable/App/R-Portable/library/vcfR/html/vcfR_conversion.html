@@ -1,0 +1,128 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Convert vcfR objects to other formats</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for Format conversion {vcfR}"><tr><td>Format conversion {vcfR}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Convert vcfR objects to other formats</h2>
+
+<h3>Description</h3>
+
+<p>Convert vcfR objects to objects supported by other R packages
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+vcfR2genind(x, sep = "[|/]", return.alleles = FALSE, ...)
+
+vcfR2loci(x, return.alleles = FALSE)
+
+vcfR2genlight(x, n.cores = 1)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>an object of class chromR or vcfR</p>
+</td></tr>
+<tr valign="top"><td><code>sep</code></td>
+<td>
+<p>character (to be used in a regular expression) to delimit the alleles of genotypes</p>
+</td></tr>
+<tr valign="top"><td><code>return.alleles</code></td>
+<td>
+<p>should the VCF encoding of the alleles be returned (FALSE) or the actual alleles (TRUE).</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>pass other parameters to adegenet::df2genlight</p>
+</td></tr>
+<tr valign="top"><td><code>n.cores</code></td>
+<td>
+<p>integer specifying the number of cores to use.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>After processing vcf data in vcfR, one will likely proceed to an analysis step.
+Within R, three obvious choices are:
+<a href="https://cran.r-project.org/package=pegas">pegas</a>,
+<a href="https://cran.r-project.org/package=adegenet">adegenet</a> 
+and <a href="https://cran.r-project.org/package=poppr">poppr</a>.
+The package pegas uses objects of type loci.
+The function <strong>vcfR2loci</strong> calls extract.gt to create a matrix of genotypes which is then converted into an object of type loci.
+</p>
+<p>The packages adegenet and poppr use the genind object.
+The function <strong>vcfR2genind</strong> uses extract.gt to create a matrix of genotypes and uses the adegenet function df2genind to create a genind object.
+The package poppr additionally uses objects of class genclone which can be created from genind objects using poppr::as.genclone.
+A genind object can be converted to a genclone object with the function poppr::as.genclone.
+</p>
+<p>The function vcfR2genlight calls the 'new' method for the genlight object.
+This method implements multi-threading through calls to the function <code>parallel::mclapply</code>.
+Because 'forks' do not exist in the windows environment, this will only work for windows users when n.cores=1.
+In the Unix environment, users may increase this number to allow the use of multiple threads (i.e., cores).
+</p>
+<p>The parameter <strong>...</strong> is used to pass parameters to other functions.
+In <code>vcfR2genind</code> it is used to pass parameters to <code>adegenet::df2genind</code>.
+For example, setting <code>check.ploidy=FALSE</code> may improve the performance of <code>adegenet::df2genind</code>, as long as you know the ploidy.
+See <code>?adegenet::df2genind</code> to see these options.
+</p>
+
+
+<h3>Note</h3>
+
+
+
+<h4>For users of <span class="pkg">poppr</span></h4>
+
+<p>If you wish to use <code>vcfR2genind()</code>, it is <strong>strongly recommended</strong> to use it with the option <code>return.alleles = TRUE</code>.
+The reason for this is because the <span class="pkg">poppr</span> package accomodates mixed-ploidy data by interpreting &quot;0&quot; alleles <em>in genind objects</em> to be NULL alleles in both <code>poppr::poppr.amova()</code> and <code>poppr::locus_table()</code>.
+</p>
+
+
+
+<h3>See Also</h3>
+
+<p><code>extract.gt</code>,
+<code>alleles2consensus</code>,
+<code>adegenet::df2genind</code>,
+<code>adegenet::genind</code>,
+<a href="https://cran.r-project.org/package=pegas">pegas</a>,
+<a href="https://cran.r-project.org/package=adegenet">adegenet</a>,
+and 
+<a href="https://cran.r-project.org/package=poppr">poppr</a>.
+To convert to objects of class <strong>DNAbin</strong> see <code>vcfR2DNAbin</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+adegenet_installed &lt;- require("adegenet")
+if (adegenet_installed) {
+  data(vcfR_test)
+  # convert to genlight (preferred method with bi-allelic SNPs)
+  gl &lt;- vcfR2genlight(vcfR_test)
+  
+  # convert to genind, keeping information about allelic state
+  # (slightly slower, but preferred method for use with the "poppr" package)
+  gid &lt;- vcfR2genind(vcfR_test, return.alleles = TRUE) 
+
+  # convert to genind, returning allelic states as 0, 1, 2, etc.
+  # (not preferred, but slightly faster)
+  gid2 &lt;- vcfR2genind(vcfR_test, return.alleles = FALSE)
+}
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>vcfR</em> version 1.15.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

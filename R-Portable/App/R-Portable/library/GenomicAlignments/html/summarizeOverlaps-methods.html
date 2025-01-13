@@ -1,0 +1,628 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Perform overlap queries between reads and genomic features</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for summarizeOverlaps-methods {GenomicAlignments}"><tr><td>summarizeOverlaps-methods {GenomicAlignments}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Perform overlap queries between reads and genomic features</h2>
+
+<h3>Description</h3>
+
+<p><code>summarizeOverlaps</code> extends <code>findOverlaps</code> by providing 
+options to resolve reads that overlap multiple features. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S4 method for signature 'GRanges,GAlignments'
+summarizeOverlaps(
+  features, reads, mode=Union,
+  ignore.strand=FALSE, inter.feature=TRUE, preprocess.reads=NULL, ...)
+
+## S4 method for signature 'GRangesList,GAlignments'
+summarizeOverlaps(
+  features, reads, mode=Union,
+  ignore.strand=FALSE, inter.feature=TRUE, preprocess.reads=NULL, ...)
+
+## S4 method for signature 'GRanges,GRanges'
+summarizeOverlaps(
+  features, reads, mode=Union,
+  ignore.strand=FALSE, inter.feature=TRUE, preprocess.reads=NULL, ...)
+
+## S4 method for signature 'GRangesList,GRanges'
+summarizeOverlaps(
+  features, reads, mode=Union,
+  ignore.strand=FALSE, inter.feature=TRUE, preprocess.reads=NULL, ...)
+
+## S4 method for signature 'GRanges,GAlignmentPairs'
+summarizeOverlaps(
+  features, reads, mode=Union,
+  ignore.strand=FALSE, inter.feature=TRUE, preprocess.reads=NULL, ...)
+
+## S4 method for signature 'GRangesList,GAlignmentPairs'
+summarizeOverlaps(
+  features, reads, mode=Union,
+  ignore.strand=FALSE, inter.feature=TRUE, preprocess.reads=NULL, ...)
+
+## mode funtions
+Union(features, reads, ignore.strand=FALSE,
+                       inter.feature=TRUE)
+IntersectionStrict(features, reads, ignore.strand=FALSE,
+                                    inter.feature=TRUE)
+IntersectionNotEmpty(features, reads, ignore.strand=FALSE,
+                                      inter.feature=TRUE)
+
+## S4 method for signature 'GRanges,BamFile'
+summarizeOverlaps(
+  features, reads, mode=Union,
+  ignore.strand=FALSE, inter.feature=TRUE, singleEnd=TRUE,
+  fragments=FALSE, param=ScanBamParam(), preprocess.reads=NULL, ...)
+
+## S4 method for signature 'BamViews,missing'
+summarizeOverlaps(
+  features, reads, mode=Union,
+  ignore.strand=FALSE, inter.feature=TRUE, singleEnd=TRUE,
+  fragments=FALSE, param=ScanBamParam(), preprocess.reads=NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>features</code></td>
+<td>
+
+<p>A <a href="../../GenomicRanges/help/GRanges.html">GRanges</a> or a <a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a>
+object of genomic regions of interest. When a <a href="../../GenomicRanges/help/GRanges.html">GRanges</a>
+is supplied, each row is considered a feature. When a
+<a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> is supplied, each higher list-level is
+considered a feature. This distinction is important when defining
+overlaps.
+</p>
+<p>When <code>features</code> is a <a href="../../Rsamtools/help/BamViews.html">BamViews</a> the <code>reads</code>
+argument is missing. Features are extracted from the <code>bamRanges</code> 
+and the <code>reads</code> from <code>bamPaths</code>. Metadata from <code>bamPaths</code> 
+and <code>bamSamples</code> are stored in the <code>colData</code> of the 
+resulting <a href="../../SummarizedExperiment/help/RangedSummarizedExperiment.html">RangedSummarizedExperiment</a> object.
+<code>bamExperiment</code> metadata are stored in the <code>metadata</code> slot. 
+</p>
+</td></tr> 
+<tr valign="top"><td><code>reads</code></td>
+<td>
+
+<p>A <a href="../../GenomicRanges/help/GRanges.html">GRanges</a>, <a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a>
+<a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a>, <a href="../../GenomicAlignments/help/GAlignmentsList.html">GAlignmentsList</a>, 
+<a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a>, <a href="../../Rsamtools/help/BamViews.html">BamViews</a> or 
+<a href="../../Rsamtools/help/BamFileList.html">BamFileList</a> object that represents the data to be 
+counted by <code>summarizeOverlaps</code>.
+</p>
+<p><code>reads</code> is missing when a <a href="../../Rsamtools/help/BamViews.html">BamViews</a> object is 
+the only argument supplied to <code>summarizeOverlaps</code>.
+<code>reads</code> are the files specified in <code>bamPaths</code> of the
+<a href="../../Rsamtools/help/BamViews.html">BamViews</a> object.
+</p>
+</td></tr>
+<tr valign="top"><td><code>mode</code></td>
+<td>
+
+<p><code>mode</code> can be one of the pre-defined count methods such as
+&quot;Union&quot;, &quot;IntersectionStrict&quot;, or &quot;IntersectionNotEmpty&quot; or
+it a user supplied count function. For a custom count
+function, the input arguments must match those of the pre-defined 
+options and the function must return a vector of counts the same
+length as the annotation ('features' argument). See examples for
+details.
+</p>
+<p>The pre-defined options are designed after the counting modes 
+available in the HTSeq package by Simon Anders (see references).
+</p>
+
+<ul>
+<li><p> &quot;Union&quot; : (Default) Reads that overlap any portion of exactly one
+feature are counted. Reads that overlap multiple features are
+discarded. This is the most conservative of the 3 modes.
+</p>
+</li>
+<li><p> &quot;IntersectionStrict&quot; : A read must fall completely &quot;within&quot; the
+feature to be counted. If a read overlaps multiple features but
+falls &quot;within&quot; only one, the read is counted for that feature.
+If the read is &quot;within&quot; multiple features, the read is discarded.
+</p>
+</li>
+<li><p> &quot;IntersectionNotEmpty&quot; : A read must fall in a unique disjoint
+region of a feature to be counted. When a read overlaps multiple
+features, the features are partitioned into disjoint intervals.
+Regions that are shared between the features are discarded leaving
+only the unique disjoint regions. If the read overlaps one of
+these remaining regions, it is assigned to the feature the
+unique disjoint region came from.
+</p>
+</li>
+<li><p> user supplied function : A function can be supplied as the
+<code>mode</code> argument. It must (1) have arguments that correspond
+to <code>features</code>, <code>reads</code>, <code>ignore.strand</code> and
+<code>inter.feature</code> arguments (as in the defined mode functions)
+and (2) return a vector of counts the same length as
+<code>features</code>. 
+</p>
+</li></ul>
+
+</td></tr>
+<tr valign="top"><td><code>ignore.strand</code></td>
+<td>
+
+<p>A logical indicating if strand should be considered when matching.
+</p>
+</td></tr>
+<tr valign="top"><td><code>inter.feature</code></td>
+<td>
+
+<p>(Default TRUE) A logical indicating if the counting <code>mode</code> should 
+be aware of overlapping features. When TRUE (default), reads mapping to 
+multiple features are dropped (i.e., not counted). When FALSE, these 
+reads are retained and a count is assigned to each feature they map to.
+</p>
+<p>There are 6 possible combinations of the <code>mode</code> and
+<code>inter.feature</code> arguments. When <code>inter.feature=FALSE</code> the
+behavior of modes &lsquo;Union&rsquo; and &lsquo;IntersectionStrict&rsquo; are 
+essentially &lsquo;countOverlaps&rsquo; with &lsquo;type=any&rsquo; and
+<code>type=within</code>, respectively. &lsquo;IntersectionNotEmpty&rsquo; does
+not reduce to a simple countOverlaps because common (shared) regions 
+of the annotation are removed before counting.
+</p>
+</td></tr>
+<tr valign="top"><td><code>preprocess.reads</code></td>
+<td>
+
+<p>A function applied to the reads before counting. The first argument
+should be <code>reads</code> and the return value should be an object 
+compatible with the <code>reads</code> argument to the counting modes,
+Union, IntersectionStrict and IntersectionNotEmpty.
+</p>
+<p>The distinction between a user-defined 'mode' and user-defined
+'preprocess.reads' function is that in the first case the user
+defines how to count; in the second case the reads are preprocessed
+before counting with a pre-defined mode. See examples.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>Additional arguments passed to functions or methods called
+from within <code>summarizeOverlaps</code>. For BAM file methods 
+arguments may include <code>singleEnd</code>, <code>fragments</code> or 
+<code>param</code> which apply to reading records from a file 
+(see below). Providing <code>count.mapped.reads=TRUE</code> include 
+additional passes through the BAM file to collect statistics 
+similar to those from <code>countBam</code>.
+</p>
+<p>A <code>BPPARAM</code> argument can be passed down to the <code>bplapply</code> 
+called by <code>summarizeOverlaps</code>. The argument can be MulticoreParam(),
+SnowParam(), BatchJobsParam() or DoparParam(). See the
+BiocParallel package for details in specifying the params.
+</p>
+</td></tr>
+<tr valign="top"><td><code>singleEnd</code></td>
+<td>
+
+<p>(Default TRUE) A logical indicating if reads are single or 
+paired-end. In Bioconductor &gt; 2.12 it is not necessary to sort
+paired-end BAM files by <code>qname</code>. When counting with 
+<code>summarizeOverlaps</code>, setting <code>singleEnd=FALSE</code> will trigger 
+paired-end reading and counting. It is fine to also set 
+<code>asMates=TRUE</code> in the <code>BamFile</code> but is not necessary when
+<code>singleEnd=FALSE</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>fragments</code></td>
+<td>
+
+<p>(Default FALSE) A logical; applied to paired-end data only.
+<code>fragments</code> controls which function is used to read the data which
+subsequently affects which records are included in counting.
+</p>
+<p>When <code>fragments=FALSE</code>, data are read with
+<code><a href="../../GenomicAlignments/help/readGAlignmentPairs.html">readGAlignmentPairs</a></code> and returned in a <code>GAlignmentPairs</code>
+class. In this case, singletons, reads with unmapped pairs, and other
+fragments, are dropped.
+</p>
+<p>When <code>fragments=TRUE</code>, data are read with
+<code><a href="../../GenomicAlignments/help/readGAlignmentsList.html">readGAlignmentsList</a></code> and returned in a <code>GAlignmentsList</code>
+class. This class holds &lsquo;mated pairs&rsquo; as well as same-strand pairs,
+singletons, reads with unmapped pairs and other fragments. Because more
+records are kept, generally counts will be higher when
+<code>fragments=TRUE</code>.
+</p>
+<p>The term &lsquo;mated pairs&rsquo; refers to records paired with the algorithm
+described on the <code>?<a href="../../GenomicAlignments/help/readGAlignmentsList.html">readGAlignmentsList</a></code> man page.
+</p>
+</td></tr>
+<tr valign="top"><td><code>param</code></td>
+<td>
+<p>An optional <code><a href="../../Rsamtools/help/ScanBamParam.html">ScanBamParam</a></code> instance to
+further influence scanning, counting, or filtering.
+</p>
+<p>See <code>?<a href="../../Rsamtools/html/BamFile-class.html">BamFile</a></code> for details of how records are returned
+when both <code>yieldSize</code> is specified in a <code><a href="../../Rsamtools/html/BamFile-class.html">BamFile</a></code> and
+<code>which</code> is defined in a <code><a href="../../Rsamtools/html/ScanBamParam-class.html">ScanBamParam</a></code>.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+
+<dl>
+<dt></dt><dd><p><code>summarizeOverlaps</code> offers counting modes to resolve reads that
+overlap multiple features. The <code>mode</code> argument defines a set of rules
+to resolve the read to a single feature such that each read is counted a
+maximum of once. New to GenomicRanges &gt;= 1.13.9 is the
+<code>inter.feature</code> argument which allows reads to be counted for each
+feature they overlap.  When <code>inter.feature=TRUE</code> the counting modes
+are aware of feature overlap; reads that overlap multiple features are
+dropped and not counted.  When <code>inter.feature=FALSE</code> multiple feature
+overlap is ignored and reads are counted once for each feature they map
+to. This essentially reduces modes &lsquo;Union&rsquo; and
+&lsquo;IntersectionStrict&rsquo; to <code>countOverlaps</code> with
+<code>type="any"</code>, and <code>type="within"</code>, respectively.
+&lsquo;IntersectionNotEmpty&rsquo; is not reduced to a derivative of
+<code>countOverlaps</code> because the shared regions are removed before
+counting.
+</p>
+<p>The <code>BamViews</code>, <code>BamFile</code> and <code>BamFileList</code> methods
+summarize overlaps across one or several files. The latter uses
+<code>bplapply</code>; control parallel evaluation using the
+<code><a href="../../BiocParallel/html/register.html">register</a></code> interface in the <span class="pkg">BiocParallel</span> package.
+</p>
+</dd>
+<dt>features :</dt><dd>
+<p>A &lsquo;feature&rsquo; can be any portion of a genomic region such as a gene, 
+transcript, exon etc. When the <code>features</code> argument is a 
+<a href="../../GenomicRanges/help/GRanges.html">GRanges</a> the rows define the features. The result
+will be the same length as the <a href="../../GenomicRanges/help/GRanges.html">GRanges</a>. When 
+<code>features</code> is a <a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a> the highest
+list-level defines the features and the result will be the same length
+as the <a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a>. 
+</p>
+<p>When <code>inter.feature=TRUE</code>, each count <code>mode</code> attempts to 
+assign a read that overlaps multiple features to a single feature. If 
+there are ranges that should be considered together (e.g., exons by 
+transcript or cds regions by gene) the <a href="../../GenomicRanges/help/GRangesList.html">GRangesList</a>
+would be appropriate. If there is no grouping in the data then a 
+<a href="../../GenomicRanges/help/GRanges.html">GRanges</a> would be appropriate. 
+</p>
+</dd>
+<dt>paired-end reads :</dt><dd> 
+<p>Paired-end reads are counted as a single hit if one or both parts
+of the pair are overlapped. Paired-end records can be counted in 
+a <a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> container or BAM file. 
+</p>
+<p>Counting pairs in BAM files:
+</p>
+
+<ul>
+<li><p>The <code>singleEnd</code> argument should be FALSE.
+</p>
+</li>
+<li><p>When <code>reads</code> are supplied as a BamFile or BamFileList, 
+the <code>asMates</code> argument to the BamFile should be TRUE.
+</p>
+</li>
+<li><p>When <code>fragments</code> is FALSE, a <code>GAlignmentPairs</code>
+object is used in counting (pairs only).
+</p>
+</li>
+<li><p>When <code>fragments</code> is TRUE, a <code>GAlignmentsList</code>
+object is used in counting (pairs, singletons, unmapped
+mates, etc.)
+</p>
+</li></ul>
+
+</dd>
+</dl>
+
+
+
+<h3>Value</h3>
+
+<p>A <a href="../../SummarizedExperiment/help/RangedSummarizedExperiment.html">RangedSummarizedExperiment</a> object. The
+<code>assays</code> slot holds the counts, <code>rowRanges</code> holds the annotation
+from <code>features</code>.
+</p>
+<p>When <code>reads</code> is a <code>BamFile</code> or <code>BamFileList</code> <code>colData</code> 
+is an empty DataFrame with a single row named &lsquo;counts&rsquo;. If 
+<code>count.mapped.reads=TRUE</code>, <code>colData</code> holds the output of 
+<code>countBam</code> in 3 columns named &lsquo;records&rsquo; (total records), 
+&lsquo;nucleotides&rsquo; and &lsquo;mapped&rsquo; (mapped records).
+</p>
+<p>When <code>features</code> is a <code>BamViews</code> <code>colData</code> includes
+2 columns named <code>bamSamples</code> and <code>bamIndices</code>. 
+</p>
+<p>In all other cases, <code>colData</code> has columns of &lsquo;object&rsquo; 
+(class of reads) and &lsquo;records&rsquo; (length of <code>reads</code>). 
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Valerie Obenchain</p>
+
+
+<h3>References</h3>
+
+<p>HTSeq :
+<a href="http://www-huber.embl.de/users/anders/HTSeq/doc/overview.html">http://www-huber.embl.de/users/anders/HTSeq/doc/overview.html</a>
+</p>
+<p>htseq-count :
+<a href="http://www-huber.embl.de/users/anders/HTSeq/doc/count.html">http://www-huber.embl.de/users/anders/HTSeq/doc/count.html</a>
+</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li><p> The <span class="pkg">DESeq2</span>, <span class="pkg">DEXSeq</span> and <span class="pkg">edgeR</span> packages.
+</p>
+</li>
+<li><p> The <a href="../../SummarizedExperiment/help/RangedSummarizedExperiment.html">RangedSummarizedExperiment</a> class
+defined in the <span class="pkg">SummarizedExperiment</span> package.
+</p>
+</li>
+<li><p> The <a href="../../GenomicAlignments/help/GAlignments.html">GAlignments</a> and <a href="../../GenomicAlignments/help/GAlignmentPairs.html">GAlignmentPairs</a> classes.
+</p>
+</li>
+<li><p> The <a href="../../Rsamtools/help/BamFileList.html">BamFileList</a> and <a href="../../Rsamtools/help/BamViews.html">BamViews</a>
+classes in the <span class="pkg">Rsamtools</span> package.
+</p>
+</li>
+<li><p> The <a href="../../GenomicAlignments/help/readGAlignments.html">readGAlignments</a> and <a href="../../GenomicAlignments/help/readGAlignmentPairs.html">readGAlignmentPairs</a> functions.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+reads &lt;- GAlignments(
+    names = c("a","b","c","d","e","f","g"),
+    seqnames = Rle(c(rep(c("chr1", "chr2"), 3), "chr1")),
+    pos = as.integer(c(1400, 2700, 3400, 7100, 4000, 3100, 5200)),
+    cigar = c("500M", "100M", "300M", "500M", "300M", 
+              "50M200N50M", "50M150N50M"),
+    strand = strand(rep("+", 7)))
+
+gr &lt;- GRanges(
+    seqnames = c(rep("chr1", 7), rep("chr2", 4)), strand = "+", 
+    ranges = IRanges(c(1000, 3000, 3600, 4000, 4000, 5000, 5400, 
+                       2000, 3000, 7000, 7500), 
+                     width = c(500, 500, 300, 500, 900, 500, 500, 
+                               900, 500, 600, 300),
+                     names=c("A", "B", "C1", "C2", "D1", "D2", "E", "F",
+                             "G", "H1", "H2"))) 
+groups &lt;- factor(c(1,2,3,3,4,4,5,6,7,8,8))
+grl &lt;- splitAsList(gr, groups)
+names(grl) &lt;- LETTERS[seq_along(grl)]
+
+## ---------------------------------------------------------------------
+## Counting modes. 
+## ---------------------------------------------------------------------
+
+## First count with a GRanges as the 'features'. 'Union' is the
+## most conservative counting mode followed by 'IntersectionStrict' 
+## then 'IntersectionNotEmpty'.
+counts1 &lt;- 
+    data.frame(union=assays(summarizeOverlaps(gr, reads))$counts, 
+               intStrict=assays(summarizeOverlaps(gr, reads, 
+                                mode="IntersectionStrict"))$counts,
+               intNotEmpty=assays(summarizeOverlaps(gr, reads,
+                                  mode="IntersectionNotEmpty"))$counts)
+
+colSums(counts1)
+
+## Split the 'features' into a GRangesList and count again.
+counts2 &lt;- 
+    data.frame(union=assays(summarizeOverlaps(grl, reads))$counts, 
+               intStrict=assays(summarizeOverlaps(grl, reads, 
+                                mode="IntersectionStrict"))$counts,
+               intNotEmpty=assays(summarizeOverlaps(grl, reads,
+                                  mode="IntersectionNotEmpty"))$counts)
+colSums(counts2)
+
+## The GRangesList ('grl' object) has 8 features whereas the GRanges 
+## ('gr' object) has 11. The affect on counting can be seen by looking
+## at feature 'H' with mode 'Union'. In the GRanges this feature is 
+## represented by ranges 'H1' and 'H2',
+gr[c("H1", "H2")]
+
+## and by list element 'H' in the GRangesList, 
+grl["H"]
+ 
+## Read "d" hits both 'H1' and 'H2'. This is considered a multi-hit when
+## using a GRanges (each range is a separate feature) so the read was 
+## dropped and not counted.
+counts1[c("H1", "H2"), ]
+
+## When using a GRangesList, each list element is considered a feature.
+## The read hits multiple ranges within list element 'H' but only one 
+## list element. This is not considered a multi-hit so the read is counted.
+counts2["H", ]
+
+## ---------------------------------------------------------------------
+## Counting multi-hit reads.
+## ---------------------------------------------------------------------
+
+## The goal of the counting modes is to provide a set of rules that
+## resolve reads hitting multiple features so each read is counted
+## a maximum of once. However, sometimes it may be desirable to count 
+## a read for each feature it overlaps. This can be accomplished by 
+## setting 'inter.feature' to FALSE.
+
+## When 'inter.feature=FALSE', modes 'Union' and 'IntersectionStrict'
+## essentially reduce to countOverlaps() with type="any" and 
+## type="within", respectively.
+
+## When 'inter.feature=TRUE' only features "A", "F" and "G" have counts.
+se1 &lt;- summarizeOverlaps(gr, reads, mode="Union", inter.feature=TRUE)
+assays(se1)$counts
+
+## When 'inter.feature=FALSE' all 11 features have a count. There are 
+## 7 total reads so one or more reads were counted more than once.
+se2 &lt;- summarizeOverlaps(gr, reads, mode="Union", inter.feature=FALSE)
+assays(se2)$counts
+
+## ---------------------------------------------------------------------
+## Counting BAM files.
+## ---------------------------------------------------------------------
+
+library(pasillaBamSubset)
+library(TxDb.Dmelanogaster.UCSC.dm3.ensGene)
+exbygene &lt;- exonsBy(TxDb.Dmelanogaster.UCSC.dm3.ensGene, "gene")
+
+## (i) Single-end :
+
+## Large files can be iterated over in chunks by setting a
+## 'yieldSize' on the BamFile.
+bf_s &lt;- BamFile(untreated1_chr4(), yieldSize=50000)
+se_s &lt;- summarizeOverlaps(exbygene, bf_s, singleEnd=TRUE)
+table(assays(se_s)$counts &gt; 0)
+
+## When a character (file name) is provided as 'reads' instead 
+## of a BamFile object summarizeOverlaps() will create a BamFile
+## and set a reasonable default 'yieldSize'.
+
+## (ii) Paired-end :
+
+## A paired-end file may contain singletons, reads with unmapped
+## pairs or reads with more than two fragments. When 'fragments=FALSE'
+## only reads paired by the algorithm are included in the counting. 
+nofrag &lt;- summarizeOverlaps(exbygene, untreated3_chr4(), 
+                            singleEnd=FALSE, fragments=FALSE)
+table(assays(nofrag)$counts &gt; 0)
+
+## When 'fragments=TRUE' all singletons, reads with unmapped pairs 
+## and other fragments will be included in the counting.
+bf &lt;- BamFile(untreated3_chr4(), asMates=TRUE)
+frag &lt;- summarizeOverlaps(exbygene, bf, singleEnd=FALSE, fragments=TRUE)
+table(assays(frag)$counts &gt; 0)
+
+## As expected, using 'fragments=TRUE' results in a larger number 
+## of total counts because singletons, unmapped pairs etc. are 
+## included in the counting.
+
+## Total reads in the file:
+countBam(untreated3_chr4())
+
+## Reads counted with 'fragments=FALSE':
+sum(assays(nofrag)$counts)
+
+## Reads counted with 'fragments=TRUE':
+sum(assays(frag)$counts)
+
+## ---------------------------------------------------------------------
+## Use ouput of summarizeOverlaps() for differential expression analysis
+## with DESeq2 or edgeR.
+## ---------------------------------------------------------------------
+
+fls &lt;- list.files(system.file("extdata", package="GenomicAlignments"),
+                  recursive=TRUE, pattern="*bam$", full=TRUE)
+names(fls) &lt;- basename(fls)
+bf &lt;- BamFileList(fls, index=character(), yieldSize=1000)
+genes &lt;- GRanges(
+    seqnames = c(rep("chr2L", 4), rep("chr2R", 5), rep("chr3L", 2)),
+    ranges = IRanges(c(1000, 3000, 4000, 7000, 2000, 3000, 3600, 
+                       4000, 7500, 5000, 5400), 
+                     width=c(rep(500, 3), 600, 900, 500, 300, 900, 
+                             300, 500, 500))) 
+se &lt;- summarizeOverlaps(genes, bf)
+
+## When the reads are BAM files, the 'colData' contains summary 
+## information from a call to countBam().
+colData(se)
+
+## Start differential expression analysis with the DESeq2 or edgeR
+## package:
+library(DESeq2)
+deseq &lt;- DESeqDataSet(se, design= ~ 1)
+library(edgeR)
+edger &lt;- DGEList(assays(se)$counts, group=rownames(colData(se)))
+
+## ---------------------------------------------------------------------
+## Filter records by map quality before counting. 
+## (user-supplied 'mode' function) 
+## ---------------------------------------------------------------------
+
+## The 'mode' argument can take a custom count function whose
+## arguments are the same as those in the current counting modes
+## (i.e., Union, IntersectionNotEmpty, IntersectionStrict). 
+## In this example records are filtered by map quality before counting.
+
+mapq_filter &lt;- function(features, reads, ignore.strand, inter.feature)
+{ 
+    require(GenomicAlignments) # needed for parallel evaluation
+    Union(features, reads[mcols(reads)$mapq &gt;= 20],
+          ignore.strand, inter.feature) 
+}
+
+genes &lt;- GRanges("seq1", IRanges(seq(1, 1500, by=200), width=100))
+param &lt;- ScanBamParam(what="mapq")
+fl &lt;- system.file("extdata", "ex1.bam", package="Rsamtools")
+se &lt;- summarizeOverlaps(genes, fl, mode=mapq_filter, param=param) 
+assays(se)$counts
+
+## The count function can be completely custom (i.e., not use the
+## pre-defined count functions at all). Requirements are that
+## the input arguments match the pre-defined modes and the output
+## is a vector of counts the same length as 'features'. 
+ 
+my_count &lt;- function(features, reads,  ignore.strand, inter.feature) { 
+    ## perform filtering, or subsetting etc. 
+    require(GenomicAlignments) # needed for parallel evaluation
+    countOverlaps(features, reads)
+}
+
+## ---------------------------------------------------------------------
+## Preprocessing reads before counting with a standard count mode.
+## (user-supplied 'preprocess.reads' function) 
+## ---------------------------------------------------------------------
+
+## The 'preprocess.reads' argument takes a function that is
+## applied to the reads before counting with a pre-defined mode.
+
+ResizeReads &lt;- function(reads, width=1, fix="start", ...) {
+    reads &lt;- as(reads, "GRanges")
+    stopifnot(all(strand(reads) != "*"))
+    resize(reads, width=width, fix=fix, ...)
+}
+
+## By default ResizeReads() counts reads that overlap on the 5' end:
+summarizeOverlaps(grl, reads, mode=Union, preprocess.reads=ResizeReads)
+
+## Count reads that overlap on the 3' end by passing new values
+## for 'width' and 'fix':
+summarizeOverlaps(grl, reads, mode=Union, preprocess.reads=ResizeReads,
+                  width=1, fix="end")
+
+## ---------------------------------------------------------------------
+## summarizeOverlaps() with BamViews.
+## ---------------------------------------------------------------------
+
+## bamSamples and bamPaths metadata are included in the colData.
+## bamExperiment metadata is put into the metadata slot.
+fl &lt;- system.file("extdata", "ex1.bam", package="Rsamtools", mustWork=TRUE)
+rngs &lt;- GRanges(c("seq1", "seq2"), IRanges(1, c(1575, 1584)))
+samp &lt;- DataFrame(info="test", row.names="ex1")
+view &lt;- BamViews(fl, bamSamples=samp, bamRanges=rngs)
+se &lt;- summarizeOverlaps(view, mode=Union, ignore.strand=TRUE)
+colData(se)
+metadata(se)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GenomicAlignments</em> version 1.30.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

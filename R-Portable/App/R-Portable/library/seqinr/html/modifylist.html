@@ -1,0 +1,168 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Modification of an ACNUC list</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for modifylist {seqinr}"><tr><td>modifylist {seqinr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Modification of an ACNUC list</h2>
+
+<h3>Description</h3>
+
+<p>This function modifies a previously existing ACNUC list by selecting sequences
+either by length, either by date, either for the presence of a given string in annotations.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+modifylist(listname, modlistname = listname, operation,
+ type = c("length", "date", "scan"), socket = autosocket(),
+ virtual = FALSE, verbose = FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>listname</code></td>
+<td>
+<p>the name of the ACNUC list to modify</p>
+</td></tr>
+<tr valign="top"><td><code>modlistname</code></td>
+<td>
+<p>the name of the modified ACNUC list. Default is to use the
+same list name so that previous list is lost.</p>
+</td></tr>
+<tr valign="top"><td><code>operation</code></td>
+<td>
+<p>a string of character describing the operation to be done, see details.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>the type of operation, could be one of <code> "length", "date", "scan"</code>.
+Default is <code>"length"</code></p>
+</td></tr>
+<tr valign="top"><td><code>socket</code></td>
+<td>
+<p>an object of class <code>sockconn</code> connecting to a remote ACNUC
+database (default is a socket to the last opened database).</p>
+</td></tr>
+<tr valign="top"><td><code>virtual</code></td>
+<td>
+<p>if TRUE, no attempt is made to retrieve the information about all the elements of the list. In this case, the <code>req</code> component of the list is set to NA.</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>logical, if TRUE mode verbose is on</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Example of possible values for the argument <code>operation</code>:
+</p>
+
+<dl>
+<dt>length</dt><dd><p>as in  &quot;&gt; 10000&quot;    or    &quot;&lt; 500&quot;</p>
+</dd>
+<dt>date</dt><dd><p>as in   &quot;&gt; 1/jul/2001&quot;   or   &quot;&lt; 30/AUG/98&quot;</p>
+</dd>
+<dt>scan</dt><dd><p>specify the string to be searched for</p>
+</dd>
+</dl>
+
+<p>Character &lt; is to be understood as &lt;= and &gt; likewise.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The result is directly assigned to the object <code>modlistname</code> in the user workspace.
+This is an objet of class <code>qaw</code>, a list with the following 6 components:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>the original call</p>
+</td></tr>
+<tr valign="top"><td><code>name</code></td>
+<td>
+<p>the ACNUC list name</p>
+</td></tr>
+<tr valign="top"><td><code>nelem</code></td>
+<td>
+<p>the number of elements (for instance sequences) in the ACNUC list</p>
+</td></tr>
+<tr valign="top"><td><code>typelist</code></td>
+<td>
+<p>the type of the elements of the list. Could be SQ for a list of
+sequence names, KW for a list of keywords, SP for a list of species names.</p>
+</td></tr>
+<tr valign="top"><td><code>req</code></td>
+<td>
+<p>a list of sequence names that fit the required criteria or <code>NA</code> when
+called with parameter <code>virtual</code> is <code>TRUE</code></p>
+</td></tr>
+<tr valign="top"><td><code>socket</code></td>
+<td>
+<p>the socket connection that was used</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>J.R. Lobry</p>
+
+
+<h3>References</h3>
+
+ <p><a href="https://doua.prabi.fr/databases/acnuc.html">https://doua.prabi.fr/databases/acnuc.html</a>
+</p>
+<p><code>citation("seqinr")</code>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../seqinr/help/choosebank.html">choosebank</a></code>, <code><a href="../../seqinr/help/query.html">query</a></code> and
+<code><a href="../../seqinr/help/prepgetannots.html">prepgetannots</a></code> to select the annotation lines for scan.</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run:  # Need internet connection
+  choosebank("emblTP")
+  mylist &lt;- query("mylist", "sp=felis catus et t=cds", virtual=TRUE)
+  mylist$nelem # 603 sequences
+  stopifnot(mylist$nelem == 603)
+
+  # select sequences with at least 1000 bp:
+  mylist &lt;- modifylist("mylist", operation = "&gt;1000", virtual = TRUE)
+  mylist$nelem # now, only 132 sequences
+  stopifnot(mylist$nelem == 132)
+
+  # scan for "felis" in annotations:
+  mylist &lt;- modifylist("mylist", op = "felis", type = "scan", virtual = TRUE)
+  mylist$nelem # now, only 33 sequences
+  stopifnot(mylist$nelem == 33)
+
+  # modify by date:
+  mylist &lt;-  modifylist("mylist", op = "&gt; 1/jul/2001", type = "date", virtual = TRUE)
+  mylist$nelem # now, only 15 sequences
+  stopifnot(mylist$nelem == 15)
+
+  # Summary of current ACNUC lists, one list called MYLIST on sever:
+  sapply(alr()$rank, getliststate)
+  closebank()
+  
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>seqinr</em> version 4.2-36 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

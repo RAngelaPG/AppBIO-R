@@ -1,0 +1,320 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: blockApply() and family</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for blockApply {DelayedArray}"><tr><td>blockApply {DelayedArray}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>blockApply() and family</h2>
+
+<h3>Description</h3>
+
+<p>A family of convenience functions to walk on the blocks of an
+array-like object and process them.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## Main looping functions:
+
+blockApply(x, FUN, ..., grid=NULL, as.sparse=FALSE,
+           BPPARAM=getAutoBPPARAM(), verbose=NA)
+
+blockReduce(FUN, x, init, ..., BREAKIF=NULL, grid=NULL, as.sparse=FALSE,
+            verbose=NA)
+
+## Lower-level looping functions:
+gridApply(grid, FUN, ..., BPPARAM=getAutoBPPARAM(), verbose=NA)
+gridReduce(FUN, grid, init, ..., BREAKIF=NULL, verbose=NA)
+
+## Retrieve grid context for the current block/viewport:
+effectiveGrid(envir=parent.frame(2))
+currentBlockId(envir=parent.frame(2))
+currentViewport(envir=parent.frame(2))
+
+## Get/set automatic parallel back-end:
+getAutoBPPARAM()
+setAutoBPPARAM(BPPARAM=NULL)
+
+## For testing/debugging callback functions:
+set_grid_context(effective_grid, current_block_id, envir=parent.frame(1))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+
+<p>An array-like object, typically a <a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> object
+or derivative.
+</p>
+</td></tr>
+<tr valign="top"><td><code>FUN</code></td>
+<td>
+
+<p>For <code>blockApply</code> and <code>blockReduce</code>, <code>FUN</code> is the callback
+function to apply to each block of data in <code>x</code>. More precisely,
+<code>FUN</code> will be called on each block of data in <code>x</code> defined by
+the grid used to walk on <code>x</code>.
+</p>
+<p>IMPORTANT: If <code>as.sparse</code> is set to <code>FALSE</code>, all blocks will
+be passed to <code>FUN</code> as ordinary arrays. If it's set to <code>TRUE</code>,
+they will be passed as <a href="../../DelayedArray/help/SparseArraySeed.html">SparseArraySeed</a> objects.
+If it's set to <code>NA</code>, then <code>is_sparse(x)</code> determines how they
+will be passed to <code>FUN</code>.
+</p>
+<p>For <code>gridApply()</code> and <code>gridReduce()</code>, <code>FUN</code> is
+the callback function to apply to each **viewport** in <code>grid</code>.
+</p>
+<p>Beware that <code>FUN</code> must take at least **two** arguments for
+<code>blockReduce()</code> and <code>gridReduce()</code>. More precisely:
+</p>
+
+<ul>
+<li> <p><code>blockReduce()</code> will perform
+<code>init &lt;- FUN(block, init, ...)</code> on each block,
+so <code>FUN</code> must take at least arguments <code>block</code>
+and <code>init</code>.
+</p>
+</li>
+<li> <p><code>gridReduce()</code> will perform
+<code>init &lt;- FUN(viewport, init, ...)</code> on each viewport,
+so <code>FUN</code> must take at least arguments <code>viewport</code>
+and <code>init</code>.
+</p>
+</li></ul>
+
+<p>In both cases, the exact names of the two arguments doesn't really matter.
+Also <code>FUN</code> is expected to return a value of the same type as its 2nd
+argument (<code>init</code>).
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>Additional arguments passed to <code>FUN</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>grid</code></td>
+<td>
+
+<p>The grid used for the walk, that is, an <a href="../../DelayedArray/help/ArrayGrid.html">ArrayGrid</a> object that
+defines the blocks (or viewports) to walk on.
+</p>
+<p>For <code>blockApply()</code> and <code>blockReduce()</code> the supplied grid
+must be compatible with the geometry of <code>x</code>. If not specified,
+an automatic grid is used. By default <code><a href="../../DelayedArray/help/defaultAutoGrid.html">defaultAutoGrid</a>(x)</code>
+is called to create an automatic grid. The <em>automatic grid maker</em>
+can be changed with <code><a href="../../DelayedArray/help/setAutoGridMaker.html">setAutoGridMaker</a>()</code>.
+See <code>?<a href="../../DelayedArray/help/setAutoGridMaker.html">setAutoGridMaker</a></code> for more information.
+</p>
+</td></tr>
+<tr valign="top"><td><code>as.sparse</code></td>
+<td>
+
+<p>Passed to the internal calls to <code>read_block</code>.
+See <code>?<a href="../../DelayedArray/help/read_block.html">read_block</a></code> for more information.
+</p>
+</td></tr>
+<tr valign="top"><td><code>BPPARAM</code></td>
+<td>
+
+<p>A <code>NULL</code>, in which case blocks are processed sequentially, or
+a <a href="../../BiocParallel/help/BiocParallelParam.html">BiocParallelParam</a> instance (from the
+<span class="pkg">BiocParallel</span> package), in which case they are processed in
+parallel. The specific <a href="../../BiocParallel/help/BiocParallelParam.html">BiocParallelParam</a>
+instance determines the parallel back-end to use.
+See <code>?<a href="../../BiocParallel/help/BiocParallelParam.html">BiocParallelParam</a></code> in the
+<span class="pkg">BiocParallel</span> package for more information about parallel back-ends.
+</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+
+<p>Whether block processing progress should be displayed or not.
+If set to <code>NA</code> (the default), verbosity is controlled
+by <code>DelayedArray:::get_verbose_block_processing()</code>.
+Setting <code>verbose</code> to <code>TRUE</code> or <code>FALSE</code> overrides this.
+</p>
+</td></tr>
+<tr valign="top"><td><code>init</code></td>
+<td>
+
+<p>The value to pass to the first call to <code>FUN(block, init)</code>
+(or <code>FUN(viewport, init)</code>) when <code>blockReduce()</code>
+(or <code>gridReduce()</code>) starts the walk. Note that
+<code>blockReduce()</code> and <code>gridReduce()</code> always operate
+sequentially.
+</p>
+</td></tr>
+<tr valign="top"><td><code>BREAKIF</code></td>
+<td>
+
+<p>An optional callback function that detects a break condition.
+Must return <code>TRUE</code> or <code>FALSE</code>.
+At each iteration <code>blockReduce()</code> (and <code>gridReduce()</code>)
+will call it on the result of <code>init &lt;- FUN(block, init)</code>
+(on the result of <code>init &lt;- FUN(viewport, init)</code> for
+<code>gridReduce()</code>) and exit the walk if <code>BREAKIF(init)</code>
+returned <code>TRUE</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>envir</code></td>
+<td>
+
+<p>Do not use (unless you know what you are doing).
+</p>
+</td></tr>
+<tr valign="top"><td><code>effective_grid, current_block_id</code></td>
+<td>
+
+<p>See Details below.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>effectiveGrid()</code>, <code>currentBlockId()</code>, and <code>currentViewport()</code>
+return the &quot;grid context&quot; for the block/viewport being currently processed.
+By &quot;grid context&quot; we mean:
+</p>
+
+<ul>
+<li><p> The <em>effective grid</em>, that is, the user-supplied grid
+or <code>defaultAutoGrid(x)</code> if the user didn't supply any grid.
+</p>
+</li>
+<li><p> The <em>current block id</em> (a.k.a. block rank).
+</p>
+</li>
+<li><p> The <em>current viewport</em>, that is, the <a href="../../DelayedArray/help/ArrayViewport.html">ArrayViewport</a>
+object describing the position of the current block w.r.t. the
+effective grid.
+</p>
+</li></ul>
+
+<p>Note that <code>effectiveGrid()</code>, <code>currentBlockId()</code>, and
+<code>currentViewport()</code> can only be called (with no arguments) from
+**within** the callback functions <code>FUN</code> and/or <code>BREAKIF</code>
+passed to <code>blockApply()</code> and family.
+</p>
+<p>If you need to be able to test/debug your callback function
+as a standalone function, set an arbitrary <em>effective grid</em>
+and <em>current block id</em> by calling
+</p>
+<pre>    set_grid_context(effective_grid, current_block_id)</pre>
+<p>**right before** calling the callback function.
+</p>
+
+
+<h3>Value</h3>
+
+<p>For <code>blockApply()</code> and <code>gridApply()</code>, a list with one
+list element per block/viewport visited.
+</p>
+<p>For <code>blockReduce()</code> and <code>gridReduce()</code>, the result of
+the last call to <code>FUN</code>.
+</p>
+<p>For <code>effectiveGrid()</code>, the grid (<a href="../../DelayedArray/help/ArrayGrid.html">ArrayGrid</a> object) being
+effectively used.
+</p>
+<p>For <code>currentBlockId()</code>, the id (a.k.a. rank) of the current block.
+</p>
+<p>For <code>currentViewport()</code>, the viewport (<a href="../../DelayedArray/help/ArrayViewport.html">ArrayViewport</a> object)
+of the current block.
+</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><code><a href="../../DelayedArray/help/defaultAutoGrid.html">defaultAutoGrid</a></code> and family to create automatic
+grids to use for block processing of array-like objects.
+</p>
+</li>
+<li> <p><a href="../../DelayedArray/help/ArrayGrid.html">ArrayGrid</a> for the formal representation of grids and
+viewports.
+</p>
+</li>
+<li> <p><code><a href="../../DelayedArray/help/read_block.html">read_block</a></code> and <code><a href="../../DelayedArray/help/write_block.html">write_block</a></code>.
+</p>
+</li>
+<li> <p><code><a href="../../BiocParallel/help/MulticoreParam.html">MulticoreParam</a></code>,
+<code><a href="../../BiocParallel/help/SnowParam.html">SnowParam</a></code>, and
+<code><a href="../../BiocParallel/help/bpparam.html">bpparam</a></code>, from the <span class="pkg">BiocParallel</span>
+package.
+</p>
+</li>
+<li> <p><a href="../../DelayedArray/help/DelayedArray.html">DelayedArray</a> objects.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+m &lt;- matrix(1:60, nrow=10)
+m_grid &lt;- defaultAutoGrid(m, block.length=16, block.shape="hypercube")
+
+## ---------------------------------------------------------------------
+## blockApply()
+## ---------------------------------------------------------------------
+blockApply(m, identity, grid=m_grid)
+blockApply(m, sum, grid=m_grid)
+
+blockApply(m, function(block) {block + currentBlockId()*1e3}, grid=m_grid)
+blockApply(m, function(block) currentViewport(), grid=m_grid)
+blockApply(m, dim, grid=m_grid)
+
+## The grid does not need to be regularly spaced:
+a &lt;- array(runif(8000), dim=c(25, 40, 8))
+a_tickmarks &lt;- list(c(7L, 15L, 25L), c(14L, 22L, 40L), c(2L, 8L))
+a_grid &lt;- ArbitraryArrayGrid(a_tickmarks)
+a_grid
+blockApply(a, function(block) sum(log(block + 0.5)), grid=a_grid)
+
+## See block processing in action:
+blockApply(m, function(block) sum(log(block + 0.5)), grid=m_grid,
+           verbose=TRUE)
+
+## Use parallel evaluation:
+library(BiocParallel)
+if (.Platform$OS.type != "windows") {
+    BPPARAM &lt;- MulticoreParam(workers=4)
+} else {
+    ## MulticoreParam() is not supported on Windows so we use
+    ## SnowParam() on this platform.
+    BPPARAM &lt;- SnowParam(4)
+}
+blockApply(m, function(block) sum(log(block + 0.5)), grid=m_grid,
+           BPPARAM=BPPARAM, verbose=TRUE)
+## Note that blocks can be visited in any order!
+
+## ---------------------------------------------------------------------
+## blockReduce()
+## ---------------------------------------------------------------------
+FUN &lt;- function(block, init) anyNA(block) || init
+blockReduce(FUN, m, init=FALSE, grid=m_grid, verbose=TRUE)
+
+m[10, 1] &lt;- NA
+blockReduce(FUN, m, init=FALSE, grid=m_grid, verbose=TRUE)
+
+## With early bailout:
+blockReduce(FUN, m, init=FALSE, BREAKIF=identity, grid=m_grid,
+            verbose=TRUE)
+
+## Note that this is how the anyNA() method for DelayedArray objects is
+## implemented.
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>DelayedArray</em> version 0.20.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

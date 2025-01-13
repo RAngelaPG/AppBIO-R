@@ -1,0 +1,168 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Apply a user-provided function to calculate pile-up...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for applyPileups {Rsamtools}"><tr><td>applyPileups {Rsamtools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Apply a user-provided function to calculate pile-up statistics across
+multiple BAM files.
+</h2>
+
+<h3>Description</h3>
+
+<p>WARNING: Starting with Bioconductor 3.14, <code>applyPileups</code> is deprecated
+in favor of <code><a href="../../Rsamtools/help/pileup.html">pileup</a></code>.
+</p>
+<p><code>applyPileups</code> scans one or more BAM files, returning
+position-specific sequence and quality summaries.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+applyPileups(files, FUN, ..., param)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>files</code></td>
+<td>
+<p>A <code><a href="../../Rsamtools/help/PileupFiles.html">PileupFiles</a></code> instances.</p>
+</td></tr>
+<tr valign="top"><td><code>FUN</code></td>
+<td>
+<p>A function of 1 argument, <code>x</code>, to be evaluated for
+each yield (see <code>yieldSize</code>, <code>yieldBy</code>,
+<code>yieldAll</code>). The argument <code>x</code> is a <code>list</code>, with
+elements describing the current pile-up. The elements of the list
+are determined by the argument <code>what</code>, and include:
+</p>
+
+<dl>
+<dt>seqnames:</dt><dd><p>(Always returned) A named <code>integer()</code>
+representing the seqnames corresponding to each position
+reported in the pile-up.  This is a run-length encoding, where
+the names of the elements represent the seqnames, and the values
+the number of successive positions corresponding to that
+seqname.</p>
+</dd>
+<dt>pos:</dt><dd><p>Always returned) A <code>integer()</code> representing the
+genomic coordinate of each pile-up position.</p>
+</dd>
+<dt>seq:</dt><dd><p>An <code>array</code> of dimensions nucleotide x file x
+position.
+</p>
+<p>The &lsquo;nucleotide&rsquo; dimension is length 5, corresponding to
+&lsquo;A&rsquo;, &lsquo;C&rsquo;, &lsquo;G&rsquo;, &lsquo;T&rsquo;, and &lsquo;N&rsquo;
+respectively.
+</p>
+<p>Entries in the array represent the number of times the
+nucleotide occurred in reads in the file overlapping the
+position.
+</p>
+</dd>
+<dt>qual:</dt><dd><p>Like <code>seq</code>, but summarizing quality; the first
+dimension is the Phred-encoded quality score, ranging from
+&lsquo;!&rsquo; (0) to &lsquo;~&rsquo; (93).</p>
+</dd>
+</dl>
+
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Additional arguments, passed to methods.</p>
+</td></tr>
+<tr valign="top"><td><code>param</code></td>
+<td>
+<p>An instance of the object returned by
+<code>ApplyPileupsParam</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Regardless of <code>param</code> values, the algorithm follows samtools by
+excluding reads flagged as unmapped, secondary, duplicate, or failing
+quality control.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>applyPileups</code> returns a <code>list</code> equal in length to the
+number of times <code>FUN</code> has been called, with each element
+containing the result of <code>FUN</code>.
+</p>
+<p><code>ApplyPileupsParam</code> returns an object describing the parameters.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Martin Morgan</p>
+
+
+<h3>References</h3>
+
+<p><a href="http://samtools.sourceforge.net/">http://samtools.sourceforge.net/</a></p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../Rsamtools/help/ApplyPileupsParam.html">ApplyPileupsParam</a></code>.</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## The examples below are currently broken and have been disabled for now
+## Not run: 
+fl &lt;- system.file("extdata", "ex1.bam", package="Rsamtools",
+                  mustWork=TRUE)
+
+fls &lt;- PileupFiles(c(fl, fl))
+
+calcInfo &lt;-
+    function(x)
+{
+    ## information at each pile-up position
+    info &lt;- apply(x[["seq"]], 2, function(y) {
+        y &lt;- y[c("A", "C", "G", "T"),,drop=FALSE]
+        y &lt;- y + 1L                     # continuity
+        cvg &lt;- colSums(y)
+        p &lt;- y / cvg[col(y)]
+        h &lt;- -colSums(p * log(p))
+        ifelse(cvg == 4L, NA, h)
+    })
+    list(seqnames=x[["seqnames"]], pos=x[["pos"]], info=info)
+}
+which &lt;- GRanges(c("seq1", "seq2"), IRanges(c(1000, 1000), 2000))
+param &lt;- ApplyPileupsParam(which=which, what="seq")
+res &lt;- applyPileups(fls, calcInfo, param=param)
+str(res)
+head(res[[1]][["pos"]])		# positions matching param
+head(res[[1]][["info"]])		# inforamtion in each file
+
+## 'param' as part of 'files'
+fls1 &lt;- PileupFiles(c(fl, fl), param=param)
+res1 &lt;- applyPileups(fls1, calcInfo)
+identical(res, res1)
+
+## yield by position, across ranges
+param &lt;- ApplyPileupsParam(which=which, yieldSize=500L,
+                           yieldBy="position", what="seq")
+res &lt;- applyPileups(fls, calcInfo, param=param)
+sapply(res, "[[", "seqnames")
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>Rsamtools</em> version 2.10.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

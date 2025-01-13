@@ -1,0 +1,175 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Assays objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for Assays-class {SummarizedExperiment}"><tr><td>Assays-class {SummarizedExperiment}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Assays objects</h2>
+
+<h3>Description</h3>
+
+<p>The Assays virtual class and its methods provide a formal abstraction
+of the assays slot of <a href="../../SummarizedExperiment/help/SummarizedExperiment.html">SummarizedExperiment</a> objects.
+</p>
+<p>SimpleAssays and ShallowSimpleListAssays are concrete subclasses of
+Assays with the former being currently the default implementation of Assays
+objects. Other implementations (e.g. disk-based) could easily be added.
+</p>
+<p>Note that these classes are not meant to be used directly by the end user
+and the material in this man page is aimed at package developers.
+</p>
+
+
+<h3>Details</h3>
+
+<p>Assays objects have a list-like semantics with elements having matrix- or
+array-like semantics (e.g., <code>dim</code>, <code>dimnames</code>).
+</p>
+<p>The Assays API consists of:
+</p>
+
+<ul>
+<li><p> (a) The <code>Assays()</code> constructor function.
+</p>
+</li>
+<li><p> (b) Lossless back and forth coercion from/to
+<a href="../../S4Vectors/help/SimpleList.html">SimpleList</a>. The coercion method from
+<a href="../../S4Vectors/help/SimpleList.html">SimpleList</a> doesn't need (and should not)
+validate the returned object.
+</p>
+</li>
+<li><p> (c) <code>length</code>, <code>names</code>, <code>`names&lt;-`</code>,
+<code>getListElement</code>, <code>setListElement</code>,
+<code>dim</code>, <code>[</code>, <code>`[&lt;-`</code>, <code>rbind</code>, <code>cbind</code>.
+</p>
+</li></ul>
+
+<p>An Assays concrete subclass needs to implement (b) (required) plus,
+optionally any of the methods in (c).
+</p>
+<p>IMPORTANT:
+</p>
+
+<ol>
+<li><p> Nobody in the Assays hierarchy is allowed to inherit from
+<a href="../../S4Vectors/help/SimpleList.html">SimpleList</a> because of the conflicting semantic
+of <code>[</code>.
+</p>
+</li>
+<li><p> Methods that return a modified Assays object (a.k.a.
+endomorphisms), that is, <code>[</code> as well as replacement methods
+<code>names&lt;-</code>, <code>setListElement</code>, and <code>[&lt;-</code>, must respect
+the <em>copy-on-change contract</em>.
+With objects that don't make use of references internally, the
+developer doesn't need to take any special action for that because
+it's automatically taken care of by R itself. However, for objects
+that do make use of references internally (e.g. environments,
+external pointers, pointer to a file on disk, etc...), the developer
+needs to be careful to implement endomorphisms with copy-on-change
+semantics. This can easily be achieved (and is what the default
+methods for Assays objects do) by performaing a full (deep) copy of
+the object before modifying it instead of trying to modify it
+in-place. However note that this full (deep) copy can be very
+expensive and is actually not necessary in order to achieve
+copy-on-change semantics: it's enough (and often preferrable for
+performance reasons) to copy only the parts of the object that need
+to be modified.
+</p>
+</li></ol>
+
+<p>Assays has currently 3 implementations which are formalized by concrete
+subclasses SimpleAssays, ShallowSimpleListAssays, and AssaysInEnv.
+SimpleAssays is the default (prior to SummarizedExperiment 1.15.4,
+ShallowSimpleListAssays was the default). AssaysInEnv is a <em>broken</em>
+alternative to ShallowSimpleListAssays that does NOT respect the
+<em>copy-on-change contract</em>. It is only provided for illustration
+purposes (see source file Assays-class.R for the details).
+</p>
+<p>A little more detail about ShallowSimpleListAssays: a small reference
+class hierarchy (not exported from the <span class="pkg">GenomicRanges</span> name space)
+defines a reference class ShallowData with a single field <code>data</code>
+of type <code>ANY</code>, and a derived class ShallowSimpleListAssays
+that specializes the type of <code>data</code> as <a href="../../S4Vectors/help/SimpleList.html">SimpleList</a>,
+and <code>contains=c("ShallowData", "Assays")</code>. The assays slot of a
+<a href="../../SummarizedExperiment/help/SummarizedExperiment.html">SummarizedExperiment</a> object contains an instance of
+ShallowSimpleListAssays.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Martin Morgan and Hervé Pagès</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><a href="../../SummarizedExperiment/help/SummarizedExperiment.html">SummarizedExperiment</a> objects.
+</p>
+</li>
+<li> <p><a href="../../S4Vectors/help/SimpleList.html">SimpleList</a> objects in the <span class="pkg">S4Vectors</span> package.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+## ---------------------------------------------------------------------
+## DIRECT MANIPULATION OF Assays OBJECTS
+## ---------------------------------------------------------------------
+m1 &lt;- matrix(runif(24), ncol=3)
+m2 &lt;- matrix(runif(24), ncol=3)
+a &lt;- Assays(SimpleList(m1, m2))
+a
+
+as(a, "SimpleList")
+
+length(a)
+getListElement(a, 2)
+dim(a)
+
+b &lt;- a[-4, 2]
+b
+length(b)
+getListElement(b, 2)
+dim(b)
+
+names(a)
+names(a) &lt;- c("a1", "a2")
+names(a)
+getListElement(a, "a2")
+
+rbind(a, a)
+cbind(a, a)
+
+## ---------------------------------------------------------------------
+## COPY-ON-CHANGE CONTRACT
+## ---------------------------------------------------------------------
+
+## ShallowSimpleListAssays objects have copy-on-change semantics but not
+## AssaysInEnv objects. For example:
+ssla &lt;- as(SimpleList(m1, m2), "ShallowSimpleListAssays")
+aie &lt;- as(SimpleList(m1, m2), "AssaysInEnv")
+
+## No names on 'ssla' and 'aie':
+names(ssla)
+names(aie)
+
+ssla2 &lt;- ssla
+aie2 &lt;- aie
+names(ssla2) &lt;- names(aie2) &lt;- c("A1", "A2")
+
+names(ssla)  # still NULL (as expected)
+
+names(aie)   # changed! (because the names&lt;-,AssaysInEnv method is not
+             # implemented in a way that respects the copy-on-change
+             # contract)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>SummarizedExperiment</em> version 1.24.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>
