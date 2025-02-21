@@ -257,8 +257,9 @@ rm(aux,N,mds)
 if (dim(mrdMAT)[1]<500){
 ver=fviz_nbclust(mrdMAT, hcut, nstart = 25, k.max=dim(mrdMAT)[1]-2,method = "gap_stat", nboot = 100)
 gapk1=ver[["data"]]$gap-ver[["data"]]$SE.sim
-test=cbind(ver[["data"]]$gap[-10],gapk1[-1])
-BestNc=min(which(test[,1]>=test[,2]))
+test=cbind(ver[["data"]]$gap[-(dim(mrdMAT)[1]-2)],gapk1[-1])
+BestNc=which(test[,1]>=test[,2])
+if(length(BestNc)>1){ if(min(BestNc)==1){BestNc=BestNc[2]}else{BestNc=min(BestNc)} }
 if (BestNc==1) {BestNc=2; print("Optimization fail (k=1)")}
 if (is.infinite(BestNc)==T){BestNc=2; print("Optimization fail (k=InF)")}
 }else{
