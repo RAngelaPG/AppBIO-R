@@ -7,6 +7,7 @@ if(length(checkpack)!=0) {
 }
 if("ggtree"%in%rownames(installed.packages())==FALSE){
   BiocManager::install("ggtree")
+  BiocManager::install("rtracklayer")
 }
 install_github("whweve/IntAssoPlot")
 #Cambiar este directorio de trabajo "C:/Users/RAPACHECO/OneDrive - CIMMYT/Desktop" por el de cada usuario
