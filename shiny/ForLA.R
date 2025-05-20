@@ -8,6 +8,7 @@ if(length(checkpack)!=0) {
 if("ggtree"%in%rownames(installed.packages())==FALSE){
   BiocManager::install("ggtree")
 }
+install_github("whweve/IntAssoPlot")
 #Cambiar este directorio de trabajo "C:/Users/RAPACHECO/OneDrive - CIMMYT/Desktop" por el de cada usuario
 shiny::runApp("C:/Users/RAPACHECO/OneDrive - CIMMYT/Desktop/AppBIO-R/shiny",port=8887,launch.browser=TRUE)
 
