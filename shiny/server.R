@@ -1550,7 +1550,7 @@ DoforGWAS<-reactive({
 		save(gDataDrops,GWASDrops,file="DataGWAS.RData")
 		for(nt in 1:length(Ttraits)){			
 			ass=split(GWASDrops[["GWAResult"]][["dropsPheno"]],GWASDrops[["GWAResult"]][["dropsPheno"]][["trait"]])
-			ass=ass[[nt]]
+			ass=ass[Ttraits[nt]]
 			write.csv(ass,paste0("MarkersEffect_",Ttraits[nt],".csv"))		
 		}
 	return(list(GWASDrops,savein=as.character(getwd())))
