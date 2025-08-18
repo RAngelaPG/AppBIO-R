@@ -22,14 +22,15 @@ CounToFreqNI<-function(dt_ff,Allele,newcolnames){
 							a1 = NULL, a2 = NULL) # drop count data
 		cast_freq=cast_freq[,c(1,3)]
 		names(cast_freq)=c("Allele",names(x))
-		return(cast_freq[,2])
+		return(cast_freq[,1:2])
 		}
 		
 		dt_use=ffcolapply(calcF(dt_ff[,i1:i2,drop=FALSE]), X=dt_ff, RETURN=TRUE, CFUN="ccbind", BATCHSIZE=1,VERBOSE=T)
+	    dt_use=dt_use[,-c(2,3,seq(3,dim(dt_use)[2],2))]
 		rm(dt_ff,SNP)
 		gc()
 		colnames(dt_use)=newcolnames
-		dt_use=data.frame(cbind(AlleleID=unique(Allele),data.frame(dt_use[,2:dim(dt_use)[2]])))
+		#dt_use=data.frame(cbind(AlleleID=unique(Allele),data.frame(dt_use[,2:dim(dt_use)[2]])))
 		fwrite(dt_use,"DataforBIO.csv",row.names = F, quote=F)
 		rm(Allele,newcolnames)
 		gc()
@@ -38,4 +39,5 @@ CounToFreqNI<-function(dt_ff,Allele,newcolnames){
 				type = "warning", showCancelButton=FALSE, showConfirmButton=TRUE, confirmButtonCol = "green"
 		)
 		return(dt_use)
+
 }
