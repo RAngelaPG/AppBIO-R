@@ -1,4 +1,4 @@
-Biodv=function(file_name,datos,nall,distk,mayorque,menorque,missval,typedata,ht1,ht2,ht3){
+Biodv=function(file_name,datos,nall,distk,mayorque,menorque,missval,typedata,ht1,ht2,ht3,gap){
 
 #suppressWarnings(library(Hmisc))  
 #suppressWarnings(library(plotly))  
@@ -254,17 +254,18 @@ rm(aux,N,mds)
 ###For do dendograms and MDSgraph
 #########################################################################
 #########################################################################
-if (dim(mrdMAT)[1]<500){
-ver=fviz_nbclust(mrdMAT, hcut, nstart = 25, k.max=dim(mrdMAT)[1]-2,method = "gap_stat", nboot = 100)
-gapk1=ver[["data"]]$gap-ver[["data"]]$SE.sim
-test=cbind(ver[["data"]]$gap[-(dim(mrdMAT)[1]-2)],gapk1[-1])
-BestNc=which(test[,1]>=test[,2])
-if(length(BestNc)>1){ if(min(BestNc)==1){BestNc=BestNc[2]}else{BestNc=min(BestNc)} }
-if (BestNc==1) {BestNc=2; print("Optimization fail (k=1)")}
-if (is.infinite(BestNc)==T){BestNc=2; print("Optimization fail (k=InF)")}
+if(gap==TRUE){										 
+#if (dim(mrdMAT)[1]<500){
+	ver=fviz_nbclust(mrdMAT, hcut, nstart = 25, k.max=dim(mrdMAT)[1]-2,method = "gap_stat", nboot = 100)
+	gapk1=ver[["data"]]$gap-ver[["data"]]$SE.sim
+	test=cbind(ver[["data"]]$gap[-(dim(mrdMAT)[1]-2)],gapk1[-1])
+	BestNc=which(test[,1]>=test[,2])
+	if(length(BestNc)>1){ if(min(BestNc)==1){BestNc=BestNc[2]}else{BestNc=min(BestNc)} }
+	if (BestNc==1) {BestNc=2; print("Optimization fail (k=1)")}
+	if (is.infinite(BestNc)==T){BestNc=2; print("Optimization fail (k=InF)")}
 }else{
-BestNc=3
- print("Optimization is not performed because there are many individuals and it takes a long time.")
+	BestNc=3
+ 	#print("Optimization is not performed because there are many individuals and it takes a long time.")
 }
 #library(cluster)
 clust=agnes(mrdMAT, method = "ward")
@@ -317,3 +318,4 @@ names(coord2)=c("Gen","Factor1","Factor2","Factor3")
 res=list(as.data.frame(div),coord2, getwd(), clust, datos, mrdMAT, perctCP12,BestNc)
 return(res)
 }
+
