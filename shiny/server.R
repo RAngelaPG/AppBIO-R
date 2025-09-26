@@ -204,12 +204,14 @@ as much as possible the genetic diversity of the original collection")),tabName=
 	if(SelFile=="RData"){
 		shinyjs::hide(id="fileenvbio")
 		shinyjs::hide(id="quitomono")
+		shinyjs::hide(id="gapS")
 		shinyjs::hide(id="nclust")
 		shinyjs::hide(id="typedata")
 		shinyjs::hide(id="distk")
 	}else{
-		shinyjs::show(id="fileenvbio")
+		shinyjs::show(id="fileenvbio")ff
 		shinyjs::show(id="quitomono")
+		shinyjs::show(id="gapS")
 		shinyjs::show(id="nclust")
 		shinyjs::show(id="distk")
 	}
@@ -580,7 +582,8 @@ as much as possible the genetic diversity of the original collection")),tabName=
 		#########################################################################
 		#########################################################################
 		if (length(colnames(mrdMAT))<30){maxK=length(colnames(mrdMAT))-1} else {maxK=30}
-		if (dim(mrdMAT)[1]<500){
+		if (input$gapS==TRUE){
+		#if (dim(mrdMAT)[1]<500){
 		ver=fviz_nbclust(mrdMAT, hcut, nstart = 25, k.max=maxK,method = "gap_stat", nboot = 100)
 		gapk1=ver[["data"]]$gap-ver[["data"]]$SE.sim
 		test=cbind(ver[["data"]]$gap[-maxK],gapk1[-1])
@@ -589,7 +592,7 @@ as much as possible the genetic diversity of the original collection")),tabName=
 		if (is.infinite(BestNc)==T) {BestNc=2; print("Optimization fail (k=InF)")}
 		}else{
 			BestNc=3
-			print("Optimization is not performed because there are many individuals and it takes a long time.")
+			#print("Optimization is not performed because there are many individuals and it takes a long time.")
 		}
 		clust=agnes(mrdMAT, method = "ward")
 		coord2=cbind(gen=colnames(datos)[-1],coord)
@@ -598,7 +601,7 @@ as much as possible the genetic diversity of the original collection")),tabName=
 		div=NULL		
 		biodata=list(as.data.frame(div),coord2, getwd(), clust, datos, mrdMAT, perctCP12,BestNc)
 	}else{
-		biodata=Biodv(str_replace(filename,".csv",""),datos,nall,distk,mayorque,menorque,missval,typedata,ht1,ht2,ht3)		
+		biodata=Biodv(str_replace(filename,".csv",""),datos,nall,distk,mayorque,menorque,missval,typedata,ht1,ht2,ht3,input$gapS)		
 	}
 	updateTextInput(session,'tx','X Axis Label',value = paste0('Factor 1 (',biodata[[7]][1],'%)'))
 	updateTextInput(session,'ty','Y Axis Label',value = paste0('Factor 2 (',biodata[[7]][2],'%)'))
@@ -1794,3 +1797,4 @@ DoforGene<-reactive({
 
 ##################################################################################################################################################################
 }
+
