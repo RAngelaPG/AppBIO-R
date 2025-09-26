@@ -209,7 +209,7 @@ as much as possible the genetic diversity of the original collection")),tabName=
 		shinyjs::hide(id="typedata")
 		shinyjs::hide(id="distk")
 	}else{
-		shinyjs::show(id="fileenvbio")ff
+		shinyjs::show(id="fileenvbio")
 		shinyjs::show(id="quitomono")
 		shinyjs::show(id="gapS")
 		shinyjs::show(id="nclust")
@@ -1797,4 +1797,5 @@ DoforGene<-reactive({
 
 ##################################################################################################################################################################
 }
+
 
