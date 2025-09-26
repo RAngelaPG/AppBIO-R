@@ -327,6 +327,7 @@ body<-dashboardBody(
               box(width=12,title=tagList(img(src="Biopng.png",height="25"),"More options"), solidHeader=T, closable=F, collapsible=T, status="success", 
                       shinyFilesButton('fileenvbio', 'Add external group', 'Select csv file', FALSE),
                       checkboxInput("quitomono","Remove monomorphic markers",value=FALSE),
+				  	  checkboxInput("gapS","Optimize number of cluster",value=FALSE),
                       textInput('nclust','No. Clusters',value='3'),
                       radioButtons("distk", "Genetic Distance",choices = c(Rogers = "Rogers", Nei = "Nei"))
               ),
@@ -541,3 +542,4 @@ ui <- dashboardPage(skin = "green",title="BSU-CIMMYT",
                         body						
                           
 )
+
