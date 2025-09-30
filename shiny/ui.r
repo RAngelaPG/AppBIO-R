@@ -1,3 +1,4 @@
+options(java.parameters = "-Xmx8g")
 library(adegenet)
 library(ape)
 library(cluster)
@@ -151,12 +152,9 @@ body<-dashboardBody(
 						h4("Authors:"),
 						h4("Angela Pacheco"),
 						h4("Guadalupe Valdez"),
-						h4("Juan Burgueno"),
-						h4("Jose Crossa"),
+						h4("Juan Burgueno"),						
 						h4("Keith Gardner"),
 						h4("Fernando Toledo"),
-						h4("Gregorio Alvarado"),
-						h4("Francisco Rodriguez"),
 						tags$hr(),
 						h5("This program is based in R. Any R component of this program as well as the program as"),
 						h5("a whole developed by CIMMYT are hereby licensed as per the terms of the GNU General"),
@@ -542,4 +540,5 @@ ui <- dashboardPage(skin = "green",title="BSU-CIMMYT",
                         body						
                           
 )
+
 
