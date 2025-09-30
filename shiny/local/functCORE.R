@@ -1,21 +1,33 @@
-funchunt=function(datosgen,dir_fileGen,dir_filePhen,dir_fileDist,size1,ENMR,ENCE,ENGD,ENPD,ANMR,ANCE,ANGD,ANPD,EEMR,EECE,EEGD,EEPD,SH,HE,CV){
-
+funchunt=function(datosgen,dir_fileGen,dir_filePhen,dir_fileDist,size1,ENMR,ENCE,ENGD,ENPD,ANMR,ANCE,ANGD,ANPD,EEMR,EECE,EEGD,EEPD,SH,HE,CV,typef){
+save(datosgen,dir_fileGen,dir_filePhen,dir_fileDist,size1,ENMR,ENCE,ENGD,ENPD,ANMR,ANCE,ANGD,ANPD,EEMR,EECE,EEGD,EEPD,SH,HE,CV,typef,file="ver.RData")
 if (dir_fileGen[1]!="none" & dir_filePhen[1]=="none" & dir_fileDist[1]=="none"){
    geno.file=datosgen
+   if(typef=="vcfile"){
+   my.data <- genotypes(geno.file,format="default")
+   }else{
    my.data <- genotypes(geno.file,format="frequency")
+   }
 }
 
 if (dir_fileGen[1]!="none" & dir_filePhen[1]!="none" & dir_fileDist[1]=="none"){
     geno.file=datosgen
     pheno.file=read.autodelim(dir_filePhen$datapath)
+	if(typef=="vcfile"){
+   my.data <- coreHunterData(genotypes(geno.file,format="default"),phenotypes(pheno.file))
+   }else{
     my.data <- coreHunterData(genotypes(geno.file,format="frequency"),phenotypes(pheno.file))
+	}
 }
 
 if (dir_fileGen[1]!="none" & dir_filePhen[1]!="none" & dir_fileDist[1]!="none"){
    geno.file=datosgen
    pheno.file=read.autodelim(dir_filePhen$datapath)
    dist.file=read.autodelim(dir_fileDist$datapath)
+   if(typef=="vcfile"){
+   my.data <- coreHunterData(genotypes(geno.file,format="default"),phenotypes(pheno.file),distances(dist.file))
+   }else{
    my.data <- coreHunterData(genotypes(geno.file,format="frequency"),phenotypes(pheno.file),distances(dist.file))
+   }
 }
 
 if (dir_fileGen[1]=="none" & dir_filePhen[1]!="none" & dir_fileDist[1]=="none"){
