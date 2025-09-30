@@ -1434,7 +1434,7 @@ as much as possible the genetic diversity of the original collection")),tabName=
 	
     funchunt(datos,dirfileGen,dirfilePhen,dirfileDist,input$score,input$mrdEN,input$csedEN,input$gdEN,
              input$pcdEN,input$mrdAN,input$csedAN,input$gdAN,input$pcdAN,input$mrdEE,input$csedEE,input$gdEE,input$pcdEE,
-             input$SH,input$HE,input$CV)
+             input$SH,input$HE,input$CV,typedata)
     incProgress(1, detail = "Finish")
 	Sys.sleep(1)
 	})
@@ -1797,5 +1797,6 @@ DoforGene<-reactive({
 
 ##################################################################################################################################################################
 }
+
 
 
