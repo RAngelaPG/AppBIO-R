@@ -1,5 +1,5 @@
 funchunt=function(datosgen,dir_fileGen,dir_filePhen,dir_fileDist,size1,ENMR,ENCE,ENGD,ENPD,ANMR,ANCE,ANGD,ANPD,EEMR,EECE,EEGD,EEPD,SH,HE,CV,typef){
-save(datosgen,dir_fileGen,dir_filePhen,dir_fileDist,size1,ENMR,ENCE,ENGD,ENPD,ANMR,ANCE,ANGD,ANPD,EEMR,EECE,EEGD,EEPD,SH,HE,CV,typef,file="ver.RData")
+
 if (dir_fileGen[1]!="none" & dir_filePhen[1]=="none" & dir_fileDist[1]=="none"){
    geno.file=datosgen
    if(typef=="vcfile"){
@@ -119,3 +119,4 @@ if (dir_fileGen[1]=="none" & dir_filePhen[1]=="none" & dir_fileDist[1]!="none"){
 }
 
 }
+
