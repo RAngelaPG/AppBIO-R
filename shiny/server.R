@@ -99,7 +99,7 @@ as much as possible the genetic diversity of the original collection")),tabName=
 	 
 	 #SNP-17
 	file_attr_SNP=c("AlleleID","CloneID","AlleleSequence","SNP","SnpPosition","CallRate","OneRatioRef","OneRatioSnp",
-                "FreqHomRe","FreqHomSnp","FreqHets","PICRef","PICSnp","AvgPIC","AvgCountRef","AvgCountSnp","RepAvg")
+                "FreqHomRef","FreqHomSnp","FreqHets","PICRef","PICSnp","AvgPIC","AvgCountRef","AvgCountSnp","RepAvg")
 	#COUNTS-32
 	file_attr_COUNTS=c("AlleleID","CloneID","ClusterTempIndex","AlleleSequence","ClusterConsensusSequence","ClusterSize",
                    "AlleleSeqDist","SNP","SnpPosition","CallRate","OneRatioRef","OneRatioSnp","FreqHomRef","FreqHomSnp",
@@ -121,10 +121,10 @@ as much as possible the genetic diversity of the original collection")),tabName=
 				dfgen = fread(as.character(inFilegen$datapath),header = TRUE,sep = ",",na=c("NA",".","-",""))
 				posit=NULL
 				hapmap=NULL
-				if(length(intersect(file_attr_PAVS, dfgen[5,])) == 15){
+				if(length(intersect(file_attr_PAVS, dfgen[4,])) == 15){
 					gename=as.matrix(dfgen[4,16:dim(dfgen)[2]])
-					idname=as.character(as.matrix(dfgen[-c(1:5),1]))
-					dfgen=as.data.frame(dfgen[-c(1:5),-c(1:15)])
+					idname=as.character(as.matrix(dfgen[-c(1:4),1]))
+					dfgen=as.data.frame(dfgen[-c(1:4),-c(1:15)])
 					dfgen=apply(dfgen,2,as.numeric)
 					colnames(dfgen)=gename
 					rownames(dfgen)=idname
@@ -150,9 +150,12 @@ as much as possible the genetic diversity of the original collection")),tabName=
 				dfgen = read.csv.ffdf(file=as.character(inFilegen$datapath),VERBOSE=T)
 				posit=NULL
 				hapmap=NULL
-				if(length(intersect(file_attr_COUNTS, as.matrix(dfgen[5,]))) == 32){
-					gename=c("AlleleID",as.matrix(dfgen[3,33:dim(dfgen)[2]]))
-					dfgen=dfgen[-c(1:5),-c(2:32)]
+				if(length(intersect(file_attr_COUNTS, as.matrix(dfgen[4,]))) == 32){
+					gename=c("AlleleID",as.matrix(dfgen[4,33:dim(dfgen)[2]]))
+					coluno=dfgen[-c(1:4),1]					
+					dfgen=as.data.frame(dfgen[-c(1:4),-c(2:32)])
+					dfgen <- apply(dfgen,2,as.numeric)
+					dfgen <-cbind(coluno,dfgen)					
 					colnames(dfgen)=gename
 					dfgen=as.ffdf(dfgen)
 				}
@@ -161,9 +164,12 @@ as much as possible the genetic diversity of the original collection")),tabName=
 				posit=NULL
 				hapmap=NULL
 				if(input$typedata=="SNP"){
-				if(length(intersect(file_attr_SNP, dfgen[5,])) == 17){
+				if(length(intersect(file_attr_SNP, dfgen[4,])) == 17){
 					gename=c("AlleleID",as.matrix(dfgen[4,18:dim(dfgen)[2]]))
-					dfgen=dfgen[-c(1:5),-c(2:17)]
+					coluno=dfgen[-c(1:4),1]
+					dfgen <-as.data.frame(dfgen[-c(1:4),-c(1:17)])
+					dfgen <- apply(dfgen,2,as.numeric)
+					dfgen <-cbind(coluno,dfgen)
 					colnames(dfgen)=gename
 				}
 			  }
@@ -496,25 +502,27 @@ as much as possible the genetic diversity of the original collection")),tabName=
 	if(input$typedata=="vcfile"){
 		datos<-as.data.frame(GenInfo$dfgen)
 		headerdatos <- colnames(datos)
-		colnames(datos)=headerdatos
+		#colnames(datos)=headerdatos
 		newcolnames <- cambia_caracter(quita_espacio(as.matrix(colnames(datos))))
 		colnames(datos) <- putg(newcolnames)
 		groupfile=cbind(BioGID=colnames(datos)[-1],OriginalGID=headerdatos[-1])
 	}else{
 		if(input$typedata=="CUENTA"){
 			datos<-GenInfo$dfgen
-			headerdatos <- names(datos)
+			headerdatos <- colnames(datos)
 			newcolnames <- cambia_caracter(quita_espacio(as.matrix(headerdatos)))
-			newcolnames <- putg(newcolnames)
-			groupfile=cbind(BioGID=newcolnames[-1],OriginalGID=headerdatos[-1])
+			colnames(datos) <- putg(newcolnames)
+			groupfile=cbind(BioGID=colnames(datos)[-1],OriginalGID=headerdatos[-1])
 		}else{
 			datos<-as.data.frame(GenInfo$dfgen)
-			inFilegen=parseFilePaths(roots=getVolumes(), input$filegen)
-			headerdatos <- read.table(as.character(inFilegen$datapath),nrows=1,header = FALSE, sep =',', stringsAsFactors = FALSE)
-			colnames(datos)=headerdatos
-			newcolnames <- cambia_caracter(quita_espacio(as.matrix(colnames(datos))))
+			#inFilegen=parseFilePaths(roots=getVolumes(), input$filegen)
+			headerdatos <- colnames(datos)
+			#headerdatos <- read.table(as.character(inFilegen$datapath),nrows=1,header = FALSE, sep =',', stringsAsFactors = FALSE)
+			#colnames(datos)=headerdatos
+			newcolnames <- cambia_caracter(quita_espacio(as.matrix(headerdatos)))
 			colnames(datos) <- putg(newcolnames)
-			groupfile=cbind(BioGID=colnames(datos)[-1],OriginalGID=t(as.matrix(headerdatos[-1]))[,1])
+			groupfile=cbind(BioGID=colnames(datos)[-1],OriginalGID=headerdatos[-1])
+			#groupfile=cbind(BioGID=colnames(datos)[-1],OriginalGID=t(as.matrix(headerdatos[-1]))[,1])
 		}
 	}
 	
@@ -1797,7 +1805,6 @@ DoforGene<-reactive({
 
 ##################################################################################################################################################################
 }
-
 
 
 
