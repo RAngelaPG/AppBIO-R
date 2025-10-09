@@ -410,9 +410,63 @@ body<-dashboardBody(
                      )
             )
           ),
-          box(solidHeader = T, title=tagList(img(src="Biopng.png",height="25"),"Warnings"),status = "success",  
+		fluidRow(
+          box(solidHeader = T, title=tagList(img(src="Biopng.png",height="25"),"Warnings"),status = "success", closable=F, collapsible=T, collapsed=F,   
               uiOutput(outputId = "defaultcore")
-          )
+          ),
+		  box(loadingState(),title=tagList(img(src="Biopng.png",height="25"),"MDSplot2D Subset"), solidHeader=T, closable=F, collapsible=T, collapsed=F, status="success", 			
+			sidebar=boxSidebar(id="boxMDS2DCH",width = 25,
+                      background = "#8f8d8d",
+                      useShinyalert(force=TRUE),         
+                      selectInput('xcolCH', 'X Variable',choices =""),
+                      selectInput('ycolCH', 'Y Variable',choices =""),
+                      selectInput('zcolCH', 'Z Variable',choices =""),
+                      tags$hr(),
+                      selectInput('catvCH','Group',choices = '',selected=NULL),					  
+                      #Creacion de color para cambiar el color de los puntos del grafico de acuerdo a una lista de colores generada
+                      selectInput('colorCH','Choose a color',choices = '',selected="",multiple=T),
+                      tags$hr(),
+                      textInput('tpCH','Plot Title',value='MDS Plot'),
+                      selectInput('pncCH','Title Color',choices=colors()[-c(1:25,27:30,37:46,48,57:67,69,80,82,83,85:89,92:93,97:98,101:106,108:113,123:127,
+                                                                          130:131,138,140:141,152:253,255:256,260:366,377:392,394:447,449,451,463:464,468:469,
+                                                                          478:489,492,499:500,504:505,509:511,513:534,536:546,548:550,553:554,557:561,563:564,
+                                                                          569:570,579:583,585:586,589:609,611:612,617,620:629,631:632,636:637,642:644,646:651)],
+                                  selected = 'blue'),
+                      sliderInput('tsCH','Title Size',min=5,max=20,step = 1,value = 12),
+                      tags$hr(),
+                      textInput('txCH','X Axis Label',value = 'Factor 1 ( 40.51 %)'),
+                      textInput('tyCH','Y Axis Label',value = 'Factor 2 ( 28.09 %)'),
+                      textInput('tzCH','Z Axis Label',value = 'Factor 3 ( 8.91 %)'),
+                      selectInput('acCH','Axes color',choices=colors()[-c(1:25,27:30,37:46,48,57:67,69,80,82,83,85:89,92:93,97:98,101:106,108:113,123:127,
+                                                                        130:131,138,140:141,152:253,255:256,260:366,377:392,394:447,449,451,463:464,468:469,
+                                                                        478:489,492,499:500,504:505,509:511,513:534,536:546,548:550,553:554,557:561,563:564,
+                                                                        569:570,579:583,585:586,589:609,611:612,617,620:629,631:632,636:637,642:644,646:651)],
+                                  selected = 'red'),
+                      sliderInput('szlCH','Axes Label Size',min=5,max=20,step=1,value=12),
+                      tags$hr(),
+                      #Creacion de bkgp para cambiar el color de fondo en el grafico
+                      selectInput('bkgpCH','Plot Background color',
+                                  choices=c("white","antique","azure","beige",               
+                                            "black","blanchedalmond","burlywood",           
+                                            "cornsilk","darkgray","dimgray","floralwhite",         
+                                            "gainsboro","ghostwhite","gray","honeydew",            
+                                            "ivory","lavender","lavenderblush","lemonchiffon",        
+                                            "lightcyan","lightgoldenrodyellow",
+                                            "lightgray","lightslategray","lightsteelblue","linen","mintcream","mistyrose",
+                                            "moccasin","oldlace","palegoldenrod","papayawhip","peachpuff","seashell","snow",
+                                            "tan","thistle","whitesmoke"),selected=NULL),
+                      tags$hr(),
+                      selectInput('etiCH','Label points',choices=''),           
+                      sliderInput('sizeCH','Points size',min=5,max=25,value=7)
+                    ),
+					
+                    #cuadro de texto que se mostrara por default con una direccion en la que se encuentra el grafico 2d
+                    #verbatimTextOutput("default1CH",placeholder = TRUE),
+                    #grafico 2d
+                    tags$div(style = "overflow-y:auto; overflow-x:auto;",
+					plotlyOutput("tryCH",height = "650px",width = "650px"),align="center")
+            )
+		)
   ),
   #close tab core
   ###################################################################################################################################################  

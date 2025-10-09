@@ -195,6 +195,11 @@ as much as possible the genetic diversity of the original collection")),tabName=
 			updateSelectInput(session,'catv3D', 'Group',choices = vars,selected=vars[5])
 			updateSelectInput(session,'eti3D', 'Label',choices = vars,selected=vars[1])
 			updateSelectInput(session,'catvdend', 'Group',choices = vars,selected=vars[5])    
+			updateSelectInput(session,'xcolCH', 'X Variable',choices = vars,selected=vars[2])
+			updateSelectInput(session,'ycolCH', 'Y Variable',choices = vars,selected=vars[3])
+			updateSelectInput(session,'zcolCH', 'Z Variable',choices = vars,selected=vars[4])
+			updateSelectInput(session,'catvCH', 'Group',choices = vars,selected=vars[5])
+			updateSelectInput(session,'etiCH', 'Label',choices = vars,selected=vars[1])			
 			updateTextInput(session,'tx','X Axis Label',value = paste0('Factor 1 (',UploadRd$DivAna[[7]][1],'%)'))
 			updateTextInput(session,'ty','Y Axis Label',value = paste0('Factor 2 (',UploadRd$DivAna[[7]][2],'%)'))
 			updateTextInput(session,'tz','Z Axis Label',value = paste0('Factor 3 (',UploadRd$DivAna[[7]][3],'%)'))
@@ -1440,18 +1445,182 @@ as much as possible the genetic diversity of the original collection")),tabName=
 	withProgress(message = 'Getting...', value = 0,{
 	incProgress(1/2, detail = "Wait, Please!")
 	
-    funchunt(datos,dirfileGen,dirfilePhen,dirfileDist,input$score,input$mrdEN,input$csedEN,input$gdEN,
+    resCH<-funchunt(datos,dirfileGen,dirfilePhen,dirfileDist,input$score,input$mrdEN,input$csedEN,input$gdEN,
              input$pcdEN,input$mrdAN,input$csedAN,input$gdAN,input$pcdAN,input$mrdEE,input$csedEE,input$gdEE,input$pcdEE,
              input$SH,input$HE,input$CV)
-    incProgress(1, detail = "Finish")
+    	
+	genos<-as.data.frame(resCH[[1]])
+	distMat<-resCH[[2]]
+	save(genos,datos,dirfileGen,dirfileDist,dirfilePhen,file="addreport.RData")
+	if (dirfileGen[1]!="none" & dirfilePhen[1]=="none" & dirfileDist[1]=="none"){
+		rownames(datos)<-datos[,1]
+		datos<-datos[,-1]
+		statsF<-data.frame(cbind(c("He","sd_He","Ho","sd_Ho","CV","SH_Index","sd_SH"),rep(c("Pop_Complete","Core_Selected"),each=7),c(report_stats(datos),report_stats(datos[which(rownames(datos)%in%genos[,1]==T),]))))
+		colnames(statsF)<-c("Parameter","Environment","Value")
+	}
+
+	if (dirfileGen[1]!="none" & dirfilePhen[1]!="none" & dirfileDist[1]=="none"){
+		rownames(datos)<-datos[,1]
+		datos<-datos[,-1]
+		statsF<-data.frame(cbind(c("He","sd_He","Ho","sd_Ho","CV","SH_Index","sd_SH"),rep(c("Pop_Complete","Core_Selected"),each=7),c(report_stats(datos),report_stats(datos[which(rownames(datos)%in%genos[,1]==T),]))))
+		colnames(statsF)<-c("Parameter","Environment","Value")
+	}
+
+	if (dirfileGen[1]!="none" & dirfilePhen[1]!="none" & dirfileDist[1]!="none"){
+		rownames(datos)<-datos[,1]
+		datos<-datos[,-1]
+		statsF<-data.frame(cbind(c("He","sd_He","Ho","sd_Ho","CV","SH_Index","sd_SH"),rep(c("Pop_Complete","Core_Selected"),each=7),c(report_stats(datos),report_stats(datos[which(rownames(datos)%in%genos[,1]==T),]))))
+		colnames(statsF)<-c("Parameter","Environment","Value")
+	}
+
+	if (dirfileGen[1]=="none" & dirfilePhen[1]!="none" & dirfileDist[1]=="none"){
+		statsF<-data.frame(matrix(rep("Info no available",9),3,3))
+		colnames(statsF)<-c("Parameter","Environment","Value")
+	}
+
+	if (dirfileGen[1]=="none" & dirfilePhen[1]=="none" & dirfileDist[1]!="none"){
+		statsF<-data.frame(matrix(rep("Info no available",9),3,3))
+		colnames(statsF)<-c("Parameter","Environment","Value")
+	}
+	
+	todos <- unique(c(genos[,1], rownames(distMat)))
+	t2 <- ifelse(todos %in% genos[,1] & todos %in% rownames(distMat), "selected", "All")
+	genos1<-data.frame(gen = todos, Group = t2)
+
+	##graphical representation, the MDS (multidimensional scaling) analysis
+	mds=cmdscale(distMat, k=3,eig=T)
+	coord=mds$points
+	perctCP12=c(round(mds$eig[1]/sum(mds$eig)*100,2),round(mds$eig[2]/sum(mds$eig)*100,2),round(mds$eig[3]/sum(mds$eig)*100,2))
+	colnames(coord)=c("Factor1","Factor2","Factor3")
+	rm(mds)
+		
+	coord=cbind(gen=rownames(coord),coord)
+	genos1<-merge(coord,genos1,"gen")
+	genos1$gen=as.factor(genos1$gen)
+	genos1$Factor1=as.numeric(genos1$Factor1)
+	genos1$Factor2=as.numeric(genos1$Factor2)
+	genos1$Factor3=as.numeric(genos1$Factor3)
+	genos1$Group=as.factor(genos1$Group)
+	incProgress(1, detail = "Finish")
 	Sys.sleep(1)
 	})
-	return(fin)
+	
+	vars=names(genos1)
+    #Actualiza el selectinput de acuerdo a la base de datos cargada
+    updateSelectInput(session,'xcolCH', 'X Variable',choices = vars,selected=vars[2])
+    updateSelectInput(session,'ycolCH', 'Y Variable',choices = vars,selected=vars[3])
+    updateSelectInput(session,'zcolCH', 'Z Variable',choices = vars,selected=vars[4])
+    updateSelectInput(session,'catvCH', 'Group',choices = vars,selected=vars[5])
+    updateSelectInput(session,'etiCH', 'Label',choices = vars,selected=vars[1])
+	updateTextInput(session,'txCH','X Axis Label',value = paste0('Factor 1 (',perctCP12[1],'%)'))
+	updateTextInput(session,'tyCH','Y Axis Label',value = paste0('Factor 2 (',perctCP12[2],'%)'))
+	updateTextInput(session,'tzCH','Z Axis Label',value = paste0('Factor 3 (',perctCP12[3],'%)'))			
+		
+	return(list(fin,genos1,statsF))
   })
   
-  output$defaultcore=renderText({
-    HTML(paste0("<font color=\"#FF0000\"><b> ","SUCCESSFUL ANALYSIS!!", "</b></font>","<br> You can find results files in:","<font color=\"#FF0000\"><b>",datacore(),"</b></font>"))
-    })
+  #output$defaultcore=renderText({
+    #HTML(paste0("<font color=\"#FF0000\"><b> ","SUCCESSFUL ANALYSIS!!", "</b></font>","<br> You can find results files in:","<font color=\"#FF0000\"><b>",datacore()[[1]],"</b></font>"))		
+  #})
+	output$defaultcore <- renderUI({
+		req(datacore())
+		path_res <- datacore()[[1]]
+		df <- datacore()[[3]]
+
+		tagList(
+			HTML(paste0(
+			"<font color='#FF0000'><b>SUCCESSFUL ANALYSIS!!</b></font><br>",
+			"You can find results files in: ",
+			"<font color='#FF0000'><b>", path_res, "</b></font><br><br>",
+			"<b>DataCore content:</b><br>"
+		)),
+		tableOutput("coreTable")
+		)
+	})
+
+	output$coreTable <- renderTable({
+		req(datacore())
+		datacore()[[3]]
+	})
+
+observeEvent(input$catvCH,{
+    genos1<-datacore()[[2]]
+	set.seed(7)
+    colores=colors()[-c(1,3:12,13:25,24,37:46,57:67,80,82,83,85:89,101:106,108:113,126:127,138,140:141,152:253,260:366,377:392,
+                        394:447,449,478:489,492,513:534,536:546,557:561,579:583,589:609,620:629,418,436,646:651)]
+    
+	if(typeof(genos1[,input$catvCH])!="double"){
+		d=sample(colores,100)
+		var=as.factor(genos1[,input$catvCH])
+		grupos=nlevels(var)
+	}else{
+		d=c("Jet","Jet","Jet","Jet","Jet","Jet")
+		grupos=2
+	}
+	
+    updateSelectInput(session,'colorCH','Choose a color', choices=d,selected=d[1:grupos])
+  })
+##################################################################################################################################################################
+  #grafico 2d Core Hunter
+##################################################################################################################################################################
+  output$tryCH=renderPlotly({		 
+	#if(SelFile=="Data"){	  
+		if(!file.exists("Output_2DPlots")) dir.create("Output_2DPlots")    
+		genos1<-datacore()[[2]]		
+		if(typeof(genos1[,input$catvCH])!="double"){
+			p=plot_ly(data=genos1,x=genos1[,input$xcolCH],y=genos1[,input$ycolCH],color=genos1[,input$catvCH],
+					type="scatter",mode="markers",colors = input$colorCH,xaxis=F, yaxis=F,
+					text=genos1[,input$etiCH],marker=list(size=input$sizeCH))%>%
+			#color de fondo del grafico
+			layout(plot_bgcolor=input$bkgpCH)%>%
+			#titulo y etiquetas ejes
+			layout(title=input$tpCH,titlefont=list(size=input$tsCH,color=input$pncCH), xaxis = list(title = input$txCH, titlefont=list(size=input$szlCH,color=input$acCH)),
+					yaxis = list(title = input$tyCH,titlefont=list(size=input$szlCH,color=input$acCH)))
+		}else{
+			p=plot_ly(data=genos1,x=genos1[,input$xcolCH],y=genos1[,input$ycolCH],color=genos1[,input$catvCH],
+					type="scatter",mode="markers",xaxis=F, yaxis=F,colors=c("blue","cyan","green","orange","red"),
+					text=genos1[,input$etiCH],marker=list(size=input$sizeCH))%>%
+			#color de fondo del grafico
+			layout(plot_bgcolor=input$bkgpCH)%>%
+			#titulo y etiquetas ejes
+			layout(title=input$tpCH,titlefont=list(size=input$tsCH,color=input$pncCH), xaxis = list(title = input$txCH, titlefont=list(size=input$szlCH,color=input$acCH)),
+					yaxis = list(title = input$tyCH,titlefont=list(size=input$szlCH,color=input$acCH)))		
+		}
+		#el siguiente codigo, cambia temporalmente el directorio de trabajo para guardar el grafico 2d
+		#primero se especifica la direccion en la que se guardara y luego la accion (guardar el grafico)
+		withr::with_dir(file.path(datacore()[[1]],"Output_2DPlots"),saveWidget(p,paste0('MDS2dCH_',input$catvCH,'.html'), selfcontained = F))
+		p
+	#}else{
+	#	UpRD=GenInfo$UploadRd
+	#	if(!file.exists("Output_2DPlots")) dir.create("Output_2DPlots")    
+	#	if(typeof(UpRD$Aux[[1]][,input$catvCH])!="double"){
+	#		p=plot_ly(data=UpRD$Aux[[1]],x=UpRD$Aux[[1]][,input$xcolCH],y=UpRD$Aux[[1]][,input$ycolCH],color=UpRD$Aux[[1]][,input$catvCH],
+	#				type="scatter",mode="markers",colors = input$colorCH,xaxis=F, yaxis=F,
+	#				text=UpRD$Aux[[1]][,input$etiCH],marker=list(size=input$sizeCH))%>%
+	#		#color de fondo del grafico
+	#		layout(plot_bgcolor=input$bkgpCH)%>%
+	#		#titulo y etiquetas ejes
+	#		layout(title=input$tpCH,titlefont=list(size=input$tsCH,color=input$pncCH), xaxis = list(title = input$txCH, titlefont=list(size=input$szlCH,color=input$acCH)),
+	#				yaxis = list(title = input$tyCH,titlefont=list(size=input$szlCH,color=input$acCH)))
+	#	}else{
+	#		p=plot_ly(data=UpRD$Aux[[1]],x=UpRD$Aux[[1]][,input$xcolCH],y=UpRD$Aux[[1]][,input$ycolCH],color=UpRD$Aux[[1]][,input$catvCH],
+	#				type="scatter",mode="markers",xaxis=F, yaxis=F,colors=c("blue","cyan","green","orange","red"),
+	#				text=UpRD$Aux[[1]][,input$etiCH],marker=list(size=input$sizeCH))%>%
+	#		#color de fondo del grafico
+	#		layout(plot_bgcolor=input$bkgpCH)%>%
+	#		#titulo y etiquetas ejes
+	#		layout(title=input$tpCH,titlefont=list(size=input$tsCH,color=input$pncCH), xaxis = list(title = input$txCH, titlefont=list(size=input$szlCH,color=input$acCH)),
+	#				yaxis = list(title = input$tyCH,titlefont=list(size=input$szlCH,color=input$acCH)))
+	#	}
+	#	#el siguiente codigo, cambia temporalmente el directorio de trabajo para guardar el grafico 2d
+	#	#primero se especifica la direccion en la que se guardara y luego la accion (guardar el grafico)
+	#	withr::with_dir(file.path(UpRD$DivAna[[3]],"Output_2DPlots"),saveWidget(p,paste0('MDS2dCH_',input$catvCH,'.html'), selfcontained = F))
+	#	p
+	#}
+  })
+  
+
+	
 ##################################################################################################################################################################
 ###################################################################################################################################################################################################
 #Start GWAS Code
