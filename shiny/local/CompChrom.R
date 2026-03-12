@@ -5,7 +5,7 @@ posit$POS=as.numeric(posit$POS)
 posit$CHROM=as.character(posit$CHROM)
 tabamv=data.frame(table(as.factor(posit$CHROM)))
 colnames(tabamv)=c("Chromosome","NMarks")
-chromi=as.character(tabamv[which(tabamv$NMarks>=(sum(tabamv$NMarks)*0.05)),1])
+chromi=as.character(tabamv[which(tabamv$NMarks>=(sum(tabamv$NMarks)*0.01)),1])
 chromi11=chromi[grep("chr",chromi)]
 if(length(chromi11)==0){chromi=chromi}else{chromi=chromi11}
 if(length(which(posit$CHROM%in%chromi==F))!=0){posit$CHROM[which(posit$CHROM%in%chromi==F)]=NA}		
@@ -15,7 +15,7 @@ posit1$POS=as.numeric(posit1$POS)
 posit1$CHROM=as.character(posit1$CHROM)
 tabamv1=data.frame(table(as.factor(posit1$CHROM)))
 colnames(tabamv1)=c("Chromosome","NMarks")
-chromi1=as.character(tabamv1[which(tabamv1$NMarks>=(sum(tabamv1$NMarks)*0.05)),1])
+chromi1=as.character(tabamv1[which(tabamv1$NMarks>=(sum(tabamv1$NMarks)*0.01)),1])
 #chromi1=chromi1[grep("chr",chromi1)]
 chromi12=chromi1[grep("chr",chromi)]
 if(length(chromi12)==0){chromi1=chromi1}else{chromi1=chromi12}
@@ -140,5 +140,6 @@ annotation_file2$STAR=as.numeric(annotation_file2$STAR)
 annotation_file2$END=as.numeric(annotation_file2$END)
 
 return(list(chromosome_file,annotation_file1,annotation_file2))
+
 
 }
