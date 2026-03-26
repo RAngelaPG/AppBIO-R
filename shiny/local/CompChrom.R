@@ -121,10 +121,10 @@ final=merge(data.frame(table(as.factor(positboth$CHROM.x))),
 final=merge(final,matches,"Var1")
 names(final)=c("CHROM",filename1,filename2,paste0("Match_",filename1),paste0("NOmatch_",filename1),paste0("Unknown_",filename1),paste0("Match_",filename2),paste0("NOmatch_",filename2),paste0("Unknown_",filename2))
 
-out=paste0("CompareBlast_",filename1,"_withBlast_",filename2,".csv")
-cat("\n","Markers in blast comparison for each chromosome: ","\n","\n",file=out,append=T)
-write.table(final, file = out, append = T,quote=F, sep=",",col.names=T,row.names=F)
-system2('open',args=out,wait=F)
+#out=paste0("CompareBlast_",filename1,"_withBlast_",filename2,".csv")
+#cat("\n","Markers in blast comparison for each chromosome: ","\n","\n",file=out,append=T)
+#write.table(final, file = out, append = T,quote=F, sep=",",col.names=T,row.names=F)
+#system2('open',args=out,wait=F)
 
 
 gg1=which(positboth$group=="g1")
@@ -139,7 +139,6 @@ annotation_file2=data.frame(cbind(ID=positboth[c(gg2,ggb),"ID"],CHROM=positboth[
 annotation_file2$STAR=as.numeric(annotation_file2$STAR)
 annotation_file2$END=as.numeric(annotation_file2$END)
 
-return(list(chromosome_file,annotation_file1,annotation_file2))
-
+return(list(chromosome_file,annotation_file1,annotation_file2,final))
 
 }

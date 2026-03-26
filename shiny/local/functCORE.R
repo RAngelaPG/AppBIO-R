@@ -123,9 +123,9 @@ if (dir_fileGen[1]!="none" & dir_filePhen[1]=="none" & dir_fileDist[1]=="none"){
   #geno_distSub <- matdist(datosgen[,Gen1[,1]],"Rogers")
   #mantel_res <- vegan::mantel(as.dist(g_full_sub), as.dist(geno_distSub), permutations = 999)  
   #mantel_res<-c(mantel_res$statistic,mantel_res$signif)	  
-  print("Saving files...")  
-  write.csv(Gen1,paste("CoreSubset_Gen.csv",sep=""),row.names=TRUE,quote=FALSE)
-  write.csv(sumy,paste("SummaryCoreSubset.csv",sep=""),quote=FALSE)
+  #print("Saving files...")  
+  #write.csv(Gen1,paste("CoreSubset_Gen.csv",sep=""),row.names=TRUE,quote=FALSE)
+  #write.csv(sumy,paste("SummaryCoreSubset.csv",sep=""),quote=FALSE)
 }
 
 if (dir_fileGen[1]!="none" & dir_filePhen[1]!="none" & dir_fileDist[1]=="none"){
@@ -135,10 +135,10 @@ if (dir_fileGen[1]!="none" & dir_filePhen[1]!="none" & dir_fileDist[1]=="none"){
   Gen1=as.data.frame(t(t(colnames(Gen1)))) 
   names(Gen1)=c("Gen")  
   #Phen1=pheno.file[as.numeric(Gen),]
-  print("Saving files...")  
-  write.csv(Gen1,paste("CoreSubset_GenPhen.csv",sep=""),row.names=TRUE,quote=FALSE)
+  #print("Saving files...")  
+  #write.csv(Gen1,paste("CoreSubset_GenPhen.csv",sep=""),row.names=TRUE,quote=FALSE)
   #write.csv(Phen1,paste("CoreSubset_Phen.csv",sep=""),row.names=TRUE,quote=FALSE)
-  write.csv(sumy,paste("SummaryCoreSubset.csv",sep=""),quote=FALSE)
+  #write.csv(sumy,paste("SummaryCoreSubset.csv",sep=""),quote=FALSE)
 }
 
 if (dir_fileGen[1]!="none" & dir_filePhen[1]!="none" & dir_fileDist[1]!="none"){  
@@ -154,11 +154,11 @@ if (dir_fileGen[1]!="none" & dir_filePhen[1]!="none" & dir_fileDist[1]!="none"){
   #colnames(dist.file)=c("names",dist.file[,1])
   #rownames(dist.file)=dist.file[,1]
   #Dist1=dist.file[as.numeric(Gen),as.numeric(Gen)+1]  
-  print("Saving files...")
-  write.csv(Gen1,paste("CoreSubset_GenPhenDist.csv",sep=""),row.names=TRUE,quote=FALSE)
+  #print("Saving files...")
+  #write.csv(Gen1,paste("CoreSubset_GenPhenDist.csv",sep=""),row.names=TRUE,quote=FALSE)
   #write.csv(Phen1,paste("CoreSubset_Phen.csv",sep=""),row.names=TRUE,quote=FALSE)
   #write.csv(Dist1,paste("CoreSubset_Dist.csv",sep=""),row.names=TRUE,quote=FALSE)
-  write.csv(sumy,paste("SummaryCoreSubset.csv",sep=""),quote=FALSE)  
+  #write.csv(sumy,paste("SummaryCoreSubset.csv",sep=""),quote=FALSE)  
 }
 
 if (dir_fileGen[1]=="none" & dir_filePhen[1]!="none" & dir_fileDist[1]=="none"){
@@ -167,9 +167,9 @@ if (dir_fileGen[1]=="none" & dir_filePhen[1]!="none" & dir_fileDist[1]=="none"){
   Phen1=pheno.file[as.numeric(Gen),]
   Gen1=as.data.frame(Phen1[,1])
   names(Gen1)=c("Gen")
-   print("Saving files...") 
-  write.csv(Gen1,paste("CoreSubset_Phen.csv",sep=""),row.names=TRUE,quote=FALSE)
-  write.csv(sumy,paste("SummaryCoreSubset.csv",sep=""),quote=FALSE)
+  #print("Saving files...") 
+  #write.csv(Gen1,paste("CoreSubset_Phen.csv",sep=""),row.names=TRUE,quote=FALSE)
+  #write.csv(sumy,paste("SummaryCoreSubset.csv",sep=""),quote=FALSE)
 }
 
 if (dir_fileGen[1]=="none" & dir_filePhen[1]=="none" & dir_fileDist[1]!="none"){
@@ -184,8 +184,8 @@ if (dir_fileGen[1]=="none" & dir_filePhen[1]=="none" & dir_fileDist[1]!="none"){
   Gen1=as.data.frame(rownames(Dist1))
   names(Gen1)=c("Gen")    
   print("Saving files...")
-  write.csv(Gen1,paste("CoreSubset_Dist.csv",sep=""),row.names=TRUE,quote=FALSE)
-  write.csv(sumy,paste("SummaryCoreSubset.csv",sep=""),quote=FALSE)
+  #write.csv(Gen1,paste("CoreSubset_Dist.csv",sep=""),row.names=TRUE,quote=FALSE)
+  #write.csv(sumy,paste("SummaryCoreSubset.csv",sep=""),quote=FALSE)
 }
 
 res<-list(Gen1,geno_distAll)

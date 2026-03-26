@@ -87,7 +87,7 @@ groups[,1]=as.numeric(as.factor(groups[,1]))
 						print(length(vect2))
 						if (length(vect2)!=0){
 						    writemono=cbind(rownames(tfreq2)[-vect2],tfreq2$pest[-vect2])
-						    write.csv(writemono,paste0(getwd(),"/Output_MarkMonoGroups/MarkersMonomorphicsForGroup_",selv,"_in level_",levels(pp[,1])[i],".csv"),row.names=F)
+						    #write.csv(writemono,paste0(getwd(),"/Output_MarkMonoGroups/MarkersMonomorphicsForGroup_",selv,"_in level_",levels(pp[,1])[i],".csv"),row.names=F)
 						}
                         tfreq2=t(tfreq2[,1:(ncol(tfreq2)-2)])
 						nummark[[i]]=nmark
@@ -108,12 +108,12 @@ groups[,1]=as.numeric(as.factor(groups[,1]))
 			names(agc.env)<-c("Pop")
 			agc.env$Pop<-as.factor(agc.env$Pop)
 			tabamv=forAMOVA(mdrMAT,agc.env)
-            if("div2"%in%ls()==TRUE){
-            cat("\n","Population Structure for group: ",selv,"\n","\n",file=out,append=T)
-            write.table(div2, file = out, append = T,quote=F, sep=",",col.names=F,row.names=F)
-			cat("\n","AMOVA for group: ",selv,"\n","\n",file=out,append=T)
-            write.table(tabamv, file = out, append = T,quote=F, sep=",",col.names=T,row.names=F)			
-            }
+            #if("div2"%in%ls()==TRUE){
+            #cat("\n","Population Structure for group: ",selv,"\n","\n",file=out,append=T)
+            #write.table(div2, file = out, append = T,quote=F, sep=",",col.names=F,row.names=F)
+			#cat("\n","AMOVA for group: ",selv,"\n","\n",file=out,append=T)
+            #write.table(tabamv, file = out, append = T,quote=F, sep=",",col.names=T,row.names=F)			
+            #}
 	   }
 	   if(selv!="GroupClust"){                       			
 	        ## end of HE function
@@ -155,7 +155,7 @@ groups[,1]=as.numeric(as.factor(groups[,1]))
 					    vect2=which(tfreq2$pest!=1 & tfreq2$pest1!=1 & tfreq2$pest!=0 & tfreq2$pest1!=0)						
 						if (length(vect2)!=0){
 						    writemono=cbind(rownames(tfreq2)[-vect2],tfreq2$pest[-vect2])
-						    write.csv(writemono,paste0(getwd(),"/Output_MarkMonoGroups/MarkersMonomorphicsForGroup_",selv,"_in level_",levels(pp[,1])[i],".csv"),row.names=F)
+						    #write.csv(writemono,paste0(getwd(),"/Output_MarkMonoGroups/MarkersMonomorphicsForGroup_",selv,"_in level_",levels(pp[,1])[i],".csv"),row.names=F)
 						}
                         tfreq2=t(tfreq2[,1:(ncol(tfreq2)-2)])
 						nummark[[i]]=nmark
@@ -185,12 +185,12 @@ groups[,1]=as.numeric(as.factor(groups[,1]))
 			names(agc.env)<-c("Pop")
 			agc.env$Pop<-as.factor(agc.env$Pop)
 			tabamv=forAMOVA(mdrMAT,agc.env)
-            if("div2"%in%ls()==TRUE){				
-				cat("\n","Population Structure for group: ",selv,"\n","\n",file=out,append=T)			
-				write.table(div2, file = out, append = T,quote=F, sep=",",col.names=F,row.names=F)				
-				cat("\n","AMOVA for group: ",selv,"\n","\n",file=out,append=T)
-				write.table(tabamv, file = out, append = T,quote=F, sep=",",col.names=T,row.names=F)			
-            }			
+            #if("div2"%in%ls()==TRUE){				
+				#cat("\n","Population Structure for group: ",selv,"\n","\n",file=out,append=T)			
+				#write.table(div2, file = out, append = T,quote=F, sep=",",col.names=F,row.names=F)				
+				#cat("\n","AMOVA for group: ",selv,"\n","\n",file=out,append=T)
+				#write.table(tabamv, file = out, append = T,quote=F, sep=",",col.names=T,row.names=F)			
+            #}			
 	   }
 return(list(div2,tabamv))
 }

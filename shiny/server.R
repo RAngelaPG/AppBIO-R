@@ -39,8 +39,8 @@ as much as possible the genetic diversity of the original collection")),tabName=
 ##################################################################################################################################
   #Genetic data#
   ##################################################################################################################################
-  shinyFileChoose(input, 'filegen', roots = getVolumes(),filetypes=c('', 'csv','vcf','gz'))
-  shinyFileChoose(input, 'fileRdata', roots = getVolumes(),filetypes=c('', 'RData'))
+  #shinyFileChoose(input, 'filegen', roots = getVolumes(),filetypes=c('', 'csv','vcf','gz'))
+  #shinyFileChoose(input, 'fileRdata', roots = getVolumes(),filetypes=c('', 'RData'))
   
   observe({	
     if(input$typedata=="SNP"){
@@ -53,12 +53,16 @@ as much as possible the genetic diversity of the original collection")),tabName=
       shinyjs::hide(id="ht3")
     }
 	
+	if(input$startAna=="CompChrom"){
+		shinyjs::show(id="fileVCF")
+	}
 	if(input$startAna=="StarChrom"){
 		shinyjs::hide(id="typedata")
 		shinyjs::hide(id="missval")
+		shinyjs::hide(id="missvalG")
 		shinyjs::hide(id="mayorque")
 		shinyjs::hide(id="menorque")	
-		shinyjs::show(id="fileVCF")
+		shinyjs::hide(id="fileVCF")
 		shinyjs::hide(id="ht1")
 		shinyjs::hide(id="ht2")
 		shinyjs::hide(id="ht3")
@@ -67,6 +71,7 @@ as much as possible the genetic diversity of the original collection")),tabName=
 	if(input$startAna=="pavs"){
 		shinyjs::hide(id="typedata")
 		shinyjs::hide(id="missval")
+		shinyjs::hide(id="missvalG")
 		shinyjs::hide(id="mayorque")
 		shinyjs::hide(id="menorque")	
 		shinyjs::hide(id="fileVCF")
@@ -77,26 +82,26 @@ as much as possible the genetic diversity of the original collection")),tabName=
 	if(input$startAna=="StarBio"){
 		shinyjs::show(id="typedata")
 		shinyjs::show(id="missval")
+		shinyjs::show(id="missvalG")
 		shinyjs::show(id="mayorque")
 		shinyjs::show(id="menorque")
 		shinyjs::hide(id="fileVCF")		
-	}	
+	}
+	if(input$gapS){shinyjs::runjs('document.getElementById("nclust").style.pointerEvents = "none";')}else{shinyjs::runjs('document.getElementById("nclust").style.pointerEvents = "auto";')}
+	
   })
   
   
-	GenInfo <- reactiveValues(dfgen=NULL,posit=NULL,UploadRd=NULL,hapmap=NULL)
-	observeEvent(input$readgenofile, {
-  #myDataGen <- reactive({
-    #SelFile="Data"
-	UploadRd=NULL
-	#Gdata=0
-	inFilegen=parseFilePaths(roots=getVolumes(), input$filegen)
-	inFileRdata=parseFilePaths(roots=getVolumes(), input$fileRdata)	
-	 if(nrow(inFilegen)!=0 & nrow(inFileRdata)==0){Gdata=1;SelFile="Data"}
-	 if(nrow(inFilegen)==0 & nrow(inFileRdata)!=0){Gdata=1;SelFile="RData"}
-	 if(nrow(inFilegen)==0 & nrow(inFileRdata)==0){Gdata=0}
-	 if(nrow(inFilegen)!=0 & nrow(inFileRdata)!=0){NAdata=0}else{NAdata=1} 
-	 
+	GenInfo <- reactiveValues(dfgen=NULL,posit=NULL,UploadRd=NULL,hapmap=NULL,pavs=NULL,summaryChrom=NULL,chromosome_file=NULL,annotation_file=NULL, annotation_file2=NULL)
+	observeEvent(input$readgenofile, {  
+		UploadRd=NULL
+
+	inFilegen=input$filegen	
+	inFileRdata=input$fileRdata	
+	 if(!is.null(inFilegen) & is.null(inFileRdata)){Gdata=1;SelFile="Data"}
+	 if(is.null(inFilegen) & !is.null(inFileRdata)){Gdata=1;SelFile="RData"}
+	 if(is.null(inFilegen) & is.null(inFileRdata)){Gdata=0}
+	 if(!is.null(inFilegen) & !is.null(inFileRdata)){NAdata=0}else{NAdata=1} 
 	 #SNP-17
 	file_attr_SNP=c("AlleleID","CloneID","AlleleSequence","SNP","SnpPosition","CallRate","OneRatioRef","OneRatioSnp",
                 "FreqHomRef","FreqHomSnp","FreqHets","PICRef","PICSnp","AvgPIC","AvgCountRef","AvgCountSnp","RepAvg")
@@ -118,23 +123,24 @@ as much as possible the genetic diversity of the original collection")),tabName=
 		
 		if(SelFile=="Data"){
 			if(input$startAna=="pavs"){
-				dfgen = fread(as.character(inFilegen$datapath),header = TRUE,sep = ",",na=c("NA",".","-",""))
+				pavs = fread(as.character(inFilegen$datapath),header = TRUE,sep = ",",na=c("NA",".","-",""))
 				posit=NULL
 				hapmap=NULL
-				if(length(intersect(file_attr_PAVS, dfgen[4,])) == 15){
-					gename=as.matrix(dfgen[4,16:dim(dfgen)[2]])
-					idname=as.character(as.matrix(dfgen[-c(1:4),1]))
-					dfgen=as.data.frame(dfgen[-c(1:4),-c(1:15)])
-					dfgen=apply(dfgen,2,as.numeric)
-					colnames(dfgen)=gename
-					rownames(dfgen)=idname
+				dfgen=NULL
+				if(length(intersect(file_attr_PAVS, pavs[4,])) == 15){
+					gename=as.matrix(pavs[4,16:dim(pavs)[2]])
+					idname=as.character(as.matrix(pavs[-c(1:4),1]))
+					pavs=as.data.frame(pavs[-c(1:4),-c(1:15)])
+					pavs=apply(pavs,2,as.numeric)
+					colnames(pavs)=gename
+					rownames(pavs)=idname
 				}else{
-					gename=names(dfgen)[-1]
-					idname=as.character(as.matrix(dfgen[,1]))
-					dfgen=as.data.frame(dfgen[,-1])
-					dfgen=apply(dfgen,2,as.numeric)
-					colnames(dfgen)=gename
-					rownames(dfgen)=idname
+					gename=names(pavs)[-1]
+					idname=as.character(as.matrix(pavs[,1]))
+					pavs=as.data.frame(pavs[,-1])
+					pavs=apply(pavs,2,as.numeric)
+					colnames(pavs)=gename
+					rownames(pavs)=idname
 				}
 			}else{
 			if(input$typedata=="vcfile"){
@@ -144,12 +150,14 @@ as much as possible the genetic diversity of the original collection")),tabName=
 				posit=data.frame(cbind(CHROM=as.character(filevcf@chromosome),POS=filevcf@position,ID=filevcf@loc.names))		
 				dfgen=t(as.matrix(filevcf))
 				class(dfgen) = "numeric"
-				dfgen=data.frame(cbind(rs=rownames(dfgen),data.frame(dfgen)))				
+				dfgen=data.frame(cbind(rs=rownames(dfgen),data.frame(dfgen)))	
+				pavs=NULL				
 			}else{
 			if(input$typedata=="CUENTA"){
 				dfgen = read.csv.ffdf(file=as.character(inFilegen$datapath),VERBOSE=T)
 				posit=NULL
 				hapmap=NULL
+				pavs=NULL
 				if(length(intersect(file_attr_COUNTS, as.matrix(dfgen[4,]))) == 32){
 					gename=c("AlleleID",as.matrix(dfgen[4,33:dim(dfgen)[2]]))
 					coluno=dfgen[-c(1:4),1]					
@@ -163,6 +171,7 @@ as much as possible the genetic diversity of the original collection")),tabName=
 				dfgen = fread(as.character(inFilegen$datapath),header = TRUE,sep = ",",na=c("NA",".","-",""))
 				posit=NULL
 				hapmap=NULL
+				pavs=NULL
 				if(input$typedata=="SNP"){
 				if(length(intersect(file_attr_SNP, dfgen[4,])) == 17){
 					gename=c("AlleleID",as.matrix(dfgen[4,18:dim(dfgen)[2]]))
@@ -181,6 +190,7 @@ as much as possible the genetic diversity of the original collection")),tabName=
 			dfgen=NULL
 			posit=NULL
 			hapmap=NULL
+			pavs=NULL
 			load(as.character(inFileRdata$datapath),UploadRd<-new.env())
 			vars=names(UploadRd$Aux[[1]])			
 			#Actualiza el selectinput de acuerdo a la base de datos cargada
@@ -216,6 +226,8 @@ as much as possible the genetic diversity of the original collection")),tabName=
 		shinyjs::hide(id="fileenvbio")
 		shinyjs::hide(id="quitomono")
 		shinyjs::hide(id="gapS")
+		shinyjs::hide(id="methgap")
+		shinyjs::hide(id="mixture")
 		shinyjs::hide(id="nclust")
 		shinyjs::hide(id="typedata")
 		shinyjs::hide(id="distk")
@@ -223,6 +235,8 @@ as much as possible the genetic diversity of the original collection")),tabName=
 		shinyjs::show(id="fileenvbio")
 		shinyjs::show(id="quitomono")
 		shinyjs::show(id="gapS")
+		shinyjs::show(id="methgap")
+		shinyjs::show(id="mixture")		
 		shinyjs::show(id="nclust")
 		shinyjs::show(id="distk")
 	}
@@ -231,8 +245,8 @@ as much as possible the genetic diversity of the original collection")),tabName=
 	GenInfo$posit<-posit
 	GenInfo$UploadRd<-UploadRd
 	GenInfo$hapmap<-hapmap
+	GenInfo$pavs<-pavs
 	
-	#return(list(dfgen,posit,SelFile,UploadRd))
   })
   #Ver datos en tabla dinamica
   output$seeDataGen<-DT::renderDataTable({	
@@ -263,63 +277,52 @@ as much as possible the genetic diversity of the original collection")),tabName=
 ##################################################################################################################################################################  
   #See heatmap PAVs
  ##################################################################################################################################################################
-  output$seePAVS<-renderPlotly({
+    
+  output$seePAVS<-renderPlotly({	
+	hasData   <- !is.null(GenInfo$pavs)
+	hasRData  <- !is.null(GenInfo$UploadRd)
+	bothData  <- hasData && hasRData
+	anyData   <- hasData || hasRData
+	correctTab <- input$startAna == "pavs"
+
+	validate(
+		need(anyData, "Please upload data"),
+		need(!bothData, "Both data selected, please close and try again"),
+		need(correctTab, "Go to the correct analysis tab")
+	)
+ 
+  # seleccionar fuente
+  if (hasData) {
+    use <- GenInfo$pavs
+  } else {
+    e <- new.env()
+    load(input$fileRdata$datapath, envir = e)
+    use <- e$GenInfo$pavs
+  }  
   
-	if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
-	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
-	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
-	 if(!is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){NAdata=0}else{NAdata=1} 
-	 if(input$startAna=="pavs"){go1=1}else{go1=0}
-	 validate(
-      need(Gdata != 0, "Please upload data"),
-	  need(NAdata != 0, "Both data selected, please close and try again"),	  
-	  need(go1 != 0, "go to the correspond tab of type analysis")		  
-    )
-	if(input$startAna=="pavs"){
-	#withProgress(message = 'Getting...', value = 0,{
-	#	incProgress(1/2, detail = "Wait, Please!")		
-			
-		if(SelFile=="Data"){
-			inFilegen=parseFilePaths(roots=getVolumes(), input$filegen)
-			dirfile=as.character(inFilegen$datapath)
-			filename=as.character(inFilegen$name)
-			outFolder <- cambia_caracter(paste0("Output_PAVs_",filename))
-			filename=str_replace(dirfile,filename,"")			
-			setwd(filename)
-			if(!file.exists(outFolder)) dir.create(outFolder)
-			setwd(outFolder)			
-			use=GenInfo$dfgen
-			save(use,file="PAVS.RData")	
-			saveurl=getwd()
-			pavsplot=plot_ly(x=colnames(use)[1:dim(use)[2]],y=rownames(use)[1:dim(use)[1]],z = use[1:dim(use)[1],1:dim(use)[2]], colorscale="Jet",type = "heatmap")%>%
-			layout(xaxis = list(showticklabels = T), yaxis = list(showticklabels = F))
-			withr::with_dir(file.path(saveurl),saveWidget(pavsplot,'PAVSPlot.html', selfcontained = F))
-			pavsplot
-		}else{
-			#use=myDataGen()[[4]]
-			inFileRdata=parseFilePaths(roots=getVolumes(), input$fileRdata)	
-			load(as.character(inFileRdata$datapath))
-			pavsplot=plot_ly(x=colnames(use)[1:dim(use)[2]],y=rownames(use)[1:dim(use)[1]],z = use[1:dim(use)[1],1:dim(use)[2]], colorscale="Jet",type = "heatmap")%>%
-			layout(xaxis = list(showticklabels = T), yaxis = list(showticklabels = F))			
-			pavsplot
-		}
-	#	incProgress(1, detail = "Finish")
-	#	Sys.sleep(1)
-	#	})
-	}else{
-			fig = plotly::plot_ly()
-            fig = fig %>% plotly::add_annotations(text = "go to the correspond tab of type analysis", x = 1, y = 1)#
-            fig
-	}
-	
+  pp<-plotly::plot_ly(x = colnames(use), y = rownames(use), z = use,  type = "heatmap",  colorscale = "Jet" ) %>%
+    layout( xaxis = list(showticklabels = TRUE), yaxis = list(showticklabels = FALSE))
+  pp	
+		
   })
  
+ output$download_pavs <- downloadHandler(
+  filename = function() {"PAVSPlot.html"},
+  content = function(file) {
+	req(GenInfo$pavs)
+    use=GenInfo$pavs
+    pp<-plotly::plot_ly(x=colnames(use),y=rownames(use),z = use, colorscale="Jet",type = "heatmap")%>%
+			layout(xaxis = list(showticklabels = T), yaxis = list(showticklabels = F))	    
+    saveWidget(pp, file, selfcontained = T)
+  }
+)
+
 ##################################################################################################################################################################
   #Ver grafico de cromosomas
 ##################################################################################################################################################################
-  output$seeChromPlot<-renderChromoMap({
-	inFilegen=parseFilePaths(roots=getVolumes(), input$filegen)
-	inFileRdata=parseFilePaths(roots=getVolumes(), input$fileRdata)	
+  tablaChrom<-reactive({	
+	inFilegen=input$filegen
+	inFileRdata=input$fileRdata	
 	if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
 	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
 	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
@@ -333,169 +336,209 @@ as much as possible the genetic diversity of the original collection")),tabName=
 	  need(go1 != 0, "go to the correspond tab of type analysis")		  
     )
 	
-	
 	if(input$startAna=="StarChrom"){	
-		withProgress(message = 'Getting...', value = 0,{
-		incProgress(1/2, detail = "Wait, Please!")		
+			
 		if(SelFile=="Data"){
-			dirfile=as.character(inFilegen$datapath)    		
-				#if(input$startAna=="StarBio"){
-					posit=data.frame(GenInfo$posit)
-				#}else{
-				#	posit=vcfR::read.vcfR(as.character(dirfile))
-				#	posit=data.frame(posit@fix)
-				#}
-				tmark=dim(posit)[1]
-				posit$POS=as.numeric(posit$POS)
-				posit$CHROM=as.character(posit$CHROM)
-				posit$ID=as.character(posit$ID)
-				tabamv1=data.frame(table(as.factor(posit$CHROM)))				
-				colnames(tabamv1)=c("Chromosome","NMarks")
-				dimt1=dim(tabamv1)[1]
-				#chromi=as.character(tabamv1[which(tabamv1$NMarks>=(sum(tabamv1$NMarks)*0.05)),1])
-				chromi=as.character(tabamv1[which(tabamv1$NMarks>=1),1])				
-				chromi1=chromi[grep("chr",chromi)]
-				if(length(chromi1)==0){chromi=chromi}else{chromi=chromi1}
-				if(length(which(posit$CHROM%in%chromi==F))!=0){posit$CHROM[which(posit$CHROM%in%chromi==F)]=NA}		
-				if(length(which(is.na(posit[,1])))!=0){posit=posit[-which(is.na(posit[,1])),]}
-				tabamv1=data.frame(table(as.factor(posit$CHROM)))		
-				colnames(tabamv1)=c("Chromosome","NMarks")
-				if(dimt1>dim(tabamv1)[1]) {
+			#dirfile=as.character(input$filegen$datapath)    		
+			posit=data.frame(GenInfo$posit)				
+			tmark=dim(posit)[1]
+			posit$POS=as.numeric(posit$POS)
+			posit$CHROM=as.character(posit$CHROM)
+			posit$ID=as.character(posit$ID)
+			tabamv1=data.frame(table(as.factor(posit$CHROM)))				
+			colnames(tabamv1)=c("Chromosome","NMarks")
+			dimt1=dim(tabamv1)[1]
+			
+			chromi=as.character(tabamv1[which(tabamv1$NMarks>=1),1])				
+			chromi1=chromi[grep("chr",chromi)]
+			if(length(chromi1)==0){chromi=chromi}else{chromi=chromi1}
+			if(length(which(posit$CHROM%in%chromi==F))!=0){posit$CHROM[which(posit$CHROM%in%chromi==F)]=NA}		
+			if(length(which(is.na(posit[,1])))!=0){posit=posit[-which(is.na(posit[,1])),]}
+			tabamv1=data.frame(table(as.factor(posit$CHROM)))		
+			colnames(tabamv1)=c("V1","V2")
+			#colnames(tabamv1)=c("Chromosome","NMarks")
+			if(dimt1>dim(tabamv1)[1]) {
 				shinyalert(title = "Important message", 
 					text="Extra chromosome information was \n found in the blast and was deleted",closeOnEsc = FALSE, 
 					type = "warning", showCancelButton=FALSE, showConfirmButton=TRUE, confirmButtonCol = "green"
 				)
 					#print("Extra chromosome information was found in the blast and was deleted") 
-				}
-				filename=as.character(inFilegen$name)
-				filenamef=str_replace(filename,".csv","")
-				filename=strsplit(filename,"\\.")[[1]][1]
-				out=paste0("SummaryBlast_",filename,".csv")
-				
-				outFolder <- cambia_caracter(paste0("ChromMap_",filename))
-				setwd(str_replace(dirfile,filenamef,""))
-				if(!file.exists("Output_BIO-R")) dir.create("Output_BIO-R")
-				setwd("Output_BIO-R")
-				if(!file.exists(outFolder)) dir.create(outFolder)
-				setwd(outFolder)			
-			
-				cat("\n","Total markers: ",tmark,"\n","\n",file=out,append=T)
-				cat("\n","Markers in blast: ",dim(posit)[1],"\n","\n",file=out,append=T)
-				cat("\n","Markers in blast for each chromosome: ","\n","\n",file=out,append=T)
-				write.table(tabamv1, file = out, append = T,quote=F, sep=",",col.names=T,row.names=F)
-				system2('open',args=out,wait=F)
-					
-				chromosome_file=aggregate(POS ~ CHROM, data = posit, max)
-				chromosome_file=data.frame(cbind(CHROM=chromosome_file$CHROM,STAR=1,END=chromosome_file$POS))
-				chromosome_file$STAR=as.numeric(chromosome_file$STAR)
-				chromosome_file$END=as.numeric(chromosome_file$END)
-		
-				annotation_file=data.frame(cbind(ID=posit[,"ID"],CHROM=posit[,"CHROM"],STAR=posit[,"POS"],END=posit[,"POS"]+10))
-				annotation_file$STAR=as.numeric(annotation_file$STAR)
-				annotation_file$END=as.numeric(annotation_file$END)
-				
-				chrdim=split(annotation_file,annotation_file$CHROM)
-				minchr=lapply(chrdim,function(x){min(min(x$STAR),min(x$END))})
-				maxchr=lapply(chrdim,function(x){max(max(x$STAR),max(x$END))})
-				chrdim=data.frame(cbind(minchr=unlist(minchr),maxchr=unlist(maxchr)))
-				write.csv(chrdim,"ChromDim.csv")
-		
-				save(chromosome_file,annotation_file,file="MapChrom.RData")	
-			}else{
-				load(as.character(inFileRdata$datapath))
 			}			
-		incProgress(1, detail = "Finish")
-		Sys.sleep(1)
-		})	
-	}
-	
-	chromoMap(list(chromosome_file),list(annotation_file),n_win.factor = 5, export.options=T, fixed.window=F, remove.last.window=T,plot.shift=T, id="chrom1")
-	
+					
+			chromosome_file=aggregate(POS ~ CHROM, data = posit, max)
+			chromosome_file=data.frame(cbind(CHROM=chromosome_file$CHROM,STAR=1,END=chromosome_file$POS))
+			chromosome_file$STAR=as.numeric(chromosome_file$STAR)
+			chromosome_file$END=as.numeric(chromosome_file$END)
+		
+			annotation_file=data.frame(cbind(ID=posit[,"ID"],CHROM=posit[,"CHROM"],STAR=posit[,"POS"],END=posit[,"POS"]+10))
+			annotation_file$STAR=as.numeric(annotation_file$STAR)
+			annotation_file$END=as.numeric(annotation_file$END)
+				
+			chrdim=split(annotation_file,annotation_file$CHROM)
+			minchr=lapply(chrdim,function(x){min(min(x$STAR),min(x$END))})
+			maxchr=lapply(chrdim,function(x){max(max(x$STAR),max(x$END))})
+			chrdim=data.frame(cbind(minchr=unlist(minchr),maxchr=unlist(maxchr)))
+			names(chrdim)=c("V1","V2")			
+			tabamv1=rbind(rbind(c("Total markers: ",tmark),c("Markers in blast: ",dim(posit)[1]),c("Markers in blast for each chromosome: "," "),c("Chromosome","NMarks")),tabamv1)						
+			#write.csv(chrdim,"ChromDim.csv")
+		    GenInfo$chromosome_file=chromosome_file
+			GenInfo$annotation_file=annotation_file
+			#save(chromosome_file,annotation_file,file="MapChrom.RData")
+			GenInfo$summaryChrom=rbind(tabamv1,c("minPos","MaxPos"),chrdim)
+		}else{
+			load(as.character(inFileRdata$datapath))			
+		}			
+			
+	}	
+	#chromoMap(list(chromosome_file),list(annotation_file),n_win.factor = 5, export.options=T, fixed.window=F, remove.last.window=T,plot.shift=T, id="chrom1")	
   })
   
-  shinyFileChoose(input, 'fileVCF', roots = getVolumes(),filetypes=c('vcf','gz'))
+  output$seeChromPlot<-renderChromoMap({	
+	inFilegen=input$filegen
+	inFileRdata=input$fileRdata	
+	if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
+	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
+	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
+	 if(!is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){NAdata=0}else{NAdata=1}
+	 if(input$typedata=="vcfile"){ dataT1=1 }else {dataT1=0}	 
+	 if(input$startAna=="StarChrom"){go1=1}else{go1=0}
+	 validate(
+      need(Gdata != 0, "Please upload data"),
+	  need(NAdata != 0, "Both data selected, please close and try again"),
+	  need(dataT1 != 0, "Option only available for VCF files"),		  	  	  
+	  need(go1 != 0, "go to the correspond tab of type analysis")		  
+    )
+	
+    tablaChrom()	
+	chromoMap(list(GenInfo$chromosome_file),list(GenInfo$annotation_file),n_win.factor = 5, export.options=T, fixed.window=F, remove.last.window=T,plot.shift=T, id="chrom1")
+	
+	})
+	
+  output$tablaChrom <- DT::renderDataTable({
+   req(GenInfo$summaryChrom)
+	withProgress(message = 'Getting...', value = 0,{
+		incProgress(1/2, detail = "Wait, Please!")	
+		#tablaChrom()
+		if(input$startAna=="StarChrom"){summd<-as.data.frame(GenInfo$summaryChrom)}else{summd<-NULL}
+		incProgress(1, detail = "Finish")
+		Sys.sleep(1)
+	})
+	nombre <- paste0("SummaryChromoMap_", Sys.Date())
+	datatable(summd, selection="multiple", escape=FALSE, extensions = 'Buttons',
+              options = list(dom  = 'Bfrtip',buttons=list(list(extend='csv',filename=nombre),list(extend='excel',filename=nombre)),pageLength = 7,width="100%", scrollX = TRUE))		  
+	
+  })
+  #shinyFileChoose(input, 'fileVCF', roots = getVolumes(),filetypes=c('vcf','gz'))
 
 ##################################################################################################################################################################
   #Ver grafico comparacion de blast cromosomas
 ##################################################################################################################################################################
-  output$BChromPlot<-renderChromoMap({
-	 inFileRdata=parseFilePaths(roots=getVolumes(), input$fileRdata)	
-	 if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
+  BtablaChrom<-reactive({	
+
+	useData  <-  !is.null(GenInfo$dfgen)
+	useRData <- !is.null(GenInfo$UploadRd)
+	SelFile <- NULL	
+	inFileVCF   <- input$fileVCF
+	
+	if (useData) { SelFile <- "Data"} else if (useRData) {  SelFile <- "RData"}		
+	
+		if(SelFile=="Data"){
+			posit <- data.frame(GenInfo$posit)
+			vcf1 <- vcfR::read.vcfR(inFileVCF$datapath)
+			posit1 <- data.frame(vcf1@fix)
+
+			filename1 <- tools::file_path_sans_ext(inFileVCF$name)
+			filename2 <- tools::file_path_sans_ext(inFileVCF$name)
+
+			frames <- CompChrom(posit, posit1, filename1, filename2)			
+			GenInfo$chromosome_file  <- data.frame(frames[[1]])
+			GenInfo$annotation_file  <- data.frame(frames[[2]])
+			GenInfo$annotation_file2 <- data.frame(frames[[3]])
+			GenInfo$summaryChrom     <- data.frame(frames[[4]])
+			
+		} else {
+			e <- new.env()
+			load(input$fileRdata$datapath, envir = e)
+		}	
+	
+	 
+  })
+  
+output$BChromPlot<-renderChromoMap({		
+	inFilegen=input$filegen
+	inFileRdata=input$fileRdata	
+	if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
 	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
 	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
 	 if(!is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){NAdata=0}else{NAdata=1}
-	 if(input$startAna=="StarChrom"){go1=1}else{go1=0}
-	 
+	 if(input$typedata=="vcfile"){ dataT1=1 }else {dataT1=0}	 
+	 if(input$startAna=="CompChrom"){go1=1}else{go1=0}
 	 validate(
       need(Gdata != 0, "Please upload data"),
-	  need(NAdata != 0, "Both data selected, please close and try again"),	  
+	  need(NAdata != 0, "Both data selected, please close and try again"),
+	  need(dataT1 != 0, "Option only available for VCF files"),		  	  	  
 	  need(go1 != 0, "go to the correspond tab of type analysis")		  
     )
-	 
-	 inFileRdata=parseFilePaths(roots=getVolumes(), input$fileRdata)	
-	 inFilegen2=parseFilePaths(roots=getVolumes(), input$fileVCF)
-	 if(nrow(inFilegen2)!=0 & nrow(inFileRdata)==0){Gdata2=1}
-	 if(nrow(inFilegen2)==0 & nrow(inFileRdata)!=0){Gdata2=1}
-	 if(nrow(inFilegen2)==0 & nrow(inFileRdata)==0){Gdata2=0}
-	 
-	 validate(
-      need(Gdata2 != 0, "Please select second data file")	  
-    )
 	
-	if(input$startAna=="StarChrom"){		
-		if(SelFile=="Data"){
-			
-			withProgress(message = 'Getting...', value = 0,{
-			incProgress(1/2, detail = "Wait, Please!")
-			
-			dirfile=as.character(parseFilePaths(roots=getVolumes(), input$filegen)$datapath)    
-			posit=data.frame(GenInfo$posit)
-			#if(input$startAna=="StarBio"){
-			#	posit=data.frame(GenInfo$posit)
-			#}else{
-			#	posit=vcfR::read.vcfR(as.character(dirfile))
-			#	posit=data.frame(posit@fix)
-			#}
-			vcf1 <- vcfR::read.vcfR(as.character(inFilegen2$datapath))
-			posit1=data.frame(vcf1@fix)
-			filename1=as.character(parseFilePaths(roots=getVolumes(), input$filegen)$name)
-			filenamef=str_replace(filename1,".csv","")
-			filename1=strsplit(filename1,"\\.")[[1]][1]	
-			filename2=as.character(parseFilePaths(roots=getVolumes(), input$fileVCF)$name)
-			filename2=strsplit(filename2,"\\.")[[1]][1]
-			
-			outFolder <- cambia_caracter(paste0("ChromMap_",filename1))
-			setwd(str_replace(dirfile,filenamef,""))
-			if(!file.exists("Output_BIO-R")) dir.create("Output_BIO-R")
-			setwd("Output_BIO-R")
-			if(!file.exists(outFolder)) dir.create(outFolder)
-			setwd(outFolder)
-			
-			frames<-CompChrom(posit,posit1,filename1,filename2)
-			chromosome_file=data.frame(frames[[1]])
-			annotation_file=data.frame(frames[[2]])
-			annotation_file2=data.frame(frames[[3]])	
-			save(chromosome_file,annotation_file,annotation_file2,file="MapChrom.RData")
-			incProgress(1, detail = "Finish")
-			Sys.sleep(1)
-			})
-		}else{
-			withProgress(message = 'Getting...', value = 0,{
-			incProgress(1/2, detail = "Wait, Please!")
-				load(as.character(inFileRdata$datapath))
-			incProgress(1, detail = "Finish")
-			Sys.sleep(1)
-			})
-		}
-	}
+		BtablaChrom()	        					
+		chromoMap(list(GenInfo$chromosome_file,GenInfo$chromosome_file),list(GenInfo$annotation_file,GenInfo$annotation_file2),n_win.factor = 5,export.options=T, fixed.window=F, remove.last.window=T, plot.shift=T, id="chrom2",ploidy=2,anno_col = c("green","red"))
 	
-	chromoMap(list(chromosome_file,chromosome_file),list(annotation_file,annotation_file2),n_win.factor = 5,export.options=T, fixed.window=F, plot.shift=T, remove.last.window=T, id="chrom2",ploidy=2,anno_col = c("green","red"))
+	})
 	
-  })
-
+  output$BtablaChrom <-DT::renderDataTable({
+	req(GenInfo$summaryChrom)	
+	withProgress(message = 'Getting...', value = 0,{
+		incProgress(1/2, detail = "Wait, Please!")
+		#BtablaChrom()
+		if(input$startAna=="CompChrom"){summd2<-as.data.frame(GenInfo$summaryChrom)}else{summd2<-NULL}
+		incProgress(1, detail = "Finish")
+		Sys.sleep(1)
+	})
+	nombre <- paste0("SummaryChromoMapCompare_", Sys.Date())
+	datatable(summd2, selection="multiple", escape=FALSE, extensions = 'Buttons',
+              options = list(dom  = 'Bfrtip',buttons=list(list(extend='csv',filename=nombre),list(extend='excel',filename=nombre)),pageLength = 7,width="100%", scrollX = TRUE))		  
+  })  
+  
 ##################################################################################################################################################################  
   ### RUN BIOR- Diversity#########################################################################################################################
 ##################################################################################################################################################################
+
+data_gen <- reactive({
+  req(GenInfo$dfgen)	
+		datos<-as.data.frame(GenInfo$dfgen)
+		req(ncol(datos) > 1)
+		headerdatos <- colnames(datos)		
+		newcolnames <- cambia_caracter(quita_espacio(as.matrix(colnames(datos))))
+		colnames(datos) <- putg(newcolnames)
+		groupfile=cbind(BioGID=colnames(datos)[-1],OriginalGID=headerdatos[-1])	
+	groupfile
+})
+
+output$downloadData <- downloadHandler(
+  filename = function() {"ForGroups.csv"},
+  content = function(file) {
+    req(data_gen())
+    write.csv(data_gen(), file, row.names = FALSE)
+  }
+)
+
+ BiodivInfo <- reactiveValues(res1=NULL,res2=NULL)
+	observeEvent(input$calcopt, {
+
+  withProgress(message = "Running analysis...", value = 0, {
+
+    incProgress(0.3, detail = "Processing diversity...")
+    BiodivInfo$res1 <- isolate(DoforDiv())
+
+    incProgress(0.6, detail = "Processing metadata...")
+    BiodivInfo$res2 <- isolate(mdata1())
+
+    incProgress(1, detail = "Done")
+
+  })  
+})
+
+	
   DoforDiv<-reactive({
 	if(input$startAna=="StarBio"){go1=1}else{go1=0}
 	 validate(      
@@ -503,40 +546,23 @@ as much as possible the genetic diversity of the original collection")),tabName=
     )
     outFolder<-"BioAnalysis"
     nall=2
-    
-	if(input$typedata=="vcfile"){
+    	
 		datos<-as.data.frame(GenInfo$dfgen)
-		headerdatos <- colnames(datos)
-		#colnames(datos)=headerdatos
+		headerdatos <- colnames(datos)	
 		newcolnames <- cambia_caracter(quita_espacio(as.matrix(colnames(datos))))
 		colnames(datos) <- putg(newcolnames)
-		groupfile=cbind(BioGID=colnames(datos)[-1],OriginalGID=headerdatos[-1])
-	}else{
-		if(input$typedata=="CUENTA"){
-			datos<-GenInfo$dfgen
-			headerdatos <- colnames(datos)
-			newcolnames <- cambia_caracter(quita_espacio(as.matrix(headerdatos)))
-			colnames(datos) <- putg(newcolnames)
-			groupfile=cbind(BioGID=colnames(datos)[-1],OriginalGID=headerdatos[-1])
-		}else{
-			datos<-as.data.frame(GenInfo$dfgen)
-			#inFilegen=parseFilePaths(roots=getVolumes(), input$filegen)
-			headerdatos <- colnames(datos)
-			#headerdatos <- read.table(as.character(inFilegen$datapath),nrows=1,header = FALSE, sep =',', stringsAsFactors = FALSE)
-			#colnames(datos)=headerdatos
-			newcolnames <- cambia_caracter(quita_espacio(as.matrix(headerdatos)))
-			colnames(datos) <- putg(newcolnames)
-			groupfile=cbind(BioGID=colnames(datos)[-1],OriginalGID=headerdatos[-1])
-			#groupfile=cbind(BioGID=colnames(datos)[-1],OriginalGID=t(as.matrix(headerdatos[-1]))[,1])
-		}
-	}
-	
-    outFolder <- cambia_caracter(outFolder)
+		#groupfile=cbind(BioGID=colnames(datos)[-1],OriginalGID=headerdatos[-1])
+		
+    #outFolder <- cambia_caracter(outFolder)
     distk<- cambia_caracter(input$distk)
     typedata<- cambia_caracter(input$typedata)
     missval=as.numeric(input$missval)
+	missvalG=as.numeric(input$missvalG)
     mayorque=as.numeric(input$mayorque)
     menorque=as.numeric(input$menorque)
+	mixture=input$mixture
+	gap=input$gapS
+	methodgap=input$methgap
     ht1=as.numeric(input$ht1)
     ht2=as.numeric(input$ht2)
     ht3=as.numeric(input$ht3)
@@ -560,19 +586,18 @@ as much as possible the genetic diversity of the original collection")),tabName=
     if (typedata=="FREQ"){datos <- data.frame(datos)}
 	    
     req(input$filegen)
-    dirfile=as.character(parseFilePaths(roots=getVolumes(), input$filegen)$datapath)
-    filename=as.character(parseFilePaths(roots=getVolumes(), input$filegen)$name)
-	filename1=strsplit(filename,"\\.")[[1]][1]	
-	
-    outFolder <- cambia_caracter(paste0("DiversityAnalysis_",filename1))
-	setwd(str_replace(dirfile,filename,""))
-    if(!file.exists("Output_BIO-R")) dir.create("Output_BIO-R")
-    setwd("Output_BIO-R")
-    if(!file.exists(outFolder)) dir.create(outFolder)
-    setwd(outFolder)
-    write.csv(groupfile,"ForGroups.csv",row.names=F, quote=F)
-	system2('open',args="ForGroups.csv",wait=F)
-	
+    #dirfile=as.character(input$filegen$datapath)
+    filename=as.character(input$filegen$name)
+	#filename1=strsplit(filename,"\\.")[[1]][1]		
+    #outFolder <- cambia_caracter(paste0("DiversityAnalysis_",filename1))
+	#setwd(str_replace(dirfile,filename,""))
+    #if(!file.exists("Output_BIO-R")) dir.create("Output_BIO-R")
+    #setwd("Output_BIO-R")
+    #if(!file.exists(outFolder)) dir.create(outFolder)
+    #setwd(outFolder)
+    #write.csv(groupfile,"ForGroups.csv",row.names=F, quote=F)
+	#system2('open',args="ForGroups.csv",wait=F)
+	#downloadHandler(filename = "ForGroups.csv", content = function(file) { write.csv(groupfile, file, row.names = FALSE)})	
 	### Correr funciones ----------------------------------------
     if (typedata=="CUENTA"){
 		#dtmp=as.data.frame(cbind(Allele=datos[,1],SNP=as.numeric(rep(c(NA,2)),dim(datos)[1]/2),datos[,-1]))
@@ -589,32 +614,34 @@ as much as possible the genetic diversity of the original collection")),tabName=
 		perctCP12=c(round(mds$eig[1]/sum(mds$eig)*100,2),round(mds$eig[2]/sum(mds$eig)*100,2),round(mds$eig[3]/sum(mds$eig)*100,2))
 		colnames(coord)=c("dim1","dim2","dim3")
 		rm(mds)
-		#########################################################################
-		#########################################################################
-		###For do dendograms and MDSgraph
-		#########################################################################
-		#########################################################################
-		if (length(colnames(mrdMAT))<30){maxK=length(colnames(mrdMAT))-1} else {maxK=30}
-		if (input$gapS==TRUE){
-		#if (dim(mrdMAT)[1]<500){
-		ver=fviz_nbclust(mrdMAT, hcut, nstart = 25, k.max=maxK,method = "gap_stat", nboot = 100)
-		gapk1=ver[["data"]]$gap-ver[["data"]]$SE.sim
-		test=cbind(ver[["data"]]$gap[-maxK],gapk1[-1])
-		BestNc=min(which(test[,1]>=test[,2]))
-		if (BestNc==1) {BestNc=2; print("Optimization fail (k=1)")}
-		if (is.infinite(BestNc)==T) {BestNc=2; print("Optimization fail (k=InF)")}
+		
+		if(input$gapS==TRUE){	
+		print("Do optimization...")
+		if(input$methgap=="gap"){			
+			ver=fviz_nbclust(mrdMAT, hcut, k.max=20,method = "gap_stat", nboot = 100)
+			gapk1=ver[["data"]]$gap-ver[["data"]]$SE.sim
+			test=cbind(ver[["data"]]$gap[-(dim(mrdMAT)[1]-2)],gapk1[-1])
+			BestNc=which(test[,1]>=test[,2])  
+			if(length(BestNc)>1){ if(min(BestNc)==1){BestNc=BestNc[2]}else{BestNc=min(BestNc)} }			
+			if (BestNc==1) {BestNc=2; print("Optimization fail (k=1)")}
+			if (is.infinite(BestNc)==T){BestNc=2; print("Optimization fail (k=InF)")}
 		}else{
-			BestNc=3
-			#print("Optimization is not performed because there are many individuals and it takes a long time.")
-		}
+			ver <- fviz_nbclust(mrdMAT,hcut, method = "silhouette",k.max = 20)
+			BestNc <- ver$data$clusters[which.max(ver$data$y)]
+			if(length(BestNc)>1){ if(min(BestNc)==1){BestNc=BestNc[2]}else{BestNc=min(BestNc)} }
+			if (BestNc==1) {BestNc=2; print("Optimization fail (k=1)")}
+			if (is.infinite(BestNc)==T){BestNc=2; print("Optimization fail (k=InF)")}
+		}		
+		}else{BestNc=3}
+	
 		clust=agnes(mrdMAT, method = "ward")
 		coord2=cbind(gen=colnames(datos)[-1],coord)
 		names(coord2)=c("Gen","Factor1","Factor2","Factor3")
 		datos=NULL
 		div=NULL		
-		biodata=list(as.data.frame(div),coord2, getwd(), clust, datos, mrdMAT, perctCP12,BestNc)
+		biodata=list(as.data.frame(div),coord2, getwd(), clust, datos, mrdMAT, perctCP12,BestNc,qmatrix=NULL,exadiv=NULL, exadivg=NULL, tablaOpt=NULL)
 	}else{
-		biodata=Biodv(str_replace(filename,".csv",""),datos,nall,distk,mayorque,menorque,missval,typedata,ht1,ht2,ht3,input$gapS)		
+		biodata=Biodv(str_replace(filename,".csv",""),datos,nall,distk,mayorque,menorque,missval,typedata,ht1,ht2,ht3,missvalG,mixture,gap,methodgap)		
 	}
 	updateTextInput(session,'tx','X Axis Label',value = paste0('Factor 1 (',biodata[[7]][1],'%)'))
 	updateTextInput(session,'ty','Y Axis Label',value = paste0('Factor 2 (',biodata[[7]][2],'%)'))
@@ -635,38 +662,17 @@ as much as possible the genetic diversity of the original collection")),tabName=
 	 if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
 	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
 	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
+	 hasResult <- !is.null(BiodivInfo$res1)
 	 validate(
-      need(Gdata != 0, "Please upload data")
+      need(Gdata != 0, "Please upload data"),
+	  need(hasResult, "Please select options and click the button 'Run analysis'")
 	)
 	
 	if(SelFile=="Data"){
 		if(input$typedata=="DistMat"){
 			seedatos=as.data.frame("Option no available for distance matrix input file")
-		}else{	
-			filename=as.character(parseFilePaths(roots=getVolumes(), input$filegen)$name)
-			file_name=str_replace(filename,".csv","")
-			markfile=paste(DoforDiv()[[3]],"/MarkersRep_",file_name,".csv",sep="")
-			genfile=paste(DoforDiv()[[3]],"/GenotypesRep_",file_name,".csv",sep="")
-			if (file.exists(markfile) && file.exists(genfile)){
-			shinyalert(title = "Important message", 
-						text="Repeated sequence of markers and genotypes information were found!",
-						type = "warning", showCancelButton=FALSE, showConfirmButton=TRUE, confirmButtonCol = "green"
-			)
-			}
-			if (file.exists(markfile) && !file.exists(genfile)){
-			shinyalert(title = "Important message", 
-						text="Repeated sequence of markers information were found!",
-						type = "warning", showCancelButton=FALSE, showConfirmButton=TRUE, confirmButtonCol = "green"
-			)
-			}
-			if (!file.exists(markfile) && file.exists(genfile)){
-			shinyalert(title = "Important message", 
-						text="Repeated sequence of genotypes information were found!",
-						type = "warning", showCancelButton=FALSE, showConfirmButton=TRUE, confirmButtonCol = "green"
-			)
-			}
-			
-			seedatos<-as.data.frame(DoforDiv()[[1]])
+		}else{				
+			seedatos<-as.data.frame(BiodivInfo$res1[[1]])
 		}
 	}else{
 		if(input$typedata=="DistMat"){
@@ -685,18 +691,20 @@ as much as possible the genetic diversity of the original collection")),tabName=
 	 if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
 	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
 	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
+	 hasResult <- !is.null(BiodivInfo$res1)
 	 validate(
-      need(Gdata != 0, "Please upload data")
-	)	 
+      need(Gdata != 0, "Please upload data"),
+	  need(hasResult, "Please select options and click the button 'Run analysis'")
+	) 
  	if(SelFile=="Data"){	
-		datos<-as.data.frame(DoforDiv()[[5]])
-		datos1<-as.data.frame(mdata1()[[1]])
-		setwd(DoforDiv()[[3]])
-		if(!file.exists("Output_MarkMonoGroups")) dir.create("Output_MarkMonoGroups")
+		datos<-as.data.frame(BiodivInfo$res1[[5]])
+		datos1<-as.data.frame(BiodivInfo$res2[[1]])
+		#setwd(BiodivInfo$res1[[3]])
+		#if(!file.exists("Output_MarkMonoGroups")) dir.create("Output_MarkMonoGroups")
 		withProgress(message = 'Getting...', value = 0,{
 		incProgress(1/2, detail = "Wait, Please!")
 			if(typeof(datos1[,input$catv])!="double"){
-				PopStr=gdiv(datos,datos1,input$catv,input$quitomono,as.data.frame(DoforDiv()[[6]]))
+				PopStr=gdiv(datos,datos1,input$catv,input$quitomono,as.data.frame(BiodivInfo$res1[[6]]))
 			}else{
 				dt1=data.frame(rbind(t(c("Option no available","Option no available for continuous variables")),
                      t(c("for continuous variables","Option no available for continuous variables"))
@@ -710,8 +718,8 @@ as much as possible the genetic diversity of the original collection")),tabName=
 		UpRD=GenInfo$UploadRd
 		datos<-UpRD$DivAna[[5]]
 		datos1<-UpRD$Aux[[1]]		
-		setwd(as.character(UpRD$DivAna[[3]]))
-		if(!file.exists("Output_MarkMonoGroups")) dir.create("Output_MarkMonoGroups")
+		#setwd(as.character(UpRD$DivAna[[3]]))
+		#if(!file.exists("Output_MarkMonoGroups")) dir.create("Output_MarkMonoGroups")
 		withProgress(message = 'Getting...', value = 0,{
 		incProgress(1/2, detail = "Wait, Please!")
 			if(typeof(datos1[,input$catv])!="double"){
@@ -738,8 +746,10 @@ as much as possible the genetic diversity of the original collection")),tabName=
 	 if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
 	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
 	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
+	 hasResult <- !is.null(BiodivInfo$res1)
 	 validate(
-      need(Gdata != 0, "Please upload data")
+      need(Gdata != 0, "Please upload data"),
+	  need(hasResult, "Please select options and click the button 'Run analysis'")
 	)
 	
 	if(input$typedata=="DistMat"){
@@ -753,17 +763,19 @@ as much as possible the genetic diversity of the original collection")),tabName=
 ##################################################################################################################################################################  
   #Ver datos en tabla dinamica AMOVA
 ##################################################################################################################################################################
-  output$seeDataGAmova<-DT::renderDataTable({
+  amovaTable<-reactive({  
 	if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
 	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
 	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
+	 hasResult <- !is.null(BiodivInfo$res1)
 	 validate(
-      need(Gdata != 0, "Please upload data")
+      need(Gdata != 0, "Please upload data"),
+	  need(hasResult, "Please select options and click the button 'Run analysis'")
 	)
-	req(mdata1())
+	#req(mdata1())
 	if(SelFile=="Data"){	  
 		if(input$typedata=="DistMat"){
-			datos1<-as.data.frame(mdata1()[[1]])
+			datos1<-as.data.frame(BiodivInfo$res2[[1]])
 			if(typeof(datos1[,input$catv])!="double"){
 				pp=as.data.frame(as.character(datos1[,input$catv]))	
 				rownames(pp)=datos1[,1]       
@@ -771,10 +783,10 @@ as much as possible the genetic diversity of the original collection")),tabName=
 				agc.env=as.data.frame(as.numeric(as.factor(groups[,1])))
 				names(agc.env)<-c("Pop")
 				agc.env$Pop<-as.factor(agc.env$Pop)
-				seedatos=forAMOVA(as.data.frame(DoforDiv()[[6]]),agc.env)  
+				seedatos=forAMOVA(as.data.frame(BiodivInfo$res1[[6]]),agc.env)  
 				rownames(seedatos)=seedatos[,1]
 				seedatos=seedatos[,-1]	
-				write.csv(seedatos,file.path(DoforDiv()[[3]],paste0("AMOVA_",input$catv,".csv")))
+				#write.csv(seedatos,file.path(BiodivInfo$res1[[3]],paste0("AMOVA_",input$catv,".csv")))
 			}else{
 				seedatos=as.data.frame("Option no available for continuous variables")
 			}
@@ -788,23 +800,49 @@ as much as possible the genetic diversity of the original collection")),tabName=
 		rownames(seedatos)=seedatos[,1]
 		seedatos=data.frame(seedatos[,-1])
 	}
-	datatable(seedatos, selection="multiple", escape=FALSE, 
+	seedatos
+  })
+  
+  output$seeDataGAmova<-DT::renderDataTable({
+    seedatos=as.data.frame(amovaTable())
+    datatable(seedatos, selection="multiple", escape=FALSE, 
               options = list(sDom  = '<"top">lrt<"bottom">ip',pageLength = 10,width="100%", scrollX = TRUE))
   })
 ##################################################################################################################################################################  
   #Transformacion de los datos, para el uso posterior en los graficos
-  shinyFileChoose(input, 'fileenvbio', roots = getVolumes(),filetypes=c('', 'csv'))
+  #shinyFileChoose(input, 'fileenvbio', roots = getVolumes(),filetypes=c('', 'csv'))
 ##################################################################################################################################################################
+colores_18 <- c(
+  "#E41A1C",  # rojo intenso
+  "#0057FF",  # azul eléctrico
+  "#00C853",  # verde brillante
+  "#FFD600",  # amarillo encendido
+  "#FF3D00",  # naranja fuerte
+  "#AA00FF",  # púrpura intenso
+  "#A65628",  # café
+  "#F781BF",  # rosa
+  "#17BECF",  # cian
+  "#BCBD22",  # oliva
+  "#08306B",  # azul oscuro
+  "#67000D",  # vino oscuro
+  "#00441B",  # verde bosque
+  "#3F007D",  # morado profundo
+  "#4A2C2A",  # marrón oscuro
+  "#00B0FF",  # azul celeste brillante
+  "#FF6F91",  # coral rosado
+  "#7CB342"   # verde lima oscuro
+)
   mdata1=reactive({
   if(input$startAna=="StarBio"){go1=1}else{go1=0}
 	 validate(      
 	  need(go1 != 0, "Please select the correspond type analysis (Biodiversity)")		  
-    )
+    )	
+	
     #Cada que se actualice nclust
-    pp= as.data.frame(cutree (as.hclust(DoforDiv()[[4]]), k = input$nclust))
-    TFArx=as.phylo(as.hclust(DoforDiv()[[4]]))
+    pp= as.data.frame(cutree (as.hclust(BiodivInfo$res1[[4]]), k = as.numeric(input$nclust)))
+    TFArx=as.phylo(as.hclust(BiodivInfo$res1[[4]]))
     groups=as.data.frame(pp)
-    coord2=as.data.frame(DoforDiv()[[2]])
+    coord2=as.data.frame(BiodivInfo$res1[[2]])
     data1=as.data.frame(cbind(coord2,groups[,1]))
     names(data1)=c("Gen","Factor1","Factor2","Factor3","GroupClust")
     data1$Factor1=as.numeric(as.character(data1$Factor1))
@@ -813,11 +851,13 @@ as much as possible the genetic diversity of the original collection")),tabName=
     data1$GroupClust=as.factor(as.character(data1$GroupClust))
     
     #Cuando se agrega un archivo para grupos externos
-    checkfile<-nrow(parseFilePaths(roots=getVolumes(), input$fileenvbio))
-    if (checkfile!=0){
-    inFileenvbio<-parseFilePaths(roots=getVolumes(), input$fileenvbio)
+    #checkfile<-is.null(input$fileenvbio)
+    if (!is.null(input$fileenvbio)){
+    inFileenvbio<-input$fileenvbio
     dfenvbio <- read.csv(as.character(inFileenvbio$datapath),header = TRUE,sep = ",")
-	dfenvbio[,1]<-putg(cambia_caracter(quita_espacio(as.character(dfenvbio[,1]))))
+	if(!all(grepl("^g", dfenvbio[,1]))){
+		dfenvbio[,1]<-putg(cambia_caracter(quita_espacio(as.character(dfenvbio[,1]))))
+	}
 	indexCOV <- match(data1$Gen,as.character(dfenvbio[,1]))
     if(length(indexCOV)>0)	dfenvbio <- dfenvbio[indexCOV,]  
     #dfenvbio[,2] <- as.factor(dfenvbio[,2])	
@@ -843,7 +883,7 @@ as much as possible the genetic diversity of the original collection")),tabName=
     updateSelectInput(session,'catvdend', 'Group',choices = vars,selected=vars[5])
     
     result=list(data1,TFArx)
-	write.csv(data1,file.path(DoforDiv()[[3]],"GroupsCluster.csv"),row.names=F)
+	#write.csv(data1,file.path(BiodivInfo$res1[[3]],"GroupsCluster.csv"),row.names=F)
     return(result)
   })
   #Actualiza la variable catv (grupos) en conjunto con la seleccion de colores
@@ -853,27 +893,29 @@ as much as possible the genetic diversity of the original collection")),tabName=
 	if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
 	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
 	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
+	 hasResult <- !is.null(BiodivInfo$res1)
 	 validate(
-      need(Gdata != 0, "Please upload data")
+      need(Gdata != 0, "Please upload data"),
+	  need(hasResult, "Please select options and click the button 'Run analysis'")
 	)
 	set.seed(7)
     colores=colors()[-c(1,3:12,13:25,24,37:46,57:67,80,82,83,85:89,101:106,108:113,126:127,138,140:141,152:253,260:366,377:392,
                         394:447,449,478:489,492,513:534,536:546,557:561,579:583,589:609,620:629,418,436,646:651)]
     if(SelFile=="RData"){
 		UpRD=GenInfo$UploadRd
-		if(typeof(UpRD$Aux[[1]][,input$catv])!="double"){
-			d=sample(colores,100)
+		if(typeof(UpRD$Aux[[1]][,input$catv])!="double"){			
 			var=as.factor(UpRD$Aux[[1]][,input$catv])
 			grupos=nlevels(var)
+			if(grupos>18){d=sample(colores,100)}else{d=colores_18}
 		}else{
 			d=c("Jet","Jet","Jet","Jet","Jet","Jet")
 			grupos=2
 		}
 	}else{
-		if(typeof(mdata1()[[1]][,input$catv])!="double"){
-			d=sample(colores,100)
-			var=as.factor(mdata1()[[1]][,input$catv])
+		if(typeof(BiodivInfo$res2[[1]][,input$catv])!="double"){			
+			var=as.factor(BiodivInfo$res2[[1]][,input$catv])
 			grupos=nlevels(var)
+			if(grupos>18){d=sample(colores,100)}else{d=colores_18}
 		}else{
 			d=c("Jet","Jet","Jet","Jet","Jet","Jet")
 			grupos=2
@@ -885,8 +927,10 @@ as much as possible the genetic diversity of the original collection")),tabName=
     if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
 	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
 	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
+	 hasResult <- !is.null(BiodivInfo$res1)
 	 validate(
-      need(Gdata != 0, "Please upload data")
+      need(Gdata != 0, "Please upload data"),
+	  need(hasResult, "Please select options and click the button 'Run analysis'")
 	)
 	set.seed(7)
     colores=colors()[-c(1,3:12,13:25,24,37:46,57:67,80,82,83,85:89,101:106,108:113,126:127,138,140:141,152:253,260:366,377:392,
@@ -894,19 +938,19 @@ as much as possible the genetic diversity of the original collection")),tabName=
     #d=sample(colores,100)
 	if(SelFile=="RData"){
 		UpRD=GenInfo$UploadRd
-		if(typeof(UpRD$Aux[[1]][,input$catv3D])!="double"){
-			d=sample(colores,100)
+		if(typeof(UpRD$Aux[[1]][,input$catv3D])!="double"){			
 			var=as.factor(UpRD$Aux[[1]][,input$catv3D])
 			grupos=nlevels(var)
+			if(grupos>18){d=sample(colores,100)}else{d=colores_18}
 		}else{
 			d=c("Jet","Jet","Jet","Jet","Jet","Jet")
 			grupos=2
 		}
 	}else{
-		if(typeof(mdata1()[[1]][,input$catv3D])!="double"){
-			d=sample(colores,100)
-			var=as.factor(mdata1()[[1]][,input$catv3D])
+		if(typeof(BiodivInfo$res2[[1]][,input$catv3D])!="double"){			
+			var=as.factor(BiodivInfo$res2[[1]][,input$catv3D])
 			grupos=nlevels(var)
+			if(grupos>18){d=sample(colores,100)}else{d=colores_18}
 		}else{
 			d=c("Jet","Jet","Jet","Jet","Jet","Jet")
 			grupos=2
@@ -918,8 +962,10 @@ as much as possible the genetic diversity of the original collection")),tabName=
 	if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
 	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
 	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
+	 hasResult <- !is.null(BiodivInfo$res1)
 	 validate(
-      need(Gdata != 0, "Please upload data")
+      need(Gdata != 0, "Please upload data"),
+	  need(hasResult, "Please select options and click the button 'Run analysis'")
 	)
     set.seed(7)
     colores=colors()[-c(1,3:12,13:25,24,37:46,57:67,80,82,83,85:89,101:106,108:113,126:127,138,140:141,152:253,260:366,377:392,
@@ -927,51 +973,53 @@ as much as possible the genetic diversity of the original collection")),tabName=
 	#d=sample(colores,100)
 	if(SelFile=="RData"){
 		UpRD=GenInfo$UploadRd
-		if(typeof(UpRD$Aux[[1]][,input$catvdend])!="double"){
-			d=sample(colores,100)
+		if(typeof(UpRD$Aux[[1]][,input$catvdend])!="double"){			
 			var=as.factor(UpRD$Aux[[1]][,input$catvdend])
 			grupos=nlevels(var)
+			if(grupos>18){d=sample(colores,100)}else{d=colores_18}
 		}else{
 			d=c("Jet","Jet","Jet","Jet","Jet","Jet")
 			grupos=2
 		}
 	}else{
-		if(typeof(mdata1()[[1]][,input$catvdend])!="double"){
-			d=sample(colores,100)
-			var=as.factor(mdata1()[[1]][,input$catvdend])
+		if(typeof(BiodivInfo$res2[[1]][,input$catvdend])!="double"){			
+			var=as.factor(BiodivInfo$res2[[1]][,input$catvdend])
 			grupos=nlevels(var)
+			if(grupos>18){d=sample(colores,100)}else{d=colores_18}
 		}else{
 			d=c("Jet","Jet","Jet","Jet","Jet","Jet")
 			grupos=2
 		}
 	}
-    updateSelectInput(session,'colordend','Choose a color', choices=d,selected=d[1:grupos])
+    updateSelectInput(session,'colordend','Choose a color', choices=d,selected=d[1:grupos])	
   })
 ##################################################################################################################################################################
   #grafico 2d
 ##################################################################################################################################################################
-  output$try=renderPlotly({
-	 if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
-	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
-	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
+  mds2Plot<-reactive({
+	 if(!is.null(GenInfo$dfgen) && is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
+	 if(is.null(GenInfo$dfgen) && !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
+	 if(is.null(GenInfo$dfgen) && is.null(GenInfo$UploadRd)){Gdata=0}
+	 hasResult <- !is.null(BiodivInfo$res1)
 	 validate(
-      need(Gdata != 0, "Please upload data")
+      need(Gdata != 0, "Please upload data"),
+	  need(hasResult, "Please select options and click the button 'Run analysis'")
 	)
 	if(SelFile=="Data"){	  
-		if(!file.exists("Output_2DPlots")) dir.create("Output_2DPlots")    
-		if(typeof(mdata1()[[1]][,input$catv])!="double"){
-			p=plot_ly(data=mdata1()[[1]],x=mdata1()[[1]][,input$xcol],y=mdata1()[[1]][,input$ycol],color=mdata1()[[1]][,input$catv],
+		#if(!file.exists("Output_2DPlots")) dir.create("Output_2DPlots")    
+		if(typeof(BiodivInfo$res2[[1]][,input$catv])!="double"){
+			p=plot_ly(data=BiodivInfo$res2[[1]],x=BiodivInfo$res2[[1]][,input$xcol],y=BiodivInfo$res2[[1]][,input$ycol],color=BiodivInfo$res2[[1]][,input$catv],
 					type="scatter",mode="markers",colors = input$color,xaxis=F, yaxis=F,
-					text=mdata1()[[1]][,input$eti],marker=list(size=input$size))%>%
+					text=BiodivInfo$res2[[1]][,input$eti],marker=list(size=input$size))%>%
 			#color de fondo del grafico
 			layout(plot_bgcolor=input$bkgp)%>%
 			#titulo y etiquetas ejes
 			layout(title=input$tp,titlefont=list(size=input$ts,color=input$pnc), xaxis = list(title = input$tx, titlefont=list(size=input$szl,color=input$ac)),
 					yaxis = list(title = input$ty,titlefont=list(size=input$szl,color=input$ac)))
 		}else{
-			p=plot_ly(data=mdata1()[[1]],x=mdata1()[[1]][,input$xcol],y=mdata1()[[1]][,input$ycol],color=mdata1()[[1]][,input$catv],
+			p=plot_ly(data=BiodivInfo$res2[[1]],x=BiodivInfo$res2[[1]][,input$xcol],y=BiodivInfo$res2[[1]][,input$ycol],color=BiodivInfo$res2[[1]][,input$catv],
 					type="scatter",mode="markers",xaxis=F, yaxis=F,colors=c("blue","cyan","green","orange","red"),
-					text=mdata1()[[1]][,input$eti],marker=list(size=input$size))%>%
+					text=BiodivInfo$res2[[1]][,input$eti],marker=list(size=input$size))%>%
 			#color de fondo del grafico
 			layout(plot_bgcolor=input$bkgp)%>%
 			#titulo y etiquetas ejes
@@ -980,11 +1028,11 @@ as much as possible the genetic diversity of the original collection")),tabName=
 		}
 		#el siguiente codigo, cambia temporalmente el directorio de trabajo para guardar el grafico 2d
 		#primero se especifica la direccion en la que se guardara y luego la accion (guardar el grafico)
-		withr::with_dir(file.path(DoforDiv()[[3]],"Output_2DPlots"),saveWidget(p,paste0('MDS2d_',input$catv,'.html'), selfcontained = F))
+		#withr::with_dir(file.path(BiodivInfo$res1[[3]],"Output_2DPlots"),saveWidget(p,paste0('MDS2d_',input$catv,'.html'), selfcontained = F))
 		p
 	}else{
 		UpRD=GenInfo$UploadRd
-		if(!file.exists("Output_2DPlots")) dir.create("Output_2DPlots")    
+		#if(!file.exists("Output_2DPlots")) dir.create("Output_2DPlots")    
 		if(typeof(UpRD$Aux[[1]][,input$catv])!="double"){
 			p=plot_ly(data=UpRD$Aux[[1]],x=UpRD$Aux[[1]][,input$xcol],y=UpRD$Aux[[1]][,input$ycol],color=UpRD$Aux[[1]][,input$catv],
 					type="scatter",mode="markers",colors = input$color,xaxis=F, yaxis=F,
@@ -1006,42 +1054,32 @@ as much as possible the genetic diversity of the original collection")),tabName=
 		}
 		#el siguiente codigo, cambia temporalmente el directorio de trabajo para guardar el grafico 2d
 		#primero se especifica la direccion en la que se guardara y luego la accion (guardar el grafico)
-		withr::with_dir(file.path(UpRD$DivAna[[3]],"Output_2DPlots"),saveWidget(p,paste0('MDS2d_',input$catv,'.html'), selfcontained = F))
+		#withr::with_dir(file.path(UpRD$DivAna[[3]],"Output_2DPlots"),saveWidget(p,paste0('MDS2d_',input$catv,'.html'), selfcontained = F))
 		p
 	}
   })
   
-  #Cuadro de texto que muestra la direccion en la que se guardo el grafico.
-  output$default1=renderText({
-  if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
-	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
-	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
-	 validate(
-      need(Gdata != 0, "Please upload data")
-	)
-	if(SelFile=="Data"){	  
-		paste('You can find results and edited plots files in:',as.character(DoforDiv()[[3]]))
-	}else{
-		UpRD=GenInfo$UploadRd
-		paste('You can find results and edited plots files in:',as.character(UpRD$DivAna[[3]]))
-	}
-  })
+ output$try=renderPlotly({
+	mds2Plot()
+ })
 ##################################################################################################################################################################  
   #grafico 3d
 ##################################################################################################################################################################
-  output$try3d=renderPlotly({
+  mds3Plot<-reactive({
     if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
 	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
 	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
+	 hasResult <- !is.null(BiodivInfo$res1)
 	 validate(
-      need(Gdata != 0, "Please upload data")
+      need(Gdata != 0, "Please upload data"),
+	  need(hasResult, "Please select options and click the button 'Run analysis'")
 	)
 	if(SelFile=="Data"){	 
-		if(!file.exists("Output_3DPlots")) dir.create("Output_3DPlots")
-		if(typeof(mdata1()[[1]][,input$catv3D])!="double"){	
-			p=plot_ly(data=mdata1()[[1]],x=mdata1()[[1]][,input$xcol3D],y=mdata1()[[1]][,input$ycol3D],z=mdata1()[[1]][,input$zcol3D],color=mdata1()[[1]][,input$catv3D],
+		#if(!file.exists("Output_3DPlots")) dir.create("Output_3DPlots")
+		if(typeof(BiodivInfo$res2[[1]][,input$catv3D])!="double"){	
+			p=plot_ly(data=BiodivInfo$res2[[1]],x=BiodivInfo$res2[[1]][,input$xcol3D],y=BiodivInfo$res2[[1]][,input$ycol3D],z=BiodivInfo$res2[[1]][,input$zcol3D],color=BiodivInfo$res2[[1]][,input$catv3D],
 					type = 'scatter3d' ,mode="markers",colors = input$color3D,
-					text=mdata1()[[1]][,input$eti3D],marker=list(size=input$size3D))%>%
+					text=BiodivInfo$res2[[1]][,input$eti3D],marker=list(size=input$size3D))%>%
 			#Nombre de los ejes del grafico
 			layout(scene=list(xaxis = list(title = input$tx3D,titlefont=list(size=input$szl3D,color=input$ac3D)),
 								yaxis = list(title = input$ty3D,titlefont=list(size=input$szl3D,color=input$ac3D)),
@@ -1049,9 +1087,9 @@ as much as possible the genetic diversity of the original collection")),tabName=
 					paper_bgcolor=input$bkgp3D,
 					title=input$tp3D,titlefont=list(size=input$ts3D,color=input$pnc3D))
 		}else{
-			p=plot_ly(data=mdata1()[[1]],x=mdata1()[[1]][,input$xcol3D],y=mdata1()[[1]][,input$ycol3D],z=mdata1()[[1]][,input$zcol3D],color=mdata1()[[1]][,input$catv3D],
+			p=plot_ly(data=BiodivInfo$res2[[1]],x=BiodivInfo$res2[[1]][,input$xcol3D],y=BiodivInfo$res2[[1]][,input$ycol3D],z=BiodivInfo$res2[[1]][,input$zcol3D],color=BiodivInfo$res2[[1]][,input$catv3D],
 				type = 'scatter3d' ,mode="markers",colors=c("blue","cyan","green","orange","red"),
-				text=mdata1()[[1]][,input$eti3D],marker=list(size=input$size3D))%>%
+				text=BiodivInfo$res2[[1]][,input$eti3D],marker=list(size=input$size3D))%>%
 		#Nombre de los ejes del grafico
 			layout(scene=list(xaxis = list(title = input$tx3D,titlefont=list(size=input$szl3D,color=input$ac3D)),
 							yaxis = list(title = input$ty3D,titlefont=list(size=input$szl3D,color=input$ac3D)),
@@ -1062,11 +1100,11 @@ as much as possible the genetic diversity of the original collection")),tabName=
 		}
 		#el siguiente codigo, cambia temporalmente el directorio de trabajo para guardar el grafico 3d
 		#primero se especifica la direccion en la que se guardara y luego la accion (guardar el grafico)
-		withr::with_dir(file.path(DoforDiv()[[3]],"Output_3DPlots"),saveWidget(p,paste0('MDS3d_',input$catv3D,'.html'), selfcontained = F))
+		#withr::with_dir(file.path(BiodivInfo$res1[[3]],"Output_3DPlots"),saveWidget(p,paste0('MDS3d_',input$catv3D,'.html'), selfcontained = F))
 		p
 	}else{
 		UpRD=GenInfo$UploadRd
-		if(!file.exists("Output_3DPlots")) dir.create("Output_3DPlots")
+		#if(!file.exists("Output_3DPlots")) dir.create("Output_3DPlots")
 		if(typeof(UpRD$Aux[[1]][,input$catv3D])!="double"){		
 			p=plot_ly(data=UpRD$Aux[[1]],x=UpRD$Aux[[1]][,input$xcol3D],y=UpRD$Aux[[1]][,input$ycol3D],z=UpRD$Aux[[1]][,input$zcol3D],color=UpRD$Aux[[1]][,input$catv3D],
 					type = 'scatter3d' ,mode="markers",colors = input$color3D,
@@ -1090,45 +1128,35 @@ as much as possible the genetic diversity of the original collection")),tabName=
 		}
 		#el siguiente codigo, cambia temporalmente el directorio de trabajo para guardar el grafico 3d
 		#primero se especifica la direccion en la que se guardara y luego la accion (guardar el grafico)
-		withr::with_dir(file.path(UpRD$DivAna[[3]],"Output_3DPlots"),saveWidget(p,paste0('MDS3d_',input$catv3D,'.html'), selfcontained = F))
+		#withr::with_dir(file.path(UpRD$DivAna[[3]],"Output_3DPlots"),saveWidget(p,paste0('MDS3d_',input$catv3D,'.html'), selfcontained = F))
 		p
 	}
-  })
+  })  
   
-  #Cuadro de texto que muestra la direccion en la que se guardo el grafico.
-  output$default3d=renderText({
-  if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
-	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
-	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
-	 validate(
-      need(Gdata != 0, "Please upload data")
-	)
-	if(SelFile=="Data"){	  
-	  paste('You can find results and edited plots files in:',as.character(DoforDiv()[[3]]))
-  }else{
-	  UpRD=GenInfo$UploadRd
-	  paste('You can find results and edited plots files in:',as.character(UpRD$DivAna[[3]]))
-  }
- })
+  output$try3d=renderPlotly({
+	mds3Plot()
+  })
 ##################################################################################################################################################################
 #distance matrix heatmap
 ##################################################################################################################################################################
-  output$heat=renderPlotly({  
+  heatPlot<-reactive({  
   if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
 	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
 	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
+	 hasResult <- !is.null(BiodivInfo$res1)
 	 validate(
-      need(Gdata != 0, "Please upload data")
+      need(Gdata != 0, "Please upload data"),
+	  need(hasResult, "Please select options and click the button 'Run analysis'")
 	)
-	req(mdata1())
+	#req(mdata1())
 	if(SelFile=="Data"){	  
-		use=as.data.frame(mdata1()[[1]])
+		use=as.data.frame(BiodivInfo$res2[[1]])
 		group=input$catv
 		use=use[order(use[,group]),]
-		useorder=match(use$Gen,rownames(DoforDiv()[[6]]))
-		distplot=plot_ly(x=rownames(DoforDiv()[[6]])[useorder],y=rownames(DoforDiv()[[6]])[useorder],z = DoforDiv()[[6]][useorder,useorder], colorscale=input$colorheat,type = "heatmap")%>%
+		useorder=match(use$Gen,rownames(BiodivInfo$res1[[6]]))
+		distplot=plot_ly(x=rownames(BiodivInfo$res1[[6]])[useorder],y=rownames(BiodivInfo$res1[[6]])[useorder],z = BiodivInfo$res1[[6]][useorder,useorder], colorscale=input$colorheat,type = "heatmap")%>%
 		layout(xaxis = list(showticklabels = F), yaxis = list(showticklabels = F))
-		withr::with_dir(file.path(DoforDiv()[[3]]),saveWidget(distplot,'DistancesPlotEdited.html', selfcontained = F))
+		#withr::with_dir(file.path(BiodivInfo$res1[[3]]),saveWidget(distplot,'DistancesPlotEdited.html', selfcontained = F))
 		distplot
 	}else{
 		UpRD=GenInfo$UploadRd
@@ -1138,103 +1166,262 @@ as much as possible the genetic diversity of the original collection")),tabName=
 		useorder=match(use$Gen,rownames(UpRD$DivAna[[6]]))
 		distplot=plot_ly(x=rownames(UpRD$DivAna[[6]])[useorder],y=rownames(UpRD$DivAna[[6]])[useorder],z = UpRD$DivAna[[6]][useorder,useorder], colorscale=input$colorheat,type = "heatmap")%>%
 		layout(xaxis = list(showticklabels = F), yaxis = list(showticklabels = F))
-		withr::with_dir(file.path(UpRD$DivAna[[3]]),saveWidget(distplot,'DistancesPlotEdited.html', selfcontained = F))
+		#withr::with_dir(file.path(UpRD$DivAna[[3]]),saveWidget(distplot,'DistancesPlotEdited.html', selfcontained = F))
 		distplot
 	}
   })
   
-  output$defaultheat=renderText({
-  if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
-	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
-	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
-	 validate(
-      need(Gdata != 0, "Please upload data")
-	)
-	if(SelFile=="Data"){	  
-		paste('You can find results and edited plots files in:',as.character(DoforDiv()[[3]]))
-	}else{
-		UpRD=GenInfo$UploadRd
-		paste('You can find results and edited plots files in:',as.character(UpRD$DivAna[[3]]))
-	}
+  output$heat=renderPlotly({  
+   heatPlot()
   })
+  
 ##################################################################################################################################################################
 #dendogram plot
-##################################################################################################################################################################  
-  output$dend=renderPlot({
+################################################################################################################################################################## 
+dendoPlot<-reactive({  
   if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
 	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
 	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
+	 hasResult <- !is.null(BiodivInfo$res1)
 	 validate(
-      need(Gdata != 0, "Please upload data")
+      need(Gdata != 0, "Please upload data"),
+	  need(hasResult, "Please select options and click the button 'Run analysis'")
 	)
 	if(SelFile=="Data"){	
-		DivAna=DoforDiv()
-		Aux=mdata1()
-		save(DivAna,Aux,file="DivAna.RData")
-		if(!file.exists("Output_Dendograms")) dir.create("Output_Dendograms")
-		data=as.data.frame(mdata1()[[1]])
+		#DivAna=BiodivInfo$res1
+		#Aux=BiodivInfo$res2
+		#save(DivAna,Aux,file="DivAna.RData")
+		#if(!file.exists("Output_Dendograms")) dir.create("Output_Dendograms")
+		data=as.data.frame(BiodivInfo$res2[[1]])
 		info<- data[,c("Gen",input$catvdend)]
 		info<- cbind(ID=info$Gen,info)
-		names(info)=c("ID","Gen","Group")
-		tree=mdata1()[[2]]
-		if(typeof(info$Group)!="double"){
-			p=ggtree(tree, layout=input$typeclust ,size=input$sizeline) %<+% info +
-			scale_color_manual(values=input$colordend)+
-			geom_tiplab(aes(label=Gen,color=Group),size=input$sizelab, offset=input$space, hjust=0.5)+ 
-			theme(legend.position=input$poslen)
-		}else{
-			p=ggtree(tree, layout=input$typeclust ,size=input$sizeline) %<+% info +
-			scale_color_gradientn(colours=c("blue","cyan","green","orange","red")) +
-			geom_tiplab(aes(label=Gen,color=Group),size=input$sizelab, offset=input$space, hjust=0.5)+ 
-			theme(legend.position=input$poslen)
+		names(info)=c("ID","Gen","Group")		
+		tree=BiodivInfo$res2[[2]]
+		
+		if(!is.null(BiodivInfo$res1[[9]])){		
+			q_df <- as.data.frame(BiodivInfo$res1[[9]])
+			q_df$Individual <- rownames(q_df)
+			q_long <- pivot_longer(q_df,
+                cols = -Individual,
+                names_to = "Cluster",
+                values_to = "Mixture")						
 		}
-		ggsave(paste0(DoforDiv()[[3]],'\\Output_Dendograms\\DendogramPlot_',input$catvdend,'.pdf'),p)
-		p
+		
+		if(typeof(info$Group)!="double"){
+			if(!is.null(BiodivInfo$res1[[9]])){
+                    updateSelectInput(session,'typeclust','Type',choices=c('circular'), selected='circular')			
+					colp=input$colordend
+				#save(tree,info,q_long,colp,file="infotree.RData")
+					p <- ggtree(tree, layout = "circular")%<+%  info +
+					geom_tiplab(aes(label=Gen,color=Group),size=input$sizelab, offset=input$space, fontface="bold", show.legend=FALSE) +
+					geom_point(aes(color = Group), alpha=0, show.legend=T) +
+					scale_color_manual(values = input$colordend, breaks=levels(info$Group)) +
+					geom_fruit(data = q_long,geom = geom_bar,mapping = aes(y = Individual,x = Mixture,fill = Cluster),
+					orientation = "y",stat = "identity",width = 0.8,offset=0.01)+				
+					theme(legend.position = input$poslen,
+					legend.title = element_text(size = 12, face = "bold"),
+					legend.text = element_text(size = 10),
+					legend.key.size = unit(0.6, "cm")
+					) + 
+					guides(color = guide_legend(override.aes = list(shape = 15, size = 5, alpha=1),ncol=2),
+					fill = guide_legend(ncol = 2)) + 
+					labs(color="Group", fill="Mixture") 
+					p + xlim(0, max(p$data$x) + 0.5)				
+			}else{
+				p<-ggtree(tree, layout=input$typeclust ,size=input$sizeline) %<+% info +
+					geom_tiplab(aes(label=Gen,color=Group),size=input$sizelab, offset=input$space, fontface="bold", show.legend=FALSE) +
+					geom_point(aes(color = Group), alpha=0, show.legend=T) +
+					scale_color_manual(values=input$colordend, breaks=levels(info$Group))+					
+					theme(legend.position = input$poslen,
+					legend.title = element_text(size = 12, face = "bold"),
+					legend.text = element_text(size = 10),
+					legend.key.size = unit(0.6, "cm")
+					) +
+					guides(color = guide_legend(override.aes = list(shape = 15, size = 5, alpha=1),ncol=2))+
+					labs(color="Group") 
+					p + xlim(0, max(p$data$x) + 0.5)	
+			}
+			
+		}else{
+			p<-ggtree(tree, layout=input$typeclust ,size=input$sizeline) %<+% info +
+					scale_color_gradientn(colours=c("blue","cyan","green","orange","red")) +
+					geom_tiplab(aes(label=Gen,color=Group),size=input$sizelab, offset=input$space, fontface="bold", show.legend=FALSE) +
+					geom_point(aes(color = Group), alpha=0, show.legend=T) +
+					theme(legend.position = input$poslen,
+					legend.title = element_text(size = 12, face = "bold"),
+					legend.text = element_text(size = 10),
+					legend.key.size = unit(0.6, "cm")
+					) +
+					guides(color = guide_legend(override.aes = list(shape = 15, size = 5, alpha=1),ncol=2))+
+					labs(color="Group") 
+					p + xlim(0, max(p$data$x) + 0.5)	
+		}		
+		
 	}else{
 		UpRD=GenInfo$UploadRd
-		if(!file.exists("Output_Dendograms")) dir.create("Output_Dendograms")
-		data=as.data.frame(UpRD$Aux[[1]])
+		#if(!file.exists("Output_Dendograms")) dir.create("Output_Dendograms")
+		data=as.data.frame(UpRD$Aux[[1]][1])
 		info<- data[,c("Gen",input$catvdend)]
 		info<- cbind(ID=info$Gen,info)
 		names(info)=c("ID","Gen","Group")
+		kbest<-length(unique(info$Group))
 		tree=UpRD$Aux[[2]]
-		if(typeof(info$Group)!="double"){
-			p=ggtree(tree, layout=input$typeclust ,size=input$sizeline) %<+% info +
-			scale_color_manual(values=input$colordend)+
-			geom_tiplab(aes(label=Gen,color=Group),size=input$sizelab, offset=input$space, hjust=0.5)+ 
-			theme(legend.position=input$poslen)
-		}else{
-			p=ggtree(tree, layout=input$typeclust ,size=input$sizeline) %<+% info +
-			scale_color_gradientn(colours=c("blue","cyan","green","orange","red")) +
-			geom_tiplab(aes(label=Gen,color=Group),size=input$sizelab, offset=input$space, hjust=0.5)+ 
-			theme(legend.position=input$poslen)
+		if(!is.null(UpRD$Aux[[1]][9])){
+			q_df <- as.data.frame(UpRD$Aux[[1]][9])
+			q_df$Individual <- rownames(q_df)
+			q_long <- pivot_longer(q_df,
+                cols = -Individual,
+                names_to = "Cluster",
+                values_to = "Mixture")			
 		}
-		ggsave(paste0(UpRD$DivAna[[3]],'\\Output_Dendograms\\DendogramPlot_',input$catvdend,'.pdf'),p)
-		p
+		
+		if(typeof(info$Group)!="double"){
+			if(!is.null(UpRD$Aux[[1]][9])){	
+				   #updateSelectInput(session,'typeclust','Type',choices=c('circular','rectangular'), selected='circular')			
+					p <- ggtree(tree, layout = "circular")%<+% info +
+					geom_tiplab(aes(label=Gen,color=Group),size=input$sizelab, offset=input$space, fontface="bold", show.legend=FALSE) +
+					geom_point(aes(color = Group), alpha=0, show.legend=T) +
+					scale_color_manual(values = input$colordend, breaks=levels(info$Group)) +
+					geom_fruit(data = q_long,geom = geom_bar,mapping = aes(y = Individual,x = Mixture,fill = Cluster),
+					orientation = "y",stat = "identity",width = 0.8,offset=0.01)+				
+					theme(legend.position = input$poslen,
+					legend.title = element_text(size = 12, face = "bold"),
+					legend.text = element_text(size = 10),
+					legend.key.size = unit(0.6, "cm")
+					) + 
+					guides(color = guide_legend(override.aes = list(shape = 15, size = 5, alpha=1),ncol=2),
+					fill = guide_legend(ncol = 2)) + 
+					labs(color="Group", fill="Mixture") 
+					p + xlim(0, max(p$data$x) + 0.5)				
+			}else{
+				p<-ggtree(tree, layout=input$typeclust ,size=input$sizeline) %<+% info +
+					scale_color_manual(values=input$colordend)+
+					geom_tiplab(aes(label=Gen,color=Group),size=input$sizelab, offset=input$space, fontface="bold", show.legend=FALSE) +
+					geom_point(aes(color = Group), alpha=0, show.legend=T) +
+					theme(legend.position = input$poslen,
+					legend.title = element_text(size = 12, face = "bold"),
+					legend.text = element_text(size = 10),
+					legend.key.size = unit(0.6, "cm")
+					) +
+					guides(color = guide_legend(override.aes = list(shape = 15, size = 5, alpha=1),ncol=2))+
+					labs(color="Group") 
+					p + xlim(0, max(p$data$x) + 0.5)	
+			}	
+		}else{
+			p<-ggtree(tree, layout=input$typeclust ,size=input$sizeline) %<+% info +
+					scale_color_gradientn(colours=c("blue","cyan","green","orange","red")) +
+					geom_tiplab(aes(label=Gen,color=Group),size=input$sizelab, offset=input$space, fontface="bold", show.legend=FALSE) +
+					geom_point(aes(color = Group), alpha=0, show.legend=T) +
+					theme(legend.position = input$poslen,
+					legend.title = element_text(size = 12, face = "bold"),
+					legend.text = element_text(size = 10),
+					legend.key.size = unit(0.6, "cm")
+					) +
+					guides(color = guide_legend(override.aes = list(shape = 15, size = 5, alpha=1),ncol=2))+
+					labs(color="Group") 
+					p + xlim(0, max(p$data$x) + 0.5)	
+		}
+		
 	}
-  })
+	})
+	output$dend=renderPlot({dendoPlot()})
   
-  
-  output$defaultdend=renderText({
-  if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
-	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
-	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
-	 validate(
-      need(Gdata != 0, "Please upload data")
+    ## Report tab
+    output$seeReportBio <- renderUI({
+		req(report())
+		tags$iframe(src = report(), width = "100%", height = "1100px", style = "border:none;")
+	})
+       
+	 
+	##Download distance matrix
+    output$download_distM <- downloadHandler(
+			filename = function() {
+				paste0("DistanceMat_", Sys.Date(), ".csv")
+			},
+			content = function(file) {	
+				req(BiodivInfo$res1)			
+				mrdMAT1=BiodivInfo$res1[[6]]
+				colnames(mrdMAT1)=seq(1:dim(BiodivInfo$res1[[6]])[1])			
+				mrdMAT1=cbind(ID=seq(1:dim(BiodivInfo$res1[[6]])[1]),NAME=rownames(BiodivInfo$res1[[6]]),round(mrdMAT1,5))
+				write.csv(mrdMAT1,file,quote=FALSE,row.names=FALSE)						
+			}
 	)
-	if(SelFile=="Data"){	
-		paste('You can find results and edited plots files in:',as.character(DoforDiv()[[3]]))
-	}else{
-		UpRD=GenInfo$UploadRd
-		paste('You can find results and edited plots files in:',as.character(UpRD$DivAna[[3]]))
-	}  
-  })
+	
+	##Download dendoplot
+    output$download_dendPlot <- downloadHandler(
+			filename = function() {
+				paste0("DendogramPlot_", Sys.Date(), ".pdf")
+			},
+			content = function(file) {					
+				p<-dendoPlot()
+				req(p, p$data$x)
+				p <- p + xlim(0, max(p$data$x) + 0.5)					
+				ggsave(file,p,device="pdf")
+			}
+	)
+	
+	##Download report
+    output$download_report <- downloadHandler(
+		filename = function() {paste0("Biodiversity_dashboard_", Sys.Date(), ".html")},
   
+		content = function(file) {
+			req(report())
+			file.copy(file.path("www", report()), file,overwrite = TRUE)
+		}
+	)
+	 
+	 report <- reactiveVal(NULL)
+    
+    observeEvent(input$generate_report, {
+
+		shinybusy::show_modal_spinner(spin = "fading-circle", text = "Generating Report..." )
+
+		src <- normalizePath("local/reportBio.Rmd")
+
+		owd <- getwd()              # ⚠️ guardas ruta real
+		setwd(tempdir())            # trabajas en temp
+
+		file.copy(src, "reportBio.Rmd", overwrite = TRUE)
+
+		outReport <- tryCatch({
+
+			rmarkdown::render( "reportBio.Rmd",
+				params = list(
+					toDownload = TRUE,
+					dend = dendoPlot(),
+					mds2 = mds2Plot(),
+					mds3 = mds3Plot(),
+					heat = heatPlot(),
+					amovaT = amovaTable(),
+					popstr = DoforPopStr()[[1]],
+					summBio = BiodivInfo
+				),
+				output_format = rmdformats::robobook(toc_depth = 4)
+			)
+		}, error = function(e) {
+		showNotification(paste("Error:", e$message), type = "error")
+		NULL
+	})
+
+  # 🔥 REGRESAR AL APP DIR
+		setwd(owd)
+		if (!is.null(outReport)) {
+			if (!dir.exists("www")) dir.create("www")
+			file.copy(outReport, "www/report.html", overwrite = TRUE)
+			report("report.html")  # 🔥 clave
+			shinyjs::click("download_report")
+			shinyjs::click("download_distM")
+			shinyjs::click("download_dendPlot")
+		}
+		shinybusy::remove_modal_spinner()
+	})
+    
+	
   ########################################################################################################################################################################################    
   #Core-BIO-R
   ########################################################################################################################################################################################    
-  shinyFileChoose(input, 'filedistbio', roots = getVolumes(),filetypes=c('', 'csv'))
-  shinyFileChoose(input, 'filephendatbio', roots = getVolumes(),filetypes=c('', 'csv'))
+  #shinyFileChoose(input, 'filedistbio', roots = getVolumes(),filetypes=c('', 'csv'))
+  #shinyFileChoose(input, 'filephendatbio', roots = getVolumes(),filetypes=c('', 'csv'))
   
   observe({
   
@@ -1339,9 +1526,9 @@ as much as possible the genetic diversity of the original collection")),tabName=
       typedata<- cambia_caracter(input$typedata)
 	  if(!"gendat"%in%input$datause && "distdat"%in%input$datause){checadist="exist"}else{checadist="none"}
 	  
-	  dirfilePhen<-parseFilePaths(roots=getVolumes(), input$filephendatbio)
+	  dirfilePhen<-input$filephendatbio
       validate(
-		need(nrow(dirfilePhen)!=0, "Please select data"),
+		need(!is.null(dirfilePhen), "Please select data"),
 		need(checadist!="exist","Combination of data NO available")
       )
     }else{      
@@ -1405,9 +1592,9 @@ as much as possible the genetic diversity of the original collection")),tabName=
     
     if ("distdat"%in%input$datause){      
 	  typedata<- cambia_caracter(input$typedata)	  
-      dirfileDist<-parseFilePaths(roots=getVolumes(), input$filedistbio)
+      dirfileDist<-input$filedistbio
       validate(
-        need(nrow(dirfileDist) != 0, "Please select data")
+        need(!is.null(dirfileDist), "Please select data")
       )
     }else{
       dirfileDist<-"none" 
@@ -1422,24 +1609,25 @@ as much as possible the genetic diversity of the original collection")),tabName=
     )
     
     if("phendat"%in%input$datause){
-      dirfile=as.character(parseFilePaths(roots=getVolumes(), input$filephendatbio)$datapath)
-      filename=as.character(parseFilePaths(roots=getVolumes(), input$filephendatbio)$name)
+      dirfile=as.character(input$filephendatbio$datapath)
+      filename=as.character(input$filephendatbio$name)
     }else{
       if("gendat"%in%input$datause){
-        dirfile=as.character(parseFilePaths(roots=getVolumes(), input$filegen)$datapath)
-        filename=as.character(parseFilePaths(roots=getVolumes(), input$filegen)$name)
+        dirfile=as.character(input$filegen$datapath)
+        filename=as.character(input$filegen$name)
       }else{
-        dirfile=as.character(parseFilePaths(roots=getVolumes(), input$filedistbio)$datapath)
-        filename=as.character(parseFilePaths(roots=getVolumes(), input$filedistbio)$name)
+        dirfile=as.character(input$filedistbio$datapath)
+        filename=as.character(input$filedistbio$name)
       }
     }
-	outFolder <- cambia_caracter(paste("CoreSubset_",str_replace(filename,".csv",""),sep=""))
-    setwd(str_replace(dirfile,filename,""))
-    if(!file.exists("Output_BIO-R")) dir.create("Output_BIO-R")
-    setwd("Output_BIO-R")
-    if(!file.exists(outFolder)) dir.create(outFolder)
-    setwd(outFolder)
-    fin=getwd()
+	
+	#outFolder <- cambia_caracter(paste("CoreSubset_",str_replace(filename,".csv",""),sep=""))
+    #setwd(str_replace(dirfile,filename,""))
+    #if(!file.exists("Output_BIO-R")) dir.create("Output_BIO-R")
+    #setwd("Output_BIO-R")
+    #if(!file.exists(outFolder)) dir.create(outFolder)
+    #setwd(outFolder)
+    #fin=getwd()
 	
 	### Correr funciones ----------------------------------------
 	withProgress(message = 'Getting...', value = 0,{
@@ -1451,7 +1639,7 @@ as much as possible the genetic diversity of the original collection")),tabName=
     	
 	genos<-as.data.frame(resCH[[1]])
 	distMat<-resCH[[2]]
-	save(genos,datos,dirfileGen,dirfileDist,dirfilePhen,file="addreport.RData")
+	#save(genos,datos,distMat,dirfileGen,dirfileDist,dirfilePhen,file="addreport.RData")
 	if (dirfileGen[1]!="none" & dirfilePhen[1]=="none" & dirfileDist[1]=="none"){
 		rownames(datos)<-datos[,1]
 		datos<-datos[,-1]
@@ -1516,35 +1704,25 @@ as much as possible the genetic diversity of the original collection")),tabName=
 	updateTextInput(session,'tyCH','Y Axis Label',value = paste0('Factor 2 (',perctCP12[2],'%)'))
 	updateTextInput(session,'tzCH','Z Axis Label',value = paste0('Factor 3 (',perctCP12[3],'%)'))			
 		
-	return(list(fin,genos1,statsF))
+	return(list(genos1,statsF))
   })
   
-  #output$defaultcore=renderText({
-    #HTML(paste0("<font color=\"#FF0000\"><b> ","SUCCESSFUL ANALYSIS!!", "</b></font>","<br> You can find results files in:","<font color=\"#FF0000\"><b>",datacore()[[1]],"</b></font>"))		
-  #})
-	output$defaultcore <- renderUI({
+	output$defaultcore <- DT::renderDataTable({
 		req(datacore())
-		path_res <- datacore()[[1]]
-		df <- datacore()[[3]]
-
-		tagList(
-			HTML(paste0(
-			"<font color='#FF0000'><b>SUCCESSFUL ANALYSIS!!</b></font><br>",
-			"You can find results files in: ",
-			"<font color='#FF0000'><b>", path_res, "</b></font><br><br>",
-			"<b>DataCore content:</b><br>"
-		)),
-		tableOutput("coreTable")
-		)
+		seedf<-as.data.frame(datacore()[[2]])
+		datatable(seedf, selection="multiple", escape=FALSE, 
+              options = list(sDom  = '<"top">lrt<"bottom">ip',pageLength = 7,width="100%", scrollX = TRUE))
 	})
 
-	output$coreTable <- renderTable({
+    output$selInd <- DT::renderDataTable({
 		req(datacore())
-		datacore()[[3]]
+		seedf<-as.data.frame(datacore()[[1]])
+		datatable(seedf, selection="multiple", escape=FALSE, 
+              options = list(sDom  = '<"top">lrt<"bottom">ip',pageLength = 10,width="100%", scrollX = TRUE))
 	})
-
+	
 observeEvent(input$catvCH,{
-    genos1<-datacore()[[2]]
+    genos1<-datacore()[[1]]
 	set.seed(7)
     colores=colors()[-c(1,3:12,13:25,24,37:46,57:67,80,82,83,85:89,101:106,108:113,126:127,138,140:141,152:253,260:366,377:392,
                         394:447,449,478:489,492,513:534,536:546,557:561,579:583,589:609,620:629,418,436,646:651)]
@@ -1563,10 +1741,10 @@ observeEvent(input$catvCH,{
 ##################################################################################################################################################################
   #grafico 2d Core Hunter
 ##################################################################################################################################################################
-  output$tryCH=renderPlotly({		 
+  mds2PlotCore<-reactive({		 
 	#if(SelFile=="Data"){	  
-		if(!file.exists("Output_2DPlots")) dir.create("Output_2DPlots")    
-		genos1<-datacore()[[2]]		
+		#if(!file.exists("Output_2DPlots")) dir.create("Output_2DPlots")    
+		genos1<-datacore()[[1]]		
 		if(typeof(genos1[,input$catvCH])!="double"){
 			p=plot_ly(data=genos1,x=genos1[,input$xcolCH],y=genos1[,input$ycolCH],color=genos1[,input$catvCH],
 					type="scatter",mode="markers",colors = input$colorCH,xaxis=F, yaxis=F,
@@ -1588,7 +1766,7 @@ observeEvent(input$catvCH,{
 		}
 		#el siguiente codigo, cambia temporalmente el directorio de trabajo para guardar el grafico 2d
 		#primero se especifica la direccion en la que se guardara y luego la accion (guardar el grafico)
-		withr::with_dir(file.path(datacore()[[1]],"Output_2DPlots"),saveWidget(p,paste0('MDS2dCH_',input$catvCH,'.html'), selfcontained = F))
+		#withr::with_dir(file.path(datacore()[[1]],"Output_2DPlots"),saveWidget(p,paste0('MDS2dCH_',input$catvCH,'.html'), selfcontained = F))
 		p
 	#}else{
 	#	UpRD=GenInfo$UploadRd
@@ -1619,6 +1797,60 @@ observeEvent(input$catvCH,{
 	#}
   })
   
+  output$tryCH=renderPlotly({	
+	req(datacore())
+	mds2PlotCore()
+  })
+  
+  ##Download report
+    output$generateCore <- downloadHandler(
+		filename = function() {paste0("CoreSubset_dashboard_", Sys.Date(), ".html")},
+  
+		content = function(file) {
+			req(reportCore())
+			file.copy(file.path("www", reportCore()), file,overwrite = TRUE)
+		}
+	)
+	 
+	 reportCore <- reactiveVal(NULL)
+    
+    observeEvent(input$generate_Core,{
+
+		shinybusy::show_modal_spinner(spin = "fading-circle", text = "Generating Report..." )
+
+		src <- normalizePath("local/reportCore.Rmd")
+
+		owd <- getwd()              # ⚠️ guardas ruta real
+		setwd(tempdir())            # trabajas en temp
+
+		file.copy(src, "reportCore.Rmd", overwrite = TRUE)
+
+		outReport <- tryCatch({
+
+			rmarkdown::render( "reportCore.Rmd",
+				params = list(
+					toDownload = TRUE,
+					resCore = datacore(),
+					mds2 = mds2PlotCore()					
+				),
+				output_format = rmdformats::robobook(toc_depth = 4)
+			)
+		}, error = function(e) {
+		showNotification(paste("Error:", e$message), type = "error")
+		NULL
+	})
+
+  # 🔥 REGRESAR AL APP DIR
+		setwd(owd)
+		if (!is.null(outReport)) {
+			if (!dir.exists("www")) dir.create("www")
+			file.copy(outReport, "www/reportCore.html", overwrite = TRUE)
+			reportCore("reportCore.html")  # 🔥 clave	
+			shinyjs::click("generateCore")			
+		}
+		shinybusy::remove_modal_spinner()
+	})
+    
 
 	
 ##################################################################################################################################################################
@@ -1626,12 +1858,13 @@ observeEvent(input$catvCH,{
 #Start GWAS Code
 ##################################################################################################################################################################
 ##################################################################################################################################################################
-shinyFileChoose(input, 'filephen', roots = getVolumes(),filetypes=c('csv'))
-shinyFileChoose(input, 'fileplants', roots = getVolumes(),filetypes=c('gz'))
+#shinyFileChoose(input, 'filephen', roots = getVolumes(),filetypes=c('csv'))
+#shinyFileChoose(input, 'fileplants', roots = getVolumes(),filetypes=c('gz'))
 
 myDataPhen<-reactive({
-	inFilephen=parseFilePaths(roots=getVolumes(), input$filephen)
-	if(nrow(inFilephen)==0){PhenData=0}else{PhenData=1}	 
+	req(GenInfo)
+	inFilephen= input$filephen
+	if(is.null(inFilephen)){PhenData=0}else{PhenData=1}	 
 	validate(
 		need(PhenData != 0, "Please select phen data")
     )
@@ -1652,20 +1885,24 @@ myDataPhen<-reactive({
 })
 
 myDataRegGen<-reactive({
-	inFileplants=parseFilePaths(roots=getVolumes(), input$fileplants)
-	if(nrow(inFileplants)==0){PlantsData=0}else{PlantsData=1}
+	req(GenInfo)
+	inFileplants=input$fileplants
+	if(is.null(inFileplants)){PlantsData=0}else{PlantsData=1}
 	validate(
 		need(PlantsData != 0, "Please select genome ref data")
     )
 	print("Please wait...")
-	dirdata=str_replace(parseFilePaths(roots=getVolumes(), input$filegen)$datapath,parseFilePaths(roots=getVolumes(), input$filegen)$name,"")
-	load(paste0(dirdata,"Output_BIO-R\\ChromMap_",cambia_caracter(strsplit(parseFilePaths(roots=getVolumes(), input$filegen)$name,"[.]","")[[1]][1]),"\\MapChrom.RData"))	
-	wheat<-import(as.character(inFileplants$datapath))
+	#dirdata=str_replace(input$filegen$datapath,input$filegen$name,"")
+	#load(paste0(dirdata,"Output_BIO-R\\ChromMap_",cambia_caracter(strsplit(input$filegen$name,"[.]","")[[1]][1]),"\\MapChrom.RData"))	
+	temp_file <- file.path(tempdir(), "archivotmp.gtf.gz")
+	file.copy(input$fileplants$datapath, temp_file, overwrite = TRUE)
+
+	wheat<-import(temp_file)
 	wheat=as.data.frame(wheat)	
-	check=sort(as.character(unique(wheat[,1])[1:dim(chromosome_file)[1]]))
+	check=sort(as.character(unique(wheat[,1])[1:dim(GenInfo$chromosome_file)[1]]))
 	checknum=as.numeric(levels(as.factor(check)))
 	wheat[,1]=as.character(wheat[,1])
-	for (k in 1:dim(chromosome_file)[1]){
+	for (k in 1:dim(GenInfo$chromosome_file)[1]){
 		wheat[which(wheat[,1]==check[k]),1]=checknum[k]
 	}
 	wheat=cbind(wheat[,c(1,12,7,2,3,8,5,9)],paste0("gene_id \"",wheat[,10],"\"; transcript_id \"",wheat[,13],"\"; exon_number \"",wheat[,16],"\";"))
@@ -1685,20 +1922,20 @@ myDataRegGen<-reactive({
 DoforGWAS<-reactive({
 		if(input$startAna=="StarChrom" & input$typedata=="vcfile"){
 		req(myDataPhen())
-		dirdata=str_replace(parseFilePaths(roots=getVolumes(), input$filegen)$datapath,parseFilePaths(roots=getVolumes(), input$filegen)$name,"")
-		load(paste0(dirdata,"Output_BIO-R\\ChromMap_",cambia_caracter(strsplit(parseFilePaths(roots=getVolumes(), input$filegen)$name,"[.]","")[[1]][1]),"\\MapChrom.RData"))
+		#dirdata=str_replace(input$filegen$datapath,input$filegen$name,"")
+		#load(paste0(dirdata,"Output_BIO-R\\ChromMap_",cambia_caracter(strsplit(input$filegen$name,"[.]","")[[1]][1]),"\\MapChrom.RData"))
 		
 		datos<-GenInfo$hapmap
 		datos<-datos[,-c(2:11)]
 		newcolnames <- cambia_caracter(quita_espacio(as.matrix(colnames(datos))))
 		colnames(datos) <- putg(newcolnames)
-		datos<-datos[which(datos[,1]%in%annotation_file$ID==T),]
+		datos<-datos[which(datos[,1]%in%GenInfo$annotation_file$ID==T),]
 		rownames(datos)<-datos[,1]
 		datos<-t(datos[,-1])
 		
 		posit<-GenInfo$posit
 		posit<-posit[,c(3,1,2)]
-		posit<-posit[which(posit[,1]%in%annotation_file$ID==T),]
+		posit<-posit[which(posit[,1]%in%GenInfo$annotation_file$ID==T),]
 		names(posit)<-c("SNP.names","chr","pos")
 		posit$chr=as.numeric(posit$chr)
 		posit$pos=as.numeric(posit$pos)
@@ -1720,20 +1957,21 @@ DoforGWAS<-reactive({
 		Ttraits=unlist(strsplit(Ttraits,","))
 		GWASDrops <- runSingleTraitGwas(gData = gDataDrops, traits = Ttraits)
 		
-		outFolderPh <- cambia_caracter(paste0("GWASAnalysis_",strsplit(parseFilePaths(roots=getVolumes(), input$filegen)$name,"[.]","")[[1]][1]))
-		setwd(dirdata)
-		if(!file.exists("Output_BIO-R")) dir.create("Output_BIO-R")
-		setwd("Output_BIO-R")
-		if(!file.exists(outFolderPh)) dir.create(outFolderPh)
-		setwd(outFolderPh)
+		#outFolderPh <- cambia_caracter(paste0("GWASAnalysis_",strsplit(input$filegen$name,"[.]","")[[1]][1]))
+		#setwd(dirdata)
+		#if(!file.exists("Output_BIO-R")) dir.create("Output_BIO-R")
+		#setwd("Output_BIO-R")
+		#if(!file.exists(outFolderPh)) dir.create(outFolderPh)
+		#setwd(outFolderPh)
 		
-		save(gDataDrops,GWASDrops,file="DataGWAS.RData")
-		for(nt in 1:length(Ttraits)){			
-			ass=split(GWASDrops[["GWAResult"]][["dropsPheno"]],GWASDrops[["GWAResult"]][["dropsPheno"]][["trait"]])
-			ass=ass[Ttraits[nt]]
-			write.csv(ass,paste0("MarkersEffect_",Ttraits[nt],".csv"))		
-		}
-	return(list(GWASDrops,savein=as.character(getwd())))
+		#save(gDataDrops,GWASDrops,file="DataGWAS.RData")
+		
+		#for(nt in 1:length(Ttraits)){			
+		#	ass=split(GWASDrops[["GWAResult"]][["dropsPheno"]],GWASDrops[["GWAResult"]][["dropsPheno"]][["trait"]])
+		#	assL[[nt]]=ass[Ttraits[nt]]
+			#write.csv(ass,paste0("MarkersEffect_",Ttraits[nt],".csv"))		
+		#}
+	return(list(GWASDrops))
 	}
 })
 	
@@ -1743,7 +1981,8 @@ DoforGene<-reactive({
 	req(myDataRegGen())
 	wheat<-as.data.frame(myDataRegGen()[[1]])
 	#chrdim<-as.data.frame(myDataRegGen()[[2]])
-	GWASDrops<-DoforGWAS()[[1]]
+	GWASDrops<-DoforGWAS()[[1]]	
+	#save(GWASDrops,wheat,file="DataGWASRegGen.RData")
 	
 	ass=split(GWASDrops[["GWAResult"]][["dropsPheno"]],GWASDrops[["GWAResult"]][["dropsPheno"]][["trait"]])
 	ass=ass[[as.character(input$RegGenPlotraits)]]
@@ -1757,35 +1996,17 @@ DoforGene<-reactive({
 	htm$chrom=as.numeric(htm$chrom)
 	htm$pos=as.numeric(htm$pos)
 	
-	savein<-DoforGWAS()[[2]]
-	setwd(savein)
-	save(GWASDrops,ass,wheat,htm,file="DataGWASRegGen.RData")
+	#savein<-DoforGWAS()[[2]]
+	#setwd(savein)	
 	
-	return(list(ass,wheat,htm,savein=getwd()))
+	return(list(ass,wheat,htm))
 	}
 })
 
 ##################################################################################################################################################################
 #For see regional associated gene plot
-##################################################################################################################################################################
-  output$defaultRegGenPlotChr=renderText({
-  if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
-	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
-	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
-	 if(input$startAna=="StarChrom" & input$typedata=="vcfile"){test=1}else{test=0}
-	 validate(
-      need(Gdata != 0, "Please upload data"),
-	  need(test != 0, "No option available, please select Chromosom option")
-	)
-	
-	if(SelFile=="Data"){	  
-		paste('You can find results and edited plots files in:',as.character(DoforGene()[[4]]))
-	}else{
-		dirdata=str_replace(parseFilePaths(roots=getVolumes(), input$fileRData)$datapath,parseFilePaths(roots=getVolumes(), input$fileRData)$name,"")
-		paste('You can find results and edited plots files in:',as.character(dirdata))
-	}
-  })
-  output$RegGenPlotChrPlot=renderPlot({
+##################################################################################################################################################################  
+  RegGenplotR<-reactive({
 	if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
 	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
 	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
@@ -1797,11 +2018,9 @@ DoforGene<-reactive({
 	if(SelFile=="Data"){
 		ass=DoforGene()[[1]]
 		wheat=DoforGene()[[2]]
-		htm=DoforGene()[[3]]
-		#chrdim=DoforGene()[[5]]
-		savein=DoforGene()[[4]]
+		htm=DoforGene()[[3]]		
 	}else{
-		load(parseFilePaths(roots=getVolumes(), input$fileRData)$datapath)
+		load(input$fileRData$datapath)
 	}
 	
 	wheatmp=wheat[which(wheat[,1]==as.character(input$RegGenPlotChr)),]
@@ -1809,36 +2028,19 @@ DoforGene<-reactive({
 	IntReg=IntRegionalPlot(chr=as.numeric(input$RegGenPlotChr),left=as.numeric(input$RegGenPlotleft),
 	right=as.numeric(input$RegGenPlotrigth),threshold=as.numeric(input$RegGenPlotChrThr),gtf=wheat,association=ass,
 	hapmap=htm,label_gene_name=TRUE,hapmap_ld=htm,leadsnp_size=3)
-	listgen=IntReg[["plot_env"]][["gene_list"]]
+	listgen=IntReg[["plot_env"]][["gene_list"]]	
 	
-	setwd(savein)
-	if(dim(listgen)[1]!=0){	write.csv(listgen,paste0("Genelist_",input$RegGenPlotraits,"_chr",input$RegGenPlotChr,".csv"))}
-	pdf(paste0("RegionalPlot_",input$RegGenPlotraits,"_chr",input$RegGenPlotChr,".pdf"), width = 6.89, height = 5.41)
-		print(IntReg)
-	dev.off()
-	print(IntReg)
+	return(IntReg,listgen)	
   })
   
+  output$RegGenPlotChrPlot=renderPlot({
+	IntReg=RegGenplotR()[[1]]
+	print(IntReg)
+  })
 ##################################################################################################################################################################
 #For see manhattan plot
-##################################################################################################################################################################
-  output$defaultMan=renderText({
-  if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
-	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
-	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
-	 if(input$startAna=="StarChrom" & input$typedata=="vcfile"){test=1}else{test=0}
-	 validate(
-      need(Gdata != 0, "Please upload data"),
-	  need(test != 0, "No option available, please select Chromosom option")
-	)
-	if(SelFile=="Data"){	  
-		paste('You can find results and edited plots files in:',as.character(DoforGWAS()[[2]]))
-	}else{
-		dirdata=str_replace(parseFilePaths(roots=getVolumes(), input$fileRData)$datapath,parseFilePaths(roots=getVolumes(), input$fileRData)$name,"")
-		paste('You can find results and edited plots files in:',as.character(dirdata))
-	}
-  })
-  output$ManPlot=renderPlot({
+##################################################################################################################################################################  
+  ManplotR<-reactive({
 	if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
 	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
 	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
@@ -1848,10 +2050,9 @@ DoforGene<-reactive({
 	  need(test != 0, "No option available, please select Chromosom option")
 	)
 	if(SelFile=="Data"){
-		GWASDrops=DoforGWAS()[[1]]
-		savein=DoforGWAS()[[2]]
+		GWASDrops=DoforGWAS()[[1]]		
 	}else{
-		load(parseFilePaths(roots=getVolumes(), input$fileRData)$datapath)
+		load(input$fileRData$datapath)
 	}
 	
 	if(input$Manchr=="All"){ManchrV=1:length(unique(GWASDrops[["GWAResult"]][["dropsPheno"]][["chr"]]))}else{ManchrV=eval(parse(text=input$Manchr))}
@@ -1860,35 +2061,18 @@ DoforGene<-reactive({
 	if(input$MancolPalette=="Green"){MancolorPaletteV=rep(c("darkolivegreen1","darkolivegreen4"),length(ManchrV))[1:length(ManchrV)]}
 	if(input$MancolPalette=="Colors"){MancolorPaletteV=colorRampPalette(brewer.pal(11,"Spectral"))(length(ManchrV))}
 	
-	plot(GWASDrops, plotType = "manhattan", trait = input$ManTrait, yThr = as.numeric(input$ManyThr) ,chr= ManchrV ,colPalette= MancolorPaletteV)
-	
-	setwd(savein)
-	#jpeg(paste0("ManhathanPlot_",input$ManTrait,"_",input$ManyThr,".jpeg"), width = 800, height = 600)
-	pdf(paste0("ManhathanPlot_",input$ManTrait,"_",input$ManyThr,".pdf"), width = 7, height = 6)
-		plot(GWASDrops, plotType = "manhattan", trait = input$ManTrait, yThr = as.numeric(input$ManyThr) ,chr= ManchrV ,colPalette= MancolorPaletteV)
-	dev.off()
+	p<-plot(GWASDrops, plotType = "manhattan", trait = input$ManTrait, yThr = as.numeric(input$ManyThr) ,chr= ManchrV ,colPalette= MancolorPaletteV)	
+	p<-p + ggtitle(paste0("Trait: ", input$ManTrait,"  LOD: ", input$ManyThr))
+	p				   	
   })
   
+  output$ManPlot=renderPlot({
+	ManplotR()
+  })
 ##################################################################################################################################################################
 #For see QTL plot
-##################################################################################################################################################################
-  output$defaultQTL=renderText({
-  if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
-	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
-	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
-	 if(input$startAna=="StarChrom" & input$typedata=="vcfile"){test=1}else{test=0}
-	 validate(
-      need(Gdata != 0, "Please upload data"),
-	  need(test != 0, "No option available, please select Chromosom option")
-	)
-	if(SelFile=="Data"){	  
-		paste('You can find results and edited plots files in:',as.character(DoforGWAS()[[2]]))
-	}else{
-		dirdata=str_replace(parseFilePaths(roots=getVolumes(), input$fileRData)$datapath,parseFilePaths(roots=getVolumes(), input$fileRData)$name,"")
-		paste('You can find results and edited plots files in:',as.character(dirdata))
-	}
-  })
-  output$QTLPlot=renderPlot({
+################################################################################################################################################################## 
+  QTLplotR<-reactive({
 	if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
 	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
 	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
@@ -1898,46 +2082,25 @@ DoforGene<-reactive({
 	  need(test != 0, "No option available, please select Chromosom option")
 	)
 	if(SelFile=="Data"){
-		GWASDrops=DoforGWAS()[[1]]
-		savein=as.character(DoforGWAS()[[2]])
+		GWASDrops=DoforGWAS()[[1]]		
 	}else{
-		load(parseFilePaths(roots=getVolumes(), input$fileRData)$datapath)
+		load(input$fileRData$datapath)
 	}
 	
 	if(input$QTLchr=="All"){QTLchrV=1:length(unique(GWASDrops[["GWAResult"]][["dropsPheno"]][["chr"]]))}else{QTLchrV=eval(parse(text=input$QTLchr))}
 	
-	plot(GWASDrops, plotType = "qtl", yThr = as.numeric(input$QTLyThr) ,chr= QTLchrV )
-	
-	setwd(savein)
-	#jpeg(paste0("QTLPlot_",input$QTLyThr,".jpeg"), width = 800, height = 600)
-	pdf(paste0("QTLPlot_",input$QTLyThr,".pdf"), width = 7, height = 6.3)
-		plot(GWASDrops, plotType = "qtl", yThr = as.numeric(input$QTLyThr) ,chr= QTLchrV )
-	dev.off()
+	p<-plot(GWASDrops, plotType = "qtl", yThr = as.numeric(input$QTLyThr) ,chr= QTLchrV)	
+	p<-p + ggtitle(paste0("LOD: ", input$QTLyThr))
+	p				   
   })
   
+  output$QTLPlot=renderPlot({
+	QTLplotR()
+  })
 ##################################################################################################################################################################
 #For see QQ plot
-##################################################################################################################################################################
-  output$defaultQQ=renderText({
-	#req(myDataGen())
-	if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
-	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
-	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
-	 if(input$startAna=="StarChrom" & input$typedata=="vcfile"){test=1}else{test=0}
-	 validate(
-      need(Gdata != 0, "Please upload data"),
-	  need(test != 0, "No option available, please select Chromosom option")
-	)
-	req(DoforGWAS())
-	
-	if(SelFile=="Data"){	  
-		paste('You can find results and edited plots files in:',as.character(DoforGWAS()[[2]]))
-	}else{
-		dirdata=str_replace(parseFilePaths(roots=getVolumes(), input$fileRData)$datapath,parseFilePaths(roots=getVolumes(), input$fileRData)$name,"")
-		paste('You can find results and edited plots files in:',as.character(dirdata))
-	}
-  })
-  output$QQPlot=renderPlot({
+##################################################################################################################################################################  
+  QQplotR<-reactive({  
 	#req(myDataGen())
 	if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
 	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
@@ -1950,26 +2113,98 @@ DoforGene<-reactive({
 	req(DoforGWAS())	
 	
 	if(SelFile=="Data"){
-		GWASDrops=DoforGWAS()[[1]]
-		savein=as.character(DoforGWAS()[[2]])
+		GWASDrops=DoforGWAS()[[1]]		
 	}else{
-		load(parseFilePaths(roots=getVolumes(), input$fileRData)$datapath)
+		load(input$fileRData$datapath)
 	}
-	
-	if(input$QTLchr=="All"){QTLchrV=1:length(unique(GWASDrops[["GWAResult"]][["dropsPheno"]][["chr"]]))}else{QTLchrV=eval(parse(text=input$QTLchr))}
+		
 	#If the lambda value is greater than 1, then this may be evidence for some systematic bias that needs to be corrected in your analysis.
 	print("Lambda for GWAS:")
 	print(GWASDrops[["GWASInfo"]][["inflationFactor"]])
+		
+	p<-plot(GWASDrops, plotType = "qq", trait=input$QQTrait)
+	p<-p + ggtitle(paste0("Trait: ", input$QQTrait, "   Lambda for GWAS: ", round(GWASDrops[["GWASInfo"]][["inflationFactor"]][[1]][input$QQTrait],4) ))
+	p				   
+})
 	
-	plot(GWASDrops, plotType = "qq", trait=input$QQTrait)
-	
-	setwd(savein)
-	#jpeg(paste0("QQPlot_",input$QQTrait,".jpeg"), width = 800, height = 600)
-	pdf(paste0("QQPlot_",input$QQTrait,".pdf"), width = 6, height = 6)
-		plot(GWASDrops, plotType = "qq", trait=input$QQTrait)
-	dev.off()
-  })
+	output$QQPlot=renderPlot({
+		QQplotR()
+	})
 
+
+##Download report
+    output$generateGWAS <- downloadHandler(
+		filename = function() {paste0("GWAS_dashboard_", Sys.Date(), ".html")},
+  
+		content = function(file) {
+			req(reportGWAS())
+			file.copy(file.path("www", reportGWAS()), file,overwrite = TRUE)
+		}
+	)
+	 
+	 reportGWAS <- reactiveVal(NULL)
+    
+    observeEvent(input$generate_GWAS,{
+
+		shinybusy::show_modal_spinner(spin = "fading-circle", text = "Generating Report..." )
+
+		src <- normalizePath("local/reportGWAS.Rmd")
+
+		owd <- getwd()              # ⚠️ guardas ruta real
+		setwd(tempdir())            # trabajas en temp
+
+		file.copy(src, "reportGWAS.Rmd", overwrite = TRUE)
+		
+		if(!is.null(input$fileplants$datapath)){
+
+		outReport <- tryCatch({
+
+			rmarkdown::render( "reportGWAS.Rmd",
+				params = list(
+					toDownload = TRUE,
+					resGWAS = DoforGWAS(),
+					qqplotR = QQplotR(),
+					qtlplotR = QTLplotR(),
+					manplotR = ManplotR(),
+					rengenplotR = RenGenplotR()
+				),
+				output_format = rmdformats::robobook(toc_depth = 4)
+			)
+		}, error = function(e) {
+			showNotification(paste("Error:", e$message), type = "error")
+			NULL
+		})
+	} else{
+		outReport <- tryCatch({
+
+			rmarkdown::render( "reportGWAS.Rmd",
+				params = list(
+					toDownload = TRUE,
+					resGWAS = DoforGWAS(),
+					qqplotR = QQplotR(),
+					qtlplotR = QTLplotR(),
+					manplotR = ManplotR(),
+					rengenplotR = NULL
+				),
+				output_format = rmdformats::robobook(toc_depth = 4)
+			)
+		}, error = function(e) {
+			showNotification(paste("Error:", e$message), type = "error")
+			NULL
+		})
+	}
+
+  # 🔥 REGRESAR AL APP DIR
+		setwd(owd)
+		if (!is.null(outReport)) {
+			if (!dir.exists("www")) dir.create("www")
+			file.copy(outReport, "www/reportGWAS.html", overwrite = TRUE)
+			reportGWAS("reportGWAS.html")  # 🔥 clave	
+			shinyjs::click("generateGWAS")			
+		}
+		shinybusy::remove_modal_spinner()
+	})
+  
 
 
 ##################################################################################################################################################################

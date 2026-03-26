@@ -9,7 +9,9 @@ if(length(checkpack)!=0) {
 }
 if("ggtree"%in%rownames(installed.packages())==FALSE){
   BiocManager::install("ggtree")
+  BiocManager::install("ggtreeExtra")
   BiocManager::install("rtracklayer")
+  BiocManager::install("LEA")
 }
 library(devtools)
 install_github("whweve/IntAssoPlot")

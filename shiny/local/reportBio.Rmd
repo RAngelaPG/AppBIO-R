@@ -1,0 +1,429 @@
+---
+title: "Biodiversity Report"
+author: "Contact:<a target = '_blank'>SAGA</a> r.a.pacheco@cgiar.org"
+date: "`r format(Sys.time(), '%B %d, %Y')`"  
+output: html_document
+params:
+  toDownload: FALSE
+  dend: NULL
+  mds2: NULL
+  mds3: NULL
+  heat: NULL
+  amovaT: NULL
+  popstr: NULL
+  summBio: NULL
+---
+  
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(dependson = knitr::all_labels(),
+                      echo = FALSE,
+                      cache = FALSE,
+                      warning = FALSE,
+                      message = FALSE,
+                      comment = NA,
+                      out.width = "100%",
+                      error = TRUE)
+options(knitr.kable.NA = '')
+# loading necessary R packages ####
+## data manipulation
+# library(dplyr)    # %>%, data cleaning functions
+library(magrittr) # coerce col to factors or numeric
+## outputs - graphs, tables
+library(ggplot2)  # ggplot(), etc.
+library(plotly)  # ggplot(), etc.
+library(DT)       # datatable()
+library(knitr)    # kable
+library(data.table)
+library(shiny)
+```
+
+```{r printfxn, include=FALSE}
+# functions ####
+# for printing tables (data.frames) - DT::datatable()
+printTable <- function(DT, pageLength = 10, 
+                         numericColNames = NULL, numRound = 3, 
+                         scrollXOpt = FALSE, colNames = NULL, autoWidthOpt = FALSE,...) {
+    
+    DT <- data.frame(lapply(X = DT, 
+                            FUN = function(x) {
+                              if(is.numeric(x)){
+                                round(x, numRound)
+                              } else {
+                                x
+                              }
+                            }))
+    
+    table <- DT::datatable(data = DT, 
+                           colnames = colNames,
+                           filter = "top", 
+                           options = list(autoWidth = autoWidthOpt,
+                                          dom = 'l<<t>pB>', 
+                                          buttons = c('copy', 'csv', 'excel', 'print'),
+                                          pageLength = pageLength,
+                                          searchHighlight = TRUE,
+                                          lengthMenu = list(c(10, 20, 30, 40, 50,-1),c("10", "20", "30", "40", "50","All")),
+                                          scrollX = scrollXOpt),
+                           extensions = 'Buttons',
+                           rownames = FALSE,
+                           ...)
+    if (length(numericColNames) > 0){
+      table <- table %>% DT::formatRound(columns = numericColNames,
+                                     digits = numRound)
+    }
+    
+    table
+  }
+```
+
+```{r, include=FALSE}
+# Init Step to make sure that the dependencies are loaded
+htmltools::tagList(printTable(mtcars))
+htmltools::tagList(ggplotly(ggplot()))
+# Get the current figure size in pixels:
+get_w <- function() {
+  with(knitr::opts_current$get(c("fig.width", "dpi", "fig.retina")),
+       fig.width*dpi/fig.retina)
+}
+
+get_h <- function() {
+  with(knitr::opts_current$get(c("fig.height", "dpi", "fig.retina")),
+       fig.height*dpi/fig.retina)
+}
+```
+### Summary input information
+
+The following table allows you to inspect the input information for the diversity analysis.
+
+<p>&nbsp;</p>
+
+```{r, results='asis'}
+suppressWarnings(tryCatch({
+  if(file.exists(normalizePath("./data/result.RData"))){
+    load(normalizePath("./data/result.RData"))   
+  }else{
+    load("result.RData")
+  }
+}, error = function(e) {
+  shinyjs::hide()
+}))
+	
+    seedatosum<-params$summBio$res1[[12]]
+    
+if("params"%in%ls()){ # we will download the document
+  printTable(seedatosum, autoWidthOpt = TRUE, scrollXOpt = FALSE)
+  }else{    
+    DT::renderDT(printTable(seedatosum,
+                        autoWidthOpt = FALSE, scrollXOpt = TRUE), server = FALSE)
+  }
+  
+```
+
+<p>&nbsp;</p>
+
+### Summary diversity
+
+The following table allows you to inspect the principal statistics for the diversity analysis.
+
+<p>&nbsp;</p>
+
+```{r, results='asis'}
+suppressWarnings(tryCatch({
+  if(file.exists(normalizePath("./data/result.RData"))){
+    load(normalizePath("./data/result.RData"))   
+  }else{
+    load("result.RData")
+  }
+}, error = function(e) {
+  shinyjs::hide()
+}))
+	
+    seedatosum<-params$summBio$res1[[1]]    
+if("params"%in%ls()){ # we will download the document
+  printTable(seedatosum, autoWidthOpt = TRUE, scrollXOpt = FALSE)           
+  }else{    
+    DT::renderDT(printTable(seedatosum,
+                        autoWidthOpt = FALSE, scrollXOpt = TRUE), server = FALSE)
+  }
+  
+```
+<p>&nbsp;</p>
+
+### Heatmap of distance matrix
+  
+  This plot allows the user to visualize the closeness or distance between genotypes.
+
+<p>&nbsp;</p>
+```{r, results='asis'}
+suppressWarnings(tryCatch({
+  if(file.exists(normalizePath("./data/result.RData"))){
+    load(normalizePath("./data/result.RData"))	
+  }else{
+    load("result.RData")
+  }
+}, error = function(e) {
+  shinyjs::hide()
+}))
+    
+	
+if("params" %in%ls()){ # we will download the document
+	p=params$heat
+	p
+}else{
+	plotly::renderPlotly({		
+	p=params$heat	
+	p
+})
+}
+```
+
+<p>&nbsp;</p>
+
+### Diversity information by genotype
+  
+  This table allows the user to see statistics by genotypes.
+
+<p>&nbsp;</p>
+```{r, results='asis'}
+suppressWarnings(tryCatch({
+  if(file.exists(normalizePath("./data/result.RData"))){
+    load(normalizePath("./data/result.RData"))
+  }else{
+    load("result.RData")	
+  }
+}, error = function(e) {
+  shinyjs::hide()
+}))
+		seedatosgen<-params$summBio$res1[[11]]
+    
+if("params"%in%ls()){ # we will download the document
+	printTable(seedatosgen, autoWidthOpt = TRUE, scrollXOpt = FALSE,colNames = colnames(seedatosgen))           
+  }else{    
+    DT::renderDT(printTable(seedatosgen, colNames = colnames(seedatosgen),
+                        autoWidthOpt = FALSE, scrollXOpt = TRUE), server = FALSE)
+  }
+  
+```
+
+<p>&nbsp;</p>
+### Diversity information by markers
+  
+  This table allows the user to see statistics by markers.
+
+<p>&nbsp;</p>
+```{r, results='asis'}
+suppressWarnings(tryCatch({
+  if(file.exists(normalizePath("./data/result.RData"))){
+    load(normalizePath("./data/result.RData"))
+  }else{
+    load("result.RData")	
+  }
+}, error = function(e) {
+  shinyjs::hide()
+}))
+		seedatosmark<-params$summBio$res1[[10]]
+    
+if("params"%in%ls()){ # we will download the document
+  printTable(seedatosmark, autoWidthOpt = TRUE, scrollXOpt = FALSE,colNames = colnames(seedatosmark))           
+  }else{    
+    DT::renderDT(printTable(seedatosmark,colNames = colnames(seedatosmark),
+                        autoWidthOpt = FALSE, scrollXOpt = TRUE), server = FALSE)
+  }
+  
+```
+
+<p>&nbsp;</p>
+
+<p>&nbsp;</p>
+
+### AMOVA
+
+ Is a powerful tool that can help support hypotheses of population structure due to clonal reproduction or isolation without making assumptions about Hardy-Weinberg equilibrium. We have shown that we can reject the Ho
+ of random mating between the two populations and have strong evidence that these populations are significantly differentiated at all stratifications.
+
+<p>&nbsp;</p>
+
+```{r, results='asis'}
+suppressWarnings(tryCatch({
+  if(file.exists(normalizePath("./data/result.RData"))){
+    load(normalizePath("./data/result.RData"))   
+  }else{
+    load("resultPopStr.RData")
+  }
+}, error = function(e) {
+  shinyjs::hide()
+}))
+    
+	seeamova=as.data.frame(params$amovaT)
+	seeamova=cbind(rownames(seeamova),seeamova)	
+	colnames(seeamova)=c("source","Df","SumOfSqs","MS","F","Pr.F","Sigma" ,"PercVar","Phi")
+	if("params" %in%ls()){ # we will download the document
+	  printTable(seeamova, autoWidthOpt = TRUE, scrollXOpt = FALSE,
+           colNames = colnames(seeamova))
+	}else{
+	  DT::renderDT(printTable(seeamova,
+                        autoWidthOpt = FALSE, scrollXOpt = TRUE,
+                        colNames = colnames(seeamova)), server = FALSE)
+	}
+    
+
+```
+<p>&nbsp;</p>
+
+### Population structure (Fst) 
+
+<p>&nbsp;</p>
+
+```{r, results='asis'}
+suppressWarnings(tryCatch({
+  if(file.exists(normalizePath("./data/result.RData"))){
+    load(normalizePath("./data/result.RData"))   
+  }else{
+    load("resultPopStr.RData")
+  }
+}, error = function(e) {
+  shinyjs::hide()
+}))
+    
+	seepop=as.data.frame(params$popstr)
+	if("params" %in%ls()){ # we will download the document
+	  printTable(seepop, autoWidthOpt = TRUE, scrollXOpt = FALSE)
+	}else{
+	  DT::renderDT(printTable(seepop,
+                        autoWidthOpt = FALSE, scrollXOpt = TRUE), server = FALSE)
+	}    
+
+```
+
+<p>&nbsp;</p>
+
+### Multidimensional scaling plot 2D
+  
+  This plot allows the user to visualize the closeness or distance between genotypes to check if the population structure was as expected.
+
+<p>&nbsp;</p>
+```{r, results='asis'}
+suppressWarnings(tryCatch({
+  if(file.exists(normalizePath("./data/result.RData"))){
+    load(normalizePath("./data/result.RData"))	
+  }else{
+    load("result.RData")
+  }
+}, error = function(e) {
+  shinyjs::hide()
+}))
+    
+	
+if("params" %in%ls()){ # we will download the document
+	p=params$mds2
+	p
+}else{
+	plotly::renderPlotly({		
+	p=params$mds2	
+	p
+})
+}
+```
+
+<p>&nbsp;</p>
+
+### Multidimensional scaling plot 3D
+  
+  This plot allows the user to visualize the closeness or distance between genotypes to check if the population structure was as expected.
+
+<p>&nbsp;</p>
+```{r, results='asis'}
+suppressWarnings(tryCatch({
+  if(file.exists(normalizePath("./data/result.RData"))){
+    load(normalizePath("./data/result.RData"))	
+  }else{
+    load("result.RData")
+  }
+}, error = function(e) {
+  shinyjs::hide()
+}))
+    
+	
+if("params" %in%ls()){ # we will download the document
+	p3=params$mds3
+	p3
+}else{
+	plotly::renderPlotly({		
+	p3=params$mds3	
+	p3
+})
+}
+```
+
+### MDS table  
+
+<p>&nbsp;</p>
+
+```{r, results='asis'}
+suppressWarnings(tryCatch({
+  if(file.exists(normalizePath("./data/result.RData"))){
+    load(normalizePath("./data/result.RData"))   
+  }else{
+    load("resultPopStr.RData")
+  }
+}, error = function(e) {
+  shinyjs::hide()
+}))
+    
+	seemds=as.data.frame(params$summBio$res2[[1]])
+	#colnames(seemds)=c("Genotype","Factor1","Factor2","Factor3","Cluster")
+	if(!is.null(params$summBio$res1[[9]])){				
+		q_df <- as.data.frame(params$summBio$res1[[9]])
+		q_df$Gen <- rownames(q_df)
+		seemds$Gen <- as.character(seemds$Gen)
+        q_df$Gen <- as.character(q_df$Gen)
+		seemds <- dplyr::left_join(seemds, q_df, by = "Gen")
+		colnames(seemds)[1]<-"Genotype"
+	}
+	
+	if("params" %in%ls()){ # we will download the document
+	  printTable(seemds, autoWidthOpt = TRUE, scrollXOpt = FALSE,colNames = colnames(seemds))
+	}else{
+	  DT::renderDT(printTable(seemds,colNames = colnames(seemds),
+                        autoWidthOpt = FALSE, scrollXOpt = TRUE), server = FALSE)
+	}    
+
+```
+
+<p>&nbsp;</p>
+
+
+<p>&nbsp;</p>
+
+### Dendogram
+  
+  This plot allows the user to visualize in one way the groupings of genotypes.
+
+<p>&nbsp;</p>
+```{r, results='asis',fig.width=14, fig.height=14}
+suppressWarnings(tryCatch({
+  if(file.exists(normalizePath("./data/result.RData"))){
+    load(normalizePath("./data/result.RData"))	
+  }else{
+    load("result.RData")	
+  }
+}, error = function(e) {
+  shinyjs::hide()
+}))
+	
+if("params" %in%ls()){ # we will download the document
+	params$dend
+}else{
+	if (figparams$typeclust=="rectangular"){
+		shiny::renderPlot({
+			params$dend
+		},width = 950,height = 850)
+	}else{
+		shiny::renderPlot({
+			params$dend
+		},width = 950,height = 850)
+	}
+}
+```
+
+

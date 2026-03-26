@@ -12,10 +12,12 @@ library(DT)
 library(ff)
 library(factoextra)
 library(ggtree)
+library(ggtreeExtra)
 library(ggplot2)
 library(Hmisc)
 library(htmlwidgets)
 library(IntAssoPlot)
+library(LEA)
 library(naturalsort)
 library(pedigreemm)
 library(plotly)
@@ -35,9 +37,9 @@ library(shinydashboardPlus)
 library(shinyalert)
 library(statgenGWAS)
 library(stringr)
+library(tidyr)
 library(vcfR)
 library(vegan)
-
 
 
 #BIOR
@@ -50,6 +52,7 @@ source("local/functCORE.R")
 source("local/Functions.R")
 source("local/utils.R")
 source("local/CompChrom.R")
+#sourceCpp("local/mrd.cpp")
 
 radioTooltip <- function(id, choice, title, placement = "bottom", trigger = "hover", options = NULL){
 
@@ -118,12 +121,15 @@ body<-dashboardBody(
               column(width = 4,
                      box(title = "Read Genetic Data File",  background="olive", width = NULL,  collapsible=F, collapsed=F,                         
 						 fluidRow(
-						 column(4,radioButtons("startAna", "Type analysis",choices = c(Chromosome="StarChrom",PAVs="pavs",Biodiversity = "StarBio"))),
+						 column(4,radioButtons("startAna", "Type analysis",choices = c(ChromosomeMap="StarChrom",ChromosomeComparison="CompChrom",PAVs="pavs",Biodiversity = "StarBio"))),
 						 column(12,
-						 column(4,shinyFilesButton('filegen', 'Choose geno file', 'Select File', FALSE)),
-						 column(4,shinyFilesButton('fileRdata', 'Choose RData file', 'Select File', FALSE)),
-						 column(4,actionButton("readgenofile", "Upload Data",icon("cloud-arrow-up"), style = "color: white; background-color: #400080;border-color: #400080;"))
-						 )
+						 column(6, fileInput('filegen','Choose geno file', buttonLabel = 'Select File',  placeholder = 'No file selected',  accept = c('.csv', '.vcf','.gz'))),
+						 #column(6, fileInput('fileRdata','Choose RData file', buttonLabel = 'Select File',  placeholder = 'No file selected',  accept = c('.RData')))
+						 ),
+						 column(6,fileInput('fileVCF','Add second VCF file for comparison', buttonLabel = 'Select VCF file',  placeholder = 'No file selected',  accept = c('.vcf','.gz'))),					  
+						 #column(4,shinyFilesButton('filegen', 'Choose geno file', 'Select File', FALSE)),
+						 #column(4,shinyFilesButton('fileRdata', 'Choose RData file', 'Select File', FALSE)),
+						 column(12,div(style = "text-align: center;",actionButton("readgenofile", "Upload Data",icon("cloud-arrow-up"), style = "color: white; background-color: #400080;border-color: #400080;")))						 
 						),
                          # Horizontal line ----
                          tags$hr(),
@@ -138,16 +144,18 @@ body<-dashboardBody(
                          tags$hr(),
                          h4("Filters"),
                          fluidRow(
-                           column(4,textInput("missval","%NA Genotype","0")),
-                           column(4,textInput("mayorque",">polymorphism","0.95")),
-                           column(4,textInput("menorque","<polymorphism","0.05"))
+						   column(3,textInput("missvalG","%NA Markers","0.2")),
+                           column(3,textInput("missval","%NA Genotype","0.2")),
+                           column(3,textInput("mayorque",">polymorphism","0.95")),
+                           column(3,textInput("menorque","<polymorphism","0.05"))
                          )
                      ),
-					 box(title="Read second VCF file to compare", background="green", width = NULL,  collapsible=F, collapsed=F,                         
-                      shinyFilesButton('fileVCF', 'Add VCF file', 'Select VCF file', FALSE)                  
-					 ),
+					 #box(title="Read second VCF file to compare", background="green", width = NULL,  collapsible=F, collapsed=F,                         
+						#shinyFilesButton('fileVCF', 'Add VCF file', 'Select VCF file', FALSE) 
+						#fileInput('fileVCF','Add VCF file', buttonLabel = 'Select VCF file',  placeholder = 'No file selected',  accept = c('.vcf','.gz'))					  
+					 #),
 					 box(title="About", background="purple", width = NULL,  collapsible=F, collapsed=F, align="center",                        
-                        h3("BIO-R (Copyright 2016 CIMMYT) Version 5.0 (2024-Nov)"),
+                        h3("BIO-R (Copyright 2016 CIMMYT) Version 6.0 (2026-Nov)"),
 						h3("maintainer: r.a.pacheco@cgiar.org"),
 						h4("Authors:"),
 						h4("Angela Pacheco"),
@@ -177,9 +185,17 @@ body<-dashboardBody(
             
             column(width=8,
               tabBox(width =NULL,title = tagList(shiny::icon("database"), "Data"),side = "left",
-                     tabPanel(h5(style="font-weight: bold","Chromo map"), chromoMap::chromoMapOutput("seeChromPlot")), 
-					 tabPanel(h5(style="font-weight: bold","Chromo map comparison blast"), chromoMap::chromoMapOutput("BChromPlot")),
-					 tabPanel(h5(style="font-weight: bold","PAVs"), plotlyOutput("seePAVS",height = "950px",width = "1250px")),	
+                     tabPanel(h5(style="font-weight: bold","Chromo map"), 
+					 fluidRow(column(12, DT::dataTableOutput("tablaChrom"))),
+					 br(),
+					 fluidRow(column(12, chromoMap::chromoMapOutput("seeChromPlot")))
+					 ), 
+					 tabPanel(h5(style="font-weight: bold","Chromo map comparison blast"), 
+					 fluidRow(column(12,DT::dataTableOutput("BtablaChrom"))),
+					 br(),					 
+					 fluidRow(column(12, chromoMap::chromoMapOutput("BChromPlot")))
+					 ),
+					 tabPanel(h5(style="font-weight: bold","PAVs"), downloadButton("download_pavs", "Download plot"), plotlyOutput("seePAVS",height = "950px",width = "1250px")),	
 					 tabPanel(h5(style="font-weight: bold","Data for Bio"), DT::dataTableOutput("seeDataGen"))				 
               )
             )
@@ -188,7 +204,9 @@ body<-dashboardBody(
 	
   ###################################################################################################################################################  
   ###################################################################################################################################################  
-  tabItem(tabName="bio",
+  tabItem(tabName="bio",  
+   tabBox( width =NULL,title = tagList(shiny::icon("database"), "Biodiversity"),side = "left",     
+    tabPanel(h5(style="font-weight: bold","Analysis"),
           fluidRow(
             column(width = 8,
             box(loadingState(),width=12,title=tagList(img(src="Biopng.png",height="25"),"MDSplot2D"), solidHeader=T, closable=F, collapsible=T, collapsed=T, status="success", 
@@ -237,7 +255,7 @@ body<-dashboardBody(
                       sliderInput('size','Points size',min=5,max=25,value=7)
                     ),
                     #cuadro de texto que se mostrara por default con una direccion en la que se encuentra el grafico 2d
-                    verbatimTextOutput("default1",placeholder = TRUE),
+                    #verbatimTextOutput("default1",placeholder = TRUE),
                     #grafico 2d
                     div(plotlyOutput("try",height = "750px",width = "950px"),align="center")
             ),
@@ -287,7 +305,7 @@ body<-dashboardBody(
                           sliderInput('size3D','Points size',min=5,max=25,value=7)
                         ),
                         #cuadro de texto que se mostrara por default con una direccion en la que se encuentra el grafico 3d
-                        verbatimTextOutput("default3d",placeholder = TRUE),
+                        #verbatimTextOutput("default3d",placeholder = TRUE),
                         #grafico 3d
                         div(plotlyOutput("try3d",height = "750px",width = "950px"),align="center")
        ),
@@ -296,7 +314,7 @@ body<-dashboardBody(
                  background = "#8f8d8d",
                  selectInput('colorheat', 'Scale color',choices =c("Jet","Reds","Blues","Viridis"), selected="Jet")
                ),
-               verbatimTextOutput("defaultheat",placeholder = TRUE),
+               #verbatimTextOutput("defaultheat",placeholder = TRUE),
                #grafico heatmap
                div(plotlyOutput("heat",height = "750px",width = "950px"),align="center")
        ),
@@ -315,19 +333,30 @@ body<-dashboardBody(
                  selectInput('colordend','Choose a color',choices = '',selected="",multiple=T)
                ),
                #radioButtons('desdend','File Type',choices = list('png','pdf'),selected = 'png'),
-               verbatimTextOutput("defaultdend",placeholder = TRUE),
+               #verbatimTextOutput("defaultdend",placeholder = TRUE),
                fluidRow(
-                 column(11, align="center",plotOutput("dend",height = "950px",width = "750px")))
+                 column(11, align="center",plotOutput("dend",height = "1150px",width = "950px")))
        )
        #close column
        ),
        column(width=4,
-              box(width=12,title=tagList(img(src="Biopng.png",height="25"),"More options"), solidHeader=T, closable=F, collapsible=T, status="success", 
-                      shinyFilesButton('fileenvbio', 'Add external group', 'Select csv file', FALSE),
-                      checkboxInput("quitomono","Remove monomorphic markers",value=FALSE),
-				  	  checkboxInput("gapS","Optimize number of cluster",value=FALSE),
+              box(width=12,title=tagList(img(src="Biopng.png",height="25"),"Select options"), solidHeader=T, closable=F, collapsible=T, status="success", 
+                      downloadButton("downloadData", "Download Precomputed file for groups",icon("download"), style = "color: white; background-color: #400080;border-color: #400080;"),
+					  tags$hr(),
+					  #tags$b("Add external file with your own groups"),
+					  #shinyFilesButton('fileenvbio', 'Upload data', 'Select csv file', FALSE),	
+					  fileInput('fileenvbio','Add external file with your own groups', buttonLabel = 'Select File',  placeholder = 'No file selected',  accept = c('.csv')),					  
+					  tags$hr(style = "border-top: 4px solid black;"),
+                      checkboxInput("quitomono","Remove monomorphic markers for calculation of Fst",value=FALSE),
+					  tags$hr(style = "border-top: 4px solid black;"),					  
+					  checkboxInput("mixture","Add mixture cluster (take time and only see in circular dendogram)",value=FALSE),
+					  tags$hr(style = "border-top: 4px solid black;"),
+				  	  checkboxInput("gapS","Optimize number of cluster (gap method take a lot of time)",value=FALSE),
+					  selectInput('methgap','Method of optimization',choices=c('gap','silhouette'), selected='silhouette'),
                       textInput('nclust','No. Clusters',value='3'),
-                      radioButtons("distk", "Genetic Distance",choices = c(Rogers = "Rogers", Nei = "Nei"))
+					  tags$hr(style = "border-top: 4px solid black;"),					  
+                      radioButtons("distk", "Genetic Distance",choices = c(Rogers = "Rogers", Nei = "Nei")),
+					  div(style = "text-align: center;",actionButton("calcopt", "Run analysis",icon("gear"), style = "color: white; background-color: #400080;border-color: #400080;"))
               ),
               tabBox(width=12,side="right",title = tagList(img(src="Biopng.png",height="25"),"Results"), 
                 tabPanel(h5(style="font-weight: bold","Summary Diversity"),DT::dataTableOutput("seeDataDiver")),
@@ -339,6 +368,17 @@ body<-dashboardBody(
        
       )    
     ),
+	tabPanel(h5(style="font-weight: bold","Dashboard"),
+		fluidRow(column(12, actionButton("generate_report", "Generate and download report",icon = icon("download")))),
+		br(),
+		fluidRow(column(12, downloadButton("download_report", "Download report",, style = "visibility:hidden;"))),
+		fluidRow(column(12, downloadButton("download_distM", "Download matrix",, style = "visibility:hidden;"))),
+		fluidRow(column(12, downloadButton("download_dendPlot", "Download dendogram",, style = "visibility:hidden;"))),
+		br(),
+		fluidRow(column(12, uiOutput("seeReportBio")))		
+	)
+  )
+ ),
   ###################################################################################################################################################  
   ###################################################################################################################################################  
   tabItem(tabName="core",
@@ -353,8 +393,10 @@ body<-dashboardBody(
                     boxPad(color="gray",
                        checkboxGroupInput("datause", "Information to use:",c("Phenotypic Data" = "phendat",
                        "Genetic Data" = "gendat","Matrix Distance" = "distdat")),
-                       shinyFilesButton('filedistbio', 'Choose distance matrix (csv file)', 'Select File', FALSE),
-					   shinyFilesButton('filephendatbio', 'Choose phenotypic data (csv file)', 'Select File', FALSE)
+                       #shinyFilesButton('filedistbio', 'Choose distance matrix (csv file)', 'Select File', FALSE),
+					   #shinyFilesButton('filephendatbio', 'Choose phenotypic data (csv file)', 'Select File', FALSE)
+					   fileInput('filedistbio','Choose distance matrix (csv file)', buttonLabel = 'Select File',  placeholder = 'No file selected',  accept = c('.csv')),					  
+					   fileInput('filephendatbio','Choose phenotypic data (csv file)', buttonLabel = 'Select File',  placeholder = 'No file selected',  accept = c('.csv'))					  
                            )
                 ),
               column(width=6,
@@ -411,8 +453,13 @@ body<-dashboardBody(
             )
           ),
 		fluidRow(
-          box(solidHeader = T, title=tagList(img(src="Biopng.png",height="25"),"Warnings"),status = "success", closable=F, collapsible=T, collapsed=F,   
-              uiOutput(outputId = "defaultcore")
+          box(solidHeader = T, title=tagList(img(src="Biopng.png",height="25"),"Statistics"),status = "success", closable=F, collapsible=T, collapsed=T,      
+			div(style = "text-align: center;",actionButton("generate_Core", "Download report",icon("download"), style = "color: white; background-color: #400080;border-color: #400080;")),		  		    
+			downloadButton("generateCore", "Download report",, style = "visibility:hidden;"),
+			tags$hr(),
+			 DT::dataTableOutput("defaultcore"),
+			 tags$hr(),
+			DT::dataTableOutput("selInd")			  
           ),
 		  box(loadingState(),title=tagList(img(src="Biopng.png",height="25"),"MDSplot2D Subset"), solidHeader=T, closable=F, collapsible=T, collapsed=F, status="success", 			
 			sidebar=boxSidebar(id="boxMDS2DCH",width = 25,
@@ -489,19 +536,23 @@ body<-dashboardBody(
 					   textInput('nmf','Can be used to remove SNPs with a lower MAF',value='0.05'),					   
 					   tags$hr(),					   
 					   h3("Load phenotypic data"),
-                       shinyFilesButton('filephen', 'Choose phenotypic info (csv file)', 'Select File', FALSE),
+                       #shinyFilesButton('filephen', 'Choose phenotypic info (csv file)', 'Select File', FALSE),
+					   fileInput('filephen','Choose phenotypic info (csv file)', buttonLabel = 'Select File',  placeholder = 'No file selected',  accept = c('.csv')),					  
 					   tags$br(),
 					   tags$hr(),
 					   h3("Load genome reference data"),
-					   textInput('RegGenPlotraits', 'Write trait to associate',value=""),
+					   textInput('RegGenPlotraits', 'Write trait to associate (only one)',value=""),
 					   textInput('RegGenPlotChr', 'Chromosome',value="1"),
 					   textInput('RegGenPlotChrThr','LOD-threshold',value='3.5'), 
 					   textInput('RegGenPlotrigth','Rigth-threshold',value='Search suggestion in ChromDim file'),
 					   textInput('RegGenPlotleft','Left-threshold',value='Search suggestion in ChromDim file'),
 					   tags$br(),
-					   shinyFilesButton('fileplants', 'Choose genome ref (gtf.gz file)', 'Select File', FALSE),
+					   #shinyFilesButton('fileplants', 'Choose genome ref (gtf.gz file)', 'Select File', FALSE),
+					   fileInput('fileplants','Choose genome ref (gtf.gz file)', buttonLabel = 'Select File',  placeholder = 'No file selected',  accept = c('.gtf.gz')),					  
 					   tags$br(),
-					   tags$br()
+					   tags$br(),
+					   div(style = "text-align: center;",actionButton("generate_GWAS", "Download report",icon("download"), style = "color: white; background-color: #400080;border-color: #400080;")),		  		    
+						downloadButton("generateGWAS", "Download report",, style = "visibility:hidden;")
 					  ) 
 					)
 			)
@@ -509,7 +560,7 @@ body<-dashboardBody(
 		column(width=8,
 			box(loadingState(),width=12,title=tagList(img(src="Biopng.png",height="25"),"Regional Gen Plot"), solidHeader=T, closable=F, collapsible=T, collapsed=T, status="success", 
 				#cuadro de texto que se mostrara por default con una direccion en la que se encuentra el grafico 2d
-              verbatimTextOutput("defaultRegGenPlotChr",placeholder = TRUE),  
+              #verbatimTextOutput("defaultRegGenPlotChr",placeholder = TRUE),  
                 
               fluidRow(
                  column(11, align="center",plotOutput("RegGenPlotChrPlot",height = "650px",width = "1050px"))
@@ -525,7 +576,7 @@ body<-dashboardBody(
 					  selectInput('MancolPalette', 'Color',choices =c("Blue","Gray","Green","Colors"), selected="Blue")
 					),
 				#cuadro de texto que se mostrara por default con una direccion en la que se encuentra el grafico 2d
-              verbatimTextOutput("defaultMan",placeholder = TRUE),
+              #verbatimTextOutput("defaultMan",placeholder = TRUE),
                 fluidRow(
                  column(11, align="center",plotOutput("ManPlot",height = "550px",width = "950px"))
 				)  
@@ -538,7 +589,7 @@ body<-dashboardBody(
 					  textInput('QTLchr','Chromosomes to be plotted ',value='All')
 					),
 				#cuadro de texto que se mostrara por default con una direccion en la que se encuentra el grafico 2d
-              verbatimTextOutput("defaultQTL",placeholder = TRUE),
+              #verbatimTextOutput("defaultQTL",placeholder = TRUE),
                 fluidRow(
                  column(11, align="center",plotOutput("QTLPlot",height = "750px",width = "950px"))
 				)
@@ -550,7 +601,7 @@ body<-dashboardBody(
                       selectInput('QQTrait', 'Trait',choices ="")  
 					),
 				#cuadro de texto que se mostrara por default con una direccion en la que se encuentra el grafico 2d
-              verbatimTextOutput("defaultQQ",placeholder = TRUE),
+              #verbatimTextOutput("defaultQQ",placeholder = TRUE),
                 fluidRow(
                  column(11, align="center",plotOutput("QQPlot",height = "750px",width = "750px"))
 				)

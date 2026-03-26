@@ -1,27 +1,16 @@
-Biodv=function(file_name,datos,nall,distk,mayorque,menorque,missval,typedata,ht1,ht2,ht3,gap){
+Biodv=function(file_name,datos,nall,distk,mayorque,menorque,missval,typedata,ht1,ht2,ht3,missvalG,mixture,gap,methodgap){
+#save(file_name,datos,nall,distk,mayorque,menorque,missval,typedata,ht1,ht2,ht3,gap,file="check.RData")
 
-#suppressWarnings(library(Hmisc))  
-#suppressWarnings(library(plotly))  
 #######################################################
 id=as.data.frame(datos[,1])
 colnames(id)=c("Markers")
 datos=datos[,2:ncol(datos)]
+oriMark=nrow(datos)
+oriGen=ncol(datos)
 #Add for markers and genotypes replicated
-bymark=as.data.frame(apply(datos,1,paste,collapse = "" ))
 bygen=as.data.frame(apply(datos,2,paste,collapse = "" ))
 
-bymark[,1]=as.character(bymark[,1])
 bygen[,1]=as.character(bygen[,1])
-
-dupm = duplicated(bymark) | duplicated(bymark, fromLast = T)
-dupm=split(which(dupm), bymark[dupm,])
-dupm=lapply(dupm,function(x)id[x,])
-if (length(dupm)!=0){
-	max.length <- max(sapply(dupm, length))
-	dupm <- lapply(dupm, function(v) { c(v, rep(NA, max.length-length(v)))})
-	reptmark=data.frame(do.call(rbind, dupm))
-	write.csv(reptmark,paste("MarkersRep_",file_name,".csv",sep=""),row.names=F)
-}
 
 idG=as.data.frame(colnames(datos))
 colnames(idG)=c("Genotypes")
@@ -32,18 +21,26 @@ if (length(dupg)!=0){
 	max.lengthg <- max(sapply(dupg, length))
 	dupg <- lapply(dupg, function(v) { c(v, rep(NA, max.lengthg-length(v)))})
 	reptgen=data.frame(do.call(rbind, dupg))
-	write.csv(reptgen,paste("GenotypesRep_",file_name,".csv",sep=""),row.names=F)
+	#write.csv(reptgen,paste("GenotypesRep_",file_name,".csv",sep=""),row.names=F)
 }
 print("Prepare data...")
 #######################################################
+## do the filters for missing values in markers
+if (missvalG!=0){
+	missmark=apply(datos,1,function(y) mean(is.na(y)))
+	if(length(which(missmark>missvalG))!=0){
+		datos=datos[-which(missmark>missvalG),]
+		id=id[-which(missmark>missvalG),]		
+	}
+}
+#######################################################
 ## do the filters for missing values in genotypes
 if (missval!=0){
-	missgen=apply(datos,2,function(y) 2*sum(is.na(y))/(nall*nrow(datos)))
+	missgen=apply(datos,2,function(y) mean(is.na(y)))
 	if(length(which(missgen>missval))!=0){datos=datos[,-which(missgen>missval)]}
 }else{
 	missgen=apply(datos,2,function(y) 2*sum(is.na(y))/(nall*nrow(datos)))
-	if(length(which(missgen>0.95))!=0){datos=datos[,-which(missgen>0.95)]}
-  
+	if(length(which(missgen>0.95))!=0){datos=datos[,-which(missgen>0.95)]}  
 }
 nacc=ncol(datos)
 nalle=nall*nrow(datos)
@@ -56,21 +53,21 @@ datos$pmiss1=apply((1-datos),1,function(y) sum(is.na(y))/nacc)
 datos$pest=apply(datos[,1:nacc],1,mean,na.rm=T)
 datos$pest1=apply((1-datos[,1:nacc]),1,mean,na.rm=T)
 id2=data.frame(id,datos$pmiss,datos$pmiss1,datos$pest,datos$pest1)
-colnames(id2)=c(colnames(id), "pmiss", "pmiss1" ,"pest","pest1")
+colnames(id2)=c("Markers", "pmiss", "pmiss1" ,"pest","pest1")
 ##do the filter for polymorphism
 if(mayorque!=0 & menorque!=0){
-exaid=id2[which(id2$pest1<=mayorque & id2$pest<=mayorque & id2$pest>=menorque & id2$pest1>=menorque),]
-datos=datos[which(datos$pest<=mayorque & datos$pest1<=mayorque & datos$pest>=menorque & datos$pest1>=menorque),]
+	exaid=id2[which(id2$pest1<=mayorque & id2$pest<=mayorque & id2$pest>=menorque & id2$pest1>=menorque),]
+	datos=datos[which(id2$pest1<=mayorque & id2$pest<=mayorque & id2$pest>=menorque & id2$pest1>=menorque),]
 }else{
-exaid=id2
-datos=datos
+	exaid=id2
+	datos=datos
 }
 x2=as.data.frame(t(datos[,1:(ncol(datos)-4)]))
 idg=as.data.frame(rownames(x2))
 colnames(idg)=c("Genotypes")
 ## with this matrix calculate the genotype he,Ae,ho,etc
 tmpmono=which(id2$pest1<=mayorque & id2$pest<=mayorque & id2$pest>=menorque & id2$pest1>=menorque)
-if(length(tmpmono)!=nmark) write.csv(id2[-tmpmono,],paste("MarkOutFilterPoly_",file_name,".csv",sep=""),row.names=F)
+#if(length(tmpmono)!=nmark) write.csv(id2[-tmpmono,],paste("MarkOutFilterPoly_",file_name,".csv",sep=""),row.names=F)
 ######################################################
 rm(id2)
 rm(tmpmono)
@@ -95,8 +92,7 @@ rm(cond1,cond2,longt,rar1,rar2)
 ##Begins calculating indexes
 ######################################################
 ## observed heterozigosity
-nhom=apply(datos[,1:nacc], 1, function(y) sum(y==1 | y==0, na.rm=T))
-
+nhom=apply(datos[,1:(ncol(datos)-4)], 1, function(y) sum(y==1 | y==0, na.rm=T))
 print("Calculate statistics by markers...")
 ## expected heterozigosity, effective alleles, shannon index, Wright statistics
 ## prepare new columns for calculate the index PER LOCUS
@@ -120,7 +116,7 @@ noNA=round(exaid$pmiss,4)
 refmark=exaid[,1]
 exadiv=data.frame(refmark,he,ho,ae,shannon,adif01,adif02,noNA)
 colnames(exadiv)=c("Marker","He","Ho","Ae","Shannon","SpeAllele1","SpeAllele2","%NA")
-write.csv(exadiv,"CalculusPerLocus.csv",row.names=FALSE,quote=FALSE)
+#write.csv(exadiv,"CalculusPerLocus.csv",row.names=FALSE,quote=FALSE)
 rm(exaid)
 #############################################################  
 He=mean(he)                                										## Expected Heterozygosity(diversidad genetica intrapoblacional)
@@ -176,15 +172,15 @@ noNA=round(x2$pmiss,4)
 refGenotype=exaidg[,1]
 exadivg=data.frame(refGenotype,heg,hog,aeg,shannong,rareness,noNA)
 colnames(exadivg)=c("Genotype","He","Ho","Ae","Shannon","rareness","%NA")
-write.csv(exadivg,"CalculusPerGenotype.csv",row.names=FALSE,quote=FALSE)
+#write.csv(exadivg,"CalculusPerGenotype.csv",row.names=FALSE,quote=FALSE)
 rm(nacc1,nmark1,x2,exaidg,id1g,nhomg,refGenotype,heg,aeg,hog,shannong,noNA,rareness)
 
 #library(car)
-out="SummaryDiversityAnalysis.csv"
-if("div"%in%ls()==TRUE){
-cat("Diversity","\n","\n",file=out)
-write.table(div, file = out, append = T,quote=F, sep=",",col.names=F,row.names=F)
-}
+#out="SummaryDiversityAnalysis.csv"
+#if("div"%in%ls()==TRUE){
+#cat("Diversity","\n","\n",file=out)
+#write.table(div, file = out, append = T,quote=F, sep=",",col.names=F,row.names=F)
+#}
 
 print("Calculate distance matrix...")
 ######################################################
@@ -197,29 +193,15 @@ frn[is.na(frn)]=0																  ## missing values convert to 0
 N=2*crossprod(frn)																## create square matrix markers information
 rm(frn)
 
-
-if (distk=="Rogers"){
-#dcano <- function(mat) {
-#  daux       <- mat%*%t(mat)
-#  vec        <- diag(daux)
-#  daux       <- -2*daux + vec[col(daux)] + vec[row(daux)]
-#  diag(daux) <- 0 
-#  daux       <- sqrt(daux*0.5)
-#  return(daux)
-#}
-aux=matrix(0,nacc,nacc)
-for(i in 1:(nacc-2)){
-    aux[i,]=t(t(c(rep(0,i),sqrt((2*apply((fr[,i]-fr[,-c(1:i)])^2,2,function(x) sum(x,na.rm=T)))/N[i,-c(1:i)]))))
-}
-aux[nacc-1,]=t(t(c(rep(0,nacc-1),sqrt((2*sum((fr[,nacc-1]-fr[,-c(1:nacc-1)])^2,na.rm=T))/N[nacc-1,-c(1:(nacc-1))]))))
-mrdMAT=aux+t(aux)
-#	loc.fac <- factor(colnames(fr), levels = colnames(fr))
-#	kX <- lapply(split(fr, loc.fac[col(fr)]), matrix, nrow = nlig)
-#	D  <- matrix(0, nacc, nacc)
-#	for(i in 1:length(kX)){
-#		D <- D + dcano(kX[[i]])
-#	}
-#	D    <- D/length(kX)
+if (distk=="Rogers"){  
+  #mrdMAT <- mrd_cpp(fr, N)
+    aux=matrix(0,nacc,nacc)
+	for (i in 1:(nacc-1)) {
+		dif <- fr[, i] - fr[, (i+1):nacc, drop = FALSE]
+		ss <- colSums(dif^2, na.rm = TRUE)
+		aux[i, (i+1):nacc] <- sqrt((2 * ss) / N[i, (i+1):nacc])
+	}
+	mrdMAT <- aux + t(aux)
 }
 
 if (distk=="Nei"){
@@ -236,11 +218,13 @@ colnames(mrdMAT)=colnames(N)
 rownames(mrdMAT)=rownames(N)
 rm(fr)
 gc()
-mrdMAT1=mrdMAT
-colnames(mrdMAT1)=seq(1:dim(mrdMAT)[1])
-write.csv(cbind(ID=seq(1:dim(mrdMAT)[1]),NAME=rownames(mrdMAT),round(mrdMAT1,5)),paste(distk,"Distances.csv",sep=""),quote=FALSE,row.names=FALSE)
-write.table(cbind(NAME=rownames(mrdMAT),round(mrdMAT,5)),"DistancesforGAP.txt",sep="\t",quote=FALSE,row.names=FALSE)
-rm(mrdMAT1)
+
+#mrdMAT1=mrdMAT
+#colnames(mrdMAT1)=seq(1:dim(mrdMAT)[1])
+#DMfs=cbind(ID=seq(1:dim(mrdMAT)[1]),NAME=rownames(mrdMAT),round(mrdMAT1,5))
+#write.csv(cbind(ID=seq(1:dim(mrdMAT)[1]),NAME=rownames(mrdMAT),round(mrdMAT1,5)),paste(distk,"Distances.csv",sep=""),quote=FALSE,row.names=FALSE)
+#write.table(cbind(NAME=rownames(mrdMAT),round(mrdMAT,5)),"DistancesforGAP.txt",sep="\t",quote=FALSE,row.names=FALSE)
+#rm(mrdMAT1)
 
 print("Calculate cluster...")
 ##graphical representation, the MDS (multidimensional scaling) analysis
@@ -248,74 +232,120 @@ mds=cmdscale(mrdMAT, k=3,eig=T)
 coord=mds$points
 perctCP12=c(round(mds$eig[1]/sum(mds$eig)*100,2),round(mds$eig[2]/sum(mds$eig)*100,2),round(mds$eig[3]/sum(mds$eig)*100,2))
 colnames(coord)=c("dim1","dim2","dim3")
-rm(aux,N,mds)
-#########################################################################
-#########################################################################
-###For do dendograms and MDSgraph
-#########################################################################
-#########################################################################
-if(gap==TRUE){										 
-#if (dim(mrdMAT)[1]<500){
-	ver=fviz_nbclust(mrdMAT, hcut, nstart = 25, k.max=dim(mrdMAT)[1]-2,method = "gap_stat", nboot = 100)
-	gapk1=ver[["data"]]$gap-ver[["data"]]$SE.sim
-	test=cbind(ver[["data"]]$gap[-(dim(mrdMAT)[1]-2)],gapk1[-1])
-	BestNc=which(test[,1]>=test[,2])
-	if(length(BestNc)>1){ if(min(BestNc)==1){BestNc=BestNc[2]}else{BestNc=min(BestNc)} }
-	if (BestNc==1) {BestNc=2; print("Optimization fail (k=1)")}
-	if (is.infinite(BestNc)==T){BestNc=2; print("Optimization fail (k=InF)")}
-}else{
-	BestNc=3
- 	#print("Optimization is not performed because there are many individuals and it takes a long time.")
-}
-#library(cluster)
+#rm(aux,N,mds)
+rm(N,mds)
+
 clust=agnes(mrdMAT, method = "ward")
-#########################################################################
-##codigo para Archaeopteryx##############################################
-######################################################################### 
-#library(ape)
-TFArx=as.phylo(as.hclust(clust))
-if (file.exists("proofnewick.txt")) file.remove("proofnewick.txt")  
-write.tree(TFArx,"proofnewick.txt")  
-line2=as.vector(scan("proofnewick.txt",what=character()))
-line1=substring(line2,1:nchar(line2),1:nchar(line2))
-filearch=paste(getwd(),"/TreeforArchaeopteryx.xml",sep="")
-export.xml(filearch,line1,TFArx,0,NULL,NULL,NULL,NULL)
-filecopy="TreeforArchaeopteryxBN.xml"
-file.copy(filearch,filecopy)
-if (file.exists("proofnewick.txt")) file.remove("proofnewick.txt")
-#########################################################################
-#save(mayorque,menorque,coord,clust,datos,exadivg,id1,mrdMAT,perctCP12,file=paste(dirroot,"/Programs/Rcode/tmpoutput.rda",sep=""))	
-#library(dendextend)
+
    dend=as.dendrogram(clust)
    coord1=as.data.frame(coord)
    names(coord1)=c("Factor1","Factor2","Factor3")
-   write.csv(coord1,"MDStable.csv",quote=FALSE)      
+   #write.csv(coord1,"MDStable.csv",quote=FALSE)
+	coord2=cbind(gen=rownames(coord),coord)
+	names(coord2)=c("Gen","Factor1","Factor2","Factor3")   
+
+finMark=nrow(datos)
+finGen=ncol(datos)-4
+   
    ##Create file with the options that were chosen for the analysis
-optan=paste("optionsAnalysis_",strsplit(file_name,"[.]")[[1]][1],"_",strsplit(as.character(Sys.time())," ")[[1]][1],"_", gsub(":","-",strsplit(as.character(Sys.time())," ")[[1]][2]),".txt",sep="")
-if(!file.exists(optan)) file.create(optan)
-cat("######################################################\n", file=optan)
-cat("The analysis was made with the following options:\n", file=optan,append=TRUE)
-cat("######################################################\n", file=optan,append=TRUE)
-if(typedata=="FREQ"){
-   cat("\nAllele frequencies were read from file:",file_name,"\n",file=optan, append=TRUE)
-}
-if(typedata=="SNP"){
-   cat("**\nSNP's were read from file:",file_name,"\n","and recode AA:",ht1,"to 1",
-          "Aa:",ht2,"to 0.5","aa:",ht3,"to 0","\n",file=optan, append=TRUE)}
-if(typedata=="CUENTA"){
-   cat("\nCounts were read from file:",file_name,"\n",file=optan, append=TRUE)
-}
-if(typedata=="DistMat"){
-   cat("\nDistance matrix were read from file:",file_name,"\n",file=optan, append=TRUE)
-}
+tablaOpt <- data.frame(parametro = character(),valor = character(), stringsAsFactors = FALSE)
+# Tipo de datos
+if(typedata=="FREQ"){ tablaOpt <- rbind(tablaOpt,data.frame(parametro="InputType", valor="Allele frequencies"))}
+if(typedata=="SNP"){ tablaOpt <- rbind(tablaOpt,data.frame(parametro="InputType", valor="SNP"), data.frame(parametro="AA", valor=ht1),
+    data.frame(parametro="Aa", valor=ht2), data.frame(parametro="aa", valor=ht3))}
+if(typedata=="CUENTA"){ tablaOpt <- rbind(tablaOpt,data.frame(parametro="InputType", valor="Counts"))}
+if(typedata=="DistMat"){ tablaOpt <- rbind(tablaOpt,data.frame(parametro="InputType", valor="Distance matrix"))}
+# Missing
+if(missval!=0){tablaOpt <- rbind(tablaOpt,data.frame(parametro="Missing genotypes (%)", valor=missval*100))}
+if(missvalG!=0){tablaOpt <- rbind(tablaOpt,data.frame(parametro="Missing markers (%)", valor=missvalG*100))}
+# Otros parámetros
+tablaOpt <- rbind(tablaOpt,
+  data.frame(parametro="Polymorphism", valor=paste(menorque,"<q<",mayorque)),
+  data.frame(parametro="Distance", valor=distk),
+  data.frame(parametro="Markers (start)", valor=oriMark),
+  data.frame(parametro="Markers (final)", valor=finMark),
+  data.frame(parametro="Genotypes (start)", valor=oriGen),
+  data.frame(parametro="Genotypes (final)", valor=finGen)
+)
 
-if(missval!=0){cat("**\nGenotypes with", missval*100,"% of missing values were not considered for analysis","\n",file=optan, append=TRUE)}
-cat("**\nPolymorphism:",menorque,"<q<",mayorque,"\n",file=optan, append=TRUE)
-cat("**\nCalculated genetic distance:",distk,"\n",file=optan, append=TRUE)
+	#########################################################################
+	#########################################################################
+	###For optimize cluster
+	#########################################################################
+	#########################################################################
+	if(gap==TRUE){	
+	print("Do optimization...")
+		if(methodgap=="gap"){			
+			ver=fviz_nbclust(mrdMAT, hcut, k.max=20,method = "gap_stat", nboot = 100)
+			gapk1=ver[["data"]]$gap-ver[["data"]]$SE.sim
+			test=cbind(ver[["data"]]$gap[-(dim(mrdMAT)[1]-2)],gapk1[-1])
+			BestNc=which(test[,1]>=test[,2])  
+			if(length(BestNc)>1){ if(min(BestNc)==1){BestNc=BestNc[2]}else{BestNc=min(BestNc)} }
+			BestNc=as.numeric(as.character(BestNc))
+			if (BestNc==1) {BestNc=1; print("Optimization fail (k=1)")}
+			if (is.infinite(BestNc)==T){BestNc=1; print("Optimization fail (k=InF)")}
+		}else{
+			ver <- fviz_nbclust(mrdMAT,hcut, method = "silhouette",k.max = 20)
+			BestNc <- ver$data$clusters[which.max(ver$data$y)]
+			if(length(BestNc)>1){ if(min(BestNc)==1){BestNc=BestNc[2]}else{BestNc=min(BestNc)} }
+			BestNc=as.numeric(as.character(BestNc))
+			if (BestNc==1) {BestNc=1; print("Optimization fail (k=1)")}
+			if (is.infinite(BestNc)==T){BestNc=1; print("Optimization fail (k=InF)")}
+		}		
+	}else{BestNc=3}
+	
+#######################################################
+if(mixture==TRUE){
+print("Calculate ancenstry...")
+if (typedata=="SNP" | typedata=="vcfile"){
+	genotype_matrix=t(datos[,1:(ncol(datos)-4)])
+	rownames(genotype_matrix)=colnames(datos)[1:(ncol(datos)-4)]
+	genotype_matrix[genotype_matrix==0]=9
+	genotype_matrix[genotype_matrix==0.5]=99
+	genotype_matrix[genotype_matrix==1]=999
+	genotype_matrix[genotype_matrix==9]=2
+	genotype_matrix[genotype_matrix==99]=1
+	genotype_matrix[genotype_matrix==999]=0
+}
+if (typedata=="FREQ" | typedata=="CUENTA"){
+	genotype_matrix=t(datos[,1:(ncol(datos)-4)])
+	rownames(genotype_matrix)=colnames(datos)[1:(ncol(datos)-4)]
+	genotype_matrix[genotype_matrix < 0.35]=9
+	genotype_matrix[genotype_matrix >= 0.35 & genotype_matrix <= 0.65] <- 99
+	genotype_matrix[genotype_matrix > 0.65]=999
+	genotype_matrix[genotype_matrix==9]=2
+	genotype_matrix[genotype_matrix==99]=1
+	genotype_matrix[genotype_matrix==999]=0
+}
+  write.geno(genotype_matrix, "datos.geno")
+		#########################################################################
+		###For do ancestry
+		#########################################################################
+		#########################################################################		
+			#write.geno(genotype_matrix, "datos.geno")
+			# Correr an?lisis sNMF
+			project <- snmf("datos.geno", K = 1:10, repetitions = 20, entropy=T, project="new",CPU=4)
+			# Ver mejor K
+			Ks <- 1:10
+			ce_list <- lapply(Ks, function(k) {
+				cross.entropy(project, K = k)
+			})
+			ce_matrix <- do.call(cbind, ce_list)
+			mean_ce <- colMeans(ce_matrix)
+			best_K <- Ks[which.min(mean_ce)]
+			best_K=as.numeric(as.character(best_K))
+			if(best_K==1){best_K=2}
+			if(gap==TRUE){if(best_K<=BestNc){best_K=best_K}else{best_K=BestNc}}
+			cat("Best K is:", best_K, "\n")
+			best_run <- which.min(ce_matrix[,best_K])
+			cat("Better run for K =", best_K, "is:", best_run, "\n")
+			# Extraer matriz Q para K optimo
+			qmatrix <- Q(project, K = best_K, run=best_run)	
+			rownames(qmatrix) <- rownames(genotype_matrix)
+			colnames(qmatrix) <- paste0("Cluster_",1:best_K)
+	}else{qmatrix=NULL}
 
-coord2=cbind(gen=rownames(coord),coord)
-names(coord2)=c("Gen","Factor1","Factor2","Factor3")
-res=list(as.data.frame(div),coord2, getwd(), clust, datos, mrdMAT, perctCP12,BestNc)
+res=list(as.data.frame(div),coord2, getwd(), clust, datos, mrdMAT, perctCP12,BestNc,qmatrix, exadiv, exadivg, tablaOpt)
 return(res)
 }
 
