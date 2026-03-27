@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Fit Functions for Stability Selection</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for Fitting Functions {stabs}"><tr><td>Fitting Functions {stabs}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Fit Functions for Stability Selection
+</h2>
+
+<h3>Description</h3>
+
+<p>Functions that fit a model until <i>q</i> variables are selected and
+that returns the indices (and names) of the selected variables.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## package lars:
+lars.lasso(x, y, q, ...)
+lars.stepwise(x, y, q, ...)
+
+## package glmnet:
+glmnet.lasso(x, y, q, type = c("conservative", "anticonservative"), ...)
+glmnet.lasso_maxCoef(x, y, q, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>a matrix containing the predictors or an object of class
+<code>"mboost"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>a vector or matrix containing the outcome.</p>
+</td></tr>
+<tr valign="top"><td><code>q</code></td>
+<td>
+<p>number of (unique) selected variables (or groups of variables
+depending on the model) that are selected on each subsample.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p> a charachter vector specifying if the number of selected
+variables per subsample is <i>&lt;= q</i> (<code>type = "conservative"</code>) 
+or <i>&gt;= q</i> (<code>type = "anticonservative"</code>). The conservative
+version <em>ensures</em> that the PFER is controlled.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p> additional arguments passed to the underlying fitting function.
+See the example on <code>glmnet.lasso_maxCoef</code> in <code><a href="../../stabs/help/stabsel.html">stabsel</a></code> for 
+the specification of additional arguments via <code><a href="../../stabs/help/stabsel.html">stabsel</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>All fitting functions are named after the package and the type of
+model that is fitted: <code>package_name.model</code>, e.g.,
+<code>glmnet.lasso</code> stands for a lasso model that is fitted using the
+package <span class="pkg">glmnet</span>.
+</p>
+<p><code>glmnet.lasso_maxCoef</code> fits a lasso model with a given penalty parameter 
+and returns the <code>q</code> variables with the largest (absolute) coefficients. 
+If one wants to use <code>glmnet.lasso_maxCoef</code>, one must specify the penalty 
+parameter   <code>lambda</code> (via the <code>...</code> argument) or in
+<code><a href="../../stabs/help/stabsel.html">stabsel</a></code> via <code>args.fitfun(lambda = )</code>. Note that usually, 
+the penalty parameter cannot be specified but is chosen such that <code>q</code>
+variables are selected. For an example on how to use 
+<code>glmnet.lasso_maxCoef</code> see <code><a href="../../stabs/help/stabsel.html">stabsel</a></code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A named list with elements
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>selected</code></td>
+<td>
+<p>logical. A vector that indicates which variable was
+selected.</p>
+</td></tr>
+<tr valign="top"><td><code>path</code></td>
+<td>
+<p>logical. A matrix that indicates which variable was
+selected in which step. Each row represents one variable, the
+columns represent the steps.</p>
+</td></tr>
+</table>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../stabs/help/stabsel.html">stabsel</a></code> for stability selection itself.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+  if (require("TH.data")) {
+      ## make data set available
+      data("bodyfat", package = "TH.data")
+  } else {
+      ## simulate some data if TH.data not available. 
+      ## Note that results are nonsense with this data.
+      bodyfat &lt;- matrix(rnorm(720), nrow = 72, ncol = 10)
+  }
+  
+  if (require("lars")) {
+      ## selected variables
+      lars.lasso(bodyfat[, -2], bodyfat[,2], q = 3)$selected
+      lars.stepwise(bodyfat[, -2], bodyfat[,2], q = 3)$selected
+  }
+
+
+  if (require("glmnet")) {
+      glmnet.lasso(bodyfat[, -2], bodyfat[,2], q = 3)$selected
+      ## selection path
+      glmnet.lasso(bodyfat[, -2], bodyfat[,2], q = 3)$path
+    
+      ## Using the anticonservative glmnet.lasso (see args.fitfun):
+      stab.glmnet &lt;- stabsel(x = bodyfat[, -2], y = bodyfat[,2],
+                             fitfun = glmnet.lasso, 
+                             args.fitfun = list(type = "anticonservative"), 
+                             cutoff = 0.75, PFER = 1)
+                             
+      ## Using glmnet.lasso_maxCoef with penalty parameter specified via args.fitfun:
+      stab.maxcoef &lt;- stabsel(x = bodyfat[, -2], y = bodyfat[,2],
+                              cutoff = 0.75, PFER = 1, fitfun = glmnet.lasso_maxCoef,
+                              args.fitfun = list(lambda = 0.3))
+      ## this selectes the q variables with the largest (abolute) effects rather
+      ## than the first q variables which are selected in the lasso model
+      ## hence leading to a very different selection
+  }
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>stabs</em> version 0.7-1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

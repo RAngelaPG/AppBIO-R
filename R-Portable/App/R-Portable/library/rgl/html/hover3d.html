@@ -1,0 +1,183 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Display hover info in plot.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for hover3d {rgl}"><tr><td>hover3d {rgl}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Display hover info in plot.
+</h2>
+
+<h3>Description</h3>
+
+<p>This adds text to identify points within a plot when the mouse is near 
+them.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+hover3d(x, y = NULL, z = NULL, 
+        labeller = NULL, 
+        tolerance = 20, 
+        persist = c("no", "one", "yes"), 
+        labels = seq_along(x),
+        adj = c(-0.2, 0.5),
+        scene = scene3d(minimal = FALSE),
+        applyToScene = TRUE,
+        ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x, y, z</code></td>
+<td>
+
+<p>Coordinates of point to identify. Any reasonable way of defining the
+coordinates is acceptable.  See the function <code><a href="../../grDevices/help/xyz.coords.html">xyz.coords</a></code> for details. 
+Alternatively, <code>x</code> may be the id of a single existing 
+object, and its vertices will be used.
+</p>
+</td></tr>
+<tr valign="top"><td><code>labeller</code></td>
+<td>
+
+<p>A function to display information about identified points. <code>NULL</code>
+indicates the default function, described in Details.
+</p>
+</td></tr>
+<tr valign="top"><td><code>tolerance</code></td>
+<td>
+
+<p>How close (in pixels) the mouse should be to a point to display the
+information.
+</p>
+</td></tr>
+<tr valign="top"><td><code>persist</code></td>
+<td>
+
+<p>Should the label persist?  If <code>"no"</code> (the default), it will be removed
+when the mouse moves away.  If <code>"one"</code>, it will be removed when 
+another point is closer to the mouse.  If <code>"yes"</code>, it will 
+not be removed.
+</p>
+</td></tr>
+<tr valign="top"><td><code>labels</code></td>
+<td>
+
+<p>If the default <code>labeller</code> is used, these labels will be displayed.
+</p>
+</td></tr>
+<tr valign="top"><td><code>adj</code></td>
+<td>
+
+<p>If the default <code>labeller</code> is used, this adjustment will be passed
+to <code><a href="../../rgl/help/text3d.html">text3d</a></code> to display the labels.
+</p>
+</td></tr>
+<tr valign="top"><td><code>scene, applyToScene</code></td>
+<td>
+
+<p>Arguments to pass to <code><a href="../../rgl/help/setUserCallbacks.html">setUserCallbacks</a></code>.
+The <code>applyToDev</code> argument to that function is always
+<code>TRUE</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>Additional arguments that will be passed to the labeller.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>If specified, the <code>labeller</code> argument should specify a
+function with arguments
+compatible with <code>function(index, ...)</code>.  It will be called with
+<code>index</code> being the index of the point that was selected.  It should
+plot the label, and return the <span class="pkg">rgl</span> ids of the objects that were 
+plotted.
+</p>
+<p>When <code>applyToScene</code> is <code>TRUE</code>, all labels
+or labelling objects will be created and attached to the scene.  You may want to
+delete them (using the ids returned in <code>idverts</code> and
+<code>idtexts</code>) once <code><a href="../../rgl/help/rglwidget.html">rglwidget</a></code> has been called,
+as they serve no purpose in the current device.
+</p>
+<p>Only one hover handler is supported per scene or device.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code><a href="../../rgl/help/lowlevel.html">lowlevel</a></code> vector of ids is returned invisibly.
+If <code>applyToScene</code> is <code>TRUE</code>, it will contain the
+ids of the temporary objects created for Javascript.
+It will also have these attributes:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>oldPar</code></td>
+<td>
+<p>Values of <code><a href="../../rgl/help/par3d.html">par3d</a></code> parameters that were changed.
+Currently only <code>"mouseMode"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>oldDev</code></td>
+<td>
+<p>The value of <code>cur3d()</code> at the time of calling, so that
+<code>oldPar</code> can be restored to the right device.</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Duncan Murdoch
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../rgl/help/identify3d.html">identify3d</a></code> and <code><a href="../../rgl/help/selectpoints3d.html">selectpoints3d</a></code>
+work in the <span class="pkg">rgl</span> device and return information
+about the selections. <code><a href="../../rgl/help/setUserCallbacks.html">setUserCallbacks</a></code>
+is the underlying function used by <code>hover3d</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Create a labeller to show the coordinates of the selected point.
+labelLocation &lt;- function(x, y = NULL, z = NULL) {
+  xyz &lt;- xyz.coords(x, y, z)
+  function(sel, ...) {
+    p &lt;- with(xyz, matrix(c(x[sel], y[sel], z[sel]), ncol = 3))
+    c(text3d(p, texts = sprintf("x:%.2f", p[1]), 
+                  adj = c(-0.2, -0.6), ...),
+      text3d(p, texts = sprintf("y:%.2f", p[2]),
+                  adj = c(-0.2, 0.5), ...),
+      text3d(p, texts = sprintf("z:%.2f", p[3]),
+                  adj = c(-0.2, 1.6), ...))
+  }
+}
+
+xyz &lt;- matrix(rnorm(30), ncol = 3)
+open3d()
+ids &lt;- plot3d(xyz)
+hover3d(xyz, labeller = labelLocation(xyz), col = "red", cex = 0.8)
+# The same thing using the data id:
+# hover3d(ids["data"], 
+#         labeller = labelLocation(rgl.attrib(ids["data"], "vertices")), 
+#         col = "red", cex = 0.8)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rgl</em> version 1.3.36 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

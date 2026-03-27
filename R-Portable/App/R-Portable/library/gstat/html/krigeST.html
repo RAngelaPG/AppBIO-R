@@ -1,0 +1,194 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Ordinary global Spatio-Temporal Kriging</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for krigeST {gstat}"><tr><td>krigeST {gstat}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Ordinary global Spatio-Temporal Kriging</h2>
+
+<h3>Description</h3>
+
+<p>Function for ordinary global and local and trans Gaussian spatio-temporal kriging on point support
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+krigeST(formula, data, newdata, modelList, beta, y, ...,
+        nmax = Inf, stAni = NULL,
+        computeVar = FALSE,	fullCovariance = FALSE,
+        bufferNmax=2, progress=TRUE)
+krigeSTTg(formula, data, newdata, modelList, y, nmax=Inf, stAni=NULL,
+                      bufferNmax=2, progress=TRUE, lambda = 0)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p> formula that defines the dependent variable as a linear
+model of independent variables; suppose the dependent variable has name
+<code>z</code>, for ordinary and simple kriging use the formula <code>z~1</code>;
+for simple kriging also define <code>beta</code> (see below); for universal
+kriging, suppose <code>z</code> is linearly dependent on <code>x</code> and <code>y</code>,
+use the formula <code>z~x+y</code></p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p> ST object: should contain the dependent variable and independent
+variables.</p>
+</td></tr>
+<tr valign="top"><td><code>newdata</code></td>
+<td>
+<p> ST object with prediction/simulation locations in
+space and time; should contain attribute columns with the independent variables
+(if present).</p>
+</td></tr>
+<tr valign="top"><td><code>modelList</code></td>
+<td>
+<p> object of class <code>StVariogramModel</code>, created by
+<code><a href="../../gstat/help/vgmST.html">vgmST</a></code> - see below or the function <code><a href="../../gstat/help/vgmAreaST.html">vgmAreaST</a></code> for area-to-point kriging. For the general kriging case: a list with named elements: <code>space</code>, <code>time</code>
+and/or <code>joint</code> depending 
+on the spatio-temporal covariance family, and an entry <code>stModel</code>. 
+Currently 
+implemented families that may be used for <code>stModel</code> 
+are <code>separable</code>, <code>productSum</code>, <code>metric</code>, 
+<code>sumMetric</code> and <code>simpleSumMetric</code>. 
+See the examples section in <code><a href="../../gstat/help/fit.StVariogram.html">fit.StVariogram</a></code> or 
+<code><a href="../../gstat/help/variogramSurface.html">variogramSurface</a></code> for details on how to define spatio-temporal 
+covariance models. <code>krigeST</code> will look for a &quot;temporal unit&quot; attribute
+in the provided modelList in order to adjust the temporal scales.</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>matrix; to krige multiple fields in a single step, pass data 
+as columns of matrix <code>y</code>. This will ignore the value of the 
+response in <code>formula</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>beta</code></td>
+<td>
+<p>The (known) mean for simple kriging.</p>
+</td></tr>
+<tr valign="top"><td><code>nmax</code></td>
+<td>
+<p>The maximum number of neighbouring locations for a spatio-temporal local neighbourhood</p>
+</td></tr>
+<tr valign="top"><td><code>stAni</code></td>
+<td>
+<p>a spatio-temporal anisotropy scaling assuming a metric spatio-temporal space. Used only for the selection of the closest neighbours. This scaling needs only to be provided in case the model does not have a stAni parameter, or if a different one should be used for the neighbourhood selection. Mind the correct spatial unit. Currently, no coordinate conversion is made for the neighbourhood selection (i.e. Lat and Lon require a spatio-temporal anisotropy scaling in degrees per second).</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p> further arguments used for instance to pass the model into vgmAreaST for area-to-point kriging</p>
+</td></tr>
+<tr valign="top"><td><code>computeVar</code></td>
+<td>
+<p>logical; if TRUE, prediction variances will be returned</p>
+</td></tr>
+<tr valign="top"><td><code>fullCovariance</code></td>
+<td>
+<p>logical; if FALSE a vector with prediction 
+variances will be returned, if TRUE the full covariance matrix of 
+all predictions will be returned</p>
+</td></tr>
+<tr valign="top"><td><code>bufferNmax</code></td>
+<td>
+<p>factor with which nmax is multiplied for an extended search radius (default=2). Set to 1 for no extension of the search radius.</p>
+</td></tr>
+<tr valign="top"><td><code>progress</code></td>
+<td>
+<p>whether a progress bar shall be printed for local spatio-temporal kriging; default=TRUE</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>The value of lambda used in the box-cox transformation.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Function <code>krigeST</code> is a R implementation of the kriging function from 
+<a href="../../gstat/help/gstat.html">gstat</a> using spatio-temporal covariance models following the 
+implementation of <code><a href="../../gstat/help/krige0.html">krige0</a></code>. Function <code>krigeST</code> offers some 
+particular methods for ordinary spatio-temporal (ST) kriging. In particular,
+it does not support block kriging or kriging in a distance-based
+neighbourhood, and does not provide simulation.
+</p>
+<p>If <code>data</code> is of class <code>sftime</code>, then <code>newdata</code> MUST be
+of class <code>stars</code> or <code>sftime</code>, i.e. mixing form old-style
+classes (package spacetime) and new-style classes (sf, stars, sftime)
+is not supported.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of the same class as <code>newdata</code> (deriving from 
+<code><a href="../../spacetime/help/ST-class.html">ST</a></code>). Attributes columns contain prediction and prediction 
+variance.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Edzer Pebesma, Benedikt Graeler </p>
+
+
+<h3>References</h3>
+
+ 
+<p>Benedikt Graeler, Edzer Pebesma, Gerard Heuvelink.  Spatio-Temporal
+Geostatistics using gstat.  The R Journal 8(1), 204&ndash;218.
+<a href="https://journal.r-project.org/articles/RJ-2016-014/index.html">https://journal.r-project.org/articles/RJ-2016-014/index.html</a>
+</p>
+<p>N.A.C. Cressie, 1993, Statistics for Spatial Data,
+Wiley. 
+</p>
+<p>Pebesma, E.J., 2004. Multivariable geostatistics in S: the gstat package.
+Computers and Geosciences, 30: 683-691.  </p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../gstat/help/krige0.html">krige0</a></code>, <code><a href="../../gstat/help/gstat.html">gstat</a></code>, <code><a href="../help/predict.html">predict</a></code>, <code><a href="../../gstat/help/krigeTg.html">krigeTg</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(sp)
+library(spacetime)
+sumMetricVgm &lt;- vgmST("sumMetric",
+                      space = vgm( 4.4, "Lin", 196.6,  3),
+                      time  = vgm( 2.2, "Lin",   1.1,  2),
+                      joint = vgm(34.6, "Exp", 136.6, 12),
+                      stAni = 51.7)
+
+data(air)
+suppressWarnings(proj4string(stations) &lt;- CRS(proj4string(stations)))
+rural = STFDF(stations, dates, data.frame(PM10 = as.vector(air)))
+
+rr &lt;- rural[,"2005-06-01/2005-06-03"]
+rr &lt;- as(rr,"STSDF")
+
+x1 &lt;- seq(from=6,to=15,by=1)
+x2 &lt;- seq(from=48,to=55,by=1)
+
+DE_gridded &lt;- SpatialPoints(cbind(rep(x1,length(x2)), rep(x2,each=length(x1))), 
+                            proj4string=CRS(proj4string(rr@sp)))
+gridded(DE_gridded) &lt;- TRUE
+DE_pred &lt;- STF(sp=as(DE_gridded,"SpatialPoints"), time=rr@time)
+DE_kriged &lt;- krigeST(PM10~1, data=rr, newdata=DE_pred,
+                     modelList=sumMetricVgm)
+gridded(DE_kriged@sp) &lt;- TRUE
+stplot(DE_kriged)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>gstat</em> version 2.1-5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

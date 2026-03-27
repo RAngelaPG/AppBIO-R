@@ -1,0 +1,198 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Read a Pajek Project or Network File and Convert to an R...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for read.paj {network}"><tr><td>read.paj {network}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Read a Pajek Project or Network File and Convert to an R 'Network' Object</h2>
+
+<h3>Description</h3>
+
+<p>Return a (list of) <code><a href="../../network/help/network.html">network</a></code> object(s) after reading a
+corresponding .net or .paj file.  The code accepts ragged array edgelists,
+but cannot currently handle 2-mode, multirelational (e.g. KEDS), or networks
+with entries for both edges and arcs (e.g. GD-a99m).  See <code>network</code>,
+<code>statnet</code>, or <code>sna</code> for more information.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+read.paj(
+  file,
+  verbose = FALSE,
+  debug = FALSE,
+  edge.name = NULL,
+  simplify = FALSE,
+  time.format = c("pajekTiming", "networkDynamic")
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>file</code></td>
+<td>
+<p>the name of the file whence the data are to be read. If it does
+not contain an absolute path, the file name is relative to the current
+working directory (as returned by <code><a href="../../base/html/getwd.html">getwd</a></code>).  <code>file</code> can
+also be a complete URL.</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>logical: Should longer descriptions of the reading and
+coercion process be printed out?</p>
+</td></tr>
+<tr valign="top"><td><code>debug</code></td>
+<td>
+<p>logical: Should very detailed descriptions of the reading and
+coercion process be printed out? This is typically used to debug the reading
+of files that are corrupted on coercion.</p>
+</td></tr>
+<tr valign="top"><td><code>edge.name</code></td>
+<td>
+<p>optional name for the edge variable read from the file. The
+default is to use the value in the project file if found.</p>
+</td></tr>
+<tr valign="top"><td><code>simplify</code></td>
+<td>
+<p>Should the returned network be simplified as much as
+possible and saved? The values specifies the name of the file which the data
+are to be stored. If it does not contain an absolute path, the file name is
+relative to the current working directory (see <code><a href="../../base/html/getwd.html">getwd</a></code>). If
+<code>specify</code> is TRUE the file name is the name <code>file</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>time.format</code></td>
+<td>
+<p>if the network has timing information attached to
+edges/vertices, how should it be processed?  <code>'pajekTiming'</code> will
+attach the timing information unchanged in an attribute named
+<code>pajek.timing</code>. <code>'networkDynamic'</code> will translate it to a spell
+matrix format, attach it as an <code>'activity'</code> attribute and add the class
+<code>'networkDynamic'</code> &ndash; formating it for use by the <code>networkDynamic</code>
+package.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>If the <code>*Vertices</code> block includes the optional graphic attributes
+(coordinates, shape, size, etc.) they will be read attached to the network
+as vertex attributes but values will not be interperted (i.e. Pajek's color
+names will not be translated to R color names).  Vertex attributes included
+in a <code>*Vector</code> block will be attached as vertex attributes.
+</p>
+<p>Edges or Arc weights in the <code>*Arcs</code> or <code>*Edges</code> block are include
+in the network as an attribute with the same name as the network. If no
+weight is included, a default weight of 1 is used. Optional graphic
+attributes or labels will be attached as edge attributes.
+</p>
+<p>If the file contains an empty <code>Arcs</code> block, an undirected network will
+be returned. Otherwise the network will be directed, with two edges (one in
+each direction) added for every row in the <code>*Edges</code> block.
+</p>
+<p>If the <code>*Vertices</code>, <code>*Arcs</code> or <code>*Edges</code> blocks having timing
+information included in the rows (indicated by <code>...</code> tokens), it will be
+attached to the vertices with behavior determined by the <code>time.format</code>
+option.  If the <code>'networkDynamic'</code> format is used, times will be
+translated to <code>networkDynamic</code>'s spell model with the assumtion that
+the original Pajek representation was indicating discrete time chunks.  For
+example <code>"[5-10]"</code> will become the spell <code>[5,11]</code>, <code>"[2-*]"</code>
+will become <code>[2,Inf]</code> and <code>"[7]"</code> will become <code>[7,8]</code>. See
+documentation for <code>networkDynamic</code>'s <code>?activity.attribute</code> for
+details.
+</p>
+<p>The <code>*Arcslist</code>, <code>*Edgelist</code> and <code>*Events</code> blocks are not yet
+supported.
+</p>
+<p>As there is no known single complete specification for the file format,
+parsing behavior has been infered from references and examples below.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The structure of the object returned by <code>read.paj</code> depends on
+the contents of the file it parses. </p>
+ <ul>
+<li><p> if input file contains
+information about a single 'network' object (i.e .net input file) a single
+network object is returned with attribute data set appropriately if
+possible.  or a list of networks (for .paj input).  </p>
+</li>
+<li><p> if input file
+contains multiple sets of relations for a single network, a list of network
+objects ('network.series') is returned, along with a formula object?.  </p>
+</li>
+<li>
+<p>if input .paj file contains additional information (like partition
+information), or multiple <code>*Network</code> definitions a two element list is
+returned.  The first element is a list of all the network objects created,
+and the second is a list of partitions, etc.  (how are these matched up) </p>
+</li></ul>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Dave Schruth <a href="mailto:dschruth@u.washington.edu">dschruth@u.washington.edu</a>, Mark S. Handcock
+<a href="mailto:handcock@stat.washington.edu">handcock@stat.washington.edu</a> (with additional input from Alex
+Montgomery <a href="mailto:ahm@reed.edu">ahm@reed.edu</a>), Skye Bender-deMoll
+<a href="mailto:skyebend@uw.edu">skyebend@uw.edu</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Batagelj, Vladimir and Mrvar, Andrej (2011) Pajek Reference
+Manual version 2.05
+<a href="http://web.archive.org/web/20240906013709/http://vlado.fmf.uni-lj.si/pub/networks/pajek/doc/pajekman.pdf">http://web.archive.org/web/20240906013709/http://vlado.fmf.uni-lj.si/pub/networks/pajek/doc/pajekman.pdf</a> Section
+5.3 pp 73-79
+</p>
+<p>Batageli, Vladimir (2008) &quot;Network Analysis Description of Networks&quot;
+<a href="http://web.archive.org/web/20240511173536/http://vlado.fmf.uni-lj.si/pub/networks/doc/ECPR/08/ECPR01.pdf">http://web.archive.org/web/20240511173536/http://vlado.fmf.uni-lj.si/pub/networks/doc/ECPR/08/ECPR01.pdf</a>
+</p>
+<p>Pajek Datasets <a href="http://web.archive.org/web/20240411203537/http://vlado.fmf.uni-lj.si/pub/networks/data/esna">http://web.archive.org/web/20240411203537/http://vlado.fmf.uni-lj.si/pub/networks/data/esna</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../network/help/network.html">network</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## Not run: 
+require(network)
+
+par(mfrow=c(2,2))
+
+test.net.1 &lt;- read.paj("http://vlado.fmf.uni-lj.si/pub/networks/data/GD/gd98/A98.net")
+plot(test.net.1,main=test.net.1%n%'title')
+
+test.net.2 &lt;- read.paj("http://vlado.fmf.uni-lj.si/pub/networks/data/mix/USAir97.net")
+# plot using coordinates from the file in the file
+plot(test.net.2,main=test.net.2%n%'title',
+               coord=cbind(test.net.2%v%'x',
+               test.net.2%v%'y'),
+               jitter=FALSE)
+               
+# read .paj project file
+# notice output has $networks and $partitions
+read.paj('http://vlado.fmf.uni-lj.si/vlado/podstat/AO/net/Tina.paj')
+
+## End(Not run)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>network</em> version 1.20.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

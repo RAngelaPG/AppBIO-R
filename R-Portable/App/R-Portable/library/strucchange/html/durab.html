@@ -1,0 +1,111 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: US Labor Productivity</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for durab {strucchange}"><tr><td>durab {strucchange}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>US Labor Productivity</h2>
+
+<h3>Description</h3>
+
+<p>US labor productivity in the manufacturing/durables sector.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>data("durab")</pre>
+
+
+<h3>Format</h3>
+
+<p><code>durab</code> is a multivariate monthly time series from 1947(3)
+to 2001(4) with variables
+</p>
+
+<dl>
+<dt>y</dt><dd><p>growth rate of the Industrial Production Index to
+average weekly labor hours in the manufacturing/durables sector,</p>
+</dd>
+<dt>lag</dt><dd><p>lag 1 of the series <code>y</code>,</p>
+</dd>
+</dl>
+
+
+
+<h3>Source</h3>
+
+<p>The data set is available from Bruce Hansen's homepage
+<a href="https://www.ssc.wisc.edu/~bhansen/">https://www.ssc.wisc.edu/~bhansen/</a>. For more information
+see Hansen (2001).</p>
+
+
+<h3>References</h3>
+
+<p>Hansen B. (2001), The New Econometrics of Structural Change:
+Dating Breaks in U.S. Labor Productivity,
+<em>Journal of Economic Perspectives</em>, <b>15</b>, 117&ndash;128.
+</p>
+<p>Zeileis A., Leisch F., Kleiber C., Hornik K. (2005), Monitoring
+Structural Change in Dynamic Econometric Models,
+<em>Journal of Applied Econometrics</em>, <b>20</b>, 99&ndash;121.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data("durab")
+## use AR(1) model as in Hansen (2001) and Zeileis et al. (2005)
+durab.model &lt;- y ~ lag
+
+## historical tests
+## OLS-based CUSUM process
+ols &lt;- efp(durab.model, data = durab, type = "OLS-CUSUM")
+plot(ols)
+## F statistics
+fs &lt;- Fstats(durab.model, data = durab, from = 0.1)
+plot(fs)
+
+
+## F statistics based on heteroskadisticy-consistent covariance matrix
+fsHC &lt;- Fstats(durab.model, data = durab, from = 0.1,
+	       vcov = function(x, ...) vcovHC(x, type = "HC", ...))
+plot(fsHC)
+
+
+## monitoring
+Durab &lt;- window(durab, start=1964, end = c(1979, 12))
+ols.efp &lt;- efp(durab.model, type = "OLS-CUSUM", data = Durab)
+newborder &lt;- function(k) 1.723 * k/192
+ols.mefp &lt;- mefp(ols.efp, period=2)
+ols.mefp2 &lt;- mefp(ols.efp, border=newborder)
+Durab &lt;- window(durab, start=1964)
+ols.mon &lt;- monitor(ols.mefp)
+ols.mon2 &lt;- monitor(ols.mefp2)
+plot(ols.mon)
+lines(boundary(ols.mon2), col = 2)
+## Note: critical value for linear boundary taken from Table III
+## in Zeileis et al. 2005: (1.568 + 1.896)/2 = 1.732 is a linear
+## interpolation between the values for T = 2 and T = 3 at
+## alpha = 0.05. A typo switched 1.732 to 1.723.
+
+
+## dating
+bp &lt;- breakpoints(durab.model, data = durab)
+summary(bp)
+plot(summary(bp))
+
+plot(ols)
+lines(breakpoints(bp, breaks = 1), col = 3)
+lines(breakpoints(bp, breaks = 2), col = 4)
+plot(fs)
+lines(breakpoints(bp, breaks = 1), col = 3)
+lines(breakpoints(bp, breaks = 2), col = 4)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>strucchange</em> version 1.5-4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

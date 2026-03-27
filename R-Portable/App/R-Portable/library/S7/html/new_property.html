@@ -1,0 +1,133 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Define a new property</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for new_property {S7}"><tr><td>new_property {S7}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Define a new property</h2>
+
+<h3>Description</h3>
+
+<p>A property defines a named component of an object. Properties are
+typically used to store (meta) data about an object, and are often
+limited to a data of a specific <code>class</code>.
+</p>
+<p>By specifying a <code>getter</code> and/or <code>setter</code>, you can make the property
+&quot;dynamic&quot; so that it's computed when accessed or has some non-standard
+behaviour when modified. Dynamic properties are not included as an argument
+to the default class constructor.
+</p>
+<p>See the &quot;Properties: Common Patterns&quot; section in <code>vignette("class-objects")</code>
+for more examples.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+new_property(
+  class = class_any,
+  getter = NULL,
+  setter = NULL,
+  validator = NULL,
+  default = NULL,
+  name = NULL
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>class</code></td>
+<td>
+<p>Class that the property must be an instance of.
+See <code><a href="../../S7/help/as_class.html">as_class()</a></code> for details.</p>
+</td></tr>
+<tr valign="top"><td><code>getter</code></td>
+<td>
+<p>An optional function used to get the value. The function
+should take <code>self</code> as its sole argument and return the value. If you
+supply a <code>getter</code>, you are responsible for ensuring that it returns
+an object of the correct <code>class</code>; it will not be validated automatically.
+</p>
+<p>If a property has a getter but doesn't have a setter, it is read only.</p>
+</td></tr>
+<tr valign="top"><td><code>setter</code></td>
+<td>
+<p>An optional function used to set the value. The function
+should take <code>self</code> and <code>value</code> and return a modified object.</p>
+</td></tr>
+<tr valign="top"><td><code>validator</code></td>
+<td>
+<p>A function taking a single argument, <code>value</code>, the value
+to validate.
+</p>
+<p>The job of a validator is to determine whether the property value is valid.
+It should return <code>NULL</code> if the object is valid, or if it's not valid,
+a single string describing the problem. The message should not include the
+name of the property as this will be automatically appended to the
+beginning of the message.
+</p>
+<p>The validator will be called after the <code>class</code> has been verified, so
+your code can assume that <code>value</code> has known type.</p>
+</td></tr>
+<tr valign="top"><td><code>default</code></td>
+<td>
+<p>When an object is created and the property is not supplied,
+what should it default to? If <code>NULL</code>, it defaults to the &quot;empty&quot; instance
+of <code>class</code>. This can also be a quoted call, which then becomes a standard
+function promise in the default constructor, evaluated at the time the
+object is constructed.</p>
+</td></tr>
+<tr valign="top"><td><code>name</code></td>
+<td>
+<p>Property name, primarily used for error messages. Generally
+don't need to set this here, as it's more convenient to supply as
+the element name when defining a list of properties. If both <code>name</code>
+and a list-name are supplied, the list-name will be used.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>An S7 property, i.e. a list with class <code>S7_property</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Simple properties store data inside an object
+Pizza &lt;- new_class("Pizza", properties = list(
+  slices = new_property(class_numeric, default = 10)
+))
+my_pizza &lt;- Pizza(slices = 6)
+my_pizza@slices
+my_pizza@slices &lt;- 5
+my_pizza@slices
+
+your_pizza &lt;- Pizza()
+your_pizza@slices
+
+# Dynamic properties can compute on demand
+Clock &lt;- new_class("Clock", properties = list(
+  now = new_property(getter = function(self) Sys.time())
+))
+my_clock &lt;- Clock()
+my_clock@now; Sys.sleep(1)
+my_clock@now
+# This property is read only, because there is a 'getter' but not a 'setter'
+try(my_clock@now &lt;- 10)
+
+# Because the property is dynamic, it is not included as an
+# argument to the default constructor
+try(Clock(now = 10))
+args(Clock)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>S7</em> version 0.2.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

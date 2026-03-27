@@ -1,0 +1,148 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Fit a spatio-temporal sample variogram to a sample variogram</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for fit.StVariogram {gstat}"><tr><td>fit.StVariogram {gstat}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Fit a spatio-temporal sample variogram to a sample variogram</h2>
+
+<h3>Description</h3>
+
+<p>Fits a spatio-temporal variogram of a given type to spatio-temporal sample variogram.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+fit.StVariogram(object, model, ...,  method = "L-BFGS-B",
+	lower, upper, fit.method = 6, stAni=NA, wles)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>The spatio-temporal sample variogram. Typically output from <code><a href="../../gstat/help/variogramST.html">variogramST</a></code></p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>The desired spatio-temporal model defined through <code><a href="../../gstat/help/vgmST.html">vgmST</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>further arguments passed to <code><a href="../../stats/html/optim.html">optim</a></code>. <code><a href="../../gstat/help/extractParNames.html">extractParNames</a></code> provides the parameter structure of spatio-temporal variogram models that help to provide sensible <code>upper</code> and <code>lower</code> limits.</p>
+</td></tr>
+<tr valign="top"><td><code>lower</code></td>
+<td>
+<p>Lower limits used by optim. If missing, the smallest well defined values are used (mostly near 0).</p>
+</td></tr>
+<tr valign="top"><td><code>upper</code></td>
+<td>
+<p>Upper limits used by optim. If missing, the largest well defined values are used (mostly <code>Inf</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>fit method, pass to <code><a href="../../stats/html/optim.html">optim</a></code></p>
+</td></tr>
+<tr valign="top"><td><code>fit.method</code></td>
+<td>
+<p>an integer between 0 and 13 determine the fitting routine (i.e. weighting of the squared residuals in the LSE). Values 0 to 6 correspond with the pure spatial version (see <code><a href="../../gstat/help/fit.variogram.html">fit.variogram</a></code>). See the details section for the meaning of the other values (partly experimental).</p>
+</td></tr>
+<tr valign="top"><td><code>stAni</code></td>
+<td>
+<p>The spatio-temporal anisotropy that is used in the weighting. Might be missing if the desired spatio-temporal variogram model does contain a spatio-temporal anisotropy parameter (this might cause bad convergence behaviour). The default is <code>NA</code> and will be understood as identity (1 temporal unit = 1 spatial unit). As this only in very few cases a valid assumption, a warning is issued.</p>
+</td></tr>
+<tr valign="top"><td><code>wles</code></td>
+<td>
+<p>Should be missing; only for backwards compatibility, <code>wles = TRUE</code> corresponds to <code>fit.method = 1</code> and <code>wles = FALSE</code> corresponds to <code>fit.method = 6</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The following list summarizes the meaning of the <code>fit.method</code> argument which is essential a weighting of the squared residuals in the least-squares estimation. Please note, that weights based on the models gamma value might fail to converge properly due to the dependence of weights on the variogram estimate:
+</p>
+
+<dl>
+<dt><code>fit.method = 0</code></dt><dd><p>no fitting, however the MSE between the provided variogram model and sample variogram surface is calculated.</p>
+</dd>
+<dt><code>fit.method = 1</code></dt><dd><p>Number of pairs in the spatio-temporal bin: <i>N[j]</i></p>
+</dd>
+<dt><code>fit.method = 2</code></dt><dd><p>Number of pairs in the spatio-temporal bin divided by the square of the current variogram model's value: <i>N[j]/gamma(h[j],u[j])^2</i></p>
+</dd>
+<dt><code>fit.method = 3</code></dt><dd><p>Same as <code>fit.method = 1</code> for compatibility with <code><a href="../../gstat/help/fit.variogram.html">fit.variogram</a></code> but as well evaluated in R.</p>
+</dd>
+<dt><code>fit.method = 4</code></dt><dd><p>Same as <code>fit.method = 2</code> for compatibility with <code><a href="../../gstat/help/fit.variogram.html">fit.variogram</a></code> but as well evaluated in R.</p>
+</dd>
+<dt><code>fit.method = 5</code></dt><dd><p>Reserved for REML for compatibility with <code><a href="../../gstat/help/fit.variogram.html">fit.variogram</a></code>, not yet implemented.</p>
+</dd>
+<dt><code>fit.method = 6</code></dt><dd><p>No weights.</p>
+</dd>
+<dt><code>fit.method = 7</code></dt><dd><p>Number of pairs in the spatio-temporal bin divided by the square of the bin's metric distance. If <code>stAni</code> is not specified, the model's  parameter is used to calculate the metric distance across space and time: <i>N[j]/(h[j]^2+ stAni^2*u[j]^2)</i></p>
+</dd>
+<dt><code>fit.method = 8</code></dt><dd><p>Number of pairs in the spatio-temporal bin divided by the square of the bin's spatial distance. <i>N[j]/h[j]^2</i>. Note that the 0 distances are replaced by the smallest non-zero distances to avoid division by zero.</p>
+</dd>
+<dt><code>fit.method = 9</code></dt><dd><p>Number of pairs in the spatio-temporal bin divided by the square of the bin's temporal distance. <i>N[j]/u[j]^2</i>. Note that the 0 distances are replaced by the smallest non-zero distances to avoid division by zero.</p>
+</dd>
+<dt><code>fit.method = 10</code></dt><dd><p>Reciprocal of the square of the current variogram model's value: <i>1/gamma(h[j],u[j])^2</i></p>
+</dd>
+<dt><code>fit.method = 11</code></dt><dd><p>Reciprocal of the square of the bin's metric distance. If <code>stAni</code> is not specified, the model's  parameter is used to calculate the metric distance across space and time: <i>1/(h[j]^2+ stAni^2*u[j]^2)</i></p>
+</dd>
+<dt><code>fit.method = 12</code></dt><dd><p>Reciprocal of the square of the bin's spatial distance. <i>1/h[j]^2</i>. Note that the 0 distances are replaced by the smallest non-zero distances to avoid division by zero.</p>
+</dd>
+<dt><code>fit.method = 13</code></dt><dd><p>Reciprocal of the square of the bin's temporal distance. <i>1/u[j]^2</i>. Note that the 0 distances are replaced by the smallest non-zero distances to avoid division by zero.</p>
+</dd>
+</dl>
+
+<p>See also Table 4.2 in the gstat manual for the original spatial version.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns a spatio-temporal variogram model, as S3 class StVariogramModel. It carries the temporal and spatial unit as attributes <code>"temporal unit"</code> and <code>"spatial unit"</code> in order to allow <code><a href="../../gstat/help/krigeST.html">krigeST</a></code> to adjust for different units. The units are obtained from the provided empirical variogram. Further attributes are the optim output <code>"optim.output"</code> and the always not weighted mean squared error <code>"MSE"</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Benedikt Graeler
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../gstat/help/fit.variogram.html">fit.variogram</a></code> for the pure spatial case. <code><a href="../../gstat/help/extractParNames.html">extractParNames</a></code> helps to understand the parameter structure of spatio-temporal variogram models.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# separable model: spatial and temporal sill will be ignored
+# and kept constant at 1-nugget respectively. A joint sill is used.
+## Not run: 
+separableModel &lt;- vgmST("separable", 
+                        method = "Nelder-Mead", # no lower &amp; upper needed
+                        space=vgm(0.9,"Exp", 123, 0.1),
+                        time =vgm(0.9,"Exp", 2.9, 0.1),
+                        sill=100)
+
+data(vv)
+separableModel &lt;- fit.StVariogram(vv, separableModel,
+                                  method="L-BFGS-B",
+                                  lower=c(10,0,0.01,0,1),
+                                  upper=c(500,1,20,1,200))
+plot(vv, separableModel)
+
+## End(Not run) # dontrun
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>gstat</em> version 2.1-5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

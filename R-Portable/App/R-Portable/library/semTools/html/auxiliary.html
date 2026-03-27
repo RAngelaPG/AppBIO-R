@@ -1,0 +1,175 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Implement Saturated Correlates with FIML</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for auxiliary {semTools}"><tr><td>auxiliary {semTools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Implement Saturated Correlates with FIML</h2>
+
+<h3>Description</h3>
+
+<p>Automatically add auxiliary variables to a lavaan model when using full
+information maximum likelihood (FIML) to handle missing data
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+auxiliary(model, data, aux, fun, ..., envir = getNamespace("lavaan"),
+  return.syntax = FALSE)
+
+lavaan.auxiliary(model, data, aux, ..., envir = getNamespace("lavaan"))
+
+cfa.auxiliary(model, data, aux, ..., envir = getNamespace("lavaan"))
+
+sem.auxiliary(model, data, aux, ..., envir = getNamespace("lavaan"))
+
+growth.auxiliary(model, data, aux, ..., envir = getNamespace("lavaan"))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>The analysis model can be specified with 1 of 2 objects:
+</p>
+
+<ol>
+<li><p>  lavaan <code><a href="../../lavaan/help/model.syntax.html">lavaan::model.syntax()</a></code> specifying a hypothesized
+model <em>without</em> mention of auxiliary variables in <code>aux</code>
+</p>
+</li>
+<li><p>  a parameter table, as returned by <code><a href="../../lavaan/help/parTable.html">lavaan::parTable()</a></code>,
+specifying the target model <em>without</em> auxiliary variables.
+This option requires these columns (and silently ignores all others):
+<code>c("lhs","op","rhs","user","group","free","label","plabel","start")</code>
+</p>
+</li></ol>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p><code>data.frame</code> that includes auxiliary variables as well as
+any observed variables in the <code>model</code></p>
+</td></tr>
+<tr valign="top"><td><code>aux</code></td>
+<td>
+<p><code>character</code>. Names of auxiliary variables to add to <code>model</code></p>
+</td></tr>
+<tr valign="top"><td><code>fun</code></td>
+<td>
+<p><code>character</code>. Name of a specific lavaan function used to fit
+<code>model</code> to <code>data</code> (i.e., <code>"lavaan"</code>, <code>"cfa"</code>,
+<code>"sem"</code>, or <code>"growth"</code>). Only required for <code>auxiliary</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Additional arguments to pass to <code style="white-space: pre;">fun=</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>envir</code></td>
+<td>
+<p>Passed to <code><a href="../../base/html/do.call.html">do.call()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>return.syntax</code></td>
+<td>
+<p><code>logical</code> indicating whether to return a
+<code>character</code> string of <code><a href="../../lavaan/help/model.syntax.html">lavaan::model.syntax()</a></code> that can be
+added to a target <code style="white-space: pre;">model=</code> that is also a <code>character</code> string.
+This can be advantageous, for example, to use add saturated correlates to
+a <span class="pkg">blavaan</span> model.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>These functions are wrappers around the corresponding lavaan functions.
+You can use them the same way you use <code><a href="../../lavaan/help/lavaan.html">lavaan::lavaan()</a></code>, but you
+<em>must</em> pass your full <code>data.frame</code> to the <code>data</code> argument.
+Because the saturated-correlates approaches (Enders, 2008) treats exogenous
+variables as random, <code>fixed.x</code> must be set to <code>FALSE</code>. Because FIML
+requires continuous data (although nonnormality corrections can still be
+requested), no variables in the model nor auxiliary variables specified in
+<code>aux</code> can be declared as <code>ordered</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a fitted <a href="../../lavaan/help/lavaan-class.html">lavaan::lavaan</a> object.  Additional
+information is stored as a <code>list</code> in the <code style="white-space: pre;">@external</code> slot:
+</p>
+
+<ul>
+<li> <p><code>baseline.model</code>. a fitted <a href="../../lavaan/help/lavaan-class.html">lavaan::lavaan</a>
+object. Results of fitting an appropriate independence model for
+the calculation of incremental fit indices (e.g., CFI, TLI) in
+which the auxiliary variables remain saturated, so only the target
+variables are constrained to be orthogonal. See Examples for how
+to send this baseline model to <code><a href="../../lavaan/help/fitMeasures.html">lavaan::fitMeasures()</a></code>.
+</p>
+</li>
+<li> <p><code>aux</code>. The character vector of auxiliary variable names.
+</p>
+</li>
+<li> <p><code>baseline.syntax</code>. A character vector generated within the
+<code>auxiliary</code> function, specifying the <code>baseline.model</code>
+syntax.
+</p>
+</li></ul>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Terrence D. Jorgensen (University of Amsterdam; <a href="mailto:TJorgensen314@gmail.com">TJorgensen314@gmail.com</a>)
+</p>
+
+
+<h3>References</h3>
+
+<p>Enders, C. K. (2008). A note on the use of missing auxiliary variables in
+full information maximum likelihood-based structural equation models.
+<em>Structural Equation Modeling, 15</em>(3), 434&ndash;448.
+doi: <a href="https://doi.org/10.1080/10705510802154307">10.1080/10705510802154307</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+dat1 &lt;- lavaan::HolzingerSwineford1939
+set.seed(12345)
+dat1$z &lt;- rnorm(nrow(dat1))
+dat1$x5 &lt;- ifelse(dat1$z &lt; quantile(dat1$z, .3), NA, dat1$x5)
+dat1$x9 &lt;- ifelse(dat1$z &gt; quantile(dat1$z, .8), NA, dat1$x9)
+
+targetModel &lt;- "
+  visual  =~ x1 + x2 + x3
+  textual =~ x4 + x5 + x6
+  speed   =~ x7 + x8 + x9
+"
+
+## works just like cfa(), but with an extra "aux" argument
+fitaux1 &lt;- cfa.auxiliary(targetModel, data = dat1, aux = "z",
+                         missing = "fiml", estimator = "mlr")
+
+## with multiple auxiliary variables and multiple groups
+fitaux2 &lt;- cfa.auxiliary(targetModel, data = dat1, aux = c("z","ageyr","grade"),
+                         group = "school", group.equal = "loadings")
+
+## calculate correct incremental fit indices (e.g., CFI, TLI)
+fitMeasures(fitaux2, fit.measures = c("cfi","tli"))
+## NOTE: lavaan will use the internally stored baseline model, which
+##       is the independence model plus saturated auxiliary parameters
+lavInspect(fitaux2@external$baseline.model, "free")
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>semTools</em> version 0.5-8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

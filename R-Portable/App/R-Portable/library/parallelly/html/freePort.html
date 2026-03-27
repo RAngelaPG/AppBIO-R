@@ -1,0 +1,114 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Find a TCP port that can be opened</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for freePort {parallelly}"><tr><td>freePort {parallelly}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Find a TCP port that can be opened</h2>
+
+<h3>Description</h3>
+
+<p>Find a TCP port that can be opened
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+freePort(ports = 1024:65535, default = "random", randomize = TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>ports</code></td>
+<td>
+<p>(integer vector, or character string)
+Zero or more TCP ports in [0, 65535] to scan.
+If <code>"random"</code>, then a random set of ports is considered.
+If <code>"auto"</code>, then the port given by environment variable
+<span class="env">R_PARALLEL_PORT</span> is used, which may also specify
+<code>"random"</code>. If <span class="env">R_PARALLEL_PORT</span> is not set, the default
+is <code>"random"</code>. The <code>"auto"</code> alternative is used for full
+backward compatibility with the <strong>parallelly</strong> package.</p>
+</td></tr>
+<tr valign="top"><td><code>default</code></td>
+<td>
+<p>(integer) <code>NA_integer_</code> or a port to returned if
+an available port could not be found.
+If <code>"first"</code>, then <code>ports[1]</code>.  If <code>"random"</code>, then a random port
+among <code>ports</code> is used. If <code>length(ports) == 0</code>, then <code>NA_integer_</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>randomize</code></td>
+<td>
+<p>(logical) If TRUE, <code>ports</code> is randomly shuffled
+before searched.  This shuffle does <em>not</em> forward the RNG seed.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>Returns an integer representing the first port among <code>ports</code> <em>that
+can be opened</em>. If none can be opened, then <code>default</code> is returned.
+</p>
+
+
+<h3>Validation of TCP port returned</h3>
+
+<p>This function attempts to validate that the TCP port returned is
+available and can be be opened. Thus, it is likely that this port
+is available momentarily after <code>freePort()</code> returns. However, due
+to race conditions, there is always a risk that the port is taken
+by another process on the same system after <code>freePort()</code> returns
+but before, say, <code>makeClusterPSOCK()</code>, opens it.
+</p>
+
+
+<h3>Controlling the random set of TCP ports</h3>
+
+<p>For backward compatibility with the <strong>parallel</strong> package, the default
+set of of ports <code>freePort("random")</code>, or <code>freePort("auto")</code> with
+environment variable <code>R_PARALLEL_PORT=random</code> samples from is
+<code>11000:11999</code>.
+The set can be overriden by setting environment variable
+<code>R_PARALLELLY_RANDOM_PORTS</code>,  e.g.
+<code>R_PARALLELLY_RANDOM_PORTS="10001:10010,11000:54000"</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Make sure to undo any changes at the end
+oenv &lt;- Sys.getenv("R_PARALLELLY_RANDOM_PORTS")
+
+# Get a random, free TCP port in 1024:65535
+port &lt;- freePort()
+message("A free TCP port: ", port)
+
+# Get a random, free TCP port in 11000:11999, which is what
+# parallelly::makeClusterPSOCK() and parallel::makePSOCKcluster()
+# default to (but the latter does not make sure it is available)
+Sys.unsetenv("R_PARALLELLY_RANDOM_PORTS")
+port &lt;- freePort("random")
+message("A free TCP port: ", port)
+
+# Customize the range of ports to sample from to 30000:50000
+Sys.setenv(R_PARALLELLY_RANDOM_PORTS = "30000:50000")
+port &lt;- freePort("random")
+message("A free TCP port: ", port)
+
+# Test if a specific port is free
+isPortFree &lt;- function(port) !is.na(freePort(port, default = NA_integer_))
+message("TCP port 1024 is free: ", isPortFree(1024))
+
+# Undo changes
+Sys.setenv(R_PARALLELLY_RANDOM_PORTS = oenv)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>parallelly</em> version 1.46.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

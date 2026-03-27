@@ -1,0 +1,179 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Sunburst</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for e_sunburst {echarts4r}"><tr><td>e_sunburst {echarts4r}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Sunburst</h2>
+
+<h3>Description</h3>
+
+<p>Build a sunburst.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+e_sunburst(
+  e,
+  styles = NULL,
+  names = NULL,
+  levels = NULL,
+  rm_x = TRUE,
+  rm_y = TRUE,
+  ...
+)
+
+e_sunburst_(
+  e,
+  styles = NULL,
+  names = NULL,
+  levels = NULL,
+  rm_x = TRUE,
+  rm_y = TRUE,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>e</code></td>
+<td>
+<p>An <code>echarts4r</code> object as returned by <code><a href="../../echarts4r/help/e_charts.html">e_charts</a></code> or
+a proxy as returned by <code><a href="../../echarts4r/help/echarts4rProxy.html">echarts4rProxy</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>styles</code></td>
+<td>
+<p>Vector of style lists, defaults to <code>NULL</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>names</code></td>
+<td>
+<p>Names of items to style, expects a <code>list</code>, defaults to <code>NULL</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>levels</code></td>
+<td>
+<p>Hierarchical levels to style, expects a <code>list</code>, defaults to <code>NULL</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>rm_x, rm_y</code></td>
+<td>
+<p>Whether to remove x and y axis, defaults to <code>TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Any other option to pass, check See Also section.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Charts e_sunburst, e_treemap and e_tree require hierarchical input data.
+Such structure could be represented thru json lists or nested tibbles (data.frame).
+Input data may contain styles, see <code>itemStyle</code> in examples <code>jsonl</code> and <code>df</code> below.
+The number of lists in the <code>styles</code> parameter should match the number of elements
+in <code>names</code> and/or <code>levels</code>. If both <code>names</code> and <code>levels</code> are present,
+name styles will take precedence over level styles.
+Multiple names may have the same style, see <code>c('land','river')</code> below.
+Multiple levels may have the same style, see <code>c(3,4)</code> below.
+<code>styles</code> lists contain items such as <code>color</code>, or <code>borderColor</code> as specified in the
+<a href="https://echarts.apache.org/en/option.html#series-sunburst.data.itemStyle">official documentation</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><a href="https://echarts.apache.org/en/option.html#series-sunburst">Additional arguments</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# json list hierarchical data representation
+jsonl &lt;- jsonlite::fromJSON('[
+  {"name": "earth", "value": 30,
+    "children": [
+      {"name": "land", "value":10,
+        "children": [
+                {"name": "forest", "value": 3},
+                {"name": "river", "value": 7}
+        ]},
+      {"name": "ocean", "value":20,
+        "children": [
+          {"name": "fish", "value": 10,
+            "children": [
+              {"name": "shark", "value":2},
+              {"name": "tuna", "value":6}
+            ]},
+          {"name": "kelp", "value": 5}
+        ]}
+    ]
+  },
+  {"name": "mars", "value": 30,
+    "children": [
+      {"name": "crater", "value": 20},
+      {"name": "valley", "value": 20}
+    ]},
+  {"name": "venus", "value": 40, "itemStyle": {"color": "blue"} }
+]', simplifyDataFrame = FALSE)
+
+jsonl |&gt;
+  e_charts() |&gt;
+  e_sunburst() # demo
+
+
+# tibble hierarchical data representation
+library(dplyr)
+df &lt;- tibble(
+  name = c("earth", "mars", "venus"),
+  value = c(30, 40, 30),
+  # 1st level
+  itemStyle = tibble(color = c(NA, "red", "blue")),
+  # embedded styles, optional
+  children = list(
+    tibble(
+      name = c("land", "ocean"),
+      value = c(10, 20),
+      # 2nd level
+      children = list(
+        tibble(name = c("forest", "river"), value = c(3, 7)),
+        # 3rd level
+        tibble(
+          name = c("fish", "kelp"),
+          value = c(10, 5),
+          children = list(
+            tibble(name = c("shark", "tuna"), value = c(2, 6)),
+            # 4th level
+            NULL # kelp
+          )
+        )
+      )
+    ),
+    tibble(name = c("crater", "valley"), value = c(20, 20)),
+    NULL # venus
+  )
+)
+
+df |&gt;
+  e_charts() |&gt;
+  e_sunburst() |&gt;
+  e_theme("westeros")
+
+# with styles
+myStyles &lt;- c(list(color = "green"), list(color = "magenta")) # custom styles defined
+myNames &lt;- list(c("land", "river"), "crater") # names to style
+myLevels &lt;- list(2, c(3, 4)) # hierarchical levels to style
+
+df |&gt;
+  e_charts() |&gt;
+  e_sunburst(myStyles, myNames, myLevels)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>echarts4r</em> version 0.5.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

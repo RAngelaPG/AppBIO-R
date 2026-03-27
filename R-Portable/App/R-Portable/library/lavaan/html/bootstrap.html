@@ -1,0 +1,189 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Bootstrapping a Lavaan Model</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for lavBootstrap {lavaan}"><tr><td>lavBootstrap {lavaan}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Bootstrapping a Lavaan Model</h2>
+
+<h3>Description</h3>
+
+<p>Bootstrap the LRT, or any other statistic (or vector
+of statistics) you can extract from a fitted lavaan object.</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+lavBootstrap(object, R = 1000L, type = "ordinary", verbose = FALSE, 
+                FUN = "coef", keep.idx = FALSE,
+                parallel = c("no", "multicore", "snow"),
+                ncpus =  max(1L, parallel::detectCores() - 2L), 
+                cl = NULL, iseed = NULL, h0.rmsea = NULL, ...)
+bootstrapLavaan(object, R = 1000L, type = "ordinary", verbose = FALSE, 
+                FUN = "coef", keep.idx = FALSE,
+                parallel = c("no", "multicore", "snow"),
+                ncpus =  max(1L, parallel::detectCores() - 2L), 
+                cl = NULL, iseed = NULL, h0.rmsea = NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>An object of class <code><a href="../../lavaan/help/lavaan-class.html">lavaan</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>h0</code></td>
+<td>
+<p>An object of class <code><a href="../../lavaan/help/lavaan-class.html">lavaan</a></code>. The restricted
+model.</p>
+</td></tr>
+<tr valign="top"><td><code>R</code></td>
+<td>
+<p>Integer. The number of bootstrap draws.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>If <code>"ordinary"</code> or <code>"nonparametric"</code>, the usual (naive)
+bootstrap method is used. If <code>"bollen.stine"</code>, the data is first
+transformed such that the null hypothesis holds exactly in the resampling
+space. If <code>"yuan"</code>, the data is first transformed by combining data and
+theory (model), such that the resampling space is closer to the population
+space. Note that both <code>"bollen.stine"</code> and <code>"yuan"</code> require the data
+to be continuous. They will not work with ordinal data.  If
+<code>"parametric"</code>, the parametric bootstrap approach is used; currently, this
+is only valid for continuous data following a multivariate normal distribution.
+See references for more details.</p>
+</td></tr>
+<tr valign="top"><td><code>FUN</code></td>
+<td>
+<p>A function which when applied to the <code><a href="../../lavaan/help/lavaan-class.html">lavaan</a></code> 
+object returns a vector containing the statistic(s) of interest.
+The default is <code>FUN="coef"</code>, returning the estimated values of the
+free parameters in the model.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Other named arguments for <code>FUN</code> which are passed
+unchanged each time it is called.</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>If <code>TRUE</code>, show information for each bootstrap draw.</p>
+</td></tr>
+<tr valign="top"><td><code>keep.idx</code></td>
+<td>
+<p>If <code>TRUE</code>, store the indices of each bootstrap run (i.e.,
+the observations that were used for this bootstrap run) as an attribute.</p>
+</td></tr>
+<tr valign="top"><td><code>parallel</code></td>
+<td>
+<p>The type of parallel operation to be used (if any).  If
+missing, the default is <code>"no"</code>.  </p>
+</td></tr>
+<tr valign="top"><td><code>ncpus</code></td>
+<td>
+<p>Integer: number of processes to be used in parallel operation.
+By default
+this is the number of cores (as detected by <code>parallel::detectCores()</code>)
+minus one.</p>
+</td></tr> 
+<tr valign="top"><td><code>cl</code></td>
+<td>
+<p>An optional <span class="pkg">parallel</span> or <span class="pkg">snow</span> cluster for use if
+<code>parallel = "snow"</code>.  If not supplied, a cluster on the local machine is
+created for the duration of the <code>lavBootstrap</code> call.</p>
+</td></tr>
+<tr valign="top"><td><code>iseed</code></td>
+<td>
+<p>An integer to set the seed. Or NULL if no reproducible results are
+needed. This works for both serial (non-parallel) and parallel settings.
+Internally, <code>RNGkind()</code> is set to <code>"L'Ecuyer-CMRG"</code> if
+<code>parallel = "multicore"</code>. If <code>parallel = "snow"</code> (under windows),
+<code>parallel::clusterSetRNGStream()</code> is called which
+automatically switches to <code>"L'Ecuyer-CMRG"</code>. When <code>iseed</code> is not 
+NULL, <code>.Random.seed</code> (if it exists) in the global environment is 
+left untouched.</p>
+</td></tr>
+<tr valign="top"><td><code>h0.rmsea</code></td>
+<td>
+<p>Only used if <code>type="yuan"</code>. Allows one to do the Yuan
+bootstrap under the hypothesis that the population RMSEA equals a specified
+value.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The FUN function can return either a scalar or a numeric vector.
+This function can be an existing function (for example <code>coef</code>) or
+can be a custom defined function. For example:
+</p>
+<pre>
+myFUN &lt;- function(x) {
+    # require(lavaan)
+    modelImpliedCov &lt;- fitted(x)$cov
+    vech(modelImpliedCov)
+}
+</pre>
+<p>If <code>parallel="snow"</code>, it is imperative that the <code>require(lavaan)</code>
+is included in the custom function.</p>
+
+
+<h3>Value</h3>
+
+<p>For <code>lavBootstrap()</code>, the bootstrap distribution of the value(s)
+returned by <code>FUN</code>, when the object can be simplified to a vector.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Yves Rosseel and Leonard Vanbrabant. Ed Merkle contributed
+Yuan's bootstrap. Improvements to Yuan's bootstrap were contributed
+by Hao Wu and Chuchu Cheng. The handling of iseed was contributed by
+Shu Fai Cheung.</p>
+
+
+<h3>References</h3>
+
+<p>Bollen, K. and Stine, R. (1992) Bootstrapping Goodness of Fit Measures in
+Structural Equation Models. Sociological Methods and Research, 21,
+205&ndash;229.
+</p>
+<p>Yuan, K.-H., Hayashi, K., &amp; Yanagihara, H. (2007). A class of population
+covariance matrices in the bootstrap approach to covariance structure analysis.
+Multivariate Behavioral Research, 42, 261&ndash;281.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# fit the Holzinger and Swineford (1939) example
+HS.model &lt;- ' visual  =~ x1 + x2 + x3
+              textual =~ x4 + x5 + x6
+              speed   =~ x7 + x8 + x9 '
+
+fit &lt;- cfa(HS.model, data=HolzingerSwineford1939, se="none")
+
+# get the test statistic for the original sample
+T.orig &lt;- fitMeasures(fit, "chisq")
+
+# bootstrap to get bootstrap test statistics
+# we only generate 10 bootstrap sample in this example; in practice
+# you may wish to use a much higher number
+T.boot &lt;- lavBootstrap(fit, R=10, type="bollen.stine",
+                          FUN=fitMeasures, fit.measures="chisq")
+
+# compute a bootstrap based p-value
+pvalue.boot &lt;- length(which(T.boot &gt; T.orig))/length(T.boot)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>lavaan</em> version 0.6-21 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

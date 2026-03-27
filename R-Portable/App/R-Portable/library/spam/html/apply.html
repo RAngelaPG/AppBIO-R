@@ -1,0 +1,126 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Apply Functions Over Sparse Matrix Margins</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for apply {spam}"><tr><td>apply {spam}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Apply Functions Over Sparse Matrix Margins</h2>
+
+<h3>Description</h3>
+
+<p>Returns a vector or array or list of values obtained by applying a
+function to margins of a sparse matrix.</p>
+
+
+<h3>Usage</h3>
+
+<pre>apply.spam(X, MARGIN=NULL, FUN, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>X</code></td>
+<td>
+<p>the <code>spam</code> matrix to be used.</p>
+</td></tr>
+<tr valign="top"><td><code>MARGIN</code></td>
+<td>
+<p>a vector giving the subscripts which the function will be
+applied over. <code>1</code> indicates rows, <code>2</code> indicates columns,
+<code>NULL</code> or <code>c(1,2)</code> indicates rows and columns.</p>
+</td></tr>
+<tr valign="top"><td><code>FUN</code></td>
+<td>
+<p>the function to be applied.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>optional arguments to <code>FUN</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This is a handy wrapper to apply a function to the (nonzero)
+elements of a sparse matrix. 
+For example, it is possible to apply a covariance matrix to a distance
+matrix obtained by <code>nearest.dist</code>, see Examples.<br />
+</p>
+<p>A call to <code>apply</code> only coerces the sparse matrix to a regular one.<br />
+</p>
+<p>The basic principle is applying the function to <code>@entries</code>, or to
+the extracted columns or rows (<code>[,i,drop=F]</code> or
+<code>[i,,drop=F]</code>). It is important to note that an empty column
+contains at least one zero value and may lead to non intuitive
+results.<br />
+</p>
+<p>This function may evolve over the next few releases. 
+</p>
+
+
+<h3>Value</h3>
+
+<p>Similar as a call to <code>apply</code> with a regular matrix. The most
+important cases are as follows. The
+result is a vector (<code>MARGIN</code> is length 1 and <code>FUN</code> is
+scalar) or a matrix (<code>MARGIN</code> is length 1 and <code>FUN</code> returns
+fixed length vectors, or <code>MARGIN</code> is length 2 and <code>FUN</code> is
+scalar) or a list (if <code>FUN</code> returns vectors of different lengths).</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Reinhard Furrer</p>
+
+
+<h3>See Also</h3>
+
+<p><code>base:apply</code> for more details on Value.</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+S &lt;- as.spam(dist(1:5))
+S &lt;- apply.spam(S/2, NULL, exp)
+# instead of 
+# S@entries &lt;- exp( S@entries/2) 
+
+# Technical detail, a null matrix consists
+# of one zero element.
+apply.spam(S,c(1,2),pmax)
+apply.spam(S,1,range)
+
+
+# A similar example as for the base apply.
+# However, no dimnames else we would get warnings. 
+x &lt;- as.spam(cbind(x1 = 3, x2 = c(0,0,0, 5:2)))
+apply.spam(x, 2, mean, trim = .2)
+col.sums &lt;- apply.spam(x, 2, sum)
+row.sums &lt;- apply.spam(x, 1, sum)
+rbind(cbind(x, row.sums), c(col.sums, sum(col.sums)))
+
+apply.spam(x, 2, is.vector)
+
+# Sort the columns of a matrix
+# Notice that the result is a list due to the different
+# lengths induced by the nonzero elements
+apply.spam(x, 2, sort)
+
+# Function with extra args:
+cave &lt;- function(x, c1, c2) c(mean(x[c1]), mean(x[c2]))
+apply(x,1, cave,  c1=1, c2=c(1,2))
+
+ma &lt;- spam(c(1:4, 0, 0,0, 6), nrow = 2)
+ma
+apply.spam(ma, 1, table)  #--&gt; a list of length 2
+apply.spam(ma, 1, stats::quantile)# 5 x n matrix with rownames
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>spam</em> version 2.11-3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

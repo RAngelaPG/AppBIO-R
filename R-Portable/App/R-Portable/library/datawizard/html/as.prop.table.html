@@ -1,0 +1,146 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Convert a crosstable to a frequency or a propensity table</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for as.prop.table {datawizard}"><tr><td>as.prop.table {datawizard}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Convert a crosstable to a frequency or a propensity table</h2>
+
+<h3>Description</h3>
+
+<p><code>as.prop.table()</code> is an S3 generic. It can be used on objects of class
+<code>datawizard_crosstab</code> created by <code>data_tabulate()</code> when it was run with the
+arguments <code>by</code> and <code>proportions</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+as.prop.table(x, ...)
+
+## S3 method for class 'datawizard_crosstab'
+as.prop.table(x, remove_na = TRUE, simplify = FALSE, verbose = TRUE, ...)
+
+## S3 method for class 'datawizard_tables'
+as.data.frame(
+  x,
+  row.names = NULL,
+  optional = FALSE,
+  ...,
+  stringsAsFactors = FALSE,
+  add_total = FALSE
+)
+
+## S3 method for class 'datawizard_table'
+as.table(x, remove_na = TRUE, simplify = FALSE, verbose = TRUE, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>An object created by <code>data_tabulate()</code>. It must be of class
+<code>datawizard_crosstab</code> for <code>as.prop.table()</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>not used.</p>
+</td></tr>
+<tr valign="top"><td><code>remove_na</code></td>
+<td>
+<p>Logical, if <code>FALSE</code>, missing values are included in the
+frequency or crosstable, else missing values are omitted. Note that the
+default for the <code>as.table()</code> method is <code>remove_na = TRUE</code>, so that missing
+values are not included in the returned table, which makes more sense for
+post-processing of the table, e.g. using <code>chisq.test()</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>simplify</code></td>
+<td>
+<p>Logical, if <code>TRUE</code>, the returned table is simplified to a
+single table object if there is only one frequency or contingency table
+input. Else, always for multiple table inputs or when <code>simplify = FALSE</code>, a
+list of tables is returned. This is only relevant for the <code>as.table()</code>
+methods. To ensure consistent output, the default is <code>FALSE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>Toggle warnings and messages.</p>
+</td></tr>
+<tr valign="top"><td><code>row.names</code></td>
+<td>
+<p><code>NULL</code> or a character vector giving the row
+names for the data frame.  Missing values are not allowed.</p>
+</td></tr>
+<tr valign="top"><td><code>optional</code></td>
+<td>
+<p>logical. If <code>TRUE</code>, setting row names and
+converting column names (to syntactic names: see
+<code><a href="../../base/help/make.names.html">make.names</a></code>) is optional.  Note that all of <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>'s
+<span class="pkg">base</span> package <code>as.data.frame()</code> methods use
+<code>optional</code> only for column names treatment, basically with the
+meaning of <code><a href="../../base/help/data.frame.html">data.frame</a>(*, check.names = !optional)</code>.
+See also the <code>make.names</code> argument of the <code>matrix</code> method.</p>
+</td></tr>
+<tr valign="top"><td><code>stringsAsFactors</code></td>
+<td>
+<p>logical: should the character vector be converted
+to a factor?</p>
+</td></tr>
+<tr valign="top"><td><code>add_total</code></td>
+<td>
+<p>For crosstables (i.e. when <code>by</code> is not <code>NULL</code>), a row and
+column with the total N values are added to the data frame. <code>add_total</code> has
+no effect in <code>as.data.frame()</code> for simple frequency tables.</p>
+</td></tr>
+</table>
+
+
+<h3>See Also</h3>
+
+<p><a href="../../datawizard/help/data_tabulate.html">data_tabulate</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(efc)
+
+# Some cross tabulation
+cross &lt;- data_tabulate(efc, select = "e42dep", by = "c172code", proportions = "row")
+cross
+
+# Convert to a propensity table
+as.prop.table(cross)
+
+# Convert to data.frame
+result &lt;- data_tabulate(efc, "c172code", by = "e16sex")
+as.data.frame(result)
+as.data.frame(result)$table
+as.data.frame(result, add_total = TRUE)$table
+
+# Convert to a table that can be passed to chisq.test()
+
+out &lt;- data_tabulate(efc, "c172code", by = "e16sex")
+# we need to simplify the output, else we get a list of tables
+tbl &lt;- as.table(out, simplify = TRUE)
+tbl
+suppressWarnings(chisq.test(tbl))
+
+# apply chisq.test to each table
+out &lt;- data_tabulate(efc, c("c172code", "e16sex"))
+suppressWarnings(lapply(as.table(out), chisq.test))
+
+# can also handle grouped data frames
+d &lt;- data_group(mtcars, "am")
+x &lt;- data_tabulate(d, "cyl", by = "gear")
+as.table(x)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>datawizard</em> version 1.3.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Make an iteror from a given object.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for iteror {iterors}"><tr><td>iteror {iterors}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Make an iteror from a given object.</h2>
+
+<h3>Description</h3>
+
+<p><code>it &lt;- iteror(obj, ...)</code> is a generic constructor that creates
+objects of class &quot;iteror&quot; from its input. An iteror outputs a
+single element of a sequence each time you call
+<code>nextOr(it)</code>. Different <code>iteror</code> methods exist for different data
+types and may take different optional arguments as listed in this
+page.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+iteror(obj, ...)
+
+## S3 method for class 'iter'
+iteror(obj, ...)
+
+## Default S3 method:
+iteror(obj, ..., recycle = FALSE, chunkSize, chunks)
+
+## S3 method for class 'connection'
+iteror(obj, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>obj</code></td>
+<td>
+<p>An object to iterate with.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Different <code>iteror</code> methods may take additional options
+depending on the class of <code>obj</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>recycle</code></td>
+<td>
+<p>a boolean describing whether the iterator should
+reset after running through all its values.</p>
+</td></tr>
+<tr valign="top"><td><code>chunkSize</code></td>
+<td>
+<p>How many elements (or slices) to include in each
+chunk.</p>
+</td></tr>
+<tr valign="top"><td><code>chunks</code></td>
+<td>
+<p>Split the input into this many chunks.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>When called, an iteror may either return a new value or stop. The
+way an iteror signals a stop is that it does whatever you write in
+the argument <code>or</code>. For instance you can write <code>or=break</code> to exit a
+loop. Summing over an iteror this way looks like:
+</p>
+<div class="sourceCode r"><pre>sum &lt;- 0
+it &lt;- iteror(iseq(0, 100, 7))
+repeat {
+  sum &lt;- sum + nextOr(it, break)
+}
+</pre></div>
+<p>Another way to use the &quot;or&quot; argument is to give it a sentinel value;
+that is, a special value that you will interpret as end of
+iteration.  If the result of calling <code>nextOr</code> is <code>identical()</code> to
+the value you provided, then you know the iterator has ended. This
+pattern looks like:
+</p>
+<div class="sourceCode r"><pre>sum &lt;- 0
+stopped &lt;- new.env()
+it &lt;- iteror(iseq(0, 100, 7))
+repeat {
+  val &lt;- nextOr(it, stopped)
+  if (identical(val, stopped)) break
+  sum &lt;- sum + val
+}
+</pre></div>
+<p>(Here I'm using <code>new.env()</code> as a sentinel value. In R it is
+commonplace to use <code>NULL</code> or <code>NA</code> as a kind of sentinel value, but
+that only works until you have an iterator that needs to yield NULL
+itself. A safer alternative is to use a local, one-shot sentinel value;
+<code>new.env()</code> is ideal, as it constructs an object that is
+not <a href="../../base/html/identical.html">identical</a> to any other object in the R session.)
+</p>
+<p>Note that <code>iteror</code> objects are simply functions with a class
+attribute attached, and all <code>nextOr.iteror</code> does is call the
+function. So if you were in the mood, you could skip calling
+<code>nextOr</code> involving S3 dispatch and instead call the iteror
+directly. If you take this approach, make sure you have called
+<code>iteror()</code> first to ensure that you have a true <code>iteror</code> object.
+</p>
+<div class="sourceCode r"><pre>sum &lt;- 0
+it &lt;- iteror(iseq(0, 100, 7))
+repeat sum &lt;- sum + it(or=break)
+sum
+#&gt; [1] 735
+</pre></div>
+<p>To create iterors with custom-defined behavior, see
+<a href="../../iterors/help/iteror.function.html">iteror.function</a>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>an object of classes 'iteror' and 'iter'.
+</p>
+<p>The method <code>iteror.iter</code> wraps an <a href="../../iterators/help/iter.html">iterators::iter</a> object
+and returns an iteror.
+</p>
+<p>The default method <code>iteror.default</code> treats <code>obj</code> as a
+vector to yield values from.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>iteror.array iteror.function iteror.data.frame
+</p>
+
+<hr /><div style="text-align: center;">[Package <em>iterors</em> version 1.0.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

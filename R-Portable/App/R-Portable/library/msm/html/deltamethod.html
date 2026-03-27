@@ -1,0 +1,136 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: The delta method</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for deltamethod {msm}"><tr><td>deltamethod {msm}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>The delta method</h2>
+
+<h3>Description</h3>
+
+<p>Delta method for approximating the standard error of a transformation
+<i>g(X)</i> of a random variable <i>X = (x1, x2,
+&hellip;)</i>, given estimates of the mean and covariance matrix of <i>X</i>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+deltamethod(g, mean, cov, ses = TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>g</code></td>
+<td>
+<p>A formula representing the transformation. The variables must be
+labelled <code>x1, x2,...{}</code> For example,
+</p>
+<p><code>~ 1 / (x1 + x2)</code>
+</p>
+<p>If the transformation returns a vector, then a list of formulae representing
+(<i>g1, g2, &hellip;</i>) can be provided, for example
+</p>
+<p><code>list( ~ x1 + x2, ~ x1 / (x1 + x2) )</code></p>
+</td></tr>
+<tr valign="top"><td><code>mean</code></td>
+<td>
+<p>The estimated mean of <i>X</i></p>
+</td></tr>
+<tr valign="top"><td><code>cov</code></td>
+<td>
+<p>The estimated covariance matrix of <i>X</i></p>
+</td></tr>
+<tr valign="top"><td><code>ses</code></td>
+<td>
+<p>If <code>TRUE</code>, then the standard errors of <i>g1(X), g2(X),&hellip;</i> are returned. Otherwise the covariance
+matrix of <i>g(X)</i> is returned.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The delta method expands a differentiable function of a random variable
+about its mean, usually with a first-order Taylor approximation, and then
+takes the variance. For example, an approximation to the covariance matrix
+of <i>g(X)</i> is given by
+</p>
+<p style="text-align: center;"><i> Cov(g(X)) = g'(mu) Cov(X)
+[g'(mu)]^T </i></p>
+
+<p>where <i>mu</i> is an estimate of the mean of <i>X</i>.  This function
+uses symbolic differentiation via <code><a href="../../stats/html/deriv.html">deriv</a></code>.
+</p>
+<p>A limitation of this function is that variables created by the user are not
+visible within the formula <code>g</code>.  To work around this, it is necessary
+to build the formula as a string, using functions such as <code>sprintf</code>,
+then to convert the string to a formula using <code>as.formula</code>.  See the
+example below.
+</p>
+<p>If you can spare the computational time, bootstrapping is a more accurate
+method of calculating confidence intervals or standard errors for
+transformations of parameters. See <code><a href="../../msm/help/boot.msm.html">boot.msm</a></code>.  Simulation from
+the asymptotic distribution of the MLEs (see e.g. Mandel 2013) is also a
+convenient alternative.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A vector containing the standard errors of <i>g1(X), g2(X), &hellip;</i> or a matrix containing the covariance of
+<i>g(X)</i>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>C. H. Jackson <a href="mailto:chris.jackson@mrc-bsu.cam.ac.uk">chris.jackson@mrc-bsu.cam.ac.uk</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Oehlert, G. W. (1992) <em>A note on the delta method</em>.
+American Statistician 46(1).
+</p>
+<p>Mandel, M. (2013) <em>Simulation based confidence intervals for functions
+with complicated derivatives.</em> The American Statistician 67(2):76-81.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+
+## Simple linear regression, E(y) = alpha + beta x 
+x &lt;- 1:100
+y &lt;- rnorm(100, 4*x, 5)
+toy.lm &lt;- lm(y ~ x)
+estmean &lt;- coef(toy.lm)
+estvar &lt;- summary(toy.lm)$cov.unscaled * summary(toy.lm)$sigma^2
+
+## Estimate of (1 / (alphahat + betahat))
+1 / (estmean[1] + estmean[2])
+## Approximate standard error
+deltamethod (~ 1 / (x1 + x2), estmean, estvar) 
+
+## We have a variable z we would like to use within the formula.
+z &lt;- 1
+## deltamethod (~ z / (x1 + x2), estmean, estvar) will not work.
+## Instead, build up the formula as a string, and convert to a formula.
+form &lt;- sprintf("~ %f / (x1 + x2)", z)
+form
+deltamethod(as.formula(form), estmean, estvar)
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>msm</em> version 1.8.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

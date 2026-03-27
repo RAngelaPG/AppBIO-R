@@ -1,3 +1,34 @@
+# rstudioapi 0.18.0
+
+* `rstudioapi::documentNew()` now accepts arbitrary document types. (#316)
+
+* Added `getIdentityToken()` for retrieving the current user's identity token
+  on Posit Workbench, if possible.
+
+* Added OAuth integration functions for Posit Workbench:
+  - `getOAuthIntegrations()`: List all configured OAuth integrations.
+  - `getOAuthIntegration()`: Get metadata for a specific integration by GUID.
+  - `findOAuthIntegration()`: Search for integrations by name, display name,
+    GUID, or authentication status, with regex support.
+  - `getOAuthCredentials()`: Retrieve OAuth credentials for an integration.
+
+* `getDelegatedAzureToken()` now works in any IDE running within a Posit
+  Workbench session, not just RStudio.
+
+* `launcherSubmitJob()` gains the `resourceProfile` argument.
+
+# rstudioapi 0.17.1
+
+* Ensure a more appropriate error message is emitted for calls to
+  `rstudioapi::getVersion()` and `rstudioapi::getMode()` outside
+  of RStudio.
+
+
+# rstudioapi 0.17.0
+
+* Added `getMode()`, which can be used to differentiate between Desktop
+  and Server installations of RStudio. (#280)
+
 
 # rstudioapi 0.16.0
 
@@ -6,10 +37,12 @@
 
 * Added `setGhostText()` for setting ghost text in the current editor.
 
+
 # rstudioapi 0.15.0
 
 * Added `getDelegatedAzureToken` for Posit Workbench users needing to expose 
   OAuth2 tokens for Azure services that have already had permissions configured
+
 
 # rstudioapi 0.14
 

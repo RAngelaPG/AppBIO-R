@@ -1,0 +1,175 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Add New Font Families to 'sysfonts'</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for font_add {sysfonts}"><tr><td>font_add {sysfonts}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Add New Font Families to 'sysfonts'</h2>
+
+<h3>Description</h3>
+
+<p>The two versions of this function are equivalent, but the
+&quot;underscore&quot; naming is preferred.
+</p>
+<p>This function registers new font families that can be used by package
+<span class="pkg">showtext</span> and the SWF device in package <span class="pkg">R2SWF</span>.
+Currently supported formats include but not limited to
+TrueType fonts(*.ttf, *.ttc) and OpenType fonts(*.otf).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+font_add(
+  family,
+  regular,
+  bold = NULL,
+  italic = NULL,
+  bolditalic = NULL,
+  symbol = NULL
+)
+
+font.add(
+  family,
+  regular,
+  bold = NULL,
+  italic = NULL,
+  bolditalic = NULL,
+  symbol = NULL
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>family</code></td>
+<td>
+<p>a character string of maximum 200-byte size,
+indicating the family name of the font.
+See &quot;Details&quot; for further explanation.</p>
+</td></tr>
+<tr valign="top"><td><code>regular</code></td>
+<td>
+<p>path of the font file for &quot;regular&quot; font face.
+This argument must be specified as a character string
+and cannot be missing.</p>
+</td></tr>
+<tr valign="top"><td><code>bold</code></td>
+<td>
+<p>path of the font file for &quot;bold&quot; font face.
+If it is <code>NULL</code>, the function will use the value of
+argument <code>regular</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>italic, bolditalic, symbol</code></td>
+<td>
+<p>ditto</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>In R graphics device, there are two parameters combined together
+to select a font to show text. <code>par("family")</code> is a character
+string giving a name to a <strong>series</strong> of font faces. Here
+<strong>series</strong> implies that there may be different fonts with the
+same family name, and actually they are distinguished by the parameter
+<code>par("font")</code>, indicating whether it is regular, bold, or italic,
+etc. In R, <code>par("font")</code> is an integer from 1 to 5 representing
+regular, bold, italic, bold italic, and symbol, respectively.
+</p>
+<p>In <span class="pkg">sysfonts</span> package, there are three default font families, sans, serif, and mono,
+each with five font faces as mentioned above. If one wants
+to use other font families, the function <code>font_add()</code> needs to be called
+to register new fonts. Note that the <code>family</code> argument in this function can be
+an arbitrary string that does not need to be the real font name. The specified
+family name will be used in functions like <code>par(family = "myfont")</code>
+and <code>text("Some text", family = "myfont")</code>. The <strong>Examples</strong> section
+shows a complete demonstration of the usage.
+</p>
+<p>To find the font file of argument <code>regular</code> (and the same for
+other font faces), this function will first check the existence
+of the specified path. If not found, file will be searched in the
+directories returned by <code><a href="../../sysfonts/help/font_paths.html">font_paths</a>()</code> in turn. If the
+file cannot be found in any of the locations,
+an error will be issued.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A character vector (invisible) of currently available
+font family names.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Yixuan Qiu &lt;<a href="https://statr.me/">https://statr.me/</a>&gt;
+</p>
+
+
+<h3>See Also</h3>
+
+<p>See <code><a href="../../graphics/help/par.html">par</a>()</code> for explanation of
+the parameters <code>family</code> and <code>font</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+## Example: download the font file of WenQuanYi Micro Hei,
+##          add it to SWF device, and use it to draw text in swf().
+##          WenQuanYi Micro Hei is an open source and high quality
+##          Chinese (and CJKV) font.
+
+wd = setwd(tempdir())
+ft.url = "http://sourceforge.net/projects/wqy/files/wqy-microhei"
+ft.url = paste(ft.url, "0.2.0-beta/wqy-microhei-0.2.0-beta.tar.gz",
+               sep = "/")
+download.file(ft.url, basename(ft.url))
+
+## Extract and add the directory to search path
+untar(basename(ft.url), compressed = "gzip")
+font_paths("wqy-microhei")
+
+## Register this font file and assign the family name "wqy"
+## Other font faces will be the same with regular by default
+font_add("wqy", regular = "wqy-microhei.ttc")
+
+## A more concise way to add font is to give the path directly,
+## without calling font_paths()
+# font_add("wqy", "wqy-microhei/wqy-microhei.ttc")
+
+## List available font families
+font_families()
+
+if(require(R2SWF))
+{
+    ## Now it shows that we can use the family "wqy" in swf()
+    swf("testfont.swf")
+
+    ## Select font family globally
+    op = par(family = "serif", font.lab = 2)
+    ## Inline selecting font
+    plot(1, type = "n")
+    text(1, 1, intToUtf8(c(20013, 25991)), family = "wqy", font = 1, cex = 2)
+
+    dev.off()
+    swf2html("testfont.swf")
+}
+
+setwd(wd)
+
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sysfonts</em> version 0.8.9 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

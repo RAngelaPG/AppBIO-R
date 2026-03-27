@@ -1,12 +1,3 @@
-# purrr 1.0.2
-
-* Fixed valgrind issue.
-
-* Deprecation infrastructure in `map_chr()` now has much less overhead 
-  leading to improved performance (#1089).
-
-* purrr now requires R 3.5.0.
-
 # purrr 1.0.1
 
 * As of purrr 1.0.0, the `map()` family of functions wraps all errors generated
@@ -204,7 +195,7 @@
 * `list_modify()`'s interface has been standardised. Modifying with `NULL`
   now always creates a `NULL` in the output (#810)
 
-### `list_` functions
+### `list_` functions`
 
 * New `list_assign()` which is similar to `list_modify()` but doesn't work
   recursively (#822).

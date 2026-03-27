@@ -1,0 +1,159 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Crossvalidation using replicate weights</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for withCrossval {survey}"><tr><td>withCrossval {survey}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Crossvalidation using replicate weights
+</h2>
+
+<h3>Description</h3>
+
+<p>In each set of replicate weights there will be some clusters that have
+essentially zero weight. These are used as the test set, with the
+other clusters used as the training set. Jackknife weights
+(&quot;JK1&quot;,&quot;JKn&quot;) are very similar to cross-validation at the cluster
+level; bootstrap weights are similar to bootstrapping for cross-validation.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+withCrossval(design, formula, trainfun, testfun, loss = c("MSE",
+"entropy", "AbsError"), intercept, tuning,  nearly_zero=1e-4,...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>design</code></td>
+<td>
+
+<p>A survey design object (currently only <code>svyrep.design</code>)
+</p>
+</td></tr>
+<tr valign="top"><td><code>formula</code></td>
+<td>
+
+<p>Model formula where the left-hand side specifies the outcome
+vairable and the right-hand side specifies the variables that will
+be used for prediction
+</p>
+</td></tr>
+<tr valign="top"><td><code>trainfun</code></td>
+<td>
+
+<p>Function taking a predictor matrix <code>X</code>, an outcome vector
+<code>y</code>,  a weights vector <code>w</code>, and an element of
+<code>tuning</code>, and training a model that is
+returned as some R object.
+</p>
+</td></tr>
+<tr valign="top"><td><code>testfun</code></td>
+<td>
+
+<p>Function taking a predictor matrix <code>X</code> and the output from
+<code>trainfun</code> and returning fitted values for the outcome variable.
+</p>
+</td></tr>
+<tr valign="top"><td><code>loss</code></td>
+<td>
+
+<p>Loss function for assessing prediction
+</p>
+</td></tr>
+<tr valign="top"><td><code>intercept</code></td>
+<td>
+
+<p>Should the predictor matrix have an intercept added?
+</p>
+</td></tr>
+<tr valign="top"><td><code>tuning</code></td>
+<td>
+<p>vector of tuning parameters, such as the regularisation
+parameter in information criteria or the number of predictors. <code>trainfun</code> and
+<code>testfun</code> will be called with each element of this vector in
+turn. Use any single-element vector if no tuning parameter is
+needed</p>
+</td></tr>
+<tr valign="top"><td><code>nearly_zero</code></td>
+<td>
+<p>test-set threshold on the scale of replicate weight
+divided by sampling weight.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>future expansion
+</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A number
+</p>
+
+
+<h3>References</h3>
+
+<p>Iparragirre, A., Lumley, T., Barrio, I., &amp; Arostegui, I. (2023).
+Variable selection with LASSO regression for complex survey data.
+Stat, 12(1), e578. 
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../survey/help/as.svrepdesign.html">as.svrepdesign</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(api)
+rclus1&lt;-as.svrepdesign(svydesign(id=~dnum, weights=~pw, data=apiclus1,
+fpc=~fpc))
+
+
+withCrossval(rclus1, api00~api99+ell+stype,
+  trainfun=function(X,y,w,tuning) lm.wfit(X,y,w),
+  testfun=function(X, trainfit,tuning) X%*%coef(trainfit),
+  intercept=TRUE,loss="MSE",tuning=1)
+
+
+## More realistic example using lasso
+## tuning parameter is number of variables in model
+##
+##  library(glmnet)
+##  ftrain=function(X,y,w,tuning) {
+##   	m&lt;-glmnet(X,y,weights=w)
+##   	lambda&lt;-m$lambda[min(which(m$df&gt;=tuning))]
+## 	list(m,lambda)
+##   	}
+##   ftest=function(X, trainfit, tuning){
+##   	predict(trainfit[[1]], newx=X, s=trainfit[[2]])
+##   }
+##
+##  withCrossval(rclus1, api00~api99+ell+stype+mobility+enroll,
+##    trainfun=ftrain,
+##    testfun=ftest,
+##    intercept=FALSE,loss="MSE",
+##    tuning=0:3)
+##
+## [1] 11445.2379  9649.1150   800.0742   787.4171
+##
+## Models with two or three predictors are about equally good
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>survey</em> version 4.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

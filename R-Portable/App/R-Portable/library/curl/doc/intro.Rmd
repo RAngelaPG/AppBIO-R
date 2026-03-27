@@ -112,10 +112,12 @@ As of `curl 2.0` the package provides an async interface which can perform multi
 
 ```{r}
 pool <- new_pool()
-cb <- function(req){cat("done:", req$url, ": HTTP:", req$status, "\n")}
-curl_fetch_multi('https://www.google.com', done = cb, pool = pool)
-curl_fetch_multi('https://cloud.r-project.org', done = cb, pool = pool)
-curl_fetch_multi('https://hb.cran.dev/blabla', done = cb, pool = pool)
+success <- function(req){cat("success:", req$url, ": HTTP:", req$status, "\n")}
+failure <- function(err){cat("failure:", err, "\n")}
+curl_fetch_multi('https://www.google.com', done = success, fail = failure, pool = pool)
+curl_fetch_multi('https://cloud.r-project.org', done = success, fail = failure, pool = pool)
+curl_fetch_multi('https://hb.cran.dev/blabla', done = success, fail = failure, pool = pool)
+curl_fetch_multi('https://doesnotexit.xyz', done = success, fail = failure, pool = pool)
 ```
 
 When we call `multi_run()`, all scheduled requests are performed concurrently. The callback functions get triggered when each request completes.
@@ -150,7 +152,7 @@ unlink('mirrors.csv')
 
 If the HTTP request was unsuccessful, R will not continue:
 
-```{r, error=TRUE, purl = FALSE}
+```{r, error=TRUE}
 # Oops! A typo in the URL!
 curl_download('https://cloud.r-project.org/CRAN_mirrorZ.csv', 'mirrors.csv')
 con <- curl('https://cloud.r-project.org/CRAN_mirrorZ.csv')
@@ -186,7 +188,7 @@ unlink('mirrors.csv')
 
 If you *do* want the `curl_fetch_*` functions to automatically raise an error, you should set the [`FAILONERROR`](https://curl.se/libcurl/c/CURLOPT_FAILONERROR.html) option to `TRUE` in the handle of the request.
 
-```{r, error=TRUE, purl = FALSE}
+```{r, error=TRUE}
 h <- new_handle(failonerror = TRUE)
 curl_fetch_memory('https://cloud.r-project.org/CRAN_mirrorZ.csv', handle = h)
 ```

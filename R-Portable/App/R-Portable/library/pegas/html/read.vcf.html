@@ -1,0 +1,173 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Read Variant Calling Format Files</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for read.vcf {pegas}"><tr><td>read.vcf {pegas}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Read Variant Calling Format Files</h2>
+
+<h3>Description</h3>
+
+<p><code>read.vcf</code> reads allelic data from VCF (variant calling format)
+files.
+</p>
+<p><code>write.vcf</code> writes allelic data from an object of class
+<code>"loci"</code> into a VCF file.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+read.vcf(file, from = 1, to = 10000, which.loci = NULL, quiet = FALSE)
+write.vcf(x, file, CHROM = NULL, POS = NULL, quiet = FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>file</code></td>
+<td>
+<p>a file name specified by either a variable of mode character,
+or a quoted string.</p>
+</td></tr>
+<tr valign="top"><td><code>from, to</code></td>
+<td>
+<p>the loci to read; by default, the first 10,000.</p>
+</td></tr>
+<tr valign="top"><td><code>which.loci</code></td>
+<td>
+<p>an alternative way to specify which loci to read is
+to give their indices (see <code>link{VCFloci}</code> how to obtain them).</p>
+</td></tr>
+<tr valign="top"><td><code>quiet</code></td>
+<td>
+<p>a logical: should the progress of the operation be
+printed?</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>an object of class <code>"loci"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>CHROM, POS</code></td>
+<td>
+<p>two vectors giving the chromosomes and (genomic)
+positions of the loci (typically from the output of <code><a href="../../pegas/help/VCFloci.html">VCFloci</a></code>).</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The VCF file can be compressed (*.gz) or not. Since pegas 0.11,
+compressed remote files can be read (see examples).
+</p>
+<p>A TABIX file is not required (and will be ignored if present).
+</p>
+<p>In the VCF standard, missing data are represented by a dot and these
+are read &ldquo;as is&rdquo; by the present function without trying to
+substitute by <code>NA</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>an object of class <code>c("loci", "data.frame")</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Like for <code><a href="../../pegas/help/VCFloci.html">VCFloci</a></code>, the present function can read either
+compressed (*.gz) or uncompressed files. There should be no difference
+in performance between both types of files if they are relatively
+small (less than 1 Gb as uncompressed, equivalent to ~50 Mb when
+compressed). For bigger files, it is more efficient to uncompress them
+(if disk space is sufficient), especially if they have to be accessed
+several times during the same session.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Emmanuel Paradis</p>
+
+
+<h3>References</h3>
+
+<p><a href="https://www.internationalgenome.org/wiki/Analysis/vcf4.0">https://www.internationalgenome.org/wiki/Analysis/vcf4.0</a>
+</p>
+<p><a href="https://github.com/samtools/hts-specs">https://github.com/samtools/hts-specs</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../pegas/help/VCFloci.html">VCFloci</a></code>, <code><a href="../../pegas/help/read.loci.html">read.loci</a></code>,
+<code><a href="../../pegas/help/read.gtx.html">read.gtx</a></code>, <code><a href="../../pegas/help/write.loci.html">write.loci</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+## Chr Y from the 1000 Genomes:
+a &lt;- "https://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20130502"
+b &lt;- "ALL.chrY.phase3_integrated_v1b.20130502.genotypes.vcf.gz"
+## WARNING: the name of the file above may change
+url &lt;- paste(a, b, sep = "/")
+## Solution 1: download first
+download.file(url, "chrY.vcf.gz")
+## no need to uncompress:
+(info &lt;- VCFloci("chrY.vcf.gz"))
+str(info) # show the modes of the columns
+## Solution 2: read remotely (since pegas 0.11)
+info2 &lt;- VCFloci(url)
+identical(info, info2)
+rm(info2)
+
+SNP &lt;- is.snp(info)
+table(SNP) # how many loci are SNPs?
+## compare with:
+table(getINFO(info, "VT"))
+
+op &lt;- par(mfcol = c(4, 1), xpd = TRUE)
+lim &lt;- c(2.65e6, 2.95e6)
+## distribution of SNP and non-SNP mutations along the Y chr:
+plot(info$POS, !SNP, "h", col = "red", main = "non-SNP mutations",
+     xlab = "Position", ylab = "", yaxt = "n")
+rect(lim[1], -0.1, lim[2], 1.1, lwd = 2, lty = 2)
+plot(info$POS, SNP, "h", col = "blue", main = "SNP mutations",
+     xlab = "Position", ylab = "", yaxt = "n")
+rect(lim[1], -0.1, lim[2], 1.1, lwd = 2, lty = 2)
+par(xpd = FALSE)
+## same focusing on a smaller portion of the chromosome:
+plot(info$POS, !SNP, "h", col = "red", xlim = lim, xlab = "Position",
+     ylab = "", yaxt = "n")
+plot(info$POS, SNP, "h", col = "blue", xlim = lim, xlab = "Position",
+     ylab = "", yaxt = "n")
+par(op)
+
+## read both types of mutations separately:
+X.SNP &lt;- read.vcf("chrY.vcf.gz", which.loci = which(SNP))
+X.other &lt;- read.vcf("chrY.vcf.gz", which.loci = which(!SNP))
+
+identical(rownames(X.SNP), VCFlabels("chrY.vcf.gz")) # TRUE
+cat(VCFheader("chrY.vcf.gz"))
+
+## get haplotypes for the first 10 loci:
+h &lt;- haplotype(X.SNP, 1:10)
+## plot their frequencies:
+op &lt;- par(mar = c(3, 10, 1, 1))
+plot(h, horiz=TRUE, las = 1)
+par(op)
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>pegas</em> version 1.4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

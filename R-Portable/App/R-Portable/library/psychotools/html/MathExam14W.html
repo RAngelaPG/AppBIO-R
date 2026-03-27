@@ -1,0 +1,183 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Mathematics 101 Exam Results</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for MathExam14W {psychotools}"><tr><td>MathExam14W {psychotools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Mathematics 101 Exam Results</h2>
+
+<h3>Description</h3>
+
+<p>Responses of 729 students to 13 items in a written
+exam of introductory mathematics along with several covariates. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>data("MathExam14W")</pre>
+
+
+<h3>Format</h3>
+
+<p>A data frame containing 729 observations on 9 variables.
+</p>
+
+<dl>
+<dt>solved</dt><dd><p>Item response matrix (of class <code><a href="../../psychotools/help/itemresp.html">itemresp</a></code>) with
+values 1/0 coding solved correctly/other.</p>
+</dd>
+<dt>credits</dt><dd><p>Item response matrix (of class <code><a href="../../psychotools/help/itemresp.html">itemresp</a></code>) with
+values 2/1/0 coding solved correctly/incorrectly/not attempted.</p>
+</dd>
+<dt>nsolved</dt><dd><p>Integer. The number of items solved correctly.</p>
+</dd>
+<dt>tests</dt><dd><p>Integer. The number of online test exercises solved
+correctly prior to the written exam.</p>
+</dd>
+<dt>gender</dt><dd><p>Factor indicating gender.</p>
+</dd>
+<dt>study</dt><dd><p>Factor indicating two different types of business/economics
+degrees. Either the 3-year bachelor program (571) or the 4-year
+diploma program (155).</p>
+</dd>
+<dt>semester</dt><dd><p>Integer. The number of semesters enrolled in the given
+university program.</p>
+</dd>
+<dt>attempt</dt><dd><p>Factor. The number of times the course/exam has
+been attempted (including the current attempt).</p>
+</dd>
+<dt>group</dt><dd><p>Factor indicating whether the students were in the
+first or second batch (with somewhat different items) in the exam.</p>
+</dd>
+</dl>
+
+
+
+<h3>Details</h3>
+
+<p>The data provides individual end-term exam results from a Mathematics 101
+course for first-year business and economics students at Universität Innsbruck.
+The format of the course comprised biweekly online tests (26 numeric exercises,
+conducted in OpenOLAT) and a written exam at the end of the semester (13
+single-choice exercises with five answer alternatives). The course covers
+basics of analysis, linear algebra, financial mathematics, and probability
+calculus (where the latter is not assessed in this exam).
+</p>
+<p>In this exam, 729 students participated (out of 941 registered in the course).
+To avoid cheating, all students received items with essentially the same questions
+but different numbers (using the exams infrastructure of Zeileis et al. 2014).
+Also, due to the large number of students two groups of students had to be formed
+which received partially different items. The items which differed (namely 1, 5,
+6, 7, 8, 9, 11, 12) varied in the setup/story, but not in the 
+mathematical skills needed to solve the exercises. Prior to the exam,
+the students could select themselves either into the first group (early in the morning)
+or the second group (starting immediately after the end of the first group).
+</p>
+<p>Correctly solved items yield 100 percent of the associated points. Items
+without correct solution can either be unanswered (0 percent) or receive an
+incorrect answer (minus 25 percent) to discourage random guessing. In the examples
+below, the items are mostly only considered as binary. Typically, students with
+8 out of 13 correct answers passed the course.
+</p>
+
+
+<h3>Source</h3>
+
+<p>Department of Statistics, Universität Innsbruck
+</p>
+
+
+<h3>References</h3>
+
+<p>Zeileis A, Umlauf N, Leisch F (2014).
+Flexible Generation of E-Learning Exams in R: Moodle Quizzes, OLAT Assessments, and Beyond.
+<em>Journal of Statistical Software</em>, <b>58</b>(1), 1&ndash;36.
+doi:10.18637/jss.v058.i01
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../psychotools/help/itemresp.html">itemresp</a></code>, <code><a href="../../psychotools/help/raschmodel.html">raschmodel</a></code>, <code><a href="../../psychotools/help/pcmodel.html">pcmodel</a></code>, <code><a href="../../psychotools/help/anchortest.html">anchortest</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## load data and exclude extreme scorers
+data("MathExam14W", package = "psychotools")
+MathExam14W &lt;- transform(MathExam14W,
+  points = 2 * nsolved - 0.5 * rowSums(credits == 1)
+)
+me &lt;- subset(MathExam14W, nsolved &gt; 0 &amp; nsolved &lt; 13)
+
+
+## item response data:
+## solved (correct/other) or credits (correct/incorrect/not attempted)
+par(mfrow = c(1, 2))
+plot(me$solved)
+plot(me$credits)
+
+## PCA
+pr &lt;- prcomp(me$solved, scale = TRUE)
+names(pr$sdev) &lt;- 1:10
+plot(pr, main = "", xlab = "Number of components")
+biplot(pr, col = c("transparent", "black"), main = "",
+  xlim = c(-0.065, 0.005), ylim = c(-0.04, 0.065))
+
+
+## points achieved (and 50% threshold)
+par(mfrow = c(1, 1))
+hist(MathExam14W$points, breaks = -4:13 * 2 + 0.5,
+  col = "lightgray", main = "", xlab = "Points")
+abline(v = 12.5, lwd = 2, col = 2)
+
+
+## Rasch and partial credit model
+ram &lt;- raschmodel(me$solved)
+pcm &lt;- pcmodel(me$credits)
+
+## various types of graphics displays
+plot(ram, type = "profile")
+plot(pcm, type = "profile", add = TRUE, col = "blue")
+plot(ram, type = "piplot")
+plot(pcm, type = "piplot")
+plot(ram, type = "region")
+plot(pcm, type = "region")
+plot(ram, type = "curves")
+plot(pcm, type = "curves")
+
+
+
+## test for differential item function with automatic anchoring
+## passing vs. not passing students
+at1 &lt;- anchortest(solved ~ factor(nsolved &lt;= 7), data = me,
+  adjust = "single-step")
+at1
+plot(at1$final_tests)
+## -&gt; "good" students discriminate somewhat more
+## (quad/payflow/lagrange are slightly more difficult)
+
+## group 1 vs. group 2
+at2 &lt;- anchortest(solved ~ group, data = me, adjust = "single-step")
+at2
+plot(at2$final_tests)
+## -&gt; quad/payflow/planning easier for group 1
+## -&gt; hesse slightly easier for group 2
+
+## bring out differences between groups 1 and 2
+## by (anchored) item difficulty profiles
+ram1 &lt;- raschmodel(subset(me, group == "1")$solved)
+ram2 &lt;- raschmodel(subset(me, group == "2")$solved)
+plot(ram1, parg = list(ref = at2$anchor_items), ylim = c(-2, 3))
+plot(ram2, parg = list(ref = at2$anchor_items), add = TRUE, col = "blue")
+legend("topleft", c("Group 1", "Group 2"), pch = 21,
+  pt.bg = c("lightgray", "blue"), bty = "n")
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>psychotools</em> version 0.7-6 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

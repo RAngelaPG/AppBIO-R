@@ -1,0 +1,508 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Scales</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for Scale {ggplot2}"><tr><td>Scale {ggplot2}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Scales</h2>
+
+<h3>Description</h3>
+
+<p>All <code style="white-space: pre;">scale_*()</code> functions (like <code>scale_fill_continuous()</code>) return a <code style="white-space: pre;">Scale*</code>
+object. The main purpose of these objects is to translate data values to
+aesthetic values and populating breaks and labels.
+</p>
+
+
+<h3>Details</h3>
+
+<p>All <code style="white-space: pre;">scale_*</code> functions like <code><a href="../../ggplot2/help/scale_x_continuous.html">scale_x_continuous()</a></code> return a <code style="white-space: pre;">Scale*</code> object
+like <code>ScaleContinuous</code>. Each of the <code style="white-space: pre;">Scale*</code> objects is a <code><a href="../../ggplot2/help/ggproto.html">ggproto()</a></code> object
+descended from the top-level <code>Scale</code>.
+</p>
+<p>Scales generally need to track three types of spaces:
+</p>
+
+<ol>
+<li><p> Data space. These are values as they are evaluated from the plot
+or layer mapping, prior to any transformation.
+</p>
+</li>
+<li><p> Transformed space. This is the space after original data has been
+transformed. Effectively, scales internally operate in transformed space
+in that ranges and breaks get passed around in this space. Discrete scales
+don't do transformations, so for these scales, transformed space is the
+same as untransformed space.
+</p>
+</li>
+<li><p> Aesthetic space. Graphic values that are mapped from the transformed
+space. This is dependent on the <code>palette</code> field for most scales and on the
+<code>rescaler</code> field for continuous position scales.
+</p>
+</li></ol>
+
+<p>The user is expected to give any vector-based <code>minor_breaks</code>, <code>breaks</code> or
+<code>limits</code> in data space. When <code>breaks</code>, <code>limits</code> or <code>labels</code> is a function,
+its input is expected to be in data space.
+</p>
+<p>Before you attempt to create a new <code style="white-space: pre;">Scale*</code> class of your own, it is
+recommended to think through whether your aims cannot be implemented with
+one of the existing classes. Making a wrapper for the <code>continuous_scale()</code>,
+<code>discrete_scale()</code> and <code>binned_scale()</code> should cover many cases, and should
+be considered prior to commiting to build a <code style="white-space: pre;">Scale*</code> extension.
+</p>
+<p>For example, if you aim to develop a scale for a new data type, it should
+generally be possible to create a new <a href="../../scales/help/new_transform.html">transformation</a>
+instead. One reason to implement your own <code style="white-space: pre;">Scale*</code> class is to accommodate
+a data type does not lend itself for continuous or discrete range training.
+</p>
+<p>In such case, you can override the following:
+</p>
+
+<ul>
+<li><p> The <code>range</code> field.
+</p>
+</li>
+<li><p> The <code>transform</code>, <code>train</code> and <code>map</code> methods.
+</p>
+</li>
+<li><p> The <code>get_limits()</code>, <code>get_breaks()</code> and <code>get_labels()</code> methods.
+</p>
+</li></ul>
+
+
+
+<h3>Fields</h3>
+
+
+<dl>
+<dt><code>call</code></dt><dd><p>A <a href="../../base/html/call.html">call</a> object with the user-facing constructor
+function, for use in error messaging. This field is populated by scale
+constructors.</p>
+</dd>
+<dt><code>range</code></dt><dd><p>A <code><a href="../../scales/help/Range.html">Range</a></code> class object, like
+<code>scales::ContinuousRange</code> or <code>scales::DiscreteRange</code>. These are 'trained'
+to keep track of the data range (continuous) or data levels (discrete).
+Continuous ranges are tracked in transformed space.</p>
+</dd>
+<dt><code>aesthetics,palette,name,breaks,labels,limits,name,guide,position,na.value,expand</code></dt><dd><p>Fields populated by the scale constructor that can take on the same values
+as described in e.g. <code><a href="../../ggplot2/help/continuous_scale.html">?continuous_scale</a></code>.
+Note that <code>limits</code> is expected in transformed space.</p>
+</dd>
+<dt><code>transform_df,transform</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for orchestrating the transformation of aesthetics in a
+data frame. Data transformation occurs before stats are computed.
+The <code>transform_df()</code> method ensures the <code>transform()</code> method is applied
+to the correct columns.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Scale$transform_df(df)
+Scale$transform(x)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>df</code></dt><dd><p>A data frame with the layer's data.</p>
+</dd>
+<dt><code>x</code></dt><dd><p>A vector of the relevant aesthetic.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>For <code>transform()</code> a vector of transformed values.
+For <code>transform_df()</code>, a named list with transformed values for each
+transformed aesthetic.</p>
+</dd>
+<dt><code>train_df,train</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for orchestrating scale training for keeping track of
+the data range or levels. The <code>train_df()</code> method ensures the <code>train()</code>
+method is applied to the correct columns.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Scale$train_df(df)
+Scale$train(x)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>df</code></dt><dd><p>A data frame with the layer's data.</p>
+</dd>
+<dt><code>x</code></dt><dd><p>A vector of the relevant aesthetic.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>Nothing, these are called for their side effect of updating the <code>range</code>
+field.</p>
+</dd>
+<dt><code>map_df,map</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for orchestrating the mapping of data values to
+aesthetics. The <code>map_df()</code> method ensures the <code>map()</code> method is applied
+to the correct columns. When the scale uses a <code>palette()</code> function, it is
+applied in the <code>map()</code> method.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Scale$map_df(df, i)
+Scale$map(x, limits)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>df</code></dt><dd><p>A data frame with the layer's data.</p>
+</dd>
+<dt><code>i</code></dt><dd><p>An integer vector giving an index to map a subset of data.
+The default, <code>NULL</code>, will map all rows.</p>
+</dd>
+<dt><code>x</code></dt><dd><p>A vector of the relevant aesthetic.</p>
+</dd>
+<dt><code>limits</code></dt><dd><p>A vector of the relevant aesthetic, usually via
+the <code>get_limits()</code> method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>For <code>map()</code> a vector of mapped values in aesthetics space.
+For <code>map_df()</code>, a named list with mapped values for each
+aesthetic.</p>
+</dd>
+<dt><code>recale</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for applying the recale function in the <code>rescaler</code> field.
+It is used during the continuous <code>map()</code> and <code>Coord$transform()</code> methods
+to ensure values are in the 0-1 range.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Scale$rescale(x, limits, range)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>x</code></dt><dd><p>A vector of values to rescale. Can contain out-of-bounds
+or missing values depending on the <code>map()</code> method.</p>
+</dd>
+<dt><code>limits</code></dt><dd><p>A length two vector giving the limits of the relevant
+aesthetic, usually via the <code>get_limits()</code> method.</p>
+</dd>
+<dt><code>range</code></dt><dd><p>A length two vector giving the range that should coincide
+with the 0-1 points. For most purpuses, this should be the same as the
+<code>limits</code> argument.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A vector of values between 0 and 1 for in-bounds values of <code>x</code>.</p>
+</dd>
+<dt><code>get_limits</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for resolving user input and getting the scale limits.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Scale$get_limits()
+</pre></div>
+<p><strong>Value</strong>
+</p>
+<p>The scale limits, without any expansion applied, in transformed space.</p>
+</dd>
+<dt><code>dimension</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for getting a continuous representation of the limits of
+position scales. For continuous scales, the dimension is the same concept
+as the limits. For discrete scales the dimension is the continuous range
+occupied by the mapped breaks, which by default take integer positions.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Scale$dimension(expand, limits)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>expand</code></dt><dd><p>A length 4 vector giving scale <a href="../../ggplot2/help/expansion.html">expansion</a>.
+This is optional and defaults to no expansion.</p>
+</dd>
+<dt><code>limits</code></dt><dd><p>A vector of the relevant aesthetic, usually via
+the <code>get_limits()</code> method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A numeric vector of length 2</p>
+</dd>
+<dt><code>get_breaks,get_breaks_minor</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for resolving user input and getting the scale breaks
+or minor breaks. Note that these may return out-of-bounds values for the
+purpose of coordinating with the <code>get_labels()</code> method.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Scale$get_breaks(limits)
+Scale$get_breaks_minor(n, b, limits)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>limits</code></dt><dd><p>A vector of the relevant aesthetic, usually via
+the <code>get_limits()</code> method.</p>
+</dd>
+<dt><code>n</code></dt><dd><p>An integer setting the desired number of minor breaks per
+major break. Note that the resulting minor breaks may coincide with
+major breaks.</p>
+</dd>
+<dt><code>b</code></dt><dd><p>A vector of mapped major breaks from the <code>get_breaks()</code>
+method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A vector of breaks in transformed space.</p>
+</dd>
+<dt><code>get_labels</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for resolving user input and getting the scale labels for
+a set of breaks.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Scale$get_labels(breaks)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>breaks</code></dt><dd><p>A vector of unmapped major breaks from the <code>get_breaks()</code>
+method, in transformed space.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A vector of labels of the same length as <code>breaks</code>.</p>
+</dd>
+<dt><code>get_transformation</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A helper method to access the scale's transformation object.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Scale$get_transformation()
+</pre></div>
+<p><strong>Value</strong>
+</p>
+<p>A <a href="../../scales/help/new_transform.html">transform</a> object.</p>
+</dd>
+<dt><code>break_info</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for getting all break related information for position
+scales. It is in use by coords that do not use the modern Guide system
+and secondary axes.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Scale$break_info(range)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>range</code></dt><dd><p>A vector of the relevant aesthetic.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A named list with the following structure:
+</p>
+
+<ul>
+<li> <p><code>range</code> a length 2 vector giving continuous range
+</p>
+</li>
+<li> <p><code>labels</code> a character or expression vector of the same length as major breaks.
+</p>
+</li>
+<li> <p><code>major</code> a numeric vector with mapped numeric values for major breaks.
+</p>
+</li>
+<li> <p><code>major_source</code> a numeric vector with (transformed) data values for major breaks.
+</p>
+</li>
+<li> <p><code>minor</code> a numeric vector with mapped numeric values for minor breaks.
+</p>
+</li>
+<li> <p><code>minor_source</code> a numeric vector with (transformed) data values for minor breaks.
+</p>
+</li></ul>
+</dd>
+<dt><code>break_position</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for getting mapped break positions. It is in use as a
+default value in <code>get_breaks_minor()</code>, but is otherwise vestigial.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Scale$break_info(range)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>range</code></dt><dd><p>A vector of the relevant aesthetic.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A vector with mapped break positions</p>
+</dd>
+<dt><code>make_title,make_sec_title</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for picking the title to use. This is usually called in
+the <code>Guide$extract_params()</code> or <code>Layout$resolve_label()</code> methods.
+The hierarchy of titles goes from guide (highest priority), to scale, to
+labs (lowest priority).
+When the guide or scale title are functions, they're applied to the next
+in line. The <code>make_sec_title()</code> method by default re-uses the primary
+<code>make_title()</code> method and only applies to position aesthetics.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Scale$make_title(guide_title, scale_title, label_title)
+Scale$make_sec_title(...)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>guide_title</code></dt><dd><p>The <code>title</code> parameter coming from a guide.</p>
+</dd>
+<dt><code>scale_title</code></dt><dd><p>The <code>name</code> field of the Scale.</p>
+</dd>
+<dt><code>label_title</code></dt><dd><p>The relevant entry in the <code>plot$labels</code> field.</p>
+</dd>
+<dt><code>...</code></dt><dd><p>By default, arguments forwarded  to the <code>make_title()</code>
+method</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A scalar character or expression title</p>
+</dd>
+<dt><code>axis_order</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for setting the order of axes titles used to coordinate
+with <code>Facet$draw_labels()</code>.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Scale$axis_order()
+</pre></div>
+<p><strong>Value</strong>
+</p>
+<p>Either <code>c("primary", "secondary")</code> or <code>c("secondary", "primary")</code>.</p>
+</dd>
+<dt><code>clone</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for making an untrained copy of the scale. Due to
+reference semantics of ggproto objects, in contrast to copy-on-modify
+semantics, scales need to be cloned at the start of plot building.
+The cloned scale can be trained independently of the original.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Scale$clone()
+</pre></div>
+<p><strong>Value</strong>
+</p>
+<p>A Scale object.</p>
+</dd>
+<dt><code>reset</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for to reset the <code>range</code> field, effectively 'untraining'
+the scale. This is used in the <code>Layout$reset_scales()</code> method, so that
+scales can be re-trained on data with final position aesthetics.
+For discrete scales, only the continuous range (<code>range_c</code>) is reset.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Scale$clone()
+</pre></div>
+<p><strong>Value</strong>
+</p>
+<p>None, called for the side-effect of resetting the range.</p>
+</dd>
+<dt><code>is_empty</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for determining whether a scale is empty, i.e. when no
+information with which to calculate limits.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Scale$is_empty()
+</pre></div>
+<p><strong>Value</strong>
+</p>
+<p>A scalar boolean value.</p>
+</dd>
+<dt><code>is_empty</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for determining whether a scale is discrete.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Scale$is_discrete()
+</pre></div>
+<p><strong>Value</strong>
+</p>
+<p>A scalar boolean value.</p>
+</dd>
+</dl>
+
+
+<h3>Conventions</h3>
+
+<p>The object name that a new class is assigned to is typically the same as the
+class name. Scale class names are in UpperCamelCase and start with the
+<code style="white-space: pre;">Scale*</code> prefix, like <code>ScaleNew</code>.
+</p>
+<p>In scales, there is a difference between user-facing and developer-facing
+constructors. Developer facing constructors have the shape
+<code style="white-space: pre;">{foundation}_scale()</code>, like <code>discrete_scale()</code> corresponding to
+<code>ScaleDiscrete</code>. User-facing constructors have the <code style="white-space: pre;">scale_{aesthetic}_{type}</code>
+as name. If you implement a new <code style="white-space: pre;">Scale*</code> class, you like want both these
+types of constructor.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# TODO: find easy to digest example
+NULL
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ggplot2</em> version 4.0.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Recode numeric variables into equal-ranged groups</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for group_var {sjmisc}"><tr><td>group_var {sjmisc}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Recode numeric variables into equal-ranged groups</h2>
+
+<h3>Description</h3>
+
+<p>Recode numeric variables into equal ranged, grouped factors,
+i.e. a variable is cut into a smaller number of groups, where each group
+has the same value range. <code>group_labels()</code> creates the related value
+labels. <code>group_var_if()</code> and <code>group_labels_if()</code> are scoped
+variants of <code>group_var()</code> and <code>group_labels()</code>, where grouping
+will be applied only to those variables that match the logical condition
+of <code>predicate</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+group_var(
+  x,
+  ...,
+  size = 5,
+  as.num = TRUE,
+  right.interval = FALSE,
+  n = 30,
+  append = TRUE,
+  suffix = "_gr"
+)
+
+group_var_if(
+  x,
+  predicate,
+  size = 5,
+  as.num = TRUE,
+  right.interval = FALSE,
+  n = 30,
+  append = TRUE,
+  suffix = "_gr"
+)
+
+group_labels(x, ..., size = 5, right.interval = FALSE, n = 30)
+
+group_labels_if(x, predicate, size = 5, right.interval = FALSE, n = 30)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A vector or data frame.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Optional, unquoted names of variables that should be selected for
+further processing. Required, if <code>x</code> is a data frame (and no
+vector) and only selected variables from <code>x</code> should be processed.
+You may also use functions like <code>:</code> or tidyselect's
+select-helpers.
+See 'Examples' or <a href="../doc/design_philosophy.html">package-vignette</a>.</p>
+</td></tr>
+<tr valign="top"><td><code>size</code></td>
+<td>
+<p>Numeric; group-size, i.e. the range for grouping. By default,
+for each 5 categories of <code>x</code> a new group is defined, i.e. <code>size = 5</code>.
+Use <code>size = "auto"</code> to automatically resize a variable into a maximum
+of 30 groups (which is the ggplot-default grouping when plotting
+histograms). Use <code>n</code> to determine the amount of groups.</p>
+</td></tr>
+<tr valign="top"><td><code>as.num</code></td>
+<td>
+<p>Logical, if <code>TRUE</code>, return value will be numeric, not a factor.</p>
+</td></tr>
+<tr valign="top"><td><code>right.interval</code></td>
+<td>
+<p>Logical; if <code>TRUE</code>, grouping starts with the lower
+bound of <code>size</code>. See 'Details'.</p>
+</td></tr>
+<tr valign="top"><td><code>n</code></td>
+<td>
+<p>Sets the maximum number of groups that are defined when auto-grouping is on
+(<code>size = "auto"</code>). Default is 30. If <code>size</code> is not set to <code>"auto"</code>,
+this argument will be ignored.</p>
+</td></tr>
+<tr valign="top"><td><code>append</code></td>
+<td>
+<p>Logical, if <code>TRUE</code> (the default) and <code>x</code> is a data frame,
+<code>x</code> including the new variables as additional columns is returned;
+if <code>FALSE</code>, only the new variables are returned.</p>
+</td></tr>
+<tr valign="top"><td><code>suffix</code></td>
+<td>
+<p>Indicates which suffix will be added to each dummy variable.
+Use <code>"numeric"</code> to number dummy variables, e.g. <em>x_1</em>,
+<em>x_2</em>, <em>x_3</em> etc. Use <code>"label"</code> to add value label,
+e.g. <em>x_low</em>, <em>x_mid</em>, <em>x_high</em>. May be abbreviated.</p>
+</td></tr>
+<tr valign="top"><td><code>predicate</code></td>
+<td>
+<p>A predicate function to be applied to the columns. The
+variables for which <code>predicate</code> returns <code>TRUE</code> are selected.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>If <code>size</code> is set to a specific value, the variable is recoded
+into several groups, where each group has a maximum range of <code>size</code>.
+Hence, the amount of groups differ depending on the range of <code>x</code>.
+<br /> <br />
+If <code>size = "auto"</code>, the variable is recoded into a maximum of
+<code>n</code> groups. Hence, independent from the range of
+<code>x</code>, always the same amount of groups are created, so the range
+within each group differs (depending on <code>x</code>'s range).
+<br /> <br />
+<code>right.interval</code> determins which boundary values to include when
+grouping is done. If <code>TRUE</code>, grouping starts with the <strong>lower
+bound</strong> of <code>size</code>. For example, having a variable ranging from
+50 to 80, groups cover the ranges from  50-54, 55-59, 60-64 etc.
+If <code>FALSE</code> (default), grouping starts with the <code>upper bound</code>
+of <code>size</code>. In this case, groups cover the ranges from
+46-50, 51-55, 56-60, 61-65 etc. <strong>Note:</strong> This will cover
+a range from 46-50 as first group, even if values from 46 to 49
+are not present. See 'Examples'.
+<br /> <br />
+If you want to split a variable into a certain amount of equal
+sized groups (instead of having groups where values have all the same
+range), use the <code><a href="../../sjmisc/help/split_var.html">split_var</a></code> function!
+<br /> <br />
+<code>group_var()</code> also works on grouped data frames (see <code><a href="../../dplyr/help/group_by.html">group_by</a></code>).
+In this case, grouping is applied to the subsets of variables
+in <code>x</code>. See 'Examples'.
+</p>
+
+
+<h3>Value</h3>
+
+
+<ul>
+<li><p> For <code>group_var()</code>, a grouped variable, either as numeric or as factor (see paramter <code>as.num</code>). If <code>x</code> is a data frame, only the grouped variables will be returned.
+</p>
+</li>
+<li><p> For <code>group_labels()</code>, a string vector or a list of string vectors containing labels based on the grouped categories of <code>x</code>, formatted as &quot;from lower bound to upper bound&quot;, e.g. <code>"10-19"  "20-29"  "30-39"</code> etc. See 'Examples'.
+</p>
+</li></ul>
+
+
+
+<h3>Note</h3>
+
+<p>Variable label attributes (see, for instance,
+<code><a href="../../sjlabelled/help/set_label.html">set_label</a></code>) are preserved. Usually you should use
+the same values for <code>size</code> and <code>right.interval</code> in
+<code>group_labels()</code> as used in the <code>group_var</code> function if you want
+matching labels for the related recoded variable.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../sjmisc/help/split_var.html">split_var</a></code> to split variables into equal sized groups,
+<code><a href="../../sjmisc/help/group_str.html">group_str</a></code> for grouping string vectors or
+<code><a href="../../sjmisc/help/rec_pattern.html">rec_pattern</a></code> and <code><a href="../../sjmisc/help/rec.html">rec</a></code> for another convenient
+way of recoding variables into smaller groups.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+age &lt;- abs(round(rnorm(100, 65, 20)))
+age.grp &lt;- group_var(age, size = 10)
+hist(age)
+hist(age.grp)
+
+age.grpvar &lt;- group_labels(age, size = 10)
+table(age.grp)
+print(age.grpvar)
+
+# histogram with EUROFAMCARE sample dataset
+# variable not grouped
+library(sjlabelled)
+data(efc)
+hist(efc$e17age, main = get_label(efc$e17age))
+
+# bar plot with EUROFAMCARE sample dataset
+# grouped variable
+ageGrp &lt;- group_var(efc$e17age)
+ageGrpLab &lt;- group_labels(efc$e17age)
+barplot(table(ageGrp), main = get_label(efc$e17age), names.arg = ageGrpLab)
+
+# within a pipe-chain
+library(dplyr)
+efc %&gt;%
+  select(e17age, c12hour, c160age) %&gt;%
+  group_var(size = 20)
+
+# create vector with values from 50 to 80
+dummy &lt;- round(runif(200, 50, 80))
+# labels with grouping starting at lower bound
+group_labels(dummy)
+# labels with grouping startint at upper bound
+group_labels(dummy, right.interval = TRUE)
+
+# works also with gouped data frames
+mtcars %&gt;%
+  group_var(disp, size = 4, append = FALSE) %&gt;%
+  table()
+
+mtcars %&gt;%
+  group_by(cyl) %&gt;%
+  group_var(disp, size = 4, append = FALSE) %&gt;%
+  table()
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sjmisc</em> version 2.8.11 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

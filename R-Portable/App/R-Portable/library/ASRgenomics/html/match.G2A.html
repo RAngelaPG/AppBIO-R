@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Check the genomic relationship matrix G against the pedigree...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for match.G2A {ASRgenomics}"><tr><td>match.G2A {ASRgenomics}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Check the genomic relationship matrix G against
+the pedigree relationship matrix A or vice versa</h2>
+
+<h3>Description</h3>
+
+<p>Assesses a given genomic relationship matrix <i>\boldsymbol{G}</i> against the
+pedigree relationship matrix <i>\boldsymbol{A}</i>, or vice versa,
+to determine the matched and mismatched individuals.
+If requested, it provides the cleaned versions containing only the matched individuals
+between both matrices. The user should provide the matrices <i>\boldsymbol{G}</i>and
+<i>\boldsymbol{A}</i> in full form (<i>ng \times ng</i> and <i>na \times na</i>, respectively).
+Individual names should be assigned to <code>rownames</code> and <code>colnames</code> for both matrices.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+match.G2A(
+  A = NULL,
+  G = NULL,
+  clean = TRUE,
+  ord = TRUE,
+  mism = FALSE,
+  RMdiff = FALSE,
+  message = TRUE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>A</code></td>
+<td>
+<p>Input of the pedigree relationship matrix <i>\boldsymbol{A}</i> in full form (<i>na \times na</i>) (default = <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>G</code></td>
+<td>
+<p>Input of the genomic relationship matrix <i>\boldsymbol{G}</i> in full form (<i>ng \times ng</i>) (default = <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>clean</code></td>
+<td>
+<p>If <code>TRUE</code> generates new clean <i>\boldsymbol{G}</i> and <i>\boldsymbol{A}</i>
+matrices in full form containing only matched individuals (default = <code>TRUE</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>ord</code></td>
+<td>
+<p>If <code>TRUE</code> it will order by ascending order of individual names
+both of the clean <i>\boldsymbol{A}</i> and <i>\boldsymbol{G}</i> matrices (default = <code>TRUE</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>mism</code></td>
+<td>
+<p>If <code>TRUE</code> generates two data frames with mismatched individual names
+from the <i>\boldsymbol{G}</i> and <i>\boldsymbol{A}</i> matrices (default = <code>FALSE</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>RMdiff</code></td>
+<td>
+<p>If <code>TRUE</code> it generates the matrix (in lower diagonal row-wise sparse form) of matched
+observations from both the <i>\boldsymbol{G}</i> and <i>\boldsymbol{A}</i> matrices.
+This matrix can be used to identify inconsistent values between matched matrices, but it can be very large
+(default = <code>FALSE</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>message</code></td>
+<td>
+<p>If <code>TRUE</code> diagnostic messages are printed on screen (default = <code>TRUE</code>).</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A list with the following elements:
+</p>
+
+<ul>
+<li><p><code>Gclean</code>: a matrix with the portion of <i>\boldsymbol{G}</i> containing only matched individuals.
+</p>
+</li>
+<li><p><code>Aclean</code>: a matrix with the portion of <i>\boldsymbol{A}</i> containing only matched individuals.
+</p>
+</li>
+<li><p><code>mismG</code>: a vector containing the names of the individuals from matrix <i>\boldsymbol{G}</i> that are
+missing in matrix <i>\boldsymbol{A}</i>.
+</p>
+</li>
+<li><p><code>mismA</code>: a vector containing the names of the individuals from matrix <i>\boldsymbol{A}</i> that are
+missing in matrix <i>\boldsymbol{G}</i>.
+</p>
+</li>
+<li><p><code>RM</code>: a data frame with the observations from both the <i>\boldsymbol{G}</i> and <i>\boldsymbol{A}</i>
+matched matrices, together with their absolute relationship difference.
+</p>
+</li>
+<li><p><code>plotG2A</code>: scatterplot with the pairing of matched pedigree- against genomic-based
+relationship values. This graph might take a long to plot with large datasets.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# Get A matrix.
+A &lt;- AGHmatrix::Amatrix(data = ped.pine)
+A[1:5,1:5]
+dim(A)
+
+# Read and filter genotypic data.
+M.clean &lt;- qc.filtering(
+ M = geno.pine655,
+ maf = 0.05,
+ marker.callrate = 0.2, ind.callrate = 0.20,
+ na.string = "-9",
+ plots = FALSE)$M.clean
+
+# Get G matrix.
+G &lt;- G.matrix(M = M.clean, method = "VanRaden", na.string = "-9")$G
+G[1:5, 1:5]
+dim(G)
+
+# Match G2A.
+check &lt;- match.G2A(
+ A = A, G = G,
+ clean = TRUE, ord = TRUE, mism = TRUE, RMdiff = TRUE)
+ls(check)
+dim(check$Aclean)
+dim(check$Gclean)
+check$Aclean[1:5, 1:5]
+check$Gclean[1:5, 1:5]
+head(check$mismG)
+head(check$mismA)
+check$plotG2A
+head(check$RM)
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ASRgenomics</em> version 1.1.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

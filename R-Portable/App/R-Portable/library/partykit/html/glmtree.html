@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Generalized Linear Model Trees</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for glmtree {partykit}"><tr><td>glmtree {partykit}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Generalized Linear Model Trees</h2>
+
+<h3>Description</h3>
+
+<p>Model-based recursive partitioning based on generalized linear models.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+glmtree(formula, data, subset, na.action, weights, offset, cluster,
+  family = gaussian, epsilon = 1e-8, maxit = 25, method = "glm.fit", ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>symbolic description of the model (of type
+<code>y ~ z1 + ... + zl</code> or <code>y ~ x1 + ... + xk | z1 + ... + zl</code>;
+for details see below).</p>
+</td></tr>
+<tr valign="top"><td><code>data, subset, na.action</code></td>
+<td>
+<p>arguments controlling formula processing
+via <code><a href="../../stats/help/model.frame.html">model.frame</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>optional numeric vector of weights. By default these are
+treated as case weights but the default can be changed in
+<code><a href="../../partykit/help/mob_control.html">mob_control</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>offset</code></td>
+<td>
+<p>optional numeric vector with an a priori known component to be
+included in the model <code>y ~ x1 + ... + xk</code> (i.e., only when
+<code>x</code> variables are specified).</p>
+</td></tr>
+<tr valign="top"><td><code>cluster</code></td>
+<td>
+<p>optional vector (typically numeric or factor) with a
+cluster ID to be employed for clustered covariances in the parameter
+stability tests.</p>
+</td></tr>
+<tr valign="top"><td><code>family, method</code></td>
+<td>
+<p>specification of a family and fitting method for
+<code><a href="../../stats/help/glm.html">glm</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>epsilon, maxit</code></td>
+<td>
+<p>control parameters passed to
+<code><a href="../../stats/help/glm.control.html">glm.control</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>optional control parameters passed to
+<code><a href="../../partykit/help/mob_control.html">mob_control</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Convenience interface for fitting MOBs (model-based recursive partitions) via
+the <code><a href="../../partykit/help/mob.html">mob</a></code> function. <code>glmtree</code> internally sets up a model
+<code>fit</code> function for <code>mob</code>, using <code><a href="../../stats/help/glm.fit.html">glm.fit</a></code>.
+Then <code>mob</code> is called using the negative log-likelihood as the objective
+function.
+</p>
+<p>Compared to calling <code>mob</code> by hand, the implementation tries to avoid
+unnecessary computations while growing the tree. Also, it provides a more
+elaborate plotting function.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>glmtree</code> inheriting from <code><a href="../../partykit/help/modelparty.html">modelparty</a></code>.
+The <code>info</code> element of the overall <code>party</code> and the individual
+<code>node</code>s contain various informations about the models.
+</p>
+<p>The methodology is described in <a href="#reference+glmtree.Rd+partykit+3A+3AZeileis+2BHothorn+2BHornik+3A2008" class="citation">Zeileis, Hothorn, and Hornik (2008)</a>.
+</p>
+
+
+<h3>References</h3>
+
+<span id="reference+glmtree.Rd+partykit+3A+3AZeileis+2BHothorn+2BHornik+3A2008"></span><p>Zeileis A., Hothorn T., Hornik K. (2008).
+&ldquo;Model-Based Recursive Partitioning.&rdquo;
+<em>Journal of Computational and Graphical Statistics</em>, <b>17</b>(2), 492&ndash;514.
+doi: <a href="https://doi.org/10.1198/106186008X319331">10.1198/106186008X319331</a>.</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../partykit/help/mob.html">mob</a></code>, <code><a href="../../partykit/help/mob_control.html">mob_control</a></code>, <code><a href="../../partykit/help/lmtree.html">lmtree</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+if(require("mlbench") &amp;&amp; require("vcd")) {
+
+## Pima Indians diabetes data
+data("PimaIndiansDiabetes", package = "mlbench")
+
+## recursive partitioning of a logistic regression model
+pid_tree2 &lt;- glmtree(diabetes ~ glucose | pregnant +
+  pressure + triceps + insulin + mass + pedigree + age,
+  data = PimaIndiansDiabetes, family = binomial)
+
+## printing whole tree or individual nodes
+print(pid_tree2)
+print(pid_tree2, node = 1)
+
+## visualization
+plot(pid_tree2)
+plot(pid_tree2, tp_args = list(cdplot = TRUE))
+plot(pid_tree2, terminal_panel = NULL)
+
+## estimated parameters
+coef(pid_tree2)
+coef(pid_tree2, node = 5)
+summary(pid_tree2, node = 5)
+
+## deviance, log-likelihood and information criteria
+deviance(pid_tree2)
+logLik(pid_tree2)
+AIC(pid_tree2)
+BIC(pid_tree2)
+
+## different types of predictions
+pid &lt;- head(PimaIndiansDiabetes)
+predict(pid_tree2, newdata = pid, type = "node")
+predict(pid_tree2, newdata = pid, type = "response")
+predict(pid_tree2, newdata = pid, type = "link")
+
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>partykit</em> version 1.2-27 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Asynchronous or synchronous 'then()'</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for hybrid_then {promises}"><tr><td>hybrid_then {promises}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Asynchronous or synchronous <code>then()</code></h2>
+
+<h3>Description</h3>
+
+<p>This is a helper function that behaves like <code>then</code>, however if
+<code>is.promising()</code> returns <code>FALSE</code> then the handlers will be executed
+immediately.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+hybrid_then(expr, on_success = NULL, on_failure = NULL, ..., tee = FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>expr</code></td>
+<td>
+<p>An expression that evaluates to either a promise or a non-promise
+value.</p>
+</td></tr>
+<tr valign="top"><td><code>on_success</code></td>
+<td>
+<p>A function to be called when no error occurs synchronously
+or asynchronously. When invoked, the function will be called with a single
+argument: the resolved value. Optionally, the function can take a second
+parameter <code>.visible</code> if you care whether the promise was resolved with a
+visible or invisible value. Can return a value or a promise.</p>
+</td></tr>
+<tr valign="top"><td><code>on_failure</code></td>
+<td>
+<p>A function to be called if an error occurs synchronously or
+asynchronously. Takes one argument: the error object. Can return a value or
+a promise to recover from the error, or throw a new error. If <code>on_failure</code>
+is provided and doesn't throw an error (or return a promise that fails)
+then this is the async equivalent of catching an error.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Reserved for future use. Currently must be empty.</p>
+</td></tr>
+<tr valign="top"><td><code>tee</code></td>
+<td>
+<p>If <code>TRUE</code>, ignore the return value of the callback, and use the
+original value of <code>expr</code> as the result. For <code>on_failure</code> with <code>tee = TRUE</code>,
+the callback executes but the original error is re-thrown afterward.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Execution paths:
+</p>
+
+<ul>
+<li><p> If <code>expr</code> evaluates to a promise (<code>p</code>), it will call <code>p |&gt; then(on_success, on_failure)</code>.
+</p>
+</li>
+<li><p> If <code>expr</code> evaluates to a non-promise value (<code>x</code>), it will call
+<code>on_success(x)</code>.
+</p>
+</li>
+<li><p> If <code>expr</code> throws an error (<code>e</code>) during calculation, it will call
+<code>on_failure(e)</code>.
+</p>
+</li></ul>
+
+<p>In all cases, the <code>on_success</code> and <code>on_failure</code> callbacks are executed (when
+provided).
+</p>
+
+
+<h3>Value</h3>
+
+
+<ul>
+<li><p> If <code>expr</code> evaluates to a promise, a promise with a single followup
+promise to handle the <code>on_success</code> or <code>on_failure</code> callbacks.
+</p>
+</li>
+<li><p> If <code>expr</code> evaluates to a non-promise value, the result of the synchronous
+operation after being processed by <code>on_success</code> or <code>on_failure</code>.
+</p>
+</li>
+<li><p> If a callback returns a promise, the result is always a promise.
+</p>
+</li></ul>
+
+
+
+<h3>Utility</h3>
+
+<p>This function is useful for writing functions that need to execute followup
+behavior <em>now</em> or within a promise. This is different behavior than <code>then()</code>
+where <em>everything</em> is made into a promise.
+</p>
+<p><code>hybrid_then()</code> allows authors to keep synchronous execution on the same
+<em>tick</em> without requiring the use of a followup promise. This is particularly
+appealing for situations where the author does not control the execution flow
+for items that may be either synchronous or asynchronous, such as within
+<code>{plumber2}</code>.
+</p>
+
+
+<h3>Error Handling</h3>
+
+<p>If no <code>on_failure</code> callback is provided and an error occurs, the error is
+re-thrown immediately (for synchronous errors) or propagated through the
+returned promise (for asynchronous errors).
+</p>
+<p>If an <code>on_failure</code> callback is provided but it throws an error, that new
+error replaces the original error. With <code>tee = TRUE</code>, even if <code>on_failure</code>
+executes successfully, the original error is still re-thrown.
+</p>
+
+
+<h3>Callback Return Values</h3>
+
+<p>Callbacks can return any value, including promises. If a callback returns a
+promise, the entire <code>hybrid_then()</code> call will return a promise, even if the
+input was synchronous. This allows seamless transitions between synchronous
+and asynchronous execution.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../promises/help/then.html">then()</a></code>, <code><a href="../../promises/help/is.promising.html">is.promising()</a></code>, <code><a href="../../promises/help/promise_resolve.html">promise_resolve()</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Basic usage - works with both sync and async values
+add_to &lt;- function(x, k) {
+  hybrid_then(
+    x,
+    on_success = function(value) {
+      value + k
+    },
+    on_failure = function(err) {
+      message("Error: ", err$message)
+      NA_real_
+    }
+  )
+}
+
+# Synchronous
+42 |&gt; add_to(100)
+#&gt; [1] 142
+
+# Synchronous error
+add_to({stop("Bad input!")}, 8)
+#&gt; Error: Bad input!
+#&gt; [1] NA
+
+## Not run: 
+# Asynchronous
+promise_resolve(42) |&gt;
+  add_to(8) |&gt;
+  then(print)
+# When resolved...
+#&gt; [1] 50
+
+# Error handling - asynchronous
+promise_resolve(stop("Bad async input!")) |&gt;
+  add_to(8) |&gt;
+  then(print)
+# When resolved...
+#&gt; Error: Bad async input!
+#&gt; [1] NA
+
+# Chaining multiple operations
+# (Move the `promise_resolve()` around to see sync vs async behavior)
+1 |&gt;
+  hybrid_then(on_success = \(x) x + 1) |&gt;
+  hybrid_then(on_success = \(x) promise_resolve(x * 2)) |&gt;
+  hybrid_then(on_success = \(x) x - 1) |&gt;
+  hybrid_then(print)
+# When resolved...
+#&gt; [1] 3
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>promises</em> version 1.5.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

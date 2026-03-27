@@ -1,0 +1,100 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Convert a 'DocumentTermMatrix'/'TermDocumentMatrix' into Tidy...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for tidy_dtm {textshape}"><tr><td>tidy_dtm {textshape}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Convert a 
+<code><a href="../../tm/help/DocumentTermMatrix.html">DocumentTermMatrix</a></code>/<code><a href="../../tm/help/TermDocumentMatrix.html">TermDocumentMatrix</a></code>
+into Tidy Form</h2>
+
+<h3>Description</h3>
+
+<p>Converts non-zero elements of a
+<code><a href="../../tm/help/DocumentTermMatrix.html">DocumentTermMatrix</a></code>/<code><a href="../../tm/help/TermDocumentMatrix.html">TermDocumentMatrix</a></code> 
+into a tidy data set.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+tidy_dtm(x, ...)
+
+tidy_tdm(x, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A 
+<code><a href="../../tm/help/DocumentTermMatrix.html">DocumentTermMatrix</a></code>/<code><a href="../../tm/help/TermDocumentMatrix.html">TermDocumentMatrix</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>ignored.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>Returns a tidied data.frame.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(simple_dtm)
+
+tidy_dtm(simple_dtm)
+
+## Not run: 
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load_current_gh('trinker/gofastr')
+pacman::p_load(tidyverse, magrittr, ggstance)
+
+my_dtm &lt;- with(
+    presidential_debates_2012, 
+    q_dtm(dialogue, paste(time, tot, sep = "_"))
+)
+
+tidy_dtm(my_dtm) %&gt;%
+    tidyr::extract(
+        col = doc, 
+        into = c("time", "turn", "sentence"), 
+        regex = "(\\d)_(\\d+)\\.(\\d+)"
+    ) %&gt;%
+    mutate(
+        time = as.numeric(time),
+        turn = as.numeric(turn),
+        sentence = as.numeric(sentence)
+    ) %&gt;%
+    tbl_df() %T&gt;%
+    print() %&gt;%
+    group_by(time, term) %&gt;%
+    summarize(n = sum(n)) %&gt;%
+    group_by(time) %&gt;%
+    arrange(desc(n)) %&gt;%
+    slice(1:10) %&gt;%
+    ungroup() %&gt;%
+    mutate(
+        term = factor(paste(term, time, sep = "__"),
+            levels = rev(paste(term, time, sep = "__")))
+    ) %&gt;%
+    ggplot(aes(x = n, y = term)) +
+        geom_barh(stat='identity') +
+        facet_wrap(~time, ncol=2, scales = 'free_y') +
+        scale_y_discrete(labels = function(x) gsub("__.+$", "", x))
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>textshape</em> version 1.7.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

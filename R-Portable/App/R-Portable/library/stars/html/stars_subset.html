@@ -1,0 +1,140 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: subset stars objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for stars_subset {stars}"><tr><td>stars_subset {stars}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>subset stars objects</h2>
+
+<h3>Description</h3>
+
+<p>subset stars objects
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 replacement method for class 'stars_proxy'
+x[i, downsample = 0] &lt;- value
+
+## S3 method for class 'stars'
+x[i = TRUE, ..., drop = FALSE, crop = !is_curvilinear(x)]
+
+## S3 replacement method for class 'stars'
+x[i] &lt;- value
+
+st_flip(x, which = 1)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>object of class <code>stars</code></p>
+</td></tr>
+<tr valign="top"><td><code>i</code></td>
+<td>
+<p>first selector: integer, logical or character vector indicating attributes to select, or object of class <code>sf</code>, <code>sfc</code>, <code>bbox</code>, or <code>stars</code> used as spatial selector; see details</p>
+</td></tr>
+<tr valign="top"><td><code>downsample</code></td>
+<td>
+<p>downsampling rate used in case <code>i</code> is a <code>stars_proxy</code> object</p>
+</td></tr>
+<tr valign="top"><td><code>value</code></td>
+<td>
+<p>array of dimensions equal to those in <code>x</code>, or a vector or value that will be recycled to such an array</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>further (logical or integer vector) selectors, matched by order, to select on individual dimensions</p>
+</td></tr>
+<tr valign="top"><td><code>drop</code></td>
+<td>
+<p>logical; if <code>TRUE</code>, degenerate dimensions (with only one value) are dropped</p>
+</td></tr>
+<tr valign="top"><td><code>crop</code></td>
+<td>
+<p>logical; if <code>TRUE</code> and parameter <code>i</code> is a spatial geometry (<code>sf</code> or <code>sfc</code>) object, the extent (bounding box) of the result is cropped to match the extent of <code>i</code> using <a href="../../stars/help/st_crop.html">st_crop</a>. Cropping curvilinear grids is not supported.</p>
+</td></tr>
+<tr valign="top"><td><code>which</code></td>
+<td>
+<p>character or integer; dimension(s) to be flipped</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>If <code>i</code> is an object of class <code>sf</code>, <code>sfc</code> or <code>bbox</code>, the spatial subset covering this geometry is selected, possibly followed by cropping the extent. Array values for which the cell centre is not inside the geometry are assigned <code>NA</code>. If <code>i</code> is of class <code>stars</code>, and attributes of <code>i</code> are <code>logical</code>, cells in <code>x</code> corresponding to <code>NA</code> or <code>FALSE</code> cells in <code>i</code> are assigned an <code>NA</code>. Dimension ranges containing negative values or <code>NA</code> may be partially supported. Character selectors are matched against the names of a dimension if it has names, otherwise to the dimension values.
+</p>
+<p>in an assignment (or replacement form, <code>[&lt;-</code>), argument <code>i</code> needs to be either (i) a <code>stars</code> object with logical attribute(s) that has dimensions matching (possibly after recycling) those of <code>x</code>, in which case the <code>TRUE</code> cells will be replaced and <code>i</code> and/or <code>value</code> will be recycled to the dimensions of the arrays in <code>x</code>, or (ii) a length-one integer or character vector indicating which array to replace, in which case <code>value</code> may be stars object or a vector or array (that will be recycled).
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>st_flip</code> flips (reverts) the array values along the chosen dimension 
+without(s) changing the dimension properties
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+tif = system.file("tif/L7_ETMs.tif", package = "stars")
+x = read_stars(tif)
+x[,,,1:3] # select bands
+x[,1:100,100:200,] # select x and y by range
+x["L7_ETMs.tif"] # select attribute
+xy = structure(list(x = c(293253.999046018, 296400.196497684), y = c(9113801.64775462,
+9111328.49619133)), .Names = c("x", "y"))
+pts = st_as_sf(data.frame(do.call(cbind, xy)), coords = c("x", "y"), crs = st_crs(x))
+image(x, axes = TRUE)
+plot(st_as_sfc(st_bbox(pts)), col = NA, add = TRUE)
+bb = st_bbox(pts)
+(xx = x[bb])
+image(xx)
+plot(st_as_sfc(bb), add = TRUE, col = NA)
+image(x)
+pt = st_point(c(x = 290462.103109179, y = 9114202.32594085))
+buf = st_buffer(st_sfc(pt, crs = st_crs(x)), 1500)
+plot(buf, add = TRUE)
+
+buf = st_sfc(st_polygon(list(st_buffer(pt, 1500)[[1]], st_buffer(pt, 1000)[[1]])),
+   crs = st_crs(x))
+image(x[buf])
+plot(buf, add = TRUE, col = NA)
+image(x[buf, crop=FALSE])
+plot(buf, add = TRUE, col = NA)
+# with i of class stars:
+x[x &gt; 75] # generates lots of NA's; pattern for each band
+x[x[,,,1] &gt; 75] # recycles a single band template for all bands
+x = read_stars(tif)
+# replace, using a logical stars selector: cuts all values above 90 to 90
+x[x &gt; 90] = 90
+# replace a single attribute when there are more than one:
+s = split(x)
+names(s) = paste0("band", 1:6)
+# rescale only band 1:
+s[1] = s[1] * 0.75 
+# rescale only attribute named "band2":
+s["band2"] = s["band2"] * 0.85 
+# create a new attribute from a numeric vector:
+s["rnorm"] = rnorm(prod(dim(s))) 
+s
+lc = read_stars(system.file("tif/lc.tif", package = "stars"))
+x = c(orig = lc, 
+      flip_x = st_flip(lc, "x"), 
+      flip_y = st_flip(lc, "y"), 
+      flip_xy = st_flip(lc, c("x", "y")), 
+      along = 3)
+plot(x)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>stars</em> version 0.7-1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,290 @@
+2022-05-24 Version 1.2-9
+* Modifications to the package to conform with current CRAN requirements. 
+  Also updated url's
+
+2015-05-08 Version 1.2-8
+* Modifications to the package so that it works with upcoming R changes to 
+  nchar(). Also updates to email addresses and url's.
+
+2014-08-25 Version 1.2-7
+* Moved vignettes to directory vignettes, as required by CRAN
+
+2012-9-20 Version 1.2-6
+* Changes to the package so that only public R functions are  now used. 
+
+2012-04-05 Version 1.2-5
+
+2010-7-5 Version 1.2-4
+* hapassoc() now handles the case of all haplotypes being included in
+  the model formula. If 'baseline' haplotype is given, it will be the 
+  reference group. If not, the most frequent haplotype will be the
+  reference group.
+
+
+2009-11-19 Version 1.2-3
+
+* fixed bug: hapassoc() failed when using the design="cc" option with no
+  non-genetic variables in the dataset.
+
+
+2008-10-03 Version 1.2-2
+
+This is a bug-fix release. Version 1.2-1 of the package was missing
+one of the C source files and would crash for case-control data
+(design="cc"). For prospective or cross-sectional data, the Poisson 
+and Gamma log-likelihood functions used an undefined indexing variable; 
+this bug has now been fixed. 
+
+
+2008-07-19 Version 1.2-1
+
+Hapassoc was originally developed to provide likelihood inference for 
+prospectively collected (cohort) or cross-sectional data.  We have
+made some provisions to accommodate case-control data (with future
+plans for more) by including an implementation of association and haplotype
+frequency estimators arising from the modified prospective score equations 
+(MPSE) of Spinka et al. (2005). The implementation is due to Chen 2006.
+
+A summary of changes to the package follows.
+
+Documentation
+-------------
+
+- Reduced emphasis on likelihood inference because hapassoc now 
+implements association estimators for case-control data from an 
+unbiased estimating equation approach (Spinka et al. 2005).
+
+- Added documentation of two new arguments to hapassoc:
+ * design can either be "cohort" (default) for cohort or cross-sectional
+   data or "cc" for case-control
+
+ * disease.prob specifies the marginal probability of disease for 
+   the case-control approach. See the Details section of the hapassoc
+   documentation for more.
+
+- Revised the "Details" section of the hapassoc help file. Added the 
+following:
+
+"When the study design is case-control, i.e. genotypes and
+non-genetic attributes have been sampled retrospectively given disease
+status, naive application of prospective maximum likelihood methods
+can yield biased inference (Spinka et al., 2005, Chen, 2006).
+Therefore, when \code{design="cc"}, the algorithm solves the modified 
+prospective score equations or MPSE (Spinka et al. 2005) for regression
+and haplotype frequency parameters. The implementation in \pkg{hapassoc} 
+is due to Chen (2006).  In general, the MPSE approach requires that
+the marginal probability of disease,  P(D=1), be known.
+An exception is when the disease is rare; hence, when
+\code{disease.prob=NULL} (the default) a rare disease is assumed.
+The variance-covariance matrix of the regression parameter and
+haplotype frequency estimators is approximated as described
+in Chen (2006). Limited simulations indicate that the resulting 
+standard errors for regression parameters perform well, but not the
+standard errors for haplotype frequencies, which should be ignored.
+For case-control data, we hope to implement the variance-covariance 
+estimator of Spinka et al. (2005) in a future version of \pkg{hapassoc}."
+
+
+Source files
+------------
+
+In DESCRIPTION:
+- Noted Zhijian Chen's contribution
+
+In R/hapassoc.R:
+- Added error check to make sure family=binomial() if design="cc"
+
+- Changed code that handles formulae of the form "y ~ ." Previously,
+when hapassoc was passed such a formula it dropped the baseline haplotype 
+from the design matrix, which has the effect of using the baseline haplotype
+as the baseline in all calls to glm. However, the MPSE code needs all
+haplotypes to be present in the data frame. The modified code paste()s 
+together the appropriate formula; for example, if there are 2 SNPs and 
+h00 is the baseline haplotype, and there are no non-genetic
+covariates, paste together the formula  y ~ h01 + h10 + h11.
+None of the columns in the design matrix are dropped.
+
+- Where there used to be just a single while loop to do the EM algorithm
+there is now an if-else. If design="cc", do the MPSE code, else
+do the regular hapassoc code.  In the "if", there are a lot of 
+preliminary calculations that need to be done (about 75 lines of code)
+before the while loop.
+
+- The output item "dispersionML" has been renamed dispersion. This required
+some changes in the log-likelihood code too.
+
+- The outut item "loglik" is set to NA when design="cc"; the MPSE are
+estimating equations, so this does not apply.
+
+- Added utility functions r.Omega() and get.diplofreq() to the hapassoc.R
+source file. These are used in the MPSE code.
+
+In src/tapply_sum.c:
+- New file that contains the function tapply_sum written by S. Blay to 
+speed up the MPSE code.
+
+Future work
+-----------
+
+- The Spinka et al. (2005) variance calculation for case-control data has 
+not yet been implemented. Currently, an approximation shown by 
+Chen (2006) to have reasonably good properties is used. 
+
+References
+----------
+Chen, Z. (2006): Approximate likelihood inference for haplotype risks
+in case-control studies of a rare disease, Masters thesis, Statistics
+and Actuarial Science, Simon Fraser University, available at
+\url{http://www.stat.sfu.ca/people/alumni/Theses/Chen-2006.pdf}.
+
+Spinka, C., Carroll, R. J. & Chatterjee, N. (2005). Analysis of
+case-control studies of genetic and environmental factors with missing
+genetic information and haplotype-phase ambiguity.
+Genetic Epidemiology, \bold{29}, 108-127.
+
+
+
+2006-07-20 Version 1.1
+* fixed bug to enable formula = dependent ~ 1 in hapassoc() 
+  and summary.hapassoc()
+* hapassoc() now also returns the function call 
+* summary.hapassoc() now also returns the hapassoc function call, 
+  the number of subjects used in the analysis, the name of the 
+  family and the log-likelihood. The returned object is printed nicely.
+
+2006-04-28 Version 1.0-1
+* added the following second citation:
+Burkett K, Graham J and McNeney B (2006). hapassoc: Software for
+Likelihood Inference of Trait Associations with SNP Haplotypes and Other
+Attributes. Journal of Statistical Software, 16(2), 1-19
+
+2006-04-04 Version 1.0
+* hapassoc(): the "baseline" argument is documented to have default equal to 
+  the most common haplotype, but the code to implement this default was 
+  lost and needed to be replaced.
+* hapassoc(): added a "verbose" flag. Default is verbose=FALSE. If TRUE users 
+  see the iteration number and value of the convergence criterion at each
+  iteration of the EM algorithm.
+* pre.hapassoc(): added a "verbose" flag. Default is verbose=TRUE. If TRUE 
+  users see a list of the SNP genotypes used to form haplotypes and a list 
+  of the other "non-haplotype" variables 
+* Package vignette "hapassoc" added. After loading the package, type 
+  vignette("hapassoc") to view.
+
+
+2006-03-22 
+* Overall addition of the log-likelihood functions
+* hapassoc(): function now returns log-likelihood and model
+* logLik.hapassoc(): New function to extract the log-likelihood 
+  from a hapassoc object
+* anova.hapassoc(): New function to perform likelihood ratio test on
+  two hapassoc objects.
+
+
+2006-02-02 Minor changes:
+* EMvar(): fixed a bug occurring when all haplotype phases are known.
+* RecodeHaplos(): fixed a bug where a single column of non-haplotype data 
+  in a non-allelic data set was losing its name.
+* hapassoc(): Change "..." argument of hapassoc to "start". Previously the 
+  only intended use of "..." was to allow the user to pass in "start" for 
+  starting values to the glm function, rather than to allow the user to pass 
+  in other optional arguments to glm. We have now made this more explicit by 
+  making this argument more specific.
+
+2005-07-13 Version 0.7-1
+* handleMissings(), pre.hapassoc(): instead of casting to a 
+  data.frame use indexing argument drop=FALSE.
+
+2005-06-30 Version 0.7
+* hapassoc(): use initial weights in the glm to get initial parameter estimates.
+* hapassoc(), pre.hapassoc(): replaced weights calcuation with a C function.
+  Speed up computing time for large data sets.
+
+2005-05-31 Version 0.6-2
+* handleMissings(): fixed a bug for SNPs with a rare allele that is in no
+  instance in a homozygous state.
+
+2005-05-09 Version 0.6-1
+
+* Added this ChangeLog file
+* Added inst/CITATION file
+
+2005-04-06 Version 0.6
+
+* RecodeHaplos(): Allow input SNP data as alphabetic alleles (e.g.A,G,C,T),
+  and for genotypes to be input either in a single two-character column
+  ("genotypic format"), or as a pair of columns (the original "allelic
+  format" from earlier versions of hapassoc)
+
+* pre.hapassoc(): Added allelic argument to indicate whether SNP data are
+  input in either genotypic fromat or allelic format
+
+* RecodeHaplos(): Check for the number of alleles at each locus. If the
+  check finds loci with >2 alleles, stop execution and print an error
+  message that tells the user that only diallelic loci are allowed.
+
+* RecodeHaplos(): Convert all missing data in "" format to NA.
+
+* happasoc(): The convergence criteria for the EM algorithm has been
+  tightened. We now require both absolute and relative changes in the
+  parameter estimates from one iteration to the next to be below the
+  user-specified tolerance.
+
+* summary.hapassoc(): Added a check for converged FALSE, and now print a
+  warning (used to just give a cryptic error).
+
+* happasoc(): Changed the name of the variable 'gamma' to 'freq' and the
+  name of the variable 'initGamma' to initFreq'
+* pre.hapassoc(): Changed the name of the returned variable 'initGamma' to
+  'initFreq'
+
+pre.hapassoc man page 
+
+* pre.hapassoc(): Added a new example of how to use pre.hapassoc with SNPs
+  in the new genotypic format
+
+* Added documentation to describe how single-locus genotypes may now be
+  specified as a single two-character column ("genotypic format") in the
+  input data frame
+
+* Added a Note to alert users to ignore the possible warnings related to
+  row.names being duplicated when there are missing genotypes on some of the
+  loci for an individual
+
+* Updated the reference to Burkett et al. to give journal volume and page
+  numbers
+
+hapassoc man page
+
+* Added a Note to alert users to the warning they'll see when fitting
+  logistic regression models (non-integer #successes...)
+
+* Added more comments to the examples to make the coding of columns in
+  haploDM more obvious, and added an example of a non-multiplicative
+  logistic regression model
+
+* Updated the reference to Burkett et al.
+
+summary.hapassoc man page
+
+* Updated the reference to Burkett et al.
+
+
+2004-11-03 Version 0.5-1
+
+* handleMissings() assignment to nonSNPdat changed to accomodate rbind of
+  data frames which contain factors.
+
+* hapassoc(): Assigned  response<-regr$y  
+  We used to use model.response to extract the response variable, but this
+  lead to problems in calculating the residuals in the pYgivenX function.
+  It is better to fit the model with the glm function (see code) and then
+  extract the response from the fitted model object
+
+
+2004-09-29 Version 0.5
+
+* Changed file name from PreEM.R to PreHap.R
+* Changed function name from EM to hapassoc
+* Changed function name from PreEM to pre.hapassoc
+* changed function name from summary.EM to summary.hapassoc

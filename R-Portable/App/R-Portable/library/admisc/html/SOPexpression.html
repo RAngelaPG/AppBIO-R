@@ -1,0 +1,313 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Functions to interpret and manupulate a SOP/DNF expression</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for Interpret DNF/SOP expressions: compute, simplify, expand, translate {admisc}"><tr><td>Interpret DNF/SOP expressions: compute, simplify, expand, translate {admisc}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Functions to interpret and manupulate a SOP/DNF expression</h2>
+
+<h3>Description</h3>
+
+<p>These functions interpret an expression written in sum of products (SOP) or in
+canonical disjunctive normal form (DNF), for both crisp and multivalue notations.
+The function <b><code>compute()</code></b> calculates set membership scores based on a
+SOP expression applied to a calibrated data set (see function
+<b><code><a href="../../QCA/help/calibrate.html">calibrate</a>()</code></b> from package <b><span class="pkg">QCA</span></b>), while the
+function <b><code>translate()</code></b> translates a  SOP expression into a matrix form.
+</p>
+<p>The function <b><code>simplify()</code></b> transforms a SOP expression into a simpler
+equivalent, through a process of Boolean minimization. The package uses the
+function <b><code><a href="../../QCA/help/minimize.html">minimize</a>()</code></b> from package <b><span class="pkg">QCA</span></b>), so
+users are highly encouraged to install and load that package, despite not being
+present in the Imports field (due to circular dependency issues).
+</p>
+<p>Function <b><code>expand()</code></b> performs a Quine expansion to the complete DNF,
+or a partial expansion to a SOP expression with equally complex terms.
+</p>
+<p>Function <b><code>asSOP()</code></b> returns a SOP expression from a POS (product of
+sums) expression. This function is different from the function
+<b><code>invert()</code></b>, which also negates each causal condition.
+</p>
+<p>Function <b><code>mvSOP()</code></b> coerces an expression from crisp set notation to
+multi-value notation.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+asSOP(expression = "", snames = "", noflevels = NULL)
+
+compute(expression = "", data = NULL, separate = FALSE, ...)
+
+expand(expression = "", snames = "", noflevels = NULL, partial = FALSE,
+      implicants = FALSE, ...)
+
+mvSOP(expression = "", snames = "", data = NULL, keep.tilde = TRUE, ...)
+
+simplify(expression = "", snames = "", noflevels = NULL, ...)
+
+translate(expression = "", snames = "", noflevels = NULL, data = NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>expression</code></td>
+<td>
+<p>String, a SOP expression.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A dataset with binary cs, mv and fs data.</p>
+</td></tr>
+<tr valign="top"><td><code>separate</code></td>
+<td>
+<p>Logical, perform computations on individual, separate paths.</p>
+</td></tr>
+<tr valign="top"><td><code>snames</code></td>
+<td>
+<p>A string containing the sets' names, separated by commas.</p>
+</td></tr>
+<tr valign="top"><td><code>noflevels</code></td>
+<td>
+<p>Numerical vector containing the number of levels for each set.</p>
+</td></tr>
+<tr valign="top"><td><code>partial</code></td>
+<td>
+<p>Logical, perform a partial Quine expansion.</p>
+</td></tr>
+<tr valign="top"><td><code>implicants</code></td>
+<td>
+<p>Logical, return an expanded matrix in the implicants space.</p>
+</td></tr>
+<tr valign="top"><td><code>keep.tilde</code></td>
+<td>
+<p>Logical, preserves the tilde sign when coercing a factor level</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Other arguments, mainly for backwards compatibility.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>An expression written in sum of products (SOP), is a &quot;union of intersections&quot;,
+for example <b><code>A*B + B*~C</code></b>. The disjunctive normal form (DNF) is also
+a sum of products, with the restriction that each product has to contain all
+literals. The equivalent DNF expression is: <b><code>A*B*~C + A*B*C + ~A*B*~C</code></b>
+</p>
+<p>The same expression can be written in multivalue notation:
+<b><code>A[1]*B[1] + B[1]*C[0]</code></b>.
+</p>
+<p>Expressions can contain multiple values for the same condition, separated by a
+comma. If B was a multivalue causal condition, an expression could be:
+<b><code>A[1] + B[1,2]*C[0]</code></b>.
+</p>
+<p>Whether crisp or multivalue, expressions are treated as Boolean. In this last
+example, all values in B equal to either 1 or 2 will be converted to 1, and the
+rest of the (multi)values will be converted to 0.
+</p>
+<p>Negating a multivalue condition requires a known number of levels (see examples
+below). Intersections between multiple levels of the same condition are possible.
+For a causal condition with 3 levels (0, 1 and 2) the following expression
+<b><code>~A[0,2]*A[1,2]</code></b> is equivalent with <b><code>A[1]</code></b>, while
+<b><code>A[0]*A[1]</code></b> results in the empty set.
+</p>
+<p>The number of levels, as well as the set names can be automatically detected
+from a dataset via the argument <b><code>data</code></b>. When specified, arguments
+<b><code>snames</code></b> and <b><code>noflevels</code></b> have precedence over
+<b><code>data</code></b>.
+</p>
+<p>The product operator <b><code>*</code></b> should always be used, but it can be omitted
+when the data is multivalue (where product terms are separated by curly brackets),
+and/or when the set names are single letters (for example <b><code>AD + B~C</code></b>),
+and/or when the set names are provided via the argument <b><code>snames</code></b>.
+</p>
+<p>When expressions are simplified, their simplest equivalent can result in the
+empty set, if the conditions cancel each other out.
+</p>
+<p>The function <b><code>mvSOP()</code></b> assumes binary crisp conditions in the
+expression, except for categorical data used as multi-value conditions. The 
+factor levels are read directly from the data, and they should be unique accross
+all conditions.
+</p>
+
+
+<h3>Value</h3>
+
+<p>For the function <b><code>compute()</code></b>, a vector of set membership values.
+</p>
+<p>For function <b><code>simplify()</code></b>, a character expression.
+</p>
+<p>For the function <b><code>translate()</code></b>, a matrix containing the implicants
+on the rows and the set names on the columns, with the following codes:
+</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: right;">
+     0 </td><td style="text-align: left;"> absence of a causal condition</td>
+</tr>
+<tr>
+ <td style="text-align: right;">
+     1 </td><td style="text-align: left;"> presence of a causal condition</td>
+</tr>
+<tr>
+ <td style="text-align: right;">
+    -1 </td><td style="text-align: left;"> causal condition was eliminated
+</td>
+</tr>
+
+</table>
+
+<p>The matrix was also assigned a class &quot;translate&quot;, to avoid printing the -1 codes
+when signaling a minimized condition. The mode of this matrix is character, to
+allow printing multiple levels in the same cell, such as &quot;1,2&quot;.
+</p>
+<p>For function <b><code>expand()</code></b>, a character expression or a matrix of
+implicants.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Adrian Dusa
+</p>
+
+
+<h3>References</h3>
+
+<p>Ragin, C.C. (1987) <em>The Comparative Method: Moving beyond Qualitative and 
+Quantitative Strategies</em>. Berkeley: University of California Press.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# -----
+# for compute()
+## Not run: 
+# make sure the package QCA is loaded
+library(QCA)
+compute(DEV*~IND + URB*STB, data = LF)
+
+# calculating individual paths
+compute(DEV*~IND + URB*STB, data = LF, separate = TRUE)
+
+## End(Not run)
+
+
+# -----
+# for simplify(), also make sure the package QCA is loaded
+simplify(asSOP("(A + B)(A + ~B)")) # result is "A"
+
+# works even without the quotes
+simplify(asSOP((A + B)(A + ~B))) # result is "A"
+
+# but to avoid confusion POS expressions are more clear when quoted
+# to force a certain order of the set names
+simplify("(URB + LIT*~DEV)(~LIT + ~DEV)", snames = c(DEV, URB, LIT))
+
+# multilevel conditions can also be specified (and negated)
+simplify("(A[1] + ~B[0])(B[1] + C[0])", snames = c(A, B, C), noflevels = c(2, 3, 2))
+
+
+# Ragin's (1987) book presents the equation E = SG + LW as the result
+# of the Boolean minimization for the ethnic political mobilization.
+
+# intersecting the reactive ethnicity perspective (R = ~L~W)
+# with the equation E (page 144)
+
+simplify("~L~W(SG + LW)", snames = c(S, L, W, G))
+
+# [1] "S~L~WG"
+
+
+# resources for size and wealth (C = SW) with E (page 145)
+simplify("SW(SG + LW)", snames = c(S, L, W, G))
+
+# [1] "SWG + SLW"
+
+
+# and factorized
+factorize(simplify("SW(SG + LW)", snames = c(S, L, W, G)))
+
+# F1: SW(G + L)
+
+
+# developmental perspective (D = Lg) and E (page 146)
+simplify("L~G(SG + LW)", snames = c(S, L, W, G))
+
+# [1] "LW~G"
+
+# subnations that exhibit ethnic political mobilization (E) but were
+# not hypothesized by any of the three theories (page 147)
+# ~H = ~(~L~W + SW + L~G) = GL~S + GL~W + G~SW + ~L~SW
+
+simplify("(GL~S + GL~W + G~SW + ~L~SW)(SG + LW)", snames = c(S, L, W, G))
+
+
+# -----
+# for translate()
+translate(A + B*C)
+
+# same thing in multivalue notation
+translate(A[1] + B[1]*C[1])
+
+# tilde as a standard negation (note the condition "b"!)
+translate(~A + b*C)
+
+# and even for multivalue variables
+# in multivalue notation, the product sign * is redundant
+translate(C[1] + T[2] + T[1]*V[0] + C[0])
+
+# negation of multivalue sets requires the number of levels
+translate(~A[1] + ~B[0]*C[1], snames = c(A, B, C), noflevels = c(2, 2, 2))
+
+# multiple values can be specified
+translate(C[1] + T[1,2] + T[1]*V[0] + C[0])
+
+# or even negated
+translate(C[1] + ~T[1,2] + T[1]*V[0] + C[0], snames = c(C, T, V), noflevels = c(2,3,2))
+
+# if the expression does not contain the product sign *
+# snames are required to complete the translation 
+translate(AaBb + ~CcDd, snames = c(Aa, Bb, Cc, Dd))
+
+# to print _all_ codes from the standard output matrix
+(obj &lt;- translate(A + ~B*C))
+print(obj, original = TRUE) # also prints the -1 code
+
+
+# -----
+# for expand()
+expand(~AB + B~C)
+
+# S1: ~AB~C + ~ABC + AB~C 
+
+expand(~AB + B~C, snames = c(A, B, C, D))
+
+# S1: ~AB~C~D + ~AB~CD + ~ABC~D + ~ABCD + AB~C~D + AB~CD 
+
+# In implicants form:
+expand(~AB + B~C, snames = c(A, B, C, D), implicants = TRUE)
+
+#      A B C D
+# [1,] 1 2 1 1    ~AB~C~D
+# [2,] 1 2 1 2    ~AB~CD
+# [3,] 1 2 2 1    ~ABC~D
+# [4,] 1 2 2 2    ~ABCD
+# [5,] 2 2 1 1    AB~C~D
+# [6,] 2 2 1 2    AB~CD
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>admisc</em> version 0.39 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

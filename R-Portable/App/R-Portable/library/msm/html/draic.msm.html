@@ -1,0 +1,202 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Criteria for comparing two multi-state models with nested...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for draic.msm {msm}"><tr><td>draic.msm {msm}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Criteria for comparing two multi-state models with nested state spaces</h2>
+
+<h3>Description</h3>
+
+<p>A modification of Akaike's information criterion, and a leave-one-out
+likelihood cross-validation criterion, for comparing the predictive ability
+of two Markov multi-state models with nested state spaces.  This is
+evaluated based on the restricted or aggregated data which the models have
+in common.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+draic.msm(
+  msm.full,
+  msm.coarse,
+  likelihood.only = FALSE,
+  information = c("expected", "observed"),
+  tl = 0.95
+)
+
+drlcv.msm(
+  msm.full,
+  msm.coarse,
+  tl = 0.95,
+  cores = NULL,
+  verbose = TRUE,
+  outfile = NULL
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>msm.full</code></td>
+<td>
+<p>Model on the bigger state space.</p>
+</td></tr>
+<tr valign="top"><td><code>msm.coarse</code></td>
+<td>
+<p>Model on the smaller state space.
+</p>
+<p>The two models must both be non-hidden Markov models without censored
+states.
+</p>
+<p>The two models must be fitted to the same datasets, except that the state
+space of the coarse model must be an aggregated version of the state space
+of the full model.  That is, every state in the full dataset must correspond
+to a unique state in the coarse dataset.  For example, for the full state
+variable <code>c(1,1,2,2,3,4)</code>, the corresponding coarse states could be
+<code>c(1,1,2,2,2,3)</code>, but not <code>c(1,2,3,4,4,4)</code>.
+</p>
+<p>The structure of allowed transitions in the coarse model must also be a
+collapsed version of the big model structure, but no check is currently made
+for this in the code.
+</p>
+<p>To use these functions, all objects which were used in the calls to fit
+<code>msm.full</code> and <code>msm.coarse</code> must be in the working environment,
+for example, datasets and definitions of transition matrices.</p>
+</td></tr>
+<tr valign="top"><td><code>likelihood.only</code></td>
+<td>
+<p>Don't calculate Hessians and trace term (DRAIC).</p>
+</td></tr>
+<tr valign="top"><td><code>information</code></td>
+<td>
+<p>Use observed or expected information in the DRAIC trace
+term.  Expected is the default, and much faster, though is only available
+for models fitted to pure panel data (all <code>obstype=1</code> in the call to
+<code><a href="../../msm/help/msm.html">msm</a></code>, thus not exact transition times or exact death times)</p>
+</td></tr>
+<tr valign="top"><td><code>tl</code></td>
+<td>
+<p>Width of symmetric tracking interval, by default 0.95 for a 95%
+interval.</p>
+</td></tr>
+<tr valign="top"><td><code>cores</code></td>
+<td>
+<p>Number of processor cores to use in <code>drlcv</code> for
+cross-validation by parallel processing.  Requires the <span class="pkg">doParallel</span>
+package to be installed.  If not specified, parallel processing is not used.
+If <code>cores</code> is set to the string <code>"default"</code>, the default methods
+of <code><a href="../../parallel/help/makeCluster.html">makeCluster</a></code> (on Windows) or
+<code><a href="../../doParallel/help/registerDoParallel.html">registerDoParallel</a></code> (on Unix-like) are used.</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>Print intermediate results of each iteration of
+cross-validation to the console while running. May not work with parallel
+processing.</p>
+</td></tr>
+<tr valign="top"><td><code>outfile</code></td>
+<td>
+<p>Output file to print intermediate results of
+cross-validation.  Useful to track execution speed when using parallel
+processing, where output to the console may not work.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Note that standard AIC can be computed for one or more fitted <code>msm</code>
+models <code>x,y,...</code> using <code><a href="../../stats/html/AIC.html">AIC</a>(x,y,...)</code>, and this can be used
+to compare models fitted to the same data. <code>draic.msm</code> and
+<code>drlcv.msm</code> are designed for models fitted to data with
+differently-aggregated state spaces.
+</p>
+<p>The difference in restricted AIC (Liquet and Commenges, 2011), as computed
+by this function, is defined as
+</p>
+<p style="text-align: center;"><i>D_RAIC = l(gamma_n |x'' ) -
+l(theta_n |x'' ) + trace ( J(theta_n |x'')J(theta_n |x)^{-1} - J(gamma_n
+|x'' )J(gamma_n |x' )^{-1})</i></p>
+
+<p>where <i>gamma</i> and <i>theta</i> are the maximum likelihood
+estimates of the smaller and bigger models, fitted to the smaller and bigger
+data, respectively.
+</p>
+<p><i>l(gamma_n |x'')</i> represents the likelihood of the
+simpler model evaluated on the restricted data.
+</p>
+<p><i>l(theta_n |x'')</i> represents the likelihood of the
+complex model evaluated on the restricted data.  This is a hidden Markov
+model, with a misclassification matrix and initial state occupancy
+probabilities as described by Thom et al (2014).
+</p>
+<p><i>J()</i> are the corresponding (expected or observed, as specified by the
+user) information matrices.
+</p>
+<p><i>x</i> is the expanded data, to which the bigger model was
+originally fitted, and <i>x'</i> is the data to which the
+smaller model was originally fitted.  <i>x''</i> is the
+restricted data which the two models have in common.  <i>x'' = x</i> in this implementation, so the models are nested.
+</p>
+<p>The difference in likelihood cross-validatory criteria (Liquet and
+Commenges, 2011) is defined as
+</p>
+<p style="text-align: center;"><i>D_{RLCV} = 1/n &sum;_{i=1}^n log( h_{X''}(x_i''
+| gamma_{-i}) / g_{X''}(x_i''| theta_{-i}))</i></p>
+
+<p>where <i>&gamma;_{-i}</i> and <i>&theta;_{-i}</i> are the maximum likelihood
+estimates from the smaller and bigger models fitted to datasets with subject
+<i>i</i> left out, <i>g()</i> and <i>h()</i> are the densities of the
+corresponding models, and <i>x_i''</i> is the restricted data from subject
+<i>i</i>.
+</p>
+<p>Tracking intervals are analogous to confidence intervals, but not strictly
+the same, since the quantity which D_RAIC aims to estimate, the difference
+in expected Kullback-Leibler discrepancy for predicting a replicate dataset,
+depends on the sample size.  See the references.
+</p>
+<p>Positive values for these criteria indicate the coarse model is preferred,
+while negative values indicate the full model is preferred.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list containing <i>D_RAIC</i> (<code>draic.msm</code>) or
+<i>D_RLCV</i> (<code>drlcv.msm</code>), its component terms, and tracking
+intervals.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>C. H. Jackson <a href="mailto:chris.jackson@mrc-bsu.cam.ac.uk">chris.jackson@mrc-bsu.cam.ac.uk</a>, H. H. Z.
+Thom <a href="mailto:howard.thom@bristol.ac.uk">howard.thom@bristol.ac.uk</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Thom, H. and Jackson, C. and Commenges, D. and Sharples, L.
+(2015) State selection in multistate models with application to quality of
+life in psoriatic arthritis.  Statistics In Medicine 34(16) 2381 - 2480.
+</p>
+<p>Liquet, B. and Commenges D. (2011) Choice of estimators based on different
+observations: Modified AIC and LCV criteria. Scandinavian Journal of
+Statistics; 38:268-287.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../msm/help/logLik.msm.html">logLik.msm</a></code>
+</p>
+
+<hr /><div style="text-align: center;">[Package <em>msm</em> version 1.8.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Adapt rolling window to irregularly spaced time series</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for frolladapt {data.table}"><tr><td>frolladapt {data.table}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Adapt rolling window to irregularly spaced time series</h2>
+
+<h3>Description</h3>
+
+<p>Helper function to generate adaptive window size based on the irregularly spaced time series index, to be passed as <code>n</code> argument to adaptive <code><a href="../../data.table/help/froll.html">froll</a></code> function (or <code>N</code> argument to adaptive <code><a href="../../data.table/help/frollapply.html">frollapply</a></code>). Experimental.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+  frolladapt(x, n, align="right", partial=FALSE, give.names=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p> Integer. Must be sorted with no duplicates or missing values. Other objects with numeric storage (including most commonly <code>Date</code> and <code>POSIXct</code>) will be coerced to integer, which, for example, in case of <code>POSIXct</code> means truncating to whole seconds. It does not support vectorized input. </p>
+</td></tr>
+<tr valign="top"><td><code>n</code></td>
+<td>
+<p> Integer, positive, rolling window size. Up to <code>n</code> values nearest to each value of <code>x</code>, with distance in the units of <code>x</code> and according to the window implied by <code>align</code>, are included in each rolling aggregation window. Thus when <code>x</code> is a <code>POSIXct</code>, <code>n</code> are seconds, and when <code>x</code> is a <code>Date</code>, <code>n</code> are days. It supports vectorized input, then it needs to be a vector. </p>
+</td></tr>
+<tr valign="top"><td><code>align</code></td>
+<td>
+<p> Character, default <code>"right"</code>. Other alignments have not yet been implemented. </p>
+</td></tr>
+<tr valign="top"><td><code>partial</code></td>
+<td>
+<p> Logical, default <code>FALSE</code>. Should the rolling window size(s) provided in <code>n</code> be trimmed to available observations? For details see <code><a href="../../data.table/help/froll.html">froll</a></code>. </p>
+</td></tr>
+<tr valign="top"><td><code>give.names</code></td>
+<td>
+<p> Logical, default <code>FALSE</code>. When <code>TRUE</code>, names are automatically generated corresponding to names of <code>n</code>. If answer is an integer vector, then the argument is ignored, see examples. </p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Argument <code>n</code> allows multiple values to generate multiple adaptive windows, unlike <code>x</code>, as mixing different time series would make no sense.
+</p>
+
+
+<h3>Value</h3>
+
+<p>When <code>length(n)==1L</code> then integer vector (<em>adaptive window</em> size) of length of <code>x</code>. Otherwise a list of <code>length(n)</code> having integer vectors (<em>adaptive window</em> sizes) of length of <code>x</code> for each window size provided in <code>n</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../data.table/help/froll.html">froll</a></code>, <code><a href="../../data.table/help/frollapply.html">frollapply</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+idx = as.Date("2022-10-23") + c(0,1,4,5,6,7,9,10,14)
+dt = data.table(index=idx, value=seq_along(idx))
+dt
+dt[, n3 := frolladapt(index, n=3L)]
+dt
+dt[, rollmean3 := frollmean(value, n3, adaptive=TRUE)]
+dt
+dt[, n3p := frolladapt(index, n=3L, partial=TRUE)]
+dt[, rollmean3p := frollmean(value, n3p, adaptive=TRUE)]
+dt
+
+n34 = frolladapt(idx, c(small=3, big=4), give.names=TRUE)
+n34
+dt[, frollmean(value, n34, adaptive=TRUE, give.names=TRUE)]
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>data.table</em> version 1.18.2.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

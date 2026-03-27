@@ -1,0 +1,160 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Reformulate a ATSP as a symmetric TSP</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for reformulate_ATSP_as_TSP {TSP}"><tr><td>reformulate_ATSP_as_TSP {TSP}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Reformulate a ATSP as a symmetric TSP</h2>
+
+<h3>Description</h3>
+
+<p>A ATSP can be formulated as a symmetric TSP by doubling the number of cities
+(Jonker and Volgenant 1983). The solution of the TSP also represents the
+solution of the original ATSP.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+reformulate_ATSP_as_TSP(x, infeasible = Inf, cheap = -Inf)
+
+filter_ATSP_as_TSP_dummies(tour, atsp)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>an <a href="../../TSP/help/ATSP.html">ATSP</a>.</p>
+</td></tr>
+<tr valign="top"><td><code>infeasible</code></td>
+<td>
+<p>value for infeasible connections.</p>
+</td></tr>
+<tr valign="top"><td><code>cheap</code></td>
+<td>
+<p>value for distance between a city and its corresponding dummy
+city.</p>
+</td></tr>
+<tr valign="top"><td><code>tour</code></td>
+<td>
+<p>a <a href="../../TSP/help/TOUR.html">TOUR</a> created for a ATSP reformulated as a TSP.</p>
+</td></tr>
+<tr valign="top"><td><code>atsp</code></td>
+<td>
+<p>the original <a href="../../TSP/help/ATSP.html">ATSP</a>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>To reformulate a <a href="../../TSP/help/ATSP.html">ATSP</a> as a <a href="../../TSP/help/TSP.html">TSP</a>, for each city a dummy city (e.g, for 'New
+York' a dummy city 'New York*') is added. Between each city and its
+corresponding dummy city a very small (or negative) distance with value
+<code>cheap</code> is used.
+To ensure that the solver places each cities always occurs in the
+solution together with its dummy city, this cost has to be much smaller than
+the distances in the TSP.
+The original distances are used
+between the cities and the dummy cities, where each city is responsible for
+the distance going to the city and the dummy city is responsible for the
+distance coming from the city. The distances between all cities and the
+distances between all dummy cities are set to <code>infeasible</code>, a very
+large value which prevents the solver from using these links.
+We use infinite values here and <code><a href="../../TSP/help/solve_TSP.html">solve_TSP()</a></code> treats them appropriately.
+</p>
+<p><code>filter_ATSP_as_TSP_dummies()</code> can be used to extract the solution for the original
+ATSP from the tour found for an ATSP reformulated as a TSP. Note that the symmetric TSP
+tour does not reveal the direction for the ATSP. The filter function computed the
+tour length for both directions and returns the shorter tour.
+</p>
+<p><code><a href="../../TSP/help/solve_TSP.html">solve_TSP()</a></code> has a parameter <code>as_TSP</code> which preforms the reformulation and
+filtering the dummy cities automatically.
+</p>
+<p><strong>Note on performance:</strong> Doubling the problem size is a performance issue especially
+has a negative impact on solution quality for heuristics. It should only be used
+together with Concorde when the optimal solution is required. Most heuristics can solve
+ATSPs directly with good solution quality.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>reformulate_ATSP_as_TSP()</code> returns a <a href="../../TSP/help/TSP.html">TSP</a> object.
+<code>filter_ATSP_as_TSP_dummies()</code> returns a <a href="../../TSP/help/TOUR.html">TOUR</a> object.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Michael Hahsler
+</p>
+
+
+<h3>References</h3>
+
+<p>Jonker, R. and Volgenant, T. (1983): Transforming asymmetric
+into symmetric traveling salesman problems, <em>Operations Research
+Letters,</em> 2, 161&ndash;163.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other TSP: 
+<code><a href="../../TSP/help/ATSP.html">ATSP</a>()</code>,
+<code><a href="../../TSP/help/Concorde.html">Concorde</a></code>,
+<code><a href="../../TSP/help/ETSP.html">ETSP</a>()</code>,
+<code><a href="../../TSP/help/TSP.html">TSP</a>()</code>,
+<code><a href="../../TSP/help/TSPLIB.html">TSPLIB</a></code>,
+<code><a href="../../TSP/help/insert_dummy.html">insert_dummy</a>()</code>,
+<code><a href="../../TSP/help/solve_TSP.html">solve_TSP</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data("USCA50")
+
+## set the distances from anywhere to Austin to zero which makes it an ATSP
+austin &lt;- which(labels(USCA50) == "Austin, TX")
+atsp &lt;- as.ATSP(USCA50)
+atsp[, austin] &lt;- 0
+atsp
+
+## reformulate as a TSP (by doubling the number of cities with dummy cities marked with *)
+tsp &lt;- reformulate_ATSP_as_TSP(atsp)
+tsp
+
+## create tour for the TSP. You should use Concorde to find the optimal solution.
+# tour_tsp &lt;- solve_TSP(tsp, method = "concorde")
+# The standard heuristic is bad for this problem. We use it here because
+#   Concord may not be installed.
+tour_tsp &lt;- solve_TSP(tsp)
+head(labels(tour_tsp), n = 10)
+tour_tsp
+# The tour length is -Inf since it includes cheap links
+#  from a city to its dummy city.
+
+## get the solution for the original ATSP by filtering out the dummy cities.
+tour_atsp &lt;- filter_ATSP_as_TSP_dummies(tour_tsp, atsp = atsp)
+tour_atsp
+head(labels(tour_atsp), n = 10)
+
+## This process can also be done automatically by using as_TSP = TRUE:
+# solve_TSP(atsp, method = "concorde", as_TSP = TRUE)
+
+## The default heuristic can directly solve ATSPs with results close to the
+#  optimal solution of 12715.
+solve_TSP(atsp, control = list(rep = 10))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>TSP</em> version 1.2.6 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

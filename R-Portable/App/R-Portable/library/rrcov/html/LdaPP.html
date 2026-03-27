@@ -1,0 +1,231 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Robust Linear Discriminant Analysis by Projection Pursuit</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for LdaPP {rrcov}"><tr><td>LdaPP {rrcov}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Robust Linear Discriminant Analysis by Projection Pursuit</h2>
+
+<h3>Description</h3>
+
+<p>Performs robust linear discriminant analysis by the projection-pursuit approach -
+proposed by Pires and Branco (2010) - and returns the results as an object of
+class <code>LdaPP</code> (aka constructor).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+LdaPP(x, ...)
+## S3 method for class 'formula'
+LdaPP(formula, data, subset, na.action, ...)
+## Default S3 method:
+LdaPP(x, grouping, prior = proportions, tol = 1.0e-4,
+                 method = c("huber", "mad", "sest", "class"),
+                 optim = FALSE,
+                 trace=FALSE, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>a formula of the form <code>y~x</code>, it describes the response
+and the predictors. The formula can be more complicated, such as
+<code>y~log(x)+z</code> etc (see <code><a href="../../stats/html/formula.html">formula</a></code> for more details).
+The response should
+be a factor representing the response variable, or any vector
+that can be coerced to such (such as a logical variable).</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>an optional data frame (or similar: see
+<code><a href="../../stats/html/model.frame.html">model.frame</a></code>) containing the variables in the
+formula <code>formula</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>subset</code></td>
+<td>
+<p>an optional vector used to select rows (observations) of the
+data matrix <code>x</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+<p>a function which indicates what should happen
+when the data contain <code>NA</code>s.  The default is set by
+the <code>na.action</code> setting of <code><a href="../../base/html/options.html">options</a></code>, and is
+<code><a href="../../stats/html/na.fail.html">na.fail</a></code> if that is unset. The default is <code><a href="../../stats/html/na.fail.html">na.omit</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>a matrix or data frame containing the explanatory variables (training set). </p>
+</td></tr>
+<tr valign="top"><td><code>grouping</code></td>
+<td>
+<p>grouping variable:  a factor specifying the class for each observation.</p>
+</td></tr>
+<tr valign="top"><td><code>prior</code></td>
+<td>
+<p>prior probabilities, default to the class proportions for the training set.</p>
+</td></tr>
+<tr valign="top"><td><code>tol</code></td>
+<td>
+<p>tolerance</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>method</p>
+</td></tr>
+<tr valign="top"><td><code>optim</code></td>
+<td>
+<p>wheather to perform the approximation using the Nelder and Mead simplex method
+(see function <code>optim()</code> from package <code>stats</code>). Default is <code>optim = FALSE</code></p>
+</td></tr>
+<tr valign="top"><td><code>trace</code></td>
+<td>
+<p>whether to print intermediate results. Default is <code>trace = FALSE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>arguments passed to or from other methods.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Currently the algorithm is implemented only for binary classification
+and in the following will be assumed that only two groups are present.
+</p>
+<p>The PP algorithm searches for low-dimensional projections of higher-dimensional
+data where a projection index is maximized. Similar to the original Fisher's proposal
+the squared standardized distance between the observations in the two groups is maximized.
+Instead of the sample univariate mean and standard deviation <code>(T,S)</code> robust
+alternatives are used. These are selected through the argument <code>method</code> and can be one of
+</p>
+
+<dl>
+<dt>huber</dt><dd><p>the pair <code>(T,S)</code> are the robust M-estimates of location and scale</p>
+</dd>
+<dt>mad</dt><dd><p><code>(T,S)</code> are the Median and the Median Absolute Deviation</p>
+</dd>
+<dt>sest</dt><dd><p>the pair <code>(T,S)</code> are the robust S-estimates of location and scale</p>
+</dd>
+<dt>class</dt><dd><p><code>(T,S)</code> are the mean and the standard deviation.</p>
+</dd>
+</dl>
+
+<p>The first approximation <em>A1</em> to the solution is obtained by investigating
+a finite number of candidate directions, the unit vectors defined
+by all pairs of points such that one belongs to the first group
+and the other to the second group. The found solution is stored in the slots
+<code>raw.ldf</code> and <code>raw.ldfconst</code>.
+</p>
+<p>The second approximation <em>A2</em> (optional) is performed by
+a numerical optimization algorithm using <em>A1</em> as initial solution.
+The Nelder and Mead method implemented in the function <code><a href="../../stats/html/optim.html">optim</a></code> is applied.
+Whether this refinement will be used is controlled by the argument <code>optim</code>.
+If <code>optim=TRUE</code> the result of the optimization is stored into the slots
+<code>ldf</code> and <code>ldfconst</code>. Otherwise these slots are set equal to
+<code>raw.ldf</code> and <code>raw.ldfconst</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns an S4 object of class <code><a href="../help/LdaPP-class.html">LdaPP-class</a></code>
+</p>
+
+
+<h3>Warning </h3>
+
+<p>Still an experimental version! Only binary classification is supported.</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Valentin Todorov <a href="mailto:valentin.todorov@chello.at">valentin.todorov@chello.at</a> and
+Ana Pires <a href="mailto:apires@math.ist.utl.pt">apires@math.ist.utl.pt</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Pires, A. M. and A. Branco, J. (2010)
+Projection-pursuit approach to robust linear discriminant analysis
+<em>Journal Multivariate Analysis</em>, Academic Press, Inc., <b>101</b>, 2464&ndash;2485.
+</p>
+
+
+<h3>See Also</h3>
+
+  <p><code><a href="../help/Linda.html">Linda</a></code>, <code><a href="../help/LdaClassic.html">LdaClassic</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+##
+## Function to plot a LDA separation line
+##
+lda.line &lt;- function(lda, ...)
+{
+    ab &lt;- lda@ldf[1,] - lda@ldf[2,]
+    cc &lt;- lda@ldfconst[1] - lda@ldfconst[2]
+    abline(a=-cc/ab[2], b=-ab[1]/ab[2],...)
+}
+
+data(pottery)
+x &lt;- pottery[,c("MG", "CA")]
+grp &lt;- pottery$origin
+col &lt;- c(3,4)
+gcol &lt;- ifelse(grp == "Attic", col[1], col[2])
+gpch &lt;- ifelse(grp == "Attic", 16, 1)
+
+##
+## Reproduce Fig. 2. from Pires and branco (2010)
+##
+plot(CA~MG, data=pottery, col=gcol, pch=gpch)
+
+## Not run: 
+
+ppc &lt;- LdaPP(x, grp, method="class", optim=TRUE)
+lda.line(ppc, col=1, lwd=2, lty=1)
+
+pph &lt;- LdaPP(x, grp, method="huber",optim=TRUE)
+lda.line(pph, col=3, lty=3)
+
+pps &lt;- LdaPP(x, grp, method="sest", optim=TRUE)
+lda.line(pps, col=4, lty=4)
+
+ppm &lt;- LdaPP(x, grp, method="mad", optim=TRUE)
+lda.line(ppm, col=5, lty=5)
+
+rlda &lt;- Linda(x, grp, method="mcd")
+lda.line(rlda, col=6, lty=1)
+
+fsa &lt;- Linda(x, grp, method="fsa")
+lda.line(fsa, col=8, lty=6)
+
+## Use the formula interface:
+##
+LdaPP(origin~MG+CA, data=pottery)       ## use the same two predictors
+LdaPP(origin~., data=pottery)           ## use all predictor variables
+
+##
+## Predict method
+data(pottery)
+fit &lt;- LdaPP(origin~., data = pottery)
+predict(fit)
+
+## End(Not run)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rrcov</em> version 1.7-7 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

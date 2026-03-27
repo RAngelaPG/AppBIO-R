@@ -1,0 +1,100 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Evaluates a foreach %dopar% expression with the doRNG adapter</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for withDoRNG {doFuture}"><tr><td>withDoRNG {doFuture}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Evaluates a foreach <code style="white-space: pre;">%dopar%</code> expression with the doRNG adapter</h2>
+
+<h3>Description</h3>
+
+<p>Evaluates a foreach <code style="white-space: pre;">%dopar%</code> expression with the doRNG adapter
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+withDoRNG(expr, substitute = TRUE, envir = parent.frame())
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>expr</code></td>
+<td>
+<p>An R <a href="../../base/html/expression.html">expression</a>.</p>
+</td></tr>
+<tr valign="top"><td><code>substitute</code></td>
+<td>
+<p>(logical) If TRUE, <code>expr</code> is substituted, otherwise not.</p>
+</td></tr>
+<tr valign="top"><td><code>envir</code></td>
+<td>
+<p>The <a href="../../base/html/environment.html">environment</a> where to evaluate <code>expr</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This function is useful when there is a foreach <code style="white-space: pre;">%dopar%</code> expression that
+uses the random-number generator (RNG).  Such code should ideally use
+<code style="white-space: pre;">%doRNG%</code> of the <span class="pkg">doRNG</span> package instead of <code style="white-space: pre;">%dopar%</code>.  Alternatively,
+and second best, is if the code would temporarily register the <strong>doRNG</strong>
+foreach adapter.  If neither is done, then there is a risk that the
+random numbers are not statistically sound, e.g. they might be correlated.
+For what it is worth, the <strong>doFuture</strong> adapter, which is set by
+<code><a href="../../doFuture/help/registerDoFuture.html">registerDoFuture()</a></code>, detects when <strong>doRNG</strong> is forgotten, and produces
+an informative warning reminding us to use <strong>doRNG</strong>.
+</p>
+<p>If you do not have control over the foreach code, you can use
+<code>withDoRNG()</code> to evaluate the foreach statement with
+<code>doRNG::registerDoRNG()</code> temporarily set.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The value of <code>expr</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<p>Consider a function:
+</p>
+<div class="sourceCode r"><pre>my_fcn &lt;- function(n) {
+  y &lt;- foreach(i = seq_len(n)) %dopar% {
+    stats::runif(n = 1L)
+  }
+  mean(unlist(y))
+}
+</pre></div>
+<p>This function generates random numbers, but without involving <span class="pkg">doRNG</span>,
+which risks generating poor randomness.  If we call it as-is, with the
+<strong>doFuture</strong> adapter, we will get a warning about the problem:
+</p>
+<div class="sourceCode r"><pre>&gt; my_fcn(10)
+[1] 0.5846141
+Warning message:
+UNRELIABLE VALUE: One of the foreach() iterations ('doFuture-1')
+unexpectedly generated random numbers without declaring so. There is a
+risk that those random numbers are not statistically sound and the overall
+results might be invalid. To fix this, use '%dorng%' from the 'doRNG'
+package instead of '%dopar%'. This ensures that proper, parallel-safe
+random numbers are produced. To disable this check, set option
+'doFuture.rng.onMisuse' to "ignore".
+&gt;
+</pre></div>
+<p>To fix this, we use <code>withDoRNG()</code> as:
+</p>
+<div class="sourceCode r"><pre>&gt; withDoRNG(my_fcn(10))
+[1] 0.535326
+</pre></div>
+
+<hr /><div style="text-align: center;">[Package <em>doFuture</em> version 1.2.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

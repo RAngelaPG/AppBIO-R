@@ -1,0 +1,370 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Handle measurement units</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for units {units}"><tr><td>units {units}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Handle measurement units</h2>
+
+<h3>Description</h3>
+
+<p>A number of functions are provided for handling unit objects.
+</p>
+
+<ul>
+<li> <p><code>`units&lt;-`</code> and <code>units</code> are the basic functions to set
+and retrieve units.
+</p>
+</li>
+<li> <p><code>as_units</code>, a generic with methods for a
+character string and for quoted language. Note, direct usage of this function
+by users is typically not necessary, as coercion via <code>as_units</code> is
+automatically done with <code>`units&lt;-`</code> and <code>set_units</code>.
+</p>
+</li>
+<li> <p><code>make_units</code>, constructs units from bare expressions.
+<code>make_units(m/s)</code> is equivalent to <code>as_units(quote(m/s))</code>.
+</p>
+</li>
+<li> <p><code>set_units</code>, a pipe-friendly version of <code>`units&lt;-`</code>. By
+default it operates with bare expressions, but this
+behavior can be disabled by a specifying <code>mode = "standard"</code> or setting
+<code>units_options(set_units_mode = "standard")</code>.
+If <code>value</code> is missing or set to <code>1</code>, the object becomes unitless.
+</p>
+</li></ul>
+
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 replacement method for class 'numeric'
+units(x) &lt;- value
+
+## S3 replacement method for class 'units'
+units(x) &lt;- value
+
+## S3 replacement method for class 'logical'
+units(x) &lt;- value
+
+## S3 method for class 'units'
+units(x)
+
+## S3 method for class 'symbolic_units'
+units(x)
+
+set_units(x, value, ..., mode = units_options("set_units_mode"))
+
+make_units(bare_expression, check_is_valid = TRUE)
+
+as_units(x, ...)
+
+## Default S3 method:
+as_units(x, value = unitless, ...)
+
+## S3 method for class 'units'
+as_units(x, value, ...)
+
+## S3 method for class 'symbolic_units'
+as_units(x, value, ...)
+
+## S3 method for class 'difftime'
+as_units(x, value, ...)
+
+## S3 method for class 'character'
+as_units(x, check_is_valid = TRUE,
+  implicit_exponents = NULL, force_single_symbol = FALSE, ...)
+
+## S3 method for class 'call'
+as_units(x, check_is_valid = TRUE, ...)
+
+## S3 method for class 'expression'
+as_units(x, check_is_valid = TRUE, ...)
+
+## S3 method for class 'name'
+as_units(x, check_is_valid = TRUE, ...)
+
+## S3 method for class 'POSIXt'
+as_units(x, value, ...)
+
+## S3 method for class 'Date'
+as_units(x, value, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>numeric vector, or object of class <code>units</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>value</code></td>
+<td>
+<p>object of class <code>units</code> or <code>symbolic_units</code>, or in the
+case of <code>set_units</code> expression with symbols (see examples).</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>passed on to other methods.</p>
+</td></tr>
+<tr valign="top"><td><code>mode</code></td>
+<td>
+<p>if <code>"symbols"</code> (the default), then unit is constructed from
+the expression supplied. Otherwise, if<code>mode = "standard"</code>,
+standard evaluation is used for the supplied value This argument can be set
+via a global option <code>units_options(set_units_mode = "standard")</code></p>
+</td></tr>
+<tr valign="top"><td><code>bare_expression</code></td>
+<td>
+<p>a bare R expression describing units. Must be valid R
+syntax (reserved R syntax words like <code>in</code> must be backticked)</p>
+</td></tr>
+<tr valign="top"><td><code>check_is_valid</code></td>
+<td>
+<p>throw an error if all the unit symbols are not either
+recognized by udunits2 via <code>ud_is_parseable()</code>, or a custom
+user defined via <code>install_unit()</code>. If <code>FALSE</code>, no check
+for validity is performed.</p>
+</td></tr>
+<tr valign="top"><td><code>implicit_exponents</code></td>
+<td>
+<p>If the unit string is in product power form (e.g.
+<code>"km m-2 s-1"</code>). Defaults to <code>NULL</code>, in which case a guess is made
+based on the supplied string. Set to <code>TRUE</code> or <code>FALSE</code> if the guess is
+incorrect.</p>
+</td></tr>
+<tr valign="top"><td><code>force_single_symbol</code></td>
+<td>
+<p>Whether to perform no string parsing and force
+treatment of the string as a single symbol.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>If <code>value</code> is of class <code>units</code> and has a value unequal to 1, this
+value is ignored unless <code>units_options("simplifiy")</code> is <code>TRUE</code>. If
+<code>simplify</code> is <code>TRUE</code>, <code>x</code> is multiplied by this value.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>units</code>.
+</p>
+<p>The <code>units</code> method retrieves the units attribute, which is of
+class <code>symbolic_units</code>.
+</p>
+
+
+<h3>Character strings</h3>
+
+<p>Generally speaking, there are 3 types of unit strings are accepted in
+<code>as_units</code> (and by extension, <code>`units&lt;-`</code>).
+</p>
+<p>The first, and likely most common, is a &quot;standard&quot; format unit
+specification where the relationship between unit symbols or names is
+specified explicitly with arithmetic symbols for division <code>/</code>,
+multiplication <code>*</code> and power exponents <code>^</code>, or other mathematical
+functions like <code>log()</code>. In this case, the string is parsed as an R
+expression via <code>parse(text = )</code> after backticking all unit symbols and
+names, and then passed on to <code>as_units.call()</code>. A heuristic is used to
+perform backticking, such that any continuous set of characters
+uninterrupted by one of <code>()\*^-</code> are backticked (unless the character
+sequence consists solely of numbers <code>0-9</code>), with some care to not
+double up on pre-existing backticks. This heuristic appears to be quite
+robust, and works for units would otherwise not be valid R syntax. For
+example, percent (<code>"%"</code>), feet (<code>"'"</code>), inches (<code>"in"</code>),
+and Tesla (<code>"T"</code>) are all backticked and parsed correctly.
+</p>
+<p>Nevertheless, for certain complex unit expressions, this backticking heuristic
+may give incorrect results.  If the string supplied fails to parse as an R
+expression, then the string is treated as a single symbolic unit and
+<code>symbolic_unit(chr)</code> is used as a fallback with a warning. In that
+case, automatic unit simplification may not work properly when performing
+operations on unit objects, but unit conversion and other Math operations
+should still give correct results so long as the unit string supplied
+returns <code>TRUE</code> for <code>ud_is_parsable()</code>.
+</p>
+<p>The second type of unit string accepted is one with implicit exponents. In
+this format, <code>/</code>, <code>*</code>, and <code>^</code>, may not be present in the
+string, and unit symbol or names must be separated by a space. Each unit
+symbol may optionally be followed by a single number, specifying the power.
+For example <code>"m2 s-2"</code> is equivalent to <code>"(m^2)*(s^-2)"</code>.
+</p>
+<p>It must be noted that prepended numbers are supported too, but their
+interpretation slightly varies depending on whether they are separated from
+the unit string or not. E.g., <code>"1000 m"</code> is interpreted as magnitude
+and unit, but <code>"1000m"</code> is interpreted as a prefixed unit, and it is
+equivalent to <code>"km"</code> to all effects.
+</p>
+<p>The third type of unit string format accepted is the special case of
+udunits time duration with a reference origin, for example <code>"hours
+  since 1970-01-01 00:00:00"</code>. Note, that the handling of time and calendar
+operations via the udunits library is subtly different from the way R
+handles date and time operations. This functionality is mostly exported for
+users that work with udunits time data, e.g., with NetCDF files. Users are
+otherwise encouraged to use <code>R</code>'s date and time functionality provided
+by <code>Date</code> and <code>POSIXt</code> classes.
+</p>
+
+
+<h3>Expressions</h3>
+
+<p>In <code>as_units()</code>, each of the symbols in the unit expression is treated
+individually, such that each symbol must be recognized by the udunits
+database (checked by <code>ud_is_parseable()</code>, <em>or</em> be a custom,
+user-defined unit symbol that was defined by <code>install_unit()</code>. To
+see which symbols and names are currently recognized by the udunits
+database, see <code>valid_udunits()</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>By default, unit names are automatically substituted with unit names
+(e.g., kilogram &ndash;&gt; kg). To turn off this behavior, set
+<code>units_options(auto_convert_names_to_symbols = FALSE)</code>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../units/help/install_unit.html">install_unit</a></code>, <code><a href="../../units/help/valid_udunits.html">valid_udunits</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+x = 1:3
+class(x)
+units(x) &lt;- as_units("m/s")
+class(x)
+y = 2:5
+a &lt;- set_units(1:3, m/s)
+units(a) &lt;- make_units(km/h)
+a
+# convert to a mixed_units object:
+units(a) &lt;- c("m/s", "km/h", "km/h")
+a
+# The easiest way to assign units to a numeric vector is like this:
+x &lt;- y &lt;- 1:4
+units(x) &lt;- "m/s"  # meters / second
+
+# Alternatively, the easiest pipe-friendly way to set units:
+if(requireNamespace("magrittr", quietly = TRUE)) {
+  library(magrittr)
+  y %&gt;% set_units(m/s)
+}
+
+# these are different ways of creating the same unit:
+# meters per second squared, i.e, acceleration
+x1 &lt;- make_units(m/s^2)
+x2 &lt;- as_units(quote(m/s^2))
+x2 &lt;- as_units("m/s^2")
+x3 &lt;- as_units("m s-2") # in product power form, i.e., implicit exponents = T
+x4 &lt;- set_units(1,  m/s^2) # by default, mode = "symbols"
+x5 &lt;- set_units(1, "m/s^2",   mode = "standard")
+x6 &lt;- set_units(1, x1,        mode = "standard")
+x7 &lt;- set_units(1, units(x1), mode = "standard")
+x8 &lt;- as_units("m") / as_units("s")^2
+
+all_identical &lt;- function(...) {
+  l &lt;- list(...)
+  for(i in seq_along(l)[-1])
+    if(!identical(l[[1]], l[[i]]))
+      return(FALSE)
+  TRUE
+}
+all_identical(x1, x2, x3, x4, x5, x6, x7, x8)
+
+# Note, direct usage of these unit creation functions is typically not
+# necessary, since coercion is automatically done via as_units(). Again,
+# these are all equivalent ways to generate the same result.
+
+x1 &lt;- x2 &lt;- x3 &lt;- x4 &lt;- x5 &lt;- x6 &lt;- x7 &lt;- x8 &lt;- 1:4
+units(x1) &lt;- "m/s^2"
+units(x2) &lt;- "m s-2"
+units(x3) &lt;- quote(m/s^2)
+units(x4) &lt;- make_units(m/s^2)
+units(x5) &lt;- as_units(quote(m/s^2))
+x6 &lt;- set_units(x6, m/s^2)
+x7 &lt;- set_units(x7, "m/s^2", mode = "standard")
+x8 &lt;- set_units(x8, units(x1), mode = "standard")
+
+all_identical(x1, x2, x3, x4, x5, x6, x7, x8)
+
+
+# Both unit names or symbols can be used. By default, unit names are
+# automatically converted to unit symbols.
+make_units(degree_C)
+make_units(kilogram)
+make_units(ohm)
+
+## Arithmetic operations and units
+# conversion between unit objects that were defined as symbols and names will
+# work correctly, although unit simplification in printing may not always occur.
+x &lt;- 500 * make_units(micrograms/liter)
+y &lt;- set_units(200, ug/l)
+x + y
+x * y # numeric result is correct, but units not simplified completely
+
+# note, plural form of unit name accepted too ('liters' vs 'liter'), and
+# denominator simplification can be performed correctly
+x * set_units(5, liters)
+
+# unit conversion works too
+set_units(x, grams/gallon)
+
+## Creating custom, user defined units
+# For example, a microbiologist might work with counts of bacterial cells
+# make_units(cells/ml) # by default, throws an ERROR
+# First define the unit, then the newly defined unit is accepted.
+install_unit("cells")
+make_units(cells/ml)
+
+# Note that install_unit() adds support for defining relationships between
+# the newly created symbols or names and existing units.
+
+## set_units()
+# set_units is a pipe friendly version of `units&lt;-`.
+if(requireNamespace("magrittr", quietly = TRUE)) {
+  library(magrittr)
+  1:5 %&gt;% set_units(N/m^2)
+  # first sets to m, then converts to km
+  1:5 %&gt;% set_units(m) %&gt;% set_units(km)
+}
+
+# set_units has two modes of operation. By default, it operates with
+# bare symbols to define the units.
+set_units(1:5, m/s)
+
+# use `mode = "standard"` to use the value of supplied argument, rather than
+# the bare symbols of the expression. In this mode, set_units() can be
+# thought of as a simple alias for `units&lt;-` that is pipe friendly.
+set_units(1:5, "m/s", mode = "standard")
+set_units(1:5, make_units(m/s), mode = "standard")
+
+# the mode of set_units() can be controlled via a global option
+# units_options(set_units_mode = "standard")
+
+# To remove units use
+units(x) &lt;- NULL
+# or
+set_units(x, NULL)
+# or
+drop_units(y)
+s = Sys.time()
+d  = s - (s+1)
+as_units(d)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>units</em> version 0.8-5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

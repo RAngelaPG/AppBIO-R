@@ -1,0 +1,204 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Expected first passage time</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for efpt.msm {msm}"><tr><td>efpt.msm {msm}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Expected first passage time</h2>
+
+<h3>Description</h3>
+
+<p>Expected time until first reaching a particular state or set of states in a
+Markov model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+efpt.msm(
+  x = NULL,
+  qmatrix = NULL,
+  tostate,
+  start = "all",
+  covariates = "mean",
+  ci = c("none", "normal", "bootstrap"),
+  cl = 0.95,
+  B = 1000,
+  cores = NULL,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A fitted multi-state model, as returned by <code><a href="../../msm/help/msm.html">msm</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>qmatrix</code></td>
+<td>
+<p>Instead of <code>x</code>, you can simply supply a transition
+intensity matrix in <code>qmatrix</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>tostate</code></td>
+<td>
+<p>State, or set of states supplied as a vector, for which to
+estimate the first passage time into.  Can be integer, or character matched
+to the row names of the Q matrix.</p>
+</td></tr>
+<tr valign="top"><td><code>start</code></td>
+<td>
+<p>Starting state (integer).  By default (<code>start="all"</code>),
+this will return a vector of expected passage times from each state in turn.
+</p>
+<p>Alternatively, this can be used to obtain the expected first passage time
+from a <em>set</em> of states, rather than single states.  To achieve this,
+<code>state</code> is set to a vector of weights, with length equal to the number
+of states in the model.  These weights should be proportional to the
+probability of starting in each of the states in the desired set, so that
+weights of zero are supplied for other states.  The function will calculate
+the weighted average of the expected passage times from each of the
+corresponding states.</p>
+</td></tr>
+<tr valign="top"><td><code>covariates</code></td>
+<td>
+<p>Covariate values defining the intensity matrix for the
+fitted model <code>x</code>, as supplied to <code><a href="../../msm/help/qmatrix.msm.html">qmatrix.msm</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>ci</code></td>
+<td>
+<p>If <code>"normal"</code>, then calculate a confidence interval by
+simulating <code>B</code> random vectors from the asymptotic multivariate normal
+distribution implied by the maximum likelihood estimates (and covariance
+matrix) of the log transition intensities and covariate effects.
+</p>
+<p>If <code>"bootstrap"</code> then calculate a confidence interval by non-parametric
+bootstrap refitting.  This is 1-2 orders of magnitude slower than the
+<code>"normal"</code> method, but is expected to be more accurate. See
+<code><a href="../../msm/help/boot.msm.html">boot.msm</a></code> for more details of bootstrapping in <span class="pkg">msm</span>.
+</p>
+<p>If <code>"none"</code> (the default) then no confidence interval is calculated.</p>
+</td></tr>
+<tr valign="top"><td><code>cl</code></td>
+<td>
+<p>Width of the symmetric confidence interval, relative to 1.</p>
+</td></tr>
+<tr valign="top"><td><code>B</code></td>
+<td>
+<p>Number of bootstrap replicates.</p>
+</td></tr>
+<tr valign="top"><td><code>cores</code></td>
+<td>
+<p>Number of cores to use for bootstrapping using parallel
+processing. See <code><a href="../../msm/help/boot.msm.html">boot.msm</a></code> for more details.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Arguments to pass to <code><a href="../../msm/help/MatrixExp.html">MatrixExp</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The expected first passage times from each of a set of states
+<i>i</i> to to the remaining set of states
+<i>ibar</i> in the state space, for a model with
+transition intensity matrix <i>Q</i>, are
+</p>
+<p style="text-align: center;"><i>-Q_{i,i}^{-1} 1</i></p>
+
+<p>where <i>1</i> is a vector of ones, and
+<i>Q_{i,i}</i> is the square subset of <i>Q</i>
+pertaining to states <i>i</i>.
+</p>
+<p>It is equal to the sum of mean sojourn times for all states between the
+&quot;from&quot; and &quot;to&quot; states in a unidirectional model.  If there is non-zero
+chance of reaching an absorbing state before reaching <code>tostate</code>, then
+it is infinite.  It is trivially zero if the &quot;from&quot; state equals
+<code>tostate</code>.
+</p>
+<p>This function currently only handles time-homogeneous Markov models.  For
+time-inhomogeneous models it will assume that <i>Q</i> equals the average
+intensity matrix over all times and observed covariates.  Simulation might
+be used to handle time dependence.
+</p>
+<p>Note this is the <em>expectation</em> of first passage time, and the
+confidence intervals are CIs for this mean, not predictive intervals for the
+first passage time.  The full distribution of the first passage time to a
+set of states can be obtained by setting the rows of the intensity matrix
+<i>Q</i> corresponding to that set of states to zero to make a model where
+those states are absorbing.  The corresponding transition probability matrix
+<i>Exp(Qt)</i> then gives the probabilities of having hit or passed that
+state by a time <i>t</i> (see the example below). This is implemented in
+<code><a href="../../msm/help/ppass.msm.html">ppass.msm</a></code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A vector of expected first passage times, or &quot;hitting times&quot;, from
+each state to the desired state.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>C. H. Jackson <a href="mailto:chris.jackson@mrc-bsu.cam.ac.uk">chris.jackson@mrc-bsu.cam.ac.uk</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Norris, J. R. (1997) Markov Chains. Cambridge University Press.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../msm/help/sojourn.msm.html">sojourn.msm</a></code>, <code><a href="../../msm/help/totlos.msm.html">totlos.msm</a></code>,
+<code><a href="../../msm/help/boot.msm.html">boot.msm</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+twoway4.q &lt;- rbind(c(-0.5, 0.25, 0, 0.25), c(0.166, -0.498, 0.166, 0.166),
+             c(0, 0.25, -0.5, 0.25), c(0, 0, 0, 0))
+efpt.msm(qmatrix=twoway4.q, tostate=3)
+# given in state 1, expected time to reaching state 3 is infinite
+# since may die (state 4) before entering state 3
+
+# If we remove the death state from the model, EFPTs become finite
+Q &lt;- twoway4.q[1:3,1:3]; diag(Q) &lt;- 0; diag(Q) &lt;- -rowSums(Q)
+efpt.msm(qmatrix=Q, tostate=3)
+
+# Suppose we cannot die or regress while in state 2, can only go to state 3
+Q &lt;- twoway4.q; Q[2,4] &lt;- Q[2,1] &lt;- 0; diag(Q) &lt;- 0; diag(Q) &lt;- -rowSums(Q)
+efpt.msm(qmatrix=Q, tostate=3)
+# The expected time from 2 to 3 now equals the mean sojourn time in 2.
+-1/Q[2,2]
+
+# Calculate cumulative distribution of the first passage time
+# into state 3 for the following three-state model
+Q &lt;- twoway4.q[1:3,1:3]; diag(Q) &lt;- 0; diag(Q) &lt;- -rowSums(Q)
+# Firstly form a model where the desired hitting state is absorbing
+Q[3,] &lt;- 0
+MatrixExp(Q, t=10)[,3]
+ppass.msm(qmatrix=Q, tot=10)
+# Given in state 1 at time 0, P(hit 3 by time 10) = 0.479
+MatrixExp(Q, t=50)[,3]  # P(hit 3 by time 50) = 0.98
+ppass.msm(qmatrix=Q, tot=50)
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>msm</em> version 1.8.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

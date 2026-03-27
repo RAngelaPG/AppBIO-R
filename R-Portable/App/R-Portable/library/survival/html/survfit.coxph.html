@@ -25,13 +25,7 @@ survfit(formula, newdata,
         se.fit=TRUE, conf.int=.95, individual=FALSE, stype=2, ctype,
         conf.type=c("log","log-log","plain","none", "logit", "arcsin"),
         censor=TRUE, start.time, id, influence=FALSE,
-        na.action=na.pass, type, time0=FALSE, ...)
-## S3 method for class 'coxphms'
-survfit(formula, newdata, 
-        se.fit=FALSE, conf.int=.95, individual=FALSE, stype=2, ctype,
-        conf.type=c("log","log-log","plain","none", "logit", "arcsin"),
-        censor=TRUE, start.time, id, influence=FALSE,
-        na.action=na.pass, type, p0=NULL, time0= FALSE, ...)
+        na.action=na.pass, type, ...)
 </pre>
 
 
@@ -48,17 +42,20 @@ survfit(formula, newdata,
 <td>
 
 <p>a data frame with the same variable names as those that appear 
-in the <code>coxph</code> formula. One curve is produced per row.
-The curve(s) produced will be representative of a cohort whose 
+in the <code>coxph</code> formula.  It is also valid to use a vector, if
+the data frame would consist of a single row.
+</p>
+<p>The curve(s) produced will be representative of a cohort whose 
 covariates correspond to the values in <code>newdata</code>. 
+Default is the mean of the covariates used in the 
+<code>coxph</code> fit. 
 </p>
 </td></tr>
 <tr valign="top"><td><code>se.fit</code></td>
 <td>
 
 <p>a logical value indicating whether standard errors should be 
-computed.  Default is <code>TRUE</code> for standard models, <code>FALSE</code>
-for multi-state (code not yet present for that case.)
+computed.  Default is <code>TRUE</code>. 
 </p>
 </td></tr>
 <tr valign="top"><td><code>conf.int</code></td>
@@ -70,7 +67,7 @@ Default is 0.95.
 </td></tr>
 <tr valign="top"><td><code>individual</code></td>
 <td>
-<p>deprecated argument, replaced by the general
+<p>depricated argument, replaced by the general
 <code>id</code></p>
 </td></tr>
 <tr valign="top"><td><code>stype</code></td>
@@ -133,17 +130,7 @@ If present the returned curve contains survival after
 <tr valign="top"><td><code>type</code></td>
 <td>
 <p>older argument that encompassed <code>stype</code> and
-<code>ctype</code>, now deprecated</p>
-</td></tr>
-<tr valign="top"><td><code>p0</code></td>
-<td>
-<p>optional, a vector of probabilities.  The returned curve
-will be for a cohort with this mixture of starting states.  Most
-often a single state is chosen</p>
-</td></tr>
-<tr valign="top"><td><code>time0</code></td>
-<td>
-<p>include the starting time for the curve in the output</p>
+<code>ctype</code>, now depricated</p>
 </td></tr>
 <tr valign="top"><td><code>...</code></td>
 <td>
@@ -172,7 +159,7 @@ default in the <code>mstate</code> package.
 if <code>stype=2</code> the estimated P(state) curves as well.  If not
 present it is chosen so as to be concordant with the 
 <code>ties</code> option in the <code>coxph</code> call. (For multistate
-<code>coxphms</code> objects, only <code>ctype=1</code> is currently implemented.)
+<code>coxphms</code> objects only <code>ctype=1</code> is currently implemented.)
 Likewise
 the choice between a model based and robust variance estimate for the
 curve will mirror the choice made in the <code>coxph</code> call,
@@ -180,22 +167,21 @@ any clustering is also inherited from the parent model.
 </p>
 <p>If the <code>newdata</code> argument is missing, then a curve is produced
 for a single &quot;pseudo&quot; subject with
-covariate values equal to the <code>means</code> component of the fit.
-The resulting curve(s) rarely make scientific sense, but 
-the default remains due to an unwarranted belief by many that it
-represents an &quot;average&quot; curve, and it's use as a default in other
-packages. For coxph, the <code>means</code> component will contain the value
-0 for any 0/1 or TRUE/FALSE variables, and the mean value in the data
-for others.  Its primary reason for this default is to
-increase numerical accuracy in internal computations of the routine
-via recentering the X matrix;
-there is no reason to assume this represents an &lsquo;interesting&rsquo;
-hypothetical subject for prediction of their survival curve. 
-Users are strongly advised to use the newdata argument;
-predictions from a multistate coxph model require the newdata argument.
-</p>
-<p>If the <code>coxph</code> model contained an offset term, then the data set
-in the <code>newdata</code> argument should also contain that variable.
+covariate values equal to the means of the data set.
+The resulting curve(s) almost never make sense, but 
+The default remains due to an unwarranted attachment to the option shown by
+some users and by other packages.  Two particularly egregious examples
+are factor variables and interactions.  Suppose one were studying
+interspecies transmission of a virus, and the data set has a factor
+variable with levels (&quot;pig&quot;, &quot;chicken&quot;) and about equal numbers of
+observations for each.  The &ldquo;mean&rdquo; covariate level will be 0.5 &ndash;
+is this a flying pig?  As to interactions assume data with sex coded as 0/1,
+ages ranging from 50 to 80, and a model with age*sex.  The &ldquo;mean&rdquo;
+value for the age:sex interaction term will be about 30, a value
+that does not occur in the data.
+Users are strongly advised to use the newdata argument.
+For these reasons predictions from a multistate coxph model require
+the newdata argument.
 </p>
 <p>When the original model contains time-dependent covariates, then the
 path of that covariate through time needs to be specified in order to
@@ -250,16 +236,6 @@ the <code>model=TRUE</code> argument must be added to the coxph call:
 This is a consequence of the non-standard evaluation process used by the
 <code>model.frame</code> function when a formula is involved.
 </p>
-<p>Let <i>log(S(t; z))</i> be the log of the survival curve
-for a fixed covariate vector <i>z</i>, then
-<i>log(S(t; x))\exp((x-z)*beta)</i>
-is the log of the curve for any new covariate vector <i>x</i>.  
-There is an unfortunate tendency to refer to the reference curve with
-<i>z=0</i> as &lsquo;THE&rsquo; baseline hazard.  However, any <i>z</i> can be used as
-the reference point, and more importantly, if <i>x-z</i> is large the
-compuation can suffer severe roundoff error.  It is always safest to
-provide the desired <i>x</i> values directly via <code>newdata</code>.
-</p>
 
 
 <h3>References</h3>
@@ -297,5 +273,5 @@ model for survival data. <em>Annals of Statistics</em>
 <code><a href="../../survival/help/strata.html">strata</a></code>.   
 </p>
 
-<hr /><div style="text-align: center;">[Package <em>survival</em> version 3.7-0 <a href="00Index.html">Index</a>]</div>
+<hr /><div style="text-align: center;">[Package <em>survival</em> version 3.2-13 <a href="00Index.html">Index</a>]</div>
 </div></body></html>

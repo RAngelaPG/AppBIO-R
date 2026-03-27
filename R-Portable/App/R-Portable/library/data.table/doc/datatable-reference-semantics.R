@@ -1,3 +1,28 @@
+## ----echo=FALSE, file='_translation_links.R'------------------------------------------------------
+# build a link list of alternative languages (may be character(0))
+# idea is to look like 'Other languages: en | fr | de'
+.write.translation.links <- function(fmt) {
+    url = "https://rdatatable.gitlab.io/data.table/articles"
+    path = dirname(knitr::current_input(TRUE))
+    if (basename(path) == "vignettes") {
+      lang = "en"
+    } else {
+      lang = basename(path)
+      path = dirname(path)
+    }
+    translation = dir(path,
+      recursive = TRUE,
+      pattern = glob2rx(knitr::current_input(FALSE))
+    )
+    transl_lang = ifelse(dirname(translation) == ".", "en", dirname(translation))
+    block = if (!all(transl_lang == lang)) {
+      linked_transl = sprintf("[%s](%s)", transl_lang, file.path(url, sub("(?i)\\.Rmd$", ".html", translation)))
+      linked_transl[transl_lang == lang] = lang
+      sprintf(fmt, paste(linked_transl, collapse = " | "))
+    } else ""
+    knitr::asis_output(block)
+}
+
 ## ----echo = FALSE, message = FALSE----------------------------------------------------------------
 require(data.table)
 knitr::opts_chunk$set(
@@ -21,22 +46,22 @@ DF = data.frame(ID = c("b","b","b","a","a","c"), a = 1:6, b = 7:12, c = 13:18)
 DF
 
 ## ----eval = FALSE---------------------------------------------------------------------------------
-#  DF$c <- 18:13               # (1) -- replace entire column
-#  # or
-#  DF$c[DF$ID == "b"] <- 15:13 # (2) -- subassign in column 'c'
+# DF$c <- 18:13               # (1) -- replace entire column
+# # or
+# DF$c[DF$ID == "b"] <- 15:13 # (2) -- subassign in column 'c'
 
 ## ----eval = FALSE---------------------------------------------------------------------------------
-#  DT[, c("colA", "colB", ...) := list(valA, valB, ...)]
-#  
-#  # when you have only one column to assign to you
-#  # can drop the quotes and list(), for convenience
-#  DT[, colA := valA]
+# DT[, c("colA", "colB", ...) := list(valA, valB, ...)]
+# 
+# # when you have only one column to assign to you
+# # can drop the quotes and list(), for convenience
+# DT[, colA := valA]
 
 ## ----eval = FALSE---------------------------------------------------------------------------------
-#  DT[, `:=`(colA = valA, # valA is assigned to colA
-#            colB = valB, # valB is assigned to colB
-#            ...
-#  )]
+# DT[, `:=`(colA = valA, # valA is assigned to colA
+#           colB = valB, # valB is assigned to colB
+#           ...
+# )]
 
 ## -------------------------------------------------------------------------------------------------
 flights[, `:=`(speed = distance / (air_time/60), # speed in mph (mi/h)
@@ -69,7 +94,7 @@ head(flights)
 # flights[, `:=`(delay = NULL)]
 
 ## ----eval = FALSE---------------------------------------------------------------------------------
-#  flights[, delay := NULL]
+# flights[, delay := NULL]
 
 ## -------------------------------------------------------------------------------------------------
 flights[, max_speed := max(speed), by = .(origin, dest)]
@@ -85,6 +110,14 @@ head(flights)
 # RHS gets automatically recycled to length of LHS
 flights[, c("speed", "max_speed", "max_dep_delay", "max_arr_delay") := NULL]
 head(flights)
+
+## -------------------------------------------------------------------------------------------------
+flights[, names(.SD) := lapply(.SD, as.factor), .SDcols = is.character]
+
+## -------------------------------------------------------------------------------------------------
+factor_cols <- sapply(flights, is.factor)
+flights[, names(.SD) := lapply(.SD, as.character), .SDcols = factor_cols]
+str(flights[, ..factor_cols])
 
 ## -------------------------------------------------------------------------------------------------
 foo <- function(DT) {
@@ -125,6 +158,22 @@ DT[, w := 4L]
 
 ## DT_n doesn't get updated
 DT_n
+
+## -------------------------------------------------------------------------------------------------
+DT = data.table(a = 1:3)
+
+# three ways to get the column
+x_ref = DT$a        # may be a reference
+y_cpy = DT[, a]     # always a copy
+z_cpy = copy(DT$a)  # forced copy
+
+# modify DT by reference
+DT[, a := a + 10L]
+
+# observe results
+x_ref   # may show 11 12 13
+y_cpy   # 1 2 3
+z_cpy   # 1 2 3
 
 ## ----echo=FALSE-----------------------------------------------------------------------------------
 setDTthreads(.old.th)

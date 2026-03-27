@@ -1,0 +1,137 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Matrix Logarithm</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for logm {expm}"><tr><td>logm {expm}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Matrix Logarithm</h2>
+
+<h3>Description</h3>
+
+<p>This function computes the (principal) matrix logarithm of a square matrix.
+A logarithm of a matrix <i>A</i> is <i>L</i> such that <i>A= e^L</i>
+(meaning <code>A == expm(L)</code>), see the documentation for the matrix
+exponential, <code><a href="../../expm/help/expm.html">expm</a></code>, which can be defined
+as </p>
+<p style="text-align: center;"><i>sum[r = 0,..,Inf; L^r/r!] .</i></p>
+
+
+
+<h3>Usage</h3>
+
+<pre>
+logm(x, method = c("Higham08", "Eigen"),
+
+     tol = .Machine$double.eps)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>a square matrix.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>a string specifying the algorithmic method to be used.
+The default uses the algorithm by Higham(2008).
+</p>
+<p>The simple <code>"Eigen"</code> method tries to diagonalise the matrix
+<code>x</code>; if that is not possible, it raises an error.
+</p>
+</td></tr>
+</table>
+
+
+<table summary="R argblock">
+<tr valign="top"><td><code>tol</code></td>
+<td>
+<p>a given tolerance used to check if <code>x</code> is
+computationally singular when <code>method = "Eigen"</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The exponential of a matrix is defined as the infinite Taylor series
+</p>
+<p style="text-align: center;"><i>
+    exp(M) = I + M + M^2/2! + M^3/3! + &hellip;.</i></p>
+
+<p>The matrix logarithm of <i>A</i> is a matrix <i>M</i> such that
+<i>exp(M) = A</i>. Note that there typically are an infinite number
+number of such matrices, and we compute the <em>prinicipal</em> matrix
+logarithm, see the references.
+</p>
+<p>Method <code>"Higham08"</code> works via &ldquo;<em>inverse</em> scaling and
+squaring&rdquo;, and from the Schur decomposition, applying a matrix
+square root computation.  It is somewhat slow but also works for
+non-diagonalizable matrices.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A matrix &lsquo;as <code>x</code>&rsquo; with the matrix logarithm of <code>x</code>,
+i.e., <code>all.equal( expm(logm(x)), x, tol)</code> is typically true for
+quite small tolerance <code>tol</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Method <code>"Higham08"</code> was implemented by Michael Stadelmann as part of his
+master thesis in mathematics, at ETH Zurich;
+the <code>"Eigen"</code> method by Christophe Dutang.
+</p>
+
+
+<h3>References</h3>
+
+<p>Higham, N.~J. (2008).
+<em>Functions of Matrices: Theory and Computation</em>;
+Society for Industrial and Applied Mathematics, Philadelphia, PA, USA.
+</p>
+<p>The Matrix Logarithm is very nicely defined by Wikipedia,
+<a href="https://en.wikipedia.org/wiki/Matrix_logarithm">https://en.wikipedia.org/wiki/Matrix_logarithm</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../expm/help/expm.html">expm</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+m &lt;- diag(2)
+logm(m)
+expm(logm(m))
+
+## Here, logm() is barely defined, and Higham08 has needed an amendment
+## in order for not to loop forever:
+D0 &lt;- diag(x=c(1, 0.))
+(L. &lt;- logm(D0))
+stopifnot( all.equal(D0, expm(L.)) )
+
+## A matrix for which clearly no logm(.) exists:
+(m &lt;- cbind(1:2, 1))
+(l.m &lt;- try(logm(m))) ## all NA {Warning in sqrt(S[ij, ij]) : NaNs produced}
+## on r-patched-solaris-x86, additionally gives
+##    Error in solve.default(X[ii, ii] + X[ij, ij], S[ii, ij] - sumU) :
+##     system is computationally singular: reciprocal condition number = 0
+##    Calls: logm ... logm.Higham08 -&gt; rootS -&gt; solve -&gt; solve -&gt; solve.default
+if(!inherits(l.m, "try-error")) stopifnot(is.na(l.m))
+## The "Eigen" method  ``works''  but wrongly :
+expm(logm(m, "Eigen"))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>expm</em> version 1.0-0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

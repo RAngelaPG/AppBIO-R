@@ -1,0 +1,369 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Handling and plotting plotting lists.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for Composite plots {plot3D}"><tr><td>Composite plots {plot3D}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Handling and plotting plotting lists.
+</h2>
+
+<h3>Description</h3>
+
+<p>S3 method <code>plot.plist</code> and function <code>plotdev</code> plot the plotting list 
+to the current device. 
+Changes can be made to the perspective view, to the lighting and shading, 
+or to make colors transparent. 
+</p>
+<p><code>getplist</code> and <code>setplist</code> retrieve and store information in the plotting list.
+</p>
+<p><code>selectplist</code> selects parts from the plotting list, based on a user-defined function.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+getplist()
+setplist(plist)
+plotdev(...)
+## S3 method for class 'plist'
+ plot(x, ...) 
+selectplist(plist, SS)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x, plist </code></td>
+<td>
+<p>The plotting <code>list</code> as generated (invisibly) 
+by any of the 3D plotting functions.
+</p>
+</td></tr>
+<tr valign="top"><td><code>SS </code></td>
+<td>
+<p>Function which tests points for inclusion in the plotting list.
+It should take as argument three vectors (x, y, z) and return a vector of 
+equal length that is either <code>TRUE</code> or <code>FALSE</code>, denoting whether
+the point should be selected or not.
+</p>
+</td></tr>
+<tr valign="top"><td><code>... </code></td>
+<td>
+<p>Additional arguments to change the view or coloration. 
+Supported arguments to change the view are :
+<code>theta, phi, xlim, ylim, zlim, d, r, scale, expand</code>. See <a href="../../plot3D/help/perspbox.html">perspbox</a>,
+<a href="../../graphics/html/persp.html">persp</a>.
+</p>
+<p>Supported arguments to change the lighting, or coloration are :
+<code>ltheta, lphi, shade, lighting</code>. See <a href="../../plot3D/help/jet.col.html">jet.col</a>.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>All 3-D functions from package <code>plot3D</code> produce or update a plotting list
+that is local to the package. One can access this plotting list via <code>getplist</code>
+and <code>setplist</code>. The list is used to plot when, in a 3-D function, the argument
+<code>plot</code> is <code>TRUE</code> or via function <code>plotdev</code>.
+</p>
+<p>When new 3-D objects are added to a plot, using the <code>add</code> argument of the 
+plotting functions, then everything except the axes, is redrawn on top of 
+what was already there. This means that several object will be drawn multiple times,
+and this may clutter the output. This may not be visible on your screen, but
+it may become apparent when exported. Use <code>plotdev</code> to create clean figures, where 
+every object is drawn only  once. 
+</p>
+<p>The plotting <code>list</code> can contain the following items:
+</p>
+
+<ul>
+<li> <p><code>mat</code>, the viewing transformation matrix,
+a 4 x 4 matrix suitable for projecting 3D coordinates 
+(x, y, z) into the 2D plane using homogeneous 4D coordinates (x,y,z,v). 
+</p>
+<p>It can be used to superimpose additional graphical elements on the 3D plot, 
+by any function that is defined on <a href="../../graphics/html/persp.html">persp</a>.
+</p>
+<p>It can also be used to add <code>lines</code>, <code>arrows</code> or 
+<code>points</code>, using the function <a href="../../plot3D/help/trans3D.html">trans3D</a>. 
+</p>
+</li>
+<li> <p><code>plt</code>, with original <code>plt</code> parameters and the <code>plt</code> 
+parameters used for the main frame.
+</p>
+</li>
+<li> <p><code>persp</code>, with settings for the perspective box.
+</p>
+</li>
+<li> <p><code>xlim, ylim, zlim</code>, with ranges.
+</p>
+</li>
+<li> <p><code>scalefac</code>, the scaling factors in x, y and z direction,
+used e.g. for shading.
+</p>
+</li>
+<li> <p><code>dot</code> other plotting parameters passed to <code>persp</code>.
+</p>
+</li>
+<li> <p><code>colkey</code>, <code>numkey</code>, with settings for the color key(s).
+</p>
+</li>
+<li> <p><code>poly, segm, pt, CIpt, labels, arr</code> the information for drawing 
+polygons, segments, points, points with confidence intervals, labels and arrows,
+that are part of the plot.  
+</p>
+</li></ul>
+
+<p>For the item <code>poly</code> the elements are:
+</p>
+
+<ul>
+<li> <p><code>x, y, z</code> : A matrix with typically 4 or 5 rows, the first rows defining the x-, y- or z- 
+values of each polygon, the last row contains <code>NA</code> (and which therefore terminates a polygon).
+</p>
+</li>
+<li> <p><code>col</code>: a vector with the colors for the facets of each polygon.
+</p>
+</li>
+<li> <p><code>lwd, lty, border</code>: a vector with the line widths, line type and colors for the border of each polygon.
+(note in R-function <a href="../../graphics/html/polygon.html">polygon</a>, passing a vector of line widths is not implemented;
+therefore, only the first value of <code>lwd</code> will be used for all polygons).
+</p>
+<p>When <code>plot.plist</code> is called, the projection depth is calculated and used to sort the
+facets and function <code>polygon</code> used to draw them.
+</p>
+</li></ul>
+
+
+
+<h3>Value</h3>
+
+<p>Returns the updated plotting list.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Once a 3D plot has been generated, a new device can be opened and 
+<code>plotdev</code> used to plot also on this device.
+</p>
+<p><code>plotdev</code> and <code>plot(getplist())</code> are the same.
+</p>
+<p>In an extension package, <code>plot3Drgl</code>, a similar function, <code>plotrgl</code>,
+plots the graphs to the device opened with <code>rgl</code>. This allows interactive
+zooming, rotating, etc...
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Karline Soetaert &lt;karline.soetaert@nioz.nl&gt;</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# save plotting parameters                            
+ pm   &lt;- par("mfrow")
+ pmar &lt;- par("mar")
+
+## ========================================================================
+## The volcano
+## ========================================================================
+
+ par(mfrow = c(2, 2), mar = c(2, 2, 2, 2))
+
+# The volcano at lower resolution
+ x &lt;- seq(1, nrow(volcano), by = 2)
+ y &lt;- seq(1, ncol(volcano), by = 2)
+ V &lt;- volcano[x,y]
+
+ persp3D(z = V)
+
+# rotate
+ plotdev(theta = 0)
+
+# light and transparence
+ plotdev(lighting  = TRUE, lphi = 90, alpha = 0.6)  
+
+# zoom
+ plotdev(xlim = c(0.2, 0.6), ylim = c(0.2, 0.6), phi = 60) 
+ 
+## ========================================================================
+## Two spheres 
+## ========================================================================
+
+ par(mfrow = c(1, 1), mar = c(0, 0, 0, 0))
+
+# create a sphere
+ M  &lt;- mesh(seq(0, 2*pi, length.out = 30),
+            seq(0,   pi, length.out = 30))
+ u  &lt;- M$x ; v  &lt;- M$y
+
+ x &lt;- cos(u)*sin(v)
+ y &lt;- sin(u)*sin(v)
+ z &lt;- cos(v)
+
+ surf3D(x = 2*x, y = 2*y, z = 2*z, 
+        colvar = NULL, lighting = TRUE, #plot = FALSE,
+        facets = NA, col = "blue", lwd = 5)
+ 
+ surf3D(x, y, z, colvar = NULL, lighting = TRUE, 
+        col = "red", add = TRUE)
+
+ names(getplist())
+
+# plot with different view:
+ plotdev(phi = 0)  
+## Not run:   # will plot same 3-D graph to pdf
+ pdf(file = "save.pdf")
+ plotdev()
+ dev.off()
+
+## End(Not run)
+             
+## ========================================================================
+## Two spheres and two planes 
+## ========================================================================
+
+ par(mar = c(2, 2, 2, 2))
+
+# equation of a sphere
+ M  &lt;- mesh(seq(0, 2*pi, length.out = 100),                                     -
+            seq(0,   pi, length.out = 100))
+ u  &lt;- M$x ; v  &lt;- M$y
+
+ x &lt;- cos(u)*sin(v)
+ y &lt;- sin(u)*sin(v)
+ z &lt;- cos(v)
+
+ surf3D(x, y, z, colvar = z, 
+        theta = 45, phi = 20, bty = "b",
+        xlim = c(-1.5, 1.5), ylim = c(-1, 2), 
+        zlim = c(-1.5, 1.5), plot = FALSE)
+
+# add a second sphere, shifted 1 unit to the right on y-axis; 
+# no facets drawn for this sphere 
+ surf3D (x, y+1, z, colvar = z, add = TRUE, 
+         facets = FALSE, plot = FALSE)
+
+# define a plane at z = 0
+ Nx &lt;- 100
+ Ny &lt;- 100
+  
+ x &lt;- seq(-1.5, 1.5, length.out = Nx)
+ y &lt;- seq(-1, 2, length.out = Ny)
+
+ image3D (x = x, y = y, z = 0, add = TRUE, colvar = NULL, 
+          col = "blue", facets = TRUE, plot = FALSE)
+
+# another, small plane at y = 0 - here x and y have to be matrices!
+ x &lt;- seq(-1., 1., length.out = 50)
+ z &lt;- seq(-1., 1., length.out = 50)
+ 
+ image3D (x = x, y = 0, z = z, colvar = NULL, 
+         add = TRUE, col = NA, border = "blue", 
+         facets = TRUE, plot = TRUE)       
+
+## Not run:   # rotate 
+ for (angle in seq(0, 360, by = 10)) 
+   plotdev(theta = angle)
+
+## End(Not run)
+
+## ========================================================================
+## Zooming, rescaling, lighting,...
+## ========================================================================
+
+ par(mfrow = c(2, 2)) 
+
+# The volcano
+ x &lt;- seq(1, nrow(volcano), by = 2)
+ y &lt;- seq(1, ncol(volcano), by = 2)
+ V &lt;- volcano[x,y]
+# plot the volcano
+ persp3D (x, y, z = V, colvar = V, theta = 10, phi = 20, 
+          box = FALSE, scale = FALSE, expand = 0.3, 
+          clim = range(V), plot = FALSE)
+
+# add a plane (image) at z = 170; jetcolored, transparant: only border
+ image3D(x, y, z = 170, add = TRUE, clim = range(V), 
+         colvar = V, facets = NA, plot = FALSE, colkey = FALSE)
+
+# add a contour (image) at z = 170; jetcolored, 
+ contour3D(x, y, z = 170, add = TRUE, clim = range(V),
+           colvar = V, plot = FALSE, colkey = FALSE)
+
+# plot it  - 
+ plot(getplist())   #  same as plotdev()
+
+# plot but with different expansion
+ plotdev(expand = 1)
+
+# other perspective, and shading
+ plotdev(d = 2, r = 10, shade = 0.3)
+    
+# zoom and rotate
+ plotdev(xlim = c(10, 30), ylim = c(20, 30), phi = 50)
+
+## ========================================================================
+## Using setplist
+## ========================================================================
+
+ polygon3D(runif(3), runif(3), runif(3))
+# retrieve plotting list
+ plist &lt;- getplist()
+ names(plist)
+ plist$poly
+# change copy of plotting list
+ plist$poly$col &lt;- "red"
+# update internal plotting list
+ setplist(plist)
+# plot updated list
+ plotdev()
+ 
+
+## ========================================================================
+## Using selectplist
+## ========================================================================
+
+ polygon3D(runif(10), runif(10), runif(10), col = "red", 
+   alpha = 0.2, plot = FALSE, ticktype = "detailed", 
+   xlim = c(0,1), ylim = c(0, 1), zlim = c(0, 1))
+ polygon3D(runif(10)*0.5, runif(10), runif(10), col = "yellow", 
+   alpha = 0.2, plot = FALSE, add = TRUE)
+ polygon3D(runif(10)*0.5+0.5, runif(10), runif(10), col = "green", 
+   alpha = 0.2, plot = FALSE, add = TRUE)
+ points3D(runif(10), runif(10), runif(10), col = "blue", 
+   add = TRUE, plot = FALSE)
+ segments3D(x0 = runif(10), y0 = runif(10), z0 = runif(10), 
+   x1 = runif(10), y1 = runif(10), z1 = runif(10), 
+   colvar = 1:10, add = TRUE, lwd = 3)
+
+# retrieve plotting list
+ plist &lt;- getplist()
+
+# selection function 
+ SS &lt;- function (x, y, z)  {
+   sel &lt;- rep(TRUE, length.out = length(x))
+   sel[x &lt; 0.5] &lt;- FALSE
+   return(sel)
+ } 
+# The whole polygon will be removed or kept.  
+ plot(x = selectplist(plist, SS), 
+   xlim = c(0, 1), ylim = c(0, 1), zlim = c(0, 1))
+
+# restore plotting parameters
+ par(mfrow = pm)
+ par(mar = pmar)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>plot3D</em> version 1.4.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

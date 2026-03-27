@@ -1,0 +1,297 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Round, floor and ceiling for date-time objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for time_round {timechange}"><tr><td>time_round {timechange}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Round, floor and ceiling for date-time objects</h2>
+
+<h3>Description</h3>
+
+<p><span class="pkg">timechange</span> provides rounding to the nearest unit or multiple of a
+unit with fractional support whenever makes sense. Units can be specified flexibly
+as strings. All common abbreviations are supported - secs, min, mins, 2 minutes, 3
+years, 2s, 1d etc.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+time_round(
+  time,
+  unit = "second",
+  week_start = getOption("timechange.week_start", 1),
+  origin = unix_origin
+)
+
+time_floor(
+  time,
+  unit = "seconds",
+  week_start = getOption("timechange.week_start", 1),
+  origin = unix_origin
+)
+
+time_ceiling(
+  time,
+  unit = "seconds",
+  change_on_boundary = inherits(time, "Date"),
+  week_start = getOption("timechange.week_start", 1),
+  origin = unix_origin
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>time</code></td>
+<td>
+<p>a date-time vector (<code>Date</code>, <code>POSIXct</code> or <code>POSIXlt</code>)</p>
+</td></tr>
+<tr valign="top"><td><code>unit</code></td>
+<td>
+<p>a character string specifying a time unit or a multiple of a unit. Valid
+base periods for civil time rounding are <code>second</code>, <code>minute</code>, <code>hour</code>, <code>day</code>, <code>week</code>,
+<code>month</code>, <code>bimonth</code>, <code>quarter</code>, <code>season</code>, <code>halfyear</code> and <code>year</code>. The only units for
+absolute time rounding are <code>asecond</code>, <code>aminute</code> and <code>ahour</code>. Other absolute units
+can be achieved with multiples of <code>asecond</code> (e.g. &quot;24ah&quot;). See &quot;Details&quot; and
+examples. Arbitrary unique English abbreviations are allowed. One letter
+abbreviations follow <code>strptime</code> formats &quot;y&quot;, &quot;m&quot;, &quot;d&quot;, &quot;M&quot;, &quot;H&quot;, &quot;S&quot;. Multi-unit
+rounding of weeks is currently not supported.
+</p>
+<p>Rounding for a unit is performed from the parent's unit origin. For example when
+rounding to seconds origin is start of the minute. When rounding to days, origin is
+first date of the month. See examples.
+</p>
+<p>With fractional sub-unit (unit &lt; 1) rounding with child unit is performed
+instead. For example 0.5mins == 30secs, .2hours == 12min etc.
+</p>
+<p>Please note that for fractions which don't match exactly to integer number of the
+child units only the integer part is used for computation. For example .7days =
+16.8hours will use 16 hours during the computation.</p>
+</td></tr>
+<tr valign="top"><td><code>week_start</code></td>
+<td>
+<p>When unit is <code>weeks</code>, this is the first day of the week. Defaults
+to 1 (Monday).</p>
+</td></tr>
+<tr valign="top"><td><code>origin</code></td>
+<td>
+<p>Origin with respect to which to perform the rounding operation. For
+absolute units only. Can be a vector of the same length as the input <code>time</code>
+vector. Defaults to the Unix origin &quot;1970-01-01 UTC&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>change_on_boundary</code></td>
+<td>
+<p>If NULL (the default) don't change instants on the boundary
+(<code>time_ceiling(ymd_hms('2000-01-01 00:00:00'))</code> is <code style="white-space: pre;">2000-01-01 00:00:00</code>), but
+round up <code>Date</code> objects to the next boundary (<code>time_ceiling(ymd("2000-01-01"), "month")</code> is <code>"2000-02-01"</code>). When <code>TRUE</code>, instants on the boundary are rounded up
+to the next boundary. When <code>FALSE</code>, date-time on the boundary are never rounded up
+(this was the default for <span class="pkg">lubridate</span> prior to <code>v1.6.0</code>. See section <code style="white-space: pre;">Rounding Up Date Objects</code> below for more details.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>An object of the same class as the input object. When input is a <code>Date</code>
+object and unit is smaller than <code>day</code> a <code>POSIXct</code> object is returned.
+</p>
+
+
+<h3>Civil Time vs Absolute Time rounding</h3>
+
+<p>Rounding in civil time is done on actual clock time (ymdHMS) and is affected
+by civil time irregularities like DST. One important characteristic of civil
+time rounding is that floor (ceiling) does not produce civil times that are
+bigger (smaller) than the original civil time.
+</p>
+<p>Absolute time rounding (with <code>aseconds</code>, <code>aminutes</code> and <code>ahours</code>) is done on the
+absolute time (number of seconds since origin), thus, allowing for fractional seconds
+and arbitrary multi-units. See examples of rounding around DST transition where
+rounding in civil time does not give the same result as rounding with the
+corresponding absolute units. Also note that <code>round.POSIXt()</code> rounds on absolute
+time.
+</p>
+<p>Please note that absolute rounding to fractions smaller than 1ms will result in large
+precision errors due to the floating point representation of the POSIXct objects.
+</p>
+
+
+<h3>Note on <code>time_round()</code></h3>
+
+<p>For rounding date-times which is exactly halfway between two consecutive units,
+the convention is to round up. Note that this is in line with the behavior of R's
+<code><a href="../../base/help/round.POSIXt.html">base::round.POSIXt()</a></code> function but does not follow the convention of the base
+<code><a href="../../base/help/Round.html">base::round()</a></code> function which &quot;rounds to the even digit&quot; per IEC 60559.
+</p>
+
+
+<h3>Ceiling of <code>Date</code> objects</h3>
+
+<p>By default rounding up <code>Date</code> objects follows 3 steps:
+</p>
+
+<ol>
+<li><p> Convert to an instant representing lower bound of the Date:
+<code>2000-01-01</code> &ndash;&gt; <code style="white-space: pre;">2000-01-01 00:00:00</code>
+</p>
+</li>
+<li><p> Round up to the <strong>next</strong> closest rounding unit boundary. For example,
+if the rounding unit is <code>month</code> then next closest boundary of <code>2000-01-01</code>
+is <code style="white-space: pre;">2000-02-01 00:00:00</code>.
+</p>
+<p>The motivation for this is that the &quot;partial&quot; <code>2000-01-01</code> is conceptually
+an interval (<code style="white-space: pre;">2000-01-01 00:00:00</code> &ndash; <code style="white-space: pre;">2000-01-02 00:00:00</code>) and the day
+hasn't started clocking yet at the exact boundary <code>00:00:00</code>. Thus, it
+seems wrong to round up a day to its lower boundary.
+</p>
+<p>The behavior on the boundary can be changed by setting
+<code>change_on_boundary</code> to a non-<code>NULL</code> value.
+</p>
+</li>
+<li><p> If rounding unit is smaller than a day, return the instant from step 2
+(<code>POSIXct</code>), otherwise convert to and return a <code>Date</code> object.
+</p>
+</li></ol>
+
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../base/help/Round.html">base::round()</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## print fractional seconds
+options(digits.secs=6)
+
+x &lt;- as.POSIXct("2009-08-03 12:01:59.23")
+time_round(x, ".5 asec")
+time_round(x, "sec")
+time_round(x, "second")
+time_round(x, "asecond")
+time_round(x, "minute")
+time_round(x, "5 mins")
+time_round(x, "5M") # "M" for minute "m" for month
+time_round(x, "hour")
+time_round(x, "2 hours")
+time_round(x, "2H")
+time_round(x, "day")
+time_round(x, "week")
+time_round(x, "month")
+time_round(x, "bimonth")
+time_round(x, "quarter") == time_round(x, "3 months")
+time_round(x, "halfyear")
+time_round(x, "year")
+
+x &lt;- as.POSIXct("2009-08-03 12:01:59.23")
+time_floor(x, ".1 asec")
+time_floor(x, "second")
+time_floor(x, "minute")
+time_floor(x, "M")
+time_floor(x, "hour")
+time_floor(x, ".2 ahour")
+time_floor(x, "day")
+time_floor(x, "week")
+time_floor(x, "m")
+time_floor(x, "month")
+time_floor(x, "bimonth")
+time_floor(x, "quarter")
+time_floor(x, "season")
+time_floor(x, "halfyear")
+time_floor(x, "year")
+
+x &lt;- as.POSIXct("2009-08-03 12:01:59.23")
+time_ceiling(x, ".1 asec")
+time_ceiling(x, "second")
+time_ceiling(x, "minute")
+time_ceiling(x, "5 mins")
+time_ceiling(x, "hour")
+time_ceiling(x, ".2 ahour")
+time_ceiling(x, "day")
+time_ceiling(x, "week")
+time_ceiling(x, "month")
+time_ceiling(x, "bimonth") == time_ceiling(x, "2 months")
+time_ceiling(x, "quarter")
+time_ceiling(x, "season")
+time_ceiling(x, "halfyear")
+time_ceiling(x, "year")
+
+## behavior on the boundary
+x &lt;- as.Date("2000-01-01")
+time_ceiling(x, "month")
+time_ceiling(x, "month", change_on_boundary = FALSE)
+
+## As of R 3.4.2 POSIXct printing of fractional seconds is wrong
+as.POSIXct("2009-08-03 12:01:59.3", tz = "UTC") ## -&gt; "2009-08-03 12:01:59.2 UTC"
+time_ceiling(x, ".1 asec") ## -&gt; "2009-08-03 12:01:59.2 UTC"
+
+## Civil Time vs Absolute Time Rounding
+
+# "2014-11-02 01:59:59.5 EDT" before 1h backroll at 2AM
+x &lt;- .POSIXct(1414907999.5, tz = "America/New_York")
+x
+time_ceiling(x, "hour")    # "2014-11-02 02:00:00 EST"
+time_ceiling(x, "ahour")   # "2014-11-02 01:00:00 EST"
+time_ceiling(x, "minute")
+time_ceiling(x, "aminute")
+time_ceiling(x, "sec")
+time_ceiling(x, "asec")
+
+time_round(x, "hour")   # "2014-11-02 01:00:00 EDT" !!
+time_round(x, "ahour")  # "2014-11-02 01:00:00 EST"
+round.POSIXt(x, "hour") # "2014-11-02 01:00:00 EST"
+
+# "2014-11-02 01:00:00.5 EST" .5s after 1h backroll at 2AM
+x &lt;- .POSIXct(1414908000.5, tz = "America/New_York")
+x
+time_floor(x, "hour") # "2014-11-02 01:00:00 EST"
+time_floor(x, "ahour") # "2014-11-02 01:00:00 EST"
+
+## Behavior on the boundary when rounding multi-units
+
+x &lt;- as.POSIXct("2009-08-28 22:56:59.23", tz = "UTC")
+time_ceiling(x, "3.4 secs")  # "2009-08-28 22:57:03.4"
+time_ceiling(x, "50.5 secs")  # "2009-08-28 22:57:50.5"
+time_ceiling(x, "57 min")  # "2009-08-28 22:57:00"
+time_ceiling(x, "56 min")  # "2009-08-28 23:56:00"
+time_ceiling(x, "7h")  # "2009-08-29 07:00:00"
+time_ceiling(x, "7d")  # "2009-08-29 00:00:00"
+time_ceiling(x, "8d")  # "2009-09-09 00:00:00"
+time_ceiling(x, "8m")  # "2009-09-01 00:00:00"
+time_ceiling(x, "6m")  # "2010-01-01 00:00:00"
+time_ceiling(x, "7m")  # "2010-08-01 00:00:00"
+
+x &lt;- as.POSIXct("2010-11-25 22:56:57", tz = "UTC")
+time_ceiling(x, "6sec") # "2010-11-25 22:57:00"
+time_ceiling(x, "60sec") # "2010-11-25 22:57:00"
+time_ceiling(x, "6min") # "2010-11-25 23:00:00"
+time_ceiling(x, "60min") # "2010-11-25 23:00:00"
+time_ceiling(x, "4h") # "2010-11-26 00:00:00"
+time_ceiling(x, "15d") # "2010-12-01 00:00:00"
+time_ceiling(x, "15d") # "2010-12-01 00:00:00"
+time_ceiling(x, "6m") # "2011-01-01 00:00:00"
+
+
+## custom origin
+x &lt;- as.POSIXct(c("2010-10-01 01:00:01", "2010-11-02 02:00:01"), tz = "America/New_York")
+# 50 minutes from the day or month start
+time_floor(x, "50amin")
+time_floor(x, "50amin", origin = time_floor(x, "day"))
+time_floor(x, "50amin", origin = time_floor(x, "month"))
+time_ceiling(x, "50amin")
+time_ceiling(x, "50amin", origin = time_floor(x, "day"))
+time_ceiling(x, "50amin", origin = time_floor(x, "month"))
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>timechange</em> version 0.4.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

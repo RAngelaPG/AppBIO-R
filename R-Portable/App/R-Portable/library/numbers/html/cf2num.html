@@ -1,0 +1,166 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Generalized Continous Fractions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for cf2num {numbers}"><tr><td>cf2num {numbers}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Generalized Continous Fractions
+</h2>
+
+<h3>Description</h3>
+
+<p>Evaluate a generalized continuous fraction as an alternating sum.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+cf2num(b0, b, a = 1, scaled = FALSE, tol = 1e-12)
+
+num2cf(x, nterms=20)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>b0</code></td>
+<td>
+<p>absolute term, integer part of the continuous fraction.</p>
+</td></tr>
+<tr valign="top"><td><code>b</code></td>
+<td>
+<p>numeric vector of length greater than 2.</p>
+</td></tr>
+<tr valign="top"><td><code>a</code></td>
+<td>
+<p>numeric vector of length 1 or the same length as a.</p>
+</td></tr>
+<tr valign="top"><td><code>scaled</code></td>
+<td>
+<p>logical; shall the convergents be scaled.</p>
+</td></tr>
+<tr valign="top"><td><code>tol</code></td>
+<td>
+<p>relative tolerance.</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>real number.</p>
+</td></tr>
+<tr valign="top"><td><code>nterms</code></td>
+<td>
+<p>number of terms.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>cf2num</code> calculates the numerical value of (simple or generalized) 
+continued fractions of the form
+</p>
+<p style="text-align: center;"><i> b_0 + \frac{a1}{b1+} \frac{a2}{b2+} \frac{a3}{b3+...} </i></p>
+
+<p>by converting its convergents into an alternating sum.
+The argument <i>a</i> is by default set to <i>a = (1, 1, ...)</i>,
+that is the continued fraction is treated in its simple form.
+</p>
+<p>The convergents may grow and become too big, especially for large and
+growing coefficients <code>a</code>. Then <code>NA</code> will probably be
+returned. In this case use <code>scaled = TRUE</code> and the convergents
+will be scaled in every iteration, thus avoiding FP overflow
+.
+</p>
+<p><code>num2cf</code> applies the direct calculation of the continued fraction.
+Attention: The input is not checked &ndash; this allows for applying 'mpfr'
+numbers for longer, correct continued fractions, see the examples.
+</p>
+<p>The relation between the number of terms <code>nterms</code> and the
+precision of the 'mpfr' numbers should be about
+<code>nterm = 0.30..35 precBits</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns a numerical value, an approximation of the continued fraction.
+</p>
+
+
+<h3>Note</h3>
+
+<p>This function is <em>not</em> vectorized.
+</p>
+
+
+<h3>References</h3>
+
+<p>Press, Teukolsky, Vetterling, Flannery. NUMERICAL RECIPES: The Art of
+Scientific Computing. 3rd Edition, Cambridge University Press 2007.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../numbers/help/contfrac.html">contfrac</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+#-- Continued fraction of sqrt(2) is [1; 2, 2, 2, ...] -----------------
+b0 &lt;- 1; b &lt;- rep(2, 20)                # sqrt(2)
+cf2num(b0, b)                           # 1.414213562, error = eps()
+
+#-- Approximate an analytic function -----------------------------------
+# tan(x) = 0 + x / (1 + (-x^2) / 3 + (-x^2) / (5 + ...))
+x  &lt;- 0.5                           # tan(0.5) = 0.546302489844
+n  &lt;- 10                            # CF of length 20
+b0 &lt;- 0                             # b0 = 0
+b  &lt;- seq(1, by=2, length=n)        # b = c(1, 3, 5, ...)
+a  &lt;- c(x, rep(-x^2, times=n-1))    # a = c(x, -x^2, -x^2, ...)
+
+cf2num(b0, b, a)                # 0.546302489844, error: eps()
+
+## Not run: 
+#-- Continued fraction of 1/(exp(0.5)-1) -------------------------------
+library(Rmpfr)
+e0 = 1/(exp(1/mpfr(2, precBits=128)) - 1)  #=&gt; 1.54149408253679828413...
+x0 &lt;- num2cf(e0, nterms=20)
+## [1]  1  1  1  5  1  1  9  1  1 13  1  1 17  1  1 21  1  1 25  1  1
+
+# Determine e0 from its continued fraction
+b0 &lt;- x0[1]; b &lt;- x0[2:19]
+cf2num(b0, b)                       # 1.541494082536798, error = eps()
+
+#-- pi as arctan(1.0) --------------------------------------------------
+n = 24
+b0 = 0
+b = seq(1, by=2, length=n)          # b = c(1, 3, 5, 7, ...)
+a = c(1, seq(1,by=1, length=n-1)^2) # a = c(1, 1, 4, 9, ...)
+4 * cf2num(b0, b, a) - pi           # error: 0
+
+#-- Leibniz-Wallis continued fraction for pi ---------------------------
+# 4/pi = 1 + 1^2/(2 + 3^2 / (2 + 5^2 / 2 + ...))
+pi4 = 4 / pi                        # 1.27323954474
+
+n  = 20
+b0 = 1
+b  = rep(2, times=n)
+a  = seq(1, by = 2, length=n)^2
+cf2num(b0, b, a)                    # NA, i.e. convergents overflow
+cf2num(b0, b, a, scaled = TRUE)
+# 1.273272 with estimated precision 0.004032851 
+# [1] 1.273272                      # actual error: 3.3e-05
+  
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>numbers</em> version 0.9-2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

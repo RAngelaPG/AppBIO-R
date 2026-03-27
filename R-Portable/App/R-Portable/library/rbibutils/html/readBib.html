@@ -1,0 +1,321 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Read and write bibtex files</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for readBib {rbibutils}"><tr><td>readBib {rbibutils}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Read and write bibtex files</h2>
+
+<h3>Description</h3>
+
+<p>Read and write bibtex files.</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+readBib(file, encoding = NULL, ..., direct = FALSE, 
+        texChars = c("keep", "convert", "export", "Rdpack"), 
+        macros = NULL, extra = FALSE, key, fbibentry = NULL)
+
+writeBib(object, con = stdout(), append = FALSE)
+
+charToBib(text, informat, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>file</code></td>
+<td>
+<p>name or path to the file, a character string.</p>
+</td></tr>
+<tr valign="top"><td><code>encoding</code></td>
+<td>
+<p>the encoding of <code>file</code>, a character string.</p>
+</td></tr>
+<tr valign="top"><td><code>direct</code></td>
+<td>
+
+<p>If <code>TRUE</code> parse <code>file</code> directly to <code>bibentry</code>,
+otherwise convert first to intermediate XML, then to
+<code>bibentry</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>texChars</code></td>
+<td>
+
+<p>What to do with characters represented by TeX commands  (for
+example, accented Latin charaters? If <code>"export"</code>,
+export as TeX escapes when possible. If <code>"convert"</code>, convert
+to the target encoding. If <code>"keep"</code>, output the characters as
+they were in the input file, like <code>"export"</code>, but don't convert
+normal characters to TeX escapes.
+</p>
+<p><code>"Rdpack"</code> is mainly for internal use and its actions may be
+changed. It is equivalent to &quot;keep&quot; plus some additional processing,
+see <a href="https://github.com/GeoBosh/rbibutils/issues/7#issue-1020385889">https://github.com/GeoBosh/rbibutils/issues/7#issue-1020385889</a>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>macros</code></td>
+<td>
+
+<p>additional bib files, usually containing bibtex macros, such as
+journal abbreviations.
+</p>
+</td></tr>
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>a <code>bibentry</code> object.</p>
+</td></tr>
+<tr valign="top"><td><code>con</code></td>
+<td>
+<p>filename (a character string) or a text connection</p>
+</td></tr>
+<tr valign="top"><td><code>append</code></td>
+<td>
+<p>if <code>TRUE</code> append to the file.</p>
+</td></tr>
+<tr valign="top"><td><code>text</code></td>
+<td>
+
+<p>a character vector.
+</p>
+</td></tr>
+<tr valign="top"><td><code>informat</code></td>
+<td>
+
+<p>the input format, defaults to <code>"bibtex"</code>. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>key</code></td>
+<td>
+
+<p>a character vectors of key(s) to use for entries without cite keys.
+Should have the same number of elements as the number of such entries.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>for <code>charTobib</code>, arguments to be passed on to <code>readBib</code> or
+<code>bibConvert</code>, see section &ldquo;Details&rdquo;.
+Not used by <code>readBib</code> and <code>writeBib</code> (which throw error to
+avoid silently ignoring unknown arguments).
+</p>
+</td></tr>
+<tr valign="top"><td><code>extra</code></td>
+<td>
+<p>if <code>TRUE</code>, allow non-standard bibtex types.</p>
+</td></tr>
+<tr valign="top"><td><code>fbibentry</code></td>
+<td>
+<p>a function to use for generating bib objects instead
+of <code>bibentry()</code>, see section &ldquo;Details&rdquo;.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>readBib</code> is wrapper around <code>bibConvert</code> for import of
+bibtex files into bibentry objects.
+</p>
+<p>If <code>direct = FALSE</code>, the bibtex file is converted first to XML
+intermediate, then the XML file is converted to bibentry. The
+advantage of this is that it gives a standardised representation of
+the bibtex input. Fields that cannot be mapped to the intermediate
+format are generally omitted.
+</p>
+<p>If <code>direct = TRUE</code> the input file is converted directly to
+bibentry, without the XML intermediate step. This means that
+non-standard fields in the bib entries are preserved in the bibentry
+object.
+</p>
+<p>Argument <code>texChars</code>, currently implemented only for the case
+<code>direct = TRUE</code>, gives some control over the processing of TeX
+sequences representing characters (such as accented Latin characters):
+If it is <code>"keep"</code> (the default), such sequences are kept as in
+the input. <code>"convert"</code> causes them to be converted to the
+characters they represent. Finally, <code>"export"</code> exports characters
+as TeX sequences, whenever possible.
+</p>
+<p>The difference between <code>"keep"</code> and <code>"export"</code> is that
+<code>"keep"</code> does not convert normal characters to TeX escapes, while
+<code>"export"</code> does it if possible. For example, if the input file
+contains the TeX sequence <code style="white-space: pre;">\"o</code> 
+representing the letter o-umlaut, <code>"keep"</code> and <code>"export"</code>
+will keep it as TeX sequence, while <code>"convert"</code> will convert it
+to the character o-umlaut in the output encoding (normally UTF-8).  On
+the othe hand, if the input file contains the character o-umlaut, then
+<code>"keep"</code> and <code>"convert"</code> will convert it to the output
+encoding of o-umlaut, while <code>"export"</code> will export it as
+<code style="white-space: pre;">\"o</code>. 
+</p>
+
+
+
+
+
+
+<p>Currently, <code>texChars = "export"</code> does not process properly
+mathematical formulas.
+</p>
+<p><code>fbibentry</code>, if supplied, will be used in place of
+<code>utils::bibentry</code> to create bib objects in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>. The arguments of
+<code>fbibentry</code> should be the same as for <code>utils::bibentry</code>.
+</p>
+<p><code>writeBib</code> writes a <code>bibentry</code> object to a bibtex file.
+</p>
+<p><code>charTobib</code> is a convenience function for reading or converting
+bibliography information, accepting the input from a
+character vector rather than a file. If <code>informat</code> is missing it calls
+<code>readBib</code>, otherwise <code>bibConvert</code>. In both cases
+the remaining arguments are passed on and should be suitable for the
+called function.
+</p>
+<p>The files specified by argument <code>macros</code> are read in before those
+in <code>file</code>. Currently this is implemented by concatenating the
+files in the order they appear in <code>c(macros, file)</code>. It is ok for
+<code>macros</code> to be <code>character(0)</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>for <code>readBib</code>, a <code>bibentry</code> object.
+If <code>extra</code> is <code>TRUE</code> it can also
+be <code>bibentryExtra</code> (which inherits from <code>bibentry</code>).
+If <code>fbibentry</code> is a function the return value is whatever it
+returns.
+</p>
+<p>for <code>writeBib</code>, the <code>bibentry</code> object (invisibly)
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Georgi N. Boshnakov</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../rbibutils/help/readBibentry.html">readBibentry</a></code> and <code><a href="../../rbibutils/help/writeBibentry.html">writeBibentry</a></code> for
+import/export to R code,
+</p>
+<p><code><a href="../../rbibutils/help/bibConvert.html">bibConvert</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## create a bibentry object
+bibs &lt;- readBib(system.file("REFERENCES.bib", package = "rbibutils"),
+                encoding = "UTF-8")
+## write bibs to a file
+fn &lt;- tempfile(fileext = ".bib")
+writeBib(bibs, fn)
+
+## see the contents of the file
+readLines(fn) # or: file.show(fn)
+
+## import a bib file containing Chineese characters encoded with UTF-8:
+ch_bib &lt;- readBib(system.file("bib/xeCJK_utf8.bib", package = "rbibutils"))
+ch_bib
+print(ch_bib, style = "R")
+
+## import a bib file encoded with the official Chineese encoding:
+ch_bib2 &lt;- readBib(system.file("bib/xeCJK_gb18030.bib", package = "rbibutils"),
+                   encoding = "gb18030")
+
+
+## a dummy reference with accented characters
+## (in the file some are utf8, others are TeX escapes)
+bibacc &lt;- system.file("bib/latin1accents_utf8.bib", package = "rbibutils")
+
+## export as UTF-8 characters
+## this will print as true characters in suitable locale:
+be &lt;- readBib(bibacc, direct = TRUE, texChars = "convert")
+print(be, style = "R")
+print(be, style = "bibtex")
+## compare to the input file:
+readLines(bibacc)
+
+
+be1 &lt;- readBib(bibacc, direct = TRUE)
+be1a &lt;- readBib(bibacc, direct = TRUE, texChars = "keep") # same
+be1
+print(be1, style = "R")
+print(be1, style = "bibtex")
+
+## export as TeX escapes, when possible
+be2 &lt;- readBib(bibacc, direct = TRUE, texChars = "export") ## same
+be2
+print(be2, style = "R")
+print(be2, style = "bibtex")
+
+## in older versions (up to 2.2.4) of rbibutils, "convert" converted
+##     a lot of TeX commands representing symbols  to characters.
+## This is no longer the case:
+be3 &lt;- readBib(bibacc, direct = TRUE, texChars = "convert")
+## be3
+print(be3, style = "R")
+## print(be3, style = "bibtex")
+
+## charToBib
+##
+## get a bibtex reference for R
+Rcore &lt;- format(citation(), style = "bibtex")
+## add a citation key
+Rcore &lt;- sub("@Manual{", "@Manual{Rcore", Rcore, fixed = TRUE)
+cat(Rcore, sep = "\n")
+beRcore &lt;- charToBib(Rcore)
+beRcore
+class(beRcore)
+print(beRcore, style = "R")
+
+## bibtex entries generated by citation() don't have cite keys.
+## this sets the key to 'Rcore'
+beRcore &lt;- charToBib(toBibtex(citation()), key = "Rcore")
+beRcore$key == "Rcore"  # TRUE
+
+## this sets two keys
+bemore &lt;- charToBib(toBibtex( c(citation(), citation("rbibutils"))),
+    key = c("Rcore", "Rpackage:rbibutils"))
+all.equal(names(bemore), c("Rcore", "Rpackage:rbibutils"))
+
+
+## a large example with several files - needs internet access;
+## it is better to clone repository https://github.com/iridia-ulb/references
+## and work on local files
+##
+## iridia_mac &lt;- c("abbrev.bib", "authors.bib", "journals.bib", "crossref.bib")
+## iridia_biblio &lt;- "biblio.bib"
+## 
+## iridia_raw_url &lt;- "https://raw.githubusercontent.com/iridia-ulb/references/master"
+## iridia_mac_url &lt;- file.path(iridia_raw_url, iridia_mac)
+## iridia_biblio_url &lt;- file.path(iridia_raw_url, iridia_biblio)
+## 
+## bibdir &lt;- tempdir()
+## iridia_mac_loc &lt;- file.path(bibdir, iridia_mac)
+## iridia_biblio_loc &lt;- file.path(bibdir, iridia_biblio)
+## 
+## ## download the files to bibdir
+## sapply(c(iridia_biblio_url, iridia_mac_url),
+##        function(x) download.file(x, file.path(bibdir, basename(x))))
+## 
+## iridia &lt;- readBib(iridia_biblio_loc, direct = TRUE, macros = iridia_mac_loc)
+## iridia[1]
+## print(iridia[1], style = "R")
+## toBibtex(iridia[1])  # or: print(iridia[1], style = "bibtex")
+## length(iridia)  # 2576 at the time of writing
+
+unlink(fn)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rbibutils</em> version 2.4.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

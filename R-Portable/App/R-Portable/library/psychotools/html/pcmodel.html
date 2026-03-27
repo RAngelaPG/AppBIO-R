@@ -1,0 +1,262 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Partial Credit Model Fitting Function</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for pcmodel {psychotools}"><tr><td>pcmodel {psychotools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Partial Credit Model Fitting Function</h2>
+
+<h3>Description</h3>
+
+<p><code>pcmodel</code> is a basic fitting function for partial credit models.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+pcmodel(y, weights = NULL, nullcats = c("keep", "downcode", "ignore"),
+  start = NULL, reltol = 1e-10, deriv = c("sum", "diff"),
+  hessian = TRUE, maxit = 100L, full = TRUE, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>item response object that can be coerced (via <code><a href="../../base/help/as.matrix.html">as.matrix</a></code>)
+to a numeric matrix with scores 0, 1, ... Typically, either
+already a matrix, data frame, or dedicated object of class
+<code><a href="../../psychotools/help/itemresp.html">itemresp</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>an optional vector of weights (interpreted as case
+weights).</p>
+</td></tr>
+<tr valign="top"><td><code>deriv</code></td>
+<td>
+<p>character. If &quot;sum&quot; (the default), the first derivatives
+of the elementary symmetric functions are calculated with the sum
+algorithm. Otherwise (&quot;diff&quot;) the difference algorithm (faster but
+numerically unstable) is used.</p>
+</td></tr>
+<tr valign="top"><td><code>nullcats</code></td>
+<td>
+<p>character string, specifying how items with
+null categories (i.e., categories not observed) should be treated (see
+details below).</p>
+</td></tr>
+<tr valign="top"><td><code>start</code></td>
+<td>
+<p>an optional vector of starting values.</p>
+</td></tr>
+<tr valign="top"><td><code>hessian</code></td>
+<td>
+<p>logical. Should the Hessian of the final model be computed?
+If set to <code>FALSE</code>, the <code>vcov</code> method can only return <code>NA</code>s
+and consequently no standard errors or tests are available in the
+<code>summary</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>reltol, maxit, ...</code></td>
+<td>
+<p>further arguments passed to <code><a href="../../stats/help/optim.html">optim</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>full</code></td>
+<td>
+<p>logical. Should a full model object be returned? If set to <code>FALSE</code>,
+no variance-covariance matrix and no matrix of estimating functions are computed.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>pcmodel</code> provides a basic fitting function for partial
+credit models, intended as a building block for fitting partial
+credit trees. It estimates the partial credit model suggested
+by Masters (1982) under the cumulative threshold parameterization,
+i.e., the item-category parameters <i>&eta;_{jk} = &sum;_{\ell =
+      1}^{k}&delta;_{jk}</i> are estimated by the the function <code>pcmodel</code>.
+</p>
+<p>Null categories, i.e., categories which have not been used, can be
+problematic when estimating a partial credit model. Several strategies
+have been suggested to cope with null categories.  <code>pcmodel</code>
+allows to select from three possible strategies via the argument
+<code>nullcats</code>. If <code>nullcats</code> is set to <code>"keep"</code> (the
+default), the strategy suggested by Wilson &amp; Masters (1993) is used to
+handle null categories. That basically means that the integrity of the
+response framework is maintained, i.e., no category scores are
+changed. This is not the case, when <code>nullcats</code> is set to
+<code>"downcode"</code>. Then all categories above a null category are
+shifted down to close the existing gap. In both cases (<code>"keep"</code>
+and <code>"downcode"</code>) the number of estimated parameters is reduced
+by the number of null categories. When <code>nullcats</code> is set to
+<code>"ignore"</code>, these are literally ignored and a threshold parameter
+is estimated during the optimization nevertheless. This strategy is
+used by the related package <span class="pkg">eRm</span> when fitting partial credit
+models via <code>eRm::PCM</code>.
+</p>
+<p><code>pcmodel</code> returns an object of class <code>"pcmodel"</code> for
+which several basic methods are available, including <code>print</code>,
+<code>plot</code>, <code>summary</code>, <code>coef</code>, <code>vcov</code>, <code>logLik</code>,
+<code><a href="../../psychotools/help/discrpar.html">discrpar</a></code>, <code><a href="../../psychotools/help/itempar.html">itempar</a></code>, <code>estfun</code>,
+<code><a href="../../psychotools/help/threshpar.html">threshpar</a></code>, and <code><a href="../../psychotools/help/personpar.html">personpar</a></code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>pcmodel</code> returns an S3 object of class <code>"pcmodel"</code>, 
+i.e., a list the following components:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>coefficients</code></td>
+<td>
+<p>a named vector of estimated item-category
+parameters (without the first item-category parameter which is
+constrained to 0),</p>
+</td></tr>
+<tr valign="top"><td><code>vcov</code></td>
+<td>
+<p>covariance matrix of the parameters in the model,</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>modified data, used for model-fitting, i.e., cleaned for
+items without variance, centralized so that the first category is
+zero for all items, treated null categories as specified via
+argument <code>"nullcats"</code> and without observations with zero
+weight. Be careful, this is different than for objects of class
+<code>"raschmodel"</code> or <code>"btmodel"</code>, where <code>data</code> contains
+the <em>original</em> data,</p>
+</td></tr>
+<tr valign="top"><td><code>items</code></td>
+<td>
+<p>logical vector of length <code>ncol(dat)</code>, indicating
+which items have variance (<code>TRUE</code>), i.e., are identified and
+have been used for the estimation or not (<code>FALSE</code>),</p>
+</td></tr>
+<tr valign="top"><td><code>categories</code></td>
+<td>
+<p>list of length <code>ncol(y)</code>, containing integer
+vectors starting from one to the number of categories minus one per
+item,</p>
+</td></tr>
+<tr valign="top"><td><code>n</code></td>
+<td>
+<p>number of observations (with non-zero weights),</p>
+</td></tr>
+<tr valign="top"><td><code>n_org</code></td>
+<td>
+<p>original number of observations in <code>y</code>,</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>the weights used (if any),</p>
+</td></tr>
+<tr valign="top"><td><code>na</code></td>
+<td>
+<p>logical indicating whether the data contain NAs,</p>
+</td></tr>
+<tr valign="top"><td><code>nullcats</code></td>
+<td>
+<p>either <code>NULL</code> or, if there have been null
+categories, a list of length <code>ncol(y)</code> with logical vectors
+specifying which categories are null categories (<code>TRUE</code>) or not
+(<code>FALSE</code>),</p>
+</td></tr>
+<tr valign="top"><td><code>esf</code></td>
+<td>
+<p>list of elementary symmetric functions and their
+derivatives for estimated parameters,</p>
+</td></tr>
+<tr valign="top"><td><code>loglik</code></td>
+<td>
+<p>log-likelihood of the fitted model,</p>
+</td></tr>
+<tr valign="top"><td><code>df</code></td>
+<td>
+<p>number of estimated parameters,</p>
+</td></tr>
+<tr valign="top"><td><code>code</code></td>
+<td>
+<p>convergence code from <code>optim</code>,</p>
+</td></tr>
+<tr valign="top"><td><code>iterations</code></td>
+<td>
+<p>number of iterations used by <code>optim</code>,</p>
+</td></tr>
+<tr valign="top"><td><code>reltol</code></td>
+<td>
+<p>tolerance passed to <code>optim</code>,</p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>original function call.</p>
+</td></tr>
+</table>
+
+
+<h3>References</h3>
+
+<p>Masters GN (1992).
+A Rasch Model for Partial Credit Scoring.
+<em>Psychometrika</em>, <b>47</b>(2), 149&ndash;174.
+</p>
+<p>Wilson M, Masters GN (1993).
+The Partial Credit Model and Null Categories.
+<em>Psychometrika</em>, <b>58</b>(1), 87&ndash;99.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../psychotools/help/gpcmodel.html">gpcmodel</a></code>, <code><a href="../../psychotools/help/rsmodel.html">rsmodel</a></code>, <code><a href="../../psychotools/help/raschmodel.html">raschmodel</a></code>,
+<code><a href="../../psychotools/help/nplmodel.html">nplmodel</a></code>, <code><a href="../../psychotools/help/btmodel.html">btmodel</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+o &lt;- options(digits = 4)
+
+## Verbal aggression data
+data("VerbalAggression", package = "psychotools")
+
+## Partial credit model for the other-to-blame situations
+pcm &lt;- pcmodel(VerbalAggression$resp[, 1:12])
+summary(pcm)
+
+## visualizations
+plot(pcm, type = "profile")
+plot(pcm, type = "regions")
+plot(pcm, type = "piplot")
+plot(pcm, type = "curves")
+plot(pcm, type = "information")
+
+## Get data of situation 1 ('A bus fails to
+## stop for me') and induce a null category in item 2.
+pcd &lt;- VerbalAggression$resp[, 1:6, drop = FALSE]
+pcd[pcd[, 2] == 1, 2] &lt;- NA
+
+## fit pcm to these data, comparing downcoding and keeping strategy
+pcm_va_keep  &lt;- pcmodel(pcd, nullcats = "keep")
+pcm_va_down  &lt;- pcmodel(pcd, nullcats = "downcode")
+
+plot(x = coef(pcm_va_keep), y = coef(pcm_va_down),
+     xlab = "Threshold Parameters (Keeping)",
+     ylab = "Threshold Parameters (Downcoding)",
+     main = "Comparison of two null category strategies (I2 with null category)", 
+     pch = rep(as.character(1:6), each = 2)[-3])
+abline(b = 1, a = 0)
+
+options(digits = o$digits)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>psychotools</em> version 0.7-6 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

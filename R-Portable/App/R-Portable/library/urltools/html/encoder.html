@@ -1,0 +1,102 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Encode or decode a URI</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for url_decode {urltools}"><tr><td>url_decode {urltools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Encode or decode a URI</h2>
+
+<h3>Description</h3>
+
+<p>encodes or decodes a URI/URL
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+url_decode(urls)
+
+url_encode(urls)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>urls</code></td>
+<td>
+<p>a vector of URLs to decode or encode.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>URL encoding and decoding is an essential prerequisite to proper web interaction
+and data analysis around things like server-side logs. The
+<a href="http://tools.ietf.org/html/rfc3986">relevant IETF RfC</a> mandates the percentage-encoding
+of non-Latin characters, including things like slashes, unless those are reserved.
+</p>
+<p>Base R provides <code><a href="../../utils/html/URLencode.html">URLdecode</a></code> and <code><a href="../../utils/html/URLencode.html">URLencode</a></code>, which handle
+URL encoding - in theory. In practise, they have a set of substantial problems
+that the urltools implementation solves::
+</p>
+
+<dl>
+<dt>No vectorisation: </dt><dd><p>Both base R functions operate on single URLs, not vectors of URLs.
+This means that, when confronted with a vector of URLs that need encoding or
+decoding, your only option is to loop from within R. This can be incredibly
+computationally costly with large datasets. url_encode and url_decode are
+implemented in C++ and entirely vectorised, allowing for a substantial
+performance improvement.</p>
+</dd>
+<dt>No scheme recognition: </dt><dd><p>encoding the slashes in, say, http://, is a good way
+of making sure your URL no longer works. Because of this, the only thing
+you can encode in URLencode (unless you refuse to encode reserved characters)
+is a partial URL, lacking the initial scheme, which requires additional operations
+to set up and increases the complexity of encoding or decoding. url_encode
+detects the protocol and silently splits it off, leaving it unencoded to ensure
+that the resulting URL is valid.</p>
+</dd>
+<dt>ASCII NULs: </dt><dd><p>Server side data can get very messy and sometimes include out-of-range
+characters. Unfortunately, URLdecode's response to these characters is to convert
+them to NULs, which R can't handle, at which point your URLdecode call breaks.
+<code>url_decode</code> simply ignores them.</p>
+</dd>
+</dl>
+
+
+
+<h3>Value</h3>
+
+<p>a character vector containing the encoded (or decoded) versions of &quot;urls&quot;.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../urltools/help/puny_decode.html">puny_decode</a></code> and <code><a href="../../urltools/help/puny_encode.html">puny_encode</a></code>, for punycode decoding
+and encoding.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+url_decode("https://en.wikipedia.org/wiki/File:Vice_City_Public_Radio_%28logo%29.jpg")
+url_encode("https://en.wikipedia.org/wiki/File:Vice_City_Public_Radio_(logo).jpg")
+
+## Not run: 
+#A demonstrator of the contrasting behaviours around out-of-range characters
+URLdecode("%gIL")
+url_decode("%gIL")
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>urltools</em> version 1.7.3.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

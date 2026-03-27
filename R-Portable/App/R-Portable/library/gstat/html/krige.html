@@ -1,0 +1,298 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Simple, Ordinary or Universal, global or local, Point or...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for krige {gstat}"><tr><td>krige {gstat}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Simple, Ordinary or Universal, global or local, Point or Block Kriging,
+or simulation. </h2>
+
+<h3>Description</h3>
+
+<p>Function for simple, ordinary or universal kriging (sometimes called
+external drift kriging), kriging in a local neighbourhood, point kriging
+or kriging of block mean values (rectangular or irregular blocks), and
+conditional (Gaussian or indicator) simulation equivalents for all kriging
+varieties, and function for inverse distance weighted interpolation. 
+For multivariable prediction, see <a href="../../gstat/help/gstat.html">gstat</a> and <a href="../help/predict.html">predict</a>
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+krige(formula, locations, ...)
+krige.locations(formula, locations, data, newdata, model, ..., beta, nmax
+= Inf, nmin = 0, omax = 0, maxdist = Inf, block, nsim = 0, indicators = FALSE,
+na.action = na.pass, debug.level = 1)
+krige.spatial(formula, locations, newdata, model, ..., beta, nmax
+= Inf, nmin = 0, omax = 0, maxdist = Inf, block, nsim = 0, indicators = FALSE,
+na.action = na.pass, debug.level = 1)
+krige0(formula, data, newdata, model, beta, y, ..., computeVar = FALSE,
+	fullCovariance = FALSE)
+idw(formula, locations, ...)
+idw.locations(formula, locations, data, newdata, nmax = Inf, 
+	nmin = 0, omax = 0, maxdist = Inf, block, na.action = na.pass, idp = 2.0,
+	debug.level = 1)
+idw.spatial(formula, locations, newdata, nmax = Inf, nmin = 0, 
+    omax = 0, maxdist = Inf, block = numeric(0), na.action = na.pass, idp = 2.0,
+	debug.level = 1)
+idw0(formula, data, newdata, y, idp = 2.0)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p> formula that defines the dependent variable as a linear
+model of independent variables; suppose the dependent variable has name
+<code>z</code>, for ordinary and simple kriging use the formula <code>z~1</code>;
+for simple kriging also define <code>beta</code> (see below); for universal
+kriging, suppose <code>z</code> is linearly dependent on <code>x</code> and <code>y</code>,
+use the formula <code>z~x+y</code></p>
+</td></tr>
+<tr valign="top"><td><code>locations</code></td>
+<td>
+<p> object of class <code>Spatial</code> or <code>sf</code>, or (deprecated)
+formula defines the spatial data locations (coordinates) such as <code>~x+y</code></p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p> data frame: should contain the dependent variable, independent
+variables, and coordinates, should be missing if locations contains data. </p>
+</td></tr>
+<tr valign="top"><td><code>newdata</code></td>
+<td>
+<p> object of class <code>Spatial</code>, <code>sf</code> or <code>stars</code> with prediction/simulation 
+locations; should contain attributes with the independent variables (if present).  </p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p> variogram model of dependent variable (or its residuals), 
+defined by a call to <a href="../../gstat/help/vgm.html">vgm</a> or <a href="../../gstat/help/fit.variogram.html">fit.variogram</a>; for <code>krige0</code>
+also a user-supplied covariance function is allowed (see example below) </p>
+</td></tr>
+<tr valign="top"><td><code>beta</code></td>
+<td>
+<p> for simple kriging (and simulation based on simple
+kriging): vector with the trend coefficients (including intercept);
+if no independent variables are defined the model only contains an
+intercept and beta should be the simple kriging mean </p>
+</td></tr>
+<tr valign="top"><td><code>nmax</code></td>
+<td>
+<p> for local kriging: the number of nearest observations that
+should be used for a kriging prediction or simulation, where nearest
+is defined in terms of the space of the spatial locations. By default,
+all observations are used </p>
+</td></tr>
+<tr valign="top"><td><code>nmin</code></td>
+<td>
+<p> for local kriging: if the number of nearest observations
+within distance <code>maxdist</code> is less than <code>nmin</code>, a missing 
+value will be generated; see maxdist </p>
+</td></tr>
+<tr valign="top"><td><code>omax</code></td>
+<td>
+<p> see <a href="../../gstat/help/gstat.html">gstat</a> </p>
+</td></tr>
+<tr valign="top"><td><code>maxdist</code></td>
+<td>
+<p> for local kriging: only observations within a distance
+of <code>maxdist</code> from the prediction location are used for prediction
+or simulation; if combined with <code>nmax</code>, both criteria apply </p>
+</td></tr>
+<tr valign="top"><td><code>block</code></td>
+<td>
+<p> block size; a vector with 1, 2 or 3 values containing
+the size of a rectangular in x-, y- and z-dimension respectively
+(0 if not set), or a data frame with 1, 2 or 3 columns, containing
+the points that discretize the block in the x-, y- and z-dimension
+to define irregular blocks relative to (0,0) or (0,0,0)&mdash;see also the details 
+section of <a href="../help/predict.html">predict</a>. By default, predictions or simulations 
+refer to the support of the data values. </p>
+</td></tr>
+<tr valign="top"><td><code>nsim</code></td>
+<td>
+<p> integer; if set to a non-zero value, conditional simulation
+is used instead of kriging interpolation. For this, sequential Gaussian
+or indicator simulation is used (depending on the value of 
+<code>indicators</code>), following a single random path through the data.  </p>
+</td></tr>
+<tr valign="top"><td><code>indicators</code></td>
+<td>
+<p> logical, only relevant if <code>nsim</code> is non-zero; if
+TRUE, use indicator simulation; else use Gaussian simulation </p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+<p> function determining what should be done with missing
+values in 'newdata'.  The default is to predict 'NA'.  Missing values 
+in coordinates and predictors are both dealt with. </p>
+</td></tr>
+<tr valign="top"><td><code>debug.level</code></td>
+<td>
+<p>debug level, passed to <a href="../help/predict.html">predict</a>; use -1 
+to see progress in percentage, and 0 to suppress all printed information </p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p> for krige: arguments that will be passed to <a href="../../gstat/help/gstat.html">gstat</a>;
+for <code>krige0</code>: arguments that will be passe to <code>model</code></p>
+</td></tr>
+<tr valign="top"><td><code>idp</code></td>
+<td>
+<p>numeric; specify the inverse distance weighting power</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>matrix; to krige multiple fields in a single step, pass data 
+as columns of matrix <code>y</code>. This will ignore the value of the 
+response in <code>formula</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>computeVar</code></td>
+<td>
+<p>logical; if TRUE, prediction variances will be returned</p>
+</td></tr>
+<tr valign="top"><td><code>fullCovariance</code></td>
+<td>
+<p>logical; if FALSE a vector with prediction 
+variances will be returned, if TRUE the full covariance matrix of 
+all predictions will be returned</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Function <code>krige</code> is a simple wrapper method around <a href="../../gstat/help/gstat.html">gstat</a>
+and <a href="../help/predict.html">predict</a> for univariate kriging prediction and conditional
+simulation methods available in gstat. For multivariate prediction or
+simulation, or for other interpolation methods provided by gstat (such as
+inverse distance weighted interpolation or trend surface interpolation)
+use the functions <a href="../../gstat/help/gstat.html">gstat</a> and <a href="../help/predict.html">predict</a> directly.
+</p>
+<p>Function <code>idw</code> performs just as <code>krige</code> without a model being
+passed, but allows direct specification of the inverse distance weighting
+power. Don't use with predictors in the formula.
+</p>
+<p>For further details, see <a href="../help/predict.html">predict</a>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>if <code>locations</code> is not a formula, object of the same class as
+<code>newdata</code> (deriving from <code>Spatial</code>); else a data frame
+containing the coordinates of <code>newdata</code>. Attributes columns
+contain prediction and prediction variance (in case of kriging) or the
+<code>abs(nsim)</code> columns of the conditional Gaussian or indicator
+simulations 
+</p>
+<p><code>krige0</code> and <code>idw0</code> are alternative functions with reduced
+functionality and larger memory requirements; they return numeric vectors
+(or matrices, in case of multiple dependent) with predicted values only;
+in case <code>computeVar</code> is TRUE, a list with elements <code>pred</code> and
+<code>var</code> is returned, containing predictions, and (co)variances (depending
+on argument <code>fullCovariance</code>).
+</p>
+
+
+<h3>Methods</h3>
+
+
+<dl>
+<dt>formula = &quot;formula&quot;, locations = &quot;formula&quot;</dt><dd> 
+<p>locations specifies which coordinates in <code>data</code> refer to spatial coordinates
+</p>
+</dd>
+<dt>formula = &quot;formula&quot;, locations = &quot;Spatial&quot;</dt><dd> 
+<p>Object locations knows about its own spatial locations
+</p>
+</dd>
+<dt>formula = &quot;formula&quot;, locations = &quot;NULL&quot;</dt><dd><p> used in case of unconditional simulations;
+newdata needs to be of class Spatial </p>
+</dd>
+</dl>
+
+
+<h3>Note</h3>
+
+  
+<p>Daniel G. Krige is a South African scientist who was a mining engineer
+when he first used generalised least squares prediction with spatial
+covariances in the 50's. George Matheron coined the term <code>kriging</code>
+in the 60's for the action of doing this, although very similar approaches
+had been taken in the field of meteorology. Beside being Krige's name,
+I consider &quot;krige&quot; to be to &quot;kriging&quot; what &quot;predict&quot; is to &quot;prediction&quot;.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Edzer Pebesma </p>
+
+
+<h3>References</h3>
+
+<p> N.A.C. Cressie, 1993, Statistics for Spatial Data,
+Wiley. 
+</p>
+<p>Pebesma, E.J., 2004. Multivariable geostatistics in S: the gstat package.
+Computers and Geosciences, 30: 683-691.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><a href="../../gstat/help/gstat.html">gstat</a>, <a href="../help/predict.html">predict</a> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(sp)
+data(meuse)
+coordinates(meuse) = ~x+y
+data(meuse.grid)
+gridded(meuse.grid) = ~x+y
+m &lt;- vgm(.59, "Sph", 874, .04)
+# ordinary kriging:
+x &lt;- krige(log(zinc)~1, meuse, meuse.grid, model = m)
+spplot(x["var1.pred"], main = "ordinary kriging predictions")
+spplot(x["var1.var"],  main = "ordinary kriging variance")
+# simple kriging:
+x &lt;- krige(log(zinc)~1, meuse, meuse.grid, model = m, beta = 5.9)
+# residual variogram:
+m &lt;- vgm(.4, "Sph", 954, .06)
+# universal block kriging:
+x &lt;- krige(log(zinc)~x+y, meuse, meuse.grid, model = m, block = c(40,40))
+spplot(x["var1.pred"], main = "universal kriging predictions")
+
+# krige0, using user-defined covariance function and multiple responses in y:
+# exponential variogram with range 500, defined as covariance function:
+v = function(x, y = x) { exp(-spDists(coordinates(x),coordinates(y))/500) }
+# krige two variables in a single pass (using 1 covariance model):
+y = cbind(meuse$zinc,meuse$copper,meuse$lead,meuse$cadmium)
+x &lt;- krige0(zinc~1, meuse, meuse.grid, v, y = y)
+meuse.grid$zinc = x[,1]
+spplot(meuse.grid["zinc"], main = "zinc")
+meuse.grid$copper = x[,2]
+spplot(meuse.grid["copper"], main = "copper")
+
+# the following has NOTHING to do with kriging, but --
+# return the median of the nearest 11 observations:
+x = krige(zinc~1, meuse, meuse.grid, set = list(method = "med"), nmax = 11)
+# get 25%- and 75%-percentiles of nearest 11 obs, as prediction and variance:
+x = krige(zinc~1, meuse, meuse.grid, nmax = 11, 
+	set = list(method = "med", quantile = 0.25))
+# get diversity (# of different values) and mode from 11 nearest observations:
+x = krige(zinc~1, meuse, meuse.grid, nmax = 11, set = list(method = "div"))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>gstat</em> version 2.1-5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,476 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Parametric and penalised generalised survival models</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for gsm {rstpm2}"><tr><td>gsm {rstpm2}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Parametric and penalised generalised survival models
+</h2>
+
+<h3>Description</h3>
+
+<p>This implements the generalised survival model g(S(t|x)) = eta, where
+g is a link function, S is survival, t is time, x are covariates and eta
+is a linear predictor. The linear predictor can include either
+parametric or penalised
+smoothers for the time effects, for time:covariate interactions and for
+covariate effects. The main model assumption is that the time
+effects in the linear predictor are smooth. This extends the class of
+flexible parametric survival models developed by Royston and
+colleagues. The model has been extended to include relative survival
+(excess hazards),
+Gamma frailties and normal random effects.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+gsm(formula, data, smooth.formula = NULL, smooth.args = NULL,
+                df = 3, cure = FALSE,
+                tvc = NULL, tvc.formula = NULL,
+                control = list(), init = NULL,
+                weights = NULL, robust = FALSE, baseoff = FALSE,
+                timeVar = "", time0Var = "", use.gr = NULL,
+                optimiser=NULL, log.time.transform=TRUE,
+                reltol=NULL, trace = NULL,
+                link.type=c("PH","PO","probit","AH","AO"), theta.AO=0,
+                contrasts = NULL, subset = NULL,
+                robust_initial=NULL,
+                coxph.strata = NULL, coxph.formula = NULL,
+                logH.formula = NULL, logH.args = NULL,
+                bhazard = NULL, bhazinit=NULL, copula=FALSE,
+                frailty = !is.null(cluster) &amp; !robust &amp; !copula,
+                cluster = NULL, logtheta=NULL,
+                nodes=NULL, RandDist=c("Gamma","LogN"), recurrent = FALSE,
+                adaptive = NULL, maxkappa = NULL,
+                sp=NULL, criterion=NULL, penalty=NULL,
+                smoother.parameters=NULL, Z=~1, outer_optim=NULL,
+                alpha=1, sp.init=1,
+                penalised=FALSE,
+                ...)
+stpm2(formula, data, weights=NULL, subset=NULL, coxph.strata=NULL, ...)
+pstpm2(formula, data, weights=NULL, subset=NULL, coxph.strata=NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+
+<p>a formula object, with the response on the left of a <code>~</code> operator, and
+the parametric terms on the right.  The response must be a survival object as
+returned by the <code><a href="../../survival/help/Surv.html">Surv</a></code> function. Specials include
+<code>cluster</code> and <code>bhazard</code>. [required]
+</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+
+<p>a data.frame in which to interpret the variables named in
+the <code>formula</code> argument.
+</p>
+</td></tr>
+<tr valign="top"><td><code>smooth.formula</code></td>
+<td>
+
+<p>either a parametric formula or a penalised <code>mgcv::gam</code> formula for
+describing the time effects and
+time-dependent effects and smoothed covariate effects on the linear
+predictor scale
+(default=NULL). The default model is equal to <code>~s(log(time),k=-1)</code>
+where <code>time</code> is the time variable.
+</p>
+</td></tr>
+<tr valign="top"><td><code>df</code></td>
+<td>
+
+<p>an integer that describes the degrees of freedom for the <code>ns</code>
+function for modelling the baseline log-cumulative hazard
+(default=3). Parametric model only.
+</p>
+</td></tr>
+<tr valign="top"><td><code>smooth.args</code></td>
+<td>
+
+<p>a list describing the arguments for the <code>s</code> function for modelling
+the baseline time effect on the linear predictor scale (default=NULL). 
+</p>
+</td></tr>
+<tr valign="top"><td><code>tvc</code></td>
+<td>
+
+<p>a list with the names of the time-varying coefficients. For a parametric
+model, this uses natural splines (e.g. <code>tvc=list(hormon=3)</code> is equivalent
+to
+<code>smooth.formula=~...+as.numeric(hormon):nsx(log(time),df=3)</code>), which by default
+does <em>not</em> include an intercept term, hence you
+should include a main effect. Note that
+this will convert a logical or factor variable to a numeric value, so
+the user should use indicators for factor terms. For a penalised
+model, this uses cubic splines
+(e.g. <code>tvc=list(hormon=-1)</code> is equivalent to
+<code>smooth.formula=~...+s(log(time),by=hormon,k=-1))</code>, which by
+default <em>does</em> include an intercept (or main effect) term (and this
+code will remove any main effect from <code>formula</code>). 
+</p>
+</td></tr>
+<tr valign="top"><td><code>tvc.formula</code></td>
+<td>
+
+<p>separate formula for the time-varying effects. This is combined with
+<code>smooth.formula</code> or the default <code>smooth.formula</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>baseoff</code></td>
+<td>
+<p>Boolean used to determine whether fully define the model
+using <code>tvc.formula</code> rather than combining <code>logH.formula</code> and <code>tvc.formula</code></p>
+</td></tr>
+<tr valign="top"><td><code>logH.args</code></td>
+<td>
+
+<p>as per <code>smooth.args</code>. Deprecated.
+</p>
+</td></tr>
+<tr valign="top"><td><code>logH.formula</code></td>
+<td>
+
+<p>as per <code>smooth.formula</code>. Deprecated.
+</p>
+</td></tr>
+<tr valign="top"><td><code>cure</code></td>
+<td>
+<p>logical for whether to estimate a cure model (parametric
+model only).</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+<p>list of arguments passed to <code><a href="../../rstpm2/help/gsm.control.html">gsm.control</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>init</code></td>
+<td>
+<p><code>init</code> should either be <code>NULL</code>, such that initial
+values will be determined using Cox regression, or a numeric
+vector of initial values.</p>
+</td></tr>
+<tr valign="top"><td><code>coxph.strata</code></td>
+<td>
+<p>variable in the <code>data</code> argument for
+stratification of the <code>coxph</code> model fit for estimating initial values.</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>an optional vector of 'prior weights' to be used in the
+fitting process. Should be <code>NULL</code> or a numeric vector.</p>
+</td></tr>
+<tr valign="top"><td><code>robust</code></td>
+<td>
+<p>Boolean used to determine whether to use a robust variance
+estimator.</p>
+</td></tr>
+<tr valign="top"><td><code>bhazard</code></td>
+<td>
+<p>variable for the baseline hazard for relative survival</p>
+</td></tr>
+<tr valign="top"><td><code>bhazinit</code></td>
+<td>
+
+<p>scalar used to adjust the background cumulative hazards for calculating
+initial values. Default=0.1. Deprecated argument: use of the
+<code>control</code> argument is preferred.
+</p>
+</td></tr>
+<tr valign="top"><td><code>copula</code></td>
+<td>
+<p>logical to indicate whether to use a copula model (experimental)</p>
+</td></tr>
+<tr valign="top"><td><code>timeVar</code></td>
+<td>
+<p>variable defining the time variable. By default, this is
+determined from the survival object, however this may be ambiguous if
+two variables define the time</p>
+</td></tr>
+</table>
+
+
+
+<table summary="R argblock">
+<tr valign="top"><td><code>sp</code></td>
+<td>
+<p>fix the value of the smoothing parameters.</p>
+</td></tr>
+<tr valign="top"><td><code>use.gr</code></td>
+<td>
+<p>in R, a Boolean to determine whether to use the gradient
+in the optimisation. Default=TRUE, Deprecated argument: use of the
+<code>control</code> argument is preferred.</p>
+</td></tr>
+<tr valign="top"><td><code>criterion</code></td>
+<td>
+<p>in Rcpp, determine whether to use &quot;GCV&quot; or &quot;BIC&quot; for for the smoothing parameter selection.</p>
+</td></tr>
+<tr valign="top"><td><code>penalty</code></td>
+<td>
+<p>use either the &quot;logH&quot; penalty, which is the default
+penalty from mgcv, or the &quot;h&quot; hazard penalty. Default=&quot;logH&quot;. Deprecated argument: use of the
+<code>control</code> argument is preferred.</p>
+</td></tr>
+<tr valign="top"><td><code>smoother.parameters</code></td>
+<td>
+<p>for the hazard penalty, a list with components which are lists with components var, transform and inverse.</p>
+</td></tr>
+<tr valign="top"><td><code>alpha</code></td>
+<td>
+<p>an ad hoc tuning parameter for the smoothing parameter.</p>
+</td></tr>
+<tr valign="top"><td><code>sp.init</code></td>
+<td>
+<p>initial values for the smoothing parameters.</p>
+</td></tr>
+<tr valign="top"><td><code>trace</code></td>
+<td>
+<p>integer for trace reporting; 0 represents no additional
+reporting. Default=0. Deprecated argument: use of the
+<code>control</code> argument is preferred.</p>
+</td></tr>
+<tr valign="top"><td><code>contrasts</code></td>
+<td>
+<p>an optional list. See the <code>contrasts.arg</code>
+of <code><a href="../../stats/html/model.matrix.html">model.matrix.default</a></code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>subset</code></td>
+<td>
+<p>an optional vector specifying a subset of observations to be used in the fitting process.</p>
+</td></tr>
+<tr valign="top"><td><code>coxph.formula</code></td>
+<td>
+<p>additional formula used to improve the fitting of
+initial values [optional and rarely used].</p>
+</td></tr>
+<tr valign="top"><td><code>time0Var</code></td>
+<td>
+<p>string variable to determine the entry variable; useful
+for when more than one data variable is used in the entry time.</p>
+</td></tr>
+<tr valign="top"><td><code>link.type</code></td>
+<td>
+<p>type of link function. For &quot;PH&quot; (generalised
+proportional hazards), g(S)=log(-log(S)); for
+&quot;PO&quot; (generalised proportional odds), g(S)=-logit(S); for &quot;probit&quot;
+(generalised probit), g(S)=-probit(S); for &quot;AH&quot; (generalised additive
+hazards), g(S)=-log(S); for &quot;AO&quot; (generalised Aranda-Ordaz), g(S)=log((S^(-theta.AO)-1)/theta.AO).</p>
+</td></tr>
+<tr valign="top"><td><code>theta.AO</code></td>
+<td>
+<p>theta parameter for the Aranda-Ordaz link type.</p>
+</td></tr>
+<tr valign="top"><td><code>optimiser</code></td>
+<td>
+<p>select which optimiser is used. Default=&quot;BFGS&quot;. Deprecated argument: use of the
+<code>control</code> argument is preferred.</p>
+</td></tr>
+<tr valign="top"><td><code>log.time.transform</code></td>
+<td>
+<p>should a log-transformation be used for
+calculating the derivative of the design matrix with respect to time? (default=TRUE)</p>
+</td></tr>
+<tr valign="top"><td><code>recurrent</code></td>
+<td>
+<p>logical for whether clustered, left truncated data are
+recurrent or for first event (where the latter requires an adjustment
+for the frailties or random effects)</p>
+</td></tr>
+<tr valign="top"><td><code>frailty</code></td>
+<td>
+<p>logical for whether to fit a shared frailty model</p>
+</td></tr>
+<tr valign="top"><td><code>cluster</code></td>
+<td>
+<p>variable that determines the cluster
+for the frailty. This can be a vector, a string for the column, or a
+name. This can also be specified using a special.</p>
+</td></tr>
+<tr valign="top"><td><code>logtheta</code></td>
+<td>
+<p>initial value for log-theta used in the gamma shared frailty
+model (defaults to value from a <code>coxph</code> model fit)</p>
+</td></tr>
+<tr valign="top"><td><code>nodes</code></td>
+<td>
+<p>number of integration points for Gaussian
+quadrature. Default=9. Deprecated argument: use of the
+<code>control</code> argument is preferred.</p>
+</td></tr>
+<tr valign="top"><td><code>RandDist</code></td>
+<td>
+<p>type of distribution for the random effect or frailty</p>
+</td></tr>
+<tr valign="top"><td><code>adaptive</code></td>
+<td>
+<p>logical for whether to use adaptive or non-adaptive
+quadrature, Default=TRUE. Deprecated argument: use of the
+<code>control</code> argument is preferred.</p>
+</td></tr>
+<tr valign="top"><td><code>maxkappa</code></td>
+<td>
+<p>double float value for the maximum value of the weight
+used in the constraint. Default=1000. Deprecated argument: use of the
+<code>control</code> argument is preferred.</p>
+</td></tr>
+<tr valign="top"><td><code>Z</code></td>
+<td>
+<p>formula for the design matrix for the random effects</p>
+</td></tr>
+<tr valign="top"><td><code>reltol</code></td>
+<td>
+<p>list with components for search and final relative
+tolerances. Default=list(search=1e-10, final=1e-10, outer=1e-5). Deprecated argument: use of the
+<code>control</code> argument with arguments <code>reltol.search</code>,
+<code>reltol.final</code> and <code>reltol.outer</code> is preferred.</p>
+</td></tr>
+<tr valign="top"><td><code>outer_optim</code></td>
+<td>
+<p>Integer to indicate the algorithm for outer
+optimisation. If outer_optim=1 (default), then use Neldear-Mead,
+otherwise use Nlm.</p>
+</td></tr> 
+<tr valign="top"><td><code>robust_initial</code></td>
+<td>
+<p>logical for whether to use Nelder-Mead
+to find initial values (max 50 iterations). This is useful for
+ill-posed initial values. Default= FALSE. Deprecated argument: use of the
+<code>control</code> argument is preferred.</p>
+</td></tr>
+<tr valign="top"><td><code>penalised</code></td>
+<td>
+<p>logical to show whether to use penalised models with
+<code>pstpm</code> (<code>penalised=TRUE</code>) or parametrics models with
+<code>stpm2</code> (<code>penalised=FALSE</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p> additional arguments to be passed to the <code><a href="../../bbmle/help/mle2.html">mle2</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The implementation extends the <code>mle2</code> object from the
+<code>bbmle</code> package.
+</p>
+<p>The default smoothers for time on the linear predictor scale are
+<code>nsxs(log(time),df=3)</code> for the parametric model and
+<code>s(log(time))</code> for the penalised model.
+</p>
+<p>A frequently asked question is: why does rstpm2 give different spline
+estimates to flexsurv and Stata's stpm2? The short answer is that
+rstpm2 uses a different natural spline basis compared with flexsurv
+and Stata's stpm2 and slightly different
+knot placement than Stata's stpm2. If the knot
+placement is the same, then the predictions and other coefficients are
+expected to be very similar. As a longer answer, the default smoother
+in rstpm2 is to use an extension of the <code>splines::ns</code> function
+(<code>rstpm2::nsx</code>), which uses a QR projection of B-splines for
+natural splines. In contrast, flexsurv and Stata's stpm2 use truncated
+power splines for the natural spline basis (also termed 'restricted
+cubic splines'). The B-splines are known to
+have good numerical properties, while Stata's stpm2 implementation
+defaults to using matrix orthogonalisation to account for any
+numerical instability in the truncated power basis. Furthermore,
+rstpm2 allows for any smooth parametric function to be used as a
+smoother in <code>stpm2</code>/<code>gsm</code>, which is an extension over
+flexsurv and Stata's stpm2. Finally, it may be difficult to get rstpm2 and
+Stata's stpm2 to return the same estimates: although
+<code>nsx</code> includes an argument <code>stata.stpm2.compatible = FALSE</code> (change to <code>TRUE</code> for
+compatibility), the design matrix for rstpm2 is based on individuals
+with events, while Stata's stpm2 determines the spline knots from the
+individuals with events and the design matrix is otherwise based on all individuals.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Either a <code>stpm2-class</code> or <code>pstpm2-class</code> object. 
+
+
+
+
+
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Mark Clements, Xing-Rong Liu, Benjamin Christoffersen.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+    data(brcancer)
+    summary(fit &lt;- stpm2(Surv(rectime,censrec==1)~hormon,data=brcancer,df=3))
+    
+    ## some predictions
+    head(predict(fit,se.fit=TRUE,type="surv"))
+    head(predict(fit,se.fit=TRUE,type="hazard"))
+    
+    ## some plots
+    plot(fit,newdata=data.frame(hormon=0),type="hazard")
+    plot(fit,newdata=data.frame(hormon=0),type="surv")
+
+    ## time-varying coefficient
+    summary(fit.tvc &lt;- stpm2(Surv(rectime,censrec==1)~hormon,data=brcancer,df=3,
+                             tvc=list(hormon=3)))
+    anova(fit,fit.tvc) # compare with and without tvc
+    
+    ## some more plots
+    plot(fit.tvc,newdata=data.frame(hormon=0),type="hr",var="hormon", ylim=c(0,2))
+    lines(fit.tvc,newdata=data.frame(hormon=1),type="hr",var="hormon",
+          col=2)
+
+    plot(fit.tvc,newdata=data.frame(hormon=0),type="sdiff",var="hormon")
+    
+    plot(fit.tvc,newdata=data.frame(hormon=0),type="hdiff",var="hormon")
+
+    library(scales)
+    cols &lt;- c(alpha("red",alpha=0.2), alpha("blue",alpha=0.2))
+    plot(fit.tvc,newdata=data.frame(hormon=0),type="hazard",ci.col=cols[1])
+    lines(fit.tvc,newdata=data.frame(hormon=1),type="hazard",lty=2,ci.col=cols[2],
+          ci=TRUE)
+    legend("topright",legend=c("No hormonal treatment", "(95
+           lty=c(1,1,2,1), lwd=c(1,10,1,10), col=c("black",cols[1],"black",cols[2]), bty="n")
+
+    
+    ## compare number of knots
+    hormon0 &lt;- data.frame(hormon=0)
+    plot(fit,type="hazard",newdata=hormon0)
+    AIC(fit)
+    for (df in 4:6) {
+        fit.new &lt;- stpm2(Surv(rectime,censrec==1)~hormon,data=brcancer,df=df)
+        plot(fit.new,type="hazard",newdata=hormon0,add=TRUE,ci=FALSE,line.col=df)
+        print(AIC(fit.new))
+    }
+
+    ## compatibility with Stata's stpm2 using the smooth.formula argument (see Details)
+    summary(stpm2(Surv(rectime,censrec==1)~hormon,data=brcancer,
+                  smooth.formula=~nsx(log(rectime),df=3,stata.stpm2.compatible=TRUE)))
+    summary(stpm2(Surv(rectime,censrec==1)~hormon,data=brcancer,
+                  smooth.formula=~nsx(log(rectime),df=3,stata=TRUE)+
+                  hormon:nsx(log(rectime),df=3,stata=TRUE)))
+
+    
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rstpm2</em> version 1.7.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

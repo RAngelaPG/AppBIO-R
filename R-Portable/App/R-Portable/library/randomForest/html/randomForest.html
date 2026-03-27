@@ -1,0 +1,444 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Classification and Regression with Random Forest</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for randomForest {randomForest}"><tr><td>randomForest {randomForest}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Classification and Regression with Random Forest</h2>
+
+<h3>Description</h3>
+
+<p><code>randomForest</code> implements Breiman's random forest algorithm (based on
+Breiman and Cutler's original Fortran code) for classification and
+regression.  It can also be used in unsupervised mode for assessing
+proximities among data points.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'formula'
+randomForest(formula, data=NULL, ..., subset, na.action=na.fail)
+## Default S3 method:
+randomForest(x, y=NULL,  xtest=NULL, ytest=NULL, ntree=500,
+             mtry=if (!is.null(y) &amp;&amp; !is.factor(y))
+             max(floor(ncol(x)/3), 1) else floor(sqrt(ncol(x))),
+             weights=NULL,
+             replace=TRUE, classwt=NULL, cutoff, strata,
+             sampsize = if (replace) nrow(x) else ceiling(.632*nrow(x)),
+             nodesize = if (!is.null(y) &amp;&amp; !is.factor(y)) 5 else 1,
+             maxnodes = NULL,
+             importance=FALSE, localImp=FALSE, nPerm=1,
+             proximity, oob.prox=proximity,
+             norm.votes=TRUE, do.trace=FALSE,
+             keep.forest=!is.null(y) &amp;&amp; is.null(xtest), corr.bias=FALSE,
+             keep.inbag=FALSE, ...)
+## S3 method for class 'randomForest'
+print(x, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>an optional data frame containing the variables in the model.
+By default the variables are taken from the environment which
+<code>randomForest</code> is called from.</p>
+</td></tr>
+<tr valign="top"><td><code>subset</code></td>
+<td>
+<p>an index vector indicating which rows should be used.
+(NOTE: If given, this argument must be named.)</p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+<p>A function to specify the action to be taken if NAs
+are found.  (NOTE: If given, this argument must be named.)</p>
+</td></tr>
+<tr valign="top"><td><code>x, formula</code></td>
+<td>
+<p>a data frame or a matrix of predictors, or a formula
+describing the model to be fitted (for the
+<code>print</code> method, an <code>randomForest</code> object).</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>A response vector.  If a factor, classification is assumed,
+otherwise regression is assumed.  If omitted, <code>randomForest</code>
+will run in unsupervised mode.</p>
+</td></tr>
+<tr valign="top"><td><code>xtest</code></td>
+<td>
+<p>a data frame or matrix (like <code>x</code>) containing
+predictors for the test set.</p>
+</td></tr>
+<tr valign="top"><td><code>ytest</code></td>
+<td>
+<p>response for the test set.</p>
+</td></tr>
+<tr valign="top"><td><code>ntree</code></td>
+<td>
+<p>Number of trees to grow.  This should not be set to too
+small a number, to ensure that every input row gets predicted at
+least a few times. </p>
+</td></tr>
+<tr valign="top"><td><code>mtry</code></td>
+<td>
+<p>Number of variables randomly sampled as candidates at each
+split.  Note that the default values are different for
+classification (sqrt(p) where p is number of variables in <code>x</code>)
+and regression (p/3)</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>A vector of length same as <code>y</code> that are positive 
+weights used only in sampling data to grow each tree (not used in any
+other calculation)</p>
+</td></tr>
+<tr valign="top"><td><code>replace</code></td>
+<td>
+<p>Should sampling of cases be done with or without
+replacement?</p>
+</td></tr>
+<tr valign="top"><td><code>classwt</code></td>
+<td>
+<p>Priors of the classes.  Need not add up to one.
+Ignored for regression.</p>
+</td></tr>
+<tr valign="top"><td><code>cutoff</code></td>
+<td>
+<p>(Classification only)  A vector of length equal to
+number of classes.  The &lsquo;winning&rsquo; class for an observation is the
+one with the maximum ratio of proportion of votes to cutoff.
+Default is 1/k where k is the number of classes (i.e., majority vote
+wins).</p>
+</td></tr>
+<tr valign="top"><td><code>strata</code></td>
+<td>
+<p>A (factor) variable that is used for stratified sampling.</p>
+</td></tr>
+<tr valign="top"><td><code>sampsize</code></td>
+<td>
+<p>Size(s) of sample to draw.  For classification, if
+sampsize is a vector of the length the number of strata, then
+sampling is stratified by strata, and the elements of sampsize
+indicate the numbers to be drawn from the strata.</p>
+</td></tr>
+<tr valign="top"><td><code>nodesize</code></td>
+<td>
+<p>Minimum size of terminal nodes.  Setting this number
+larger causes smaller trees to be grown (and thus take less time).
+Note that the default values are different for classification (1)
+and regression (5).</p>
+</td></tr>
+<tr valign="top"><td><code>maxnodes</code></td>
+<td>
+<p>Maximum number of terminal nodes trees in the forest
+can have.  If not given, trees are grown to the maximum possible
+(subject to limits by <code>nodesize</code>).  If set larger than maximum
+possible, a warning is issued.</p>
+</td></tr>
+<tr valign="top"><td><code>importance</code></td>
+<td>
+<p>Should importance of predictors be assessed? </p>
+</td></tr>
+<tr valign="top"><td><code>localImp</code></td>
+<td>
+<p>Should casewise importance measure be computed?
+(Setting this to <code>TRUE</code> will override <code>importance</code>.) </p>
+</td></tr>
+<tr valign="top"><td><code>nPerm</code></td>
+<td>
+<p>Number of times the OOB data are permuted per tree for
+assessing variable importance.  Number larger than 1 gives slightly
+more stable estimate, but not very effective.  Currently only
+implemented for regression.</p>
+</td></tr>
+<tr valign="top"><td><code>proximity</code></td>
+<td>
+<p>Should proximity measure among the rows be
+calculated?</p>
+</td></tr>
+<tr valign="top"><td><code>oob.prox</code></td>
+<td>
+<p>Should proximity be calculated only on &ldquo;out-of-bag&rdquo;
+data?</p>
+</td></tr>
+<tr valign="top"><td><code>norm.votes</code></td>
+<td>
+<p>If <code>TRUE</code> (default), the final result of votes
+are expressed as fractions.  If <code>FALSE</code>, raw vote counts are
+returned (useful for combining results from different runs).
+Ignored for regression.</p>
+</td></tr>
+<tr valign="top"><td><code>do.trace</code></td>
+<td>
+<p>If set to <code>TRUE</code>, give a more verbose output as
+<code>randomForest</code> is run.  If set to some integer, then running
+output is printed for every <code>do.trace</code> trees.</p>
+</td></tr>
+<tr valign="top"><td><code>keep.forest</code></td>
+<td>
+<p>If set to <code>FALSE</code>, the forest will not be
+retained in the output object.  If <code>xtest</code> is given, defaults
+to <code>FALSE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>corr.bias</code></td>
+<td>
+<p>perform bias correction for regression?  Note:
+Experimental.  Use at your own risk.</p>
+</td></tr>
+<tr valign="top"><td><code>keep.inbag</code></td>
+<td>
+<p>Should an <code>n</code> by <code>ntree</code> matrix be
+returned that keeps track of which samples are &ldquo;in-bag&rdquo; in which
+trees (but not how many times, if sampling with replacement)</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>optional parameters to be passed to the low level function
+<code>randomForest.default</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>randomForest</code>, which is a list with the
+following components:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>the original call to <code>randomForest</code></p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>one of <code>regression</code>, <code>classification</code>, or
+<code>unsupervised</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>predicted</code></td>
+<td>
+<p>the predicted values of the input data based on
+out-of-bag samples.</p>
+</td></tr>
+<tr valign="top"><td><code>importance</code></td>
+<td>
+<p>a matrix with <code>nclass</code> + 2 (for classification)
+or two (for regression) columns.  For classification, the first
+<code>nclass</code> columns are the class-specific measures computed as
+mean descrease in accuracy.  The <code>nclass</code> + 1st column is the
+mean descrease in accuracy over all classes.  The last column is the
+mean decrease in Gini index.  For Regression, the first column is
+the mean decrease in accuracy and the second the mean decrease in MSE.
+If <code>importance=FALSE</code>, the last measure is still returned as a
+vector.</p>
+</td></tr>
+<tr valign="top"><td><code>importanceSD</code></td>
+<td>
+<p>The &ldquo;standard errors&rdquo; of the permutation-based
+importance measure.  For classification, a <code>p</code> by <code>nclass
+      + 1</code> matrix corresponding to the first <code>nclass + 1</code> columns
+of the importance matrix.  For regression, a length <code>p</code> vector.</p>
+</td></tr>
+<tr valign="top"><td><code>localImp</code></td>
+<td>
+<p>a p by n matrix containing the casewise importance
+measures, the [i,j] element of which is the importance of i-th
+variable on the j-th case. <code>NULL</code> if <code>localImp=FALSE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>ntree</code></td>
+<td>
+<p>number of trees grown.</p>
+</td></tr>
+<tr valign="top"><td><code>mtry</code></td>
+<td>
+<p>number of predictors sampled for spliting at each node.</p>
+</td></tr>
+<tr valign="top"><td><code>forest</code></td>
+<td>
+<p>(a list that contains the entire forest; <code>NULL</code> if
+<code>randomForest</code> is run in unsupervised mode or if
+<code>keep.forest=FALSE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>err.rate</code></td>
+<td>
+<p>(classification only) vector error rates of the
+prediction on the input data, the i-th element being the (OOB) error rate
+for all trees up to the i-th.</p>
+</td></tr>
+<tr valign="top"><td><code>confusion</code></td>
+<td>
+<p>(classification only) the confusion matrix of the
+prediction (based on OOB data).</p>
+</td></tr>
+<tr valign="top"><td><code>votes</code></td>
+<td>
+<p>(classification only) a matrix with one row for each
+input data point and one column for each class, giving the fraction
+or number of (OOB) &lsquo;votes&rsquo; from the random forest.</p>
+</td></tr>
+<tr valign="top"><td><code>oob.times</code></td>
+<td>
+<p>number of times cases are &lsquo;out-of-bag&rsquo; (and thus used
+in computing OOB error estimate)</p>
+</td></tr>
+<tr valign="top"><td><code>proximity</code></td>
+<td>
+<p>if <code>proximity=TRUE</code> when
+<code>randomForest</code> is called, a matrix of proximity measures among
+the input (based on the frequency that pairs of data points are in
+the same terminal nodes).</p>
+</td></tr>
+<tr valign="top"><td><code>mse</code></td>
+<td>
+<p>(regression only) vector of mean square errors: sum of squared
+residuals divided by <code>n</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>rsq</code></td>
+<td>
+<p>(regression only) &ldquo;pseudo R-squared&rdquo;: 1 - <code>mse</code> /
+Var(y).</p>
+</td></tr>
+<tr valign="top"><td><code>test</code></td>
+<td>
+<p>if test set is given (through the <code>xtest</code> or additionally
+<code>ytest</code> arguments), this component is a list which contains the
+corresponding <code>predicted</code>, <code>err.rate</code>, <code>confusion</code>,
+<code>votes</code> (for classification) or <code>predicted</code>, <code>mse</code> and
+<code>rsq</code> (for regression) for the test set.  If
+<code>proximity=TRUE</code>, there is also a component, <code>proximity</code>,
+which contains the proximity among the test set as well as proximity
+between test and training data.</p>
+</td></tr>
+</table>
+
+
+<h3>Note</h3>
+
+<p>The <code>forest</code> structure is slightly different between
+classification and regression.  For details on how the trees are
+stored, see the help page for <code><a href="../../randomForest/help/getTree.html">getTree</a></code>.
+</p>
+<p>If <code>xtest</code> is given, prediction of the test set is done &ldquo;in
+place&rdquo; as the trees are grown.  If <code>ytest</code> is also given, and
+<code>do.trace</code> is set to some positive integer, then for every
+<code>do.trace</code> trees, the test set error is printed.  Results for the
+test set is returned in the <code>test</code> component of the resulting
+<code>randomForest</code> object.  For classification, the <code>votes</code>
+component (for training or test set data) contain the votes the cases
+received for the classes.  If <code>norm.votes=TRUE</code>, the fraction is
+given, which can be taken as predicted probabilities for the classes.
+</p>
+<p>For large data sets, especially those with large number of variables,
+calling <code>randomForest</code> via the formula interface is not advised:
+There may be too much overhead in handling the formula.
+</p>
+<p>The &ldquo;local&rdquo; (or casewise) variable importance is computed as
+follows:  For classification, it is the increase in percent of times a
+case is OOB and misclassified when the variable is permuted.  For
+regression, it is the average increase in squared OOB residuals when
+the variable is permuted.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Andy Liaw <a href="mailto:andy_liaw@merck.com">andy_liaw@merck.com</a> and Matthew Wiener
+<a href="mailto:matthew_wiener@merck.com">matthew_wiener@merck.com</a>, based on original Fortran code by
+Leo Breiman and Adele Cutler.</p>
+
+
+<h3>References</h3>
+
+<p>Breiman, L. (2001), <em>Random Forests</em>, Machine Learning 45(1),
+5-32.
+</p>
+<p>Breiman, L (2002), &ldquo;Manual On Setting Up, Using, And Understanding
+Random Forests V3.1&rdquo;, <a href="https://www.stat.berkeley.edu/~breiman/Using_random_forests_V3.1.pdf">https://www.stat.berkeley.edu/~breiman/Using_random_forests_V3.1.pdf</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../randomForest/help/predict.randomForest.html">predict.randomForest</a></code>, <code><a href="../../randomForest/help/varImpPlot.html">varImpPlot</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Classification:
+##data(iris)
+set.seed(71)
+iris.rf &lt;- randomForest(Species ~ ., data=iris, importance=TRUE,
+                        proximity=TRUE)
+print(iris.rf)
+## Look at variable importance:
+round(importance(iris.rf), 2)
+## Do MDS on 1 - proximity:
+iris.mds &lt;- cmdscale(1 - iris.rf$proximity, eig=TRUE)
+op &lt;- par(pty="s")
+pairs(cbind(iris[,1:4], iris.mds$points), cex=0.6, gap=0,
+      col=c("red", "green", "blue")[as.numeric(iris$Species)],
+      main="Iris Data: Predictors and MDS of Proximity Based on RandomForest")
+par(op)
+print(iris.mds$GOF)
+
+## The `unsupervised' case:
+set.seed(17)
+iris.urf &lt;- randomForest(iris[, -5])
+MDSplot(iris.urf, iris$Species)
+
+## stratified sampling: draw 20, 30, and 20 of the species to grow each tree.
+(iris.rf2 &lt;- randomForest(iris[1:4], iris$Species, 
+                          sampsize=c(20, 30, 20)))
+
+## Regression:
+## data(airquality)
+set.seed(131)
+ozone.rf &lt;- randomForest(Ozone ~ ., data=airquality, mtry=3,
+                         importance=TRUE, na.action=na.omit)
+print(ozone.rf)
+## Show "importance" of variables: higher value mean more important:
+round(importance(ozone.rf), 2)
+
+## "x" can be a matrix instead of a data frame:
+set.seed(17)
+x &lt;- matrix(runif(5e2), 100)
+y &lt;- gl(2, 50)
+(myrf &lt;- randomForest(x, y))
+(predict(myrf, x))
+
+## "complicated" formula:
+(swiss.rf &lt;- randomForest(sqrt(Fertility) ~ . - Catholic + I(Catholic &lt; 50),
+                          data=swiss))
+(predict(swiss.rf, swiss))
+## Test use of 32-level factor as a predictor:
+set.seed(1)
+x &lt;- data.frame(x1=gl(53, 10), x2=runif(530), y=rnorm(530))
+(rf1 &lt;- randomForest(x[-3], x[[3]], ntree=10))
+
+## Grow no more than 4 nodes per tree:
+(treesize(randomForest(Species ~ ., data=iris, maxnodes=4, ntree=30)))
+
+## test proximity in regression
+iris.rrf &lt;- randomForest(iris[-1], iris[[1]], ntree=101, proximity=TRUE, oob.prox=FALSE)
+str(iris.rrf$proximity)
+
+## Using weights: make versicolors having 3 times larger weights
+iris_wt &lt;- ifelse( iris$Species == "versicolor", 3, 1 )
+set.seed(15)
+iris.wcrf &lt;- randomForest(iris[-5], iris[[5]], weights=iris_wt, keep.inbag=TRUE)
+print(rowSums(iris.wcrf$inbag))
+set.seed(15)
+iris.wrrf &lt;- randomForest(iris[-1], iris[[1]], weights=iris_wt, keep.inbag=TRUE)
+print(rowSums(iris.wrrf$inbag))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>randomForest</em> version 4.7-1.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

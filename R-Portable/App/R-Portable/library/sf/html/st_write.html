@@ -1,0 +1,198 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Write simple features object to file or database</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for st_write {sf}"><tr><td>st_write {sf}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Write simple features object to file or database</h2>
+
+<h3>Description</h3>
+
+<p>Write simple features object to file or database
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+st_write(obj, dsn, layer, ...)
+
+## S3 method for class 'sfc'
+st_write(obj, dsn, layer, ...)
+
+## S3 method for class 'sf'
+st_write(
+  obj,
+  dsn,
+  layer = NULL,
+  ...,
+  driver = guess_driver_can_write(dsn),
+  dataset_options = NULL,
+  layer_options = NULL,
+  quiet = FALSE,
+  factorsAsCharacter = TRUE,
+  append = NA,
+  delete_dsn = FALSE,
+  delete_layer = !is.na(append) &amp;&amp; !append,
+  fid_column_name = NULL,
+  config_options = character(0)
+)
+
+## S3 method for class 'data.frame'
+st_write(obj, dsn, layer = NULL, ...)
+
+write_sf(..., quiet = TRUE, append = FALSE, delete_layer = !append)
+
+st_delete(
+  dsn,
+  layer = character(0),
+  driver = guess_driver_can_write(dsn),
+  quiet = FALSE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>obj</code></td>
+<td>
+<p>object of class <code>sf</code> or <code>sfc</code></p>
+</td></tr>
+<tr valign="top"><td><code>dsn</code></td>
+<td>
+<p>data source name. Interpretation varies by driver: can be
+a filename, a folder, a database name, or a Database Connection
+(we officially test support for
+<code><a href="../../RPostgres/help/Postgres.html">RPostgres::Postgres()</a></code> connections).</p>
+</td></tr>
+<tr valign="top"><td><code>layer</code></td>
+<td>
+<p>layer name. Varies by driver, may be a file name without
+extension; for database connection, it is the name of the table. If layer
+is missing, the <code>basename</code> of <code>dsn</code> is taken.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>other arguments passed to <a href="../../DBI/help/dbWriteTable.html">dbWriteTable</a> when <code>dsn</code> is a
+Database Connection</p>
+</td></tr>
+<tr valign="top"><td><code>driver</code></td>
+<td>
+<p>character; name of driver to be used; if missing and <code>dsn</code> is not a Database Connection, a driver name is guessed from <code>dsn</code>;
+<code>st_drivers()</code> returns the drivers that are available with their properties; links to full driver documentation
+are found at <a href="https://gdal.org/en/latest/drivers/vector/index.html">https://gdal.org/en/latest/drivers/vector/index.html</a></p>
+</td></tr>
+<tr valign="top"><td><code>dataset_options</code></td>
+<td>
+<p>character; driver dependent dataset creation options;
+multiple options supported.</p>
+</td></tr>
+<tr valign="top"><td><code>layer_options</code></td>
+<td>
+<p>character; driver dependent layer creation options;
+multiple options supported.</p>
+</td></tr>
+<tr valign="top"><td><code>quiet</code></td>
+<td>
+<p>logical; suppress info on name, driver, size and spatial
+reference</p>
+</td></tr>
+<tr valign="top"><td><code>factorsAsCharacter</code></td>
+<td>
+<p>logical; convert <code>factor</code> levels to character
+strings (<code>TRUE</code>, default), otherwise into numbers when
+factorsAsCharacter is <code>FALSE</code>. For database connections,
+<code>factorsAsCharacter</code> is always <code>TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>append</code></td>
+<td>
+<p>logical; should we append to an existing layer, or replace it?
+if <code>TRUE</code> append, if <code>FALSE</code> replace.
+The default for <code>st_write</code> is <code>NA</code> which raises an error if the layer exists.
+The default for <code>write_sf</code> is <code>FALSE</code>, which overwrites any existing data.
+See also next two arguments for more control on overwrite behavior.</p>
+</td></tr>
+<tr valign="top"><td><code>delete_dsn</code></td>
+<td>
+<p>logical; delete data source <code>dsn</code> before attempting
+to write?</p>
+</td></tr>
+<tr valign="top"><td><code>delete_layer</code></td>
+<td>
+<p>logical; delete layer <code>layer</code> before attempting to
+write?
+The default for <code>st_write</code> is <code>FALSE</code> which raises an error if the layer exists.
+The default for <code>write_sf</code> is <code>TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>fid_column_name</code></td>
+<td>
+<p>character, name of column with feature IDs; if
+specified, this column is no longer written as feature attribute.</p>
+</td></tr>
+<tr valign="top"><td><code>config_options</code></td>
+<td>
+<p>character, named vector with GDAL config options</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Columns (variables) of a class not supported are dropped with a warning.
+</p>
+<p>When updating an existing layer, records are appended to it if the updating
+object has the right variable names and types. If names don't match an
+error is raised. If types don't match, behaviour is undefined: GDAL may
+raise warnings or errors or fail silently.
+</p>
+<p>When deleting layers or data sources is not successful, no error is emitted.
+<code>delete_dsn</code> and <code>delete_layer</code> should be
+handled with care; the former may erase complete directories or databases.
+</p>
+<p><code>st_delete()</code> deletes layer(s) in a data source, or a data source if layers are
+omitted; it returns <code>TRUE</code> on success, <code>FALSE</code> on failure, invisibly.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>obj</code>, invisibly
+</p>
+
+
+<h3>See Also</h3>
+
+<p><a href="../../sf/help/st_drivers.html">st_drivers</a>, <a href="../../DBI/help/dbWriteTable.html">dbWriteTable</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+nc = st_read(system.file("shape/nc.shp", package="sf"))
+st_write(nc, paste0(tempdir(), "/", "nc.shp"))
+st_write(nc, paste0(tempdir(), "/", "nc.shp"), delete_layer = TRUE) # overwrites
+if (require(sp, quietly = TRUE)) {
+ data(meuse, package = "sp") # loads data.frame from sp
+ meuse_sf = st_as_sf(meuse, coords = c("x", "y"), crs = 28992)
+ # writes X and Y as columns:
+ st_write(meuse_sf, paste0(tempdir(), "/", "meuse.csv"), layer_options = "GEOMETRY=AS_XY")
+ st_write(meuse_sf, paste0(tempdir(), "/", "meuse.csv"), layer_options = "GEOMETRY=AS_WKT",
+   delete_dsn=TRUE) # overwrites
+## Not run: 
+ library(sp)
+ example(meuse, ask = FALSE, echo = FALSE)
+ try(st_write(st_as_sf(meuse), "PG:dbname=postgis", "meuse_sf",
+     layer_options = c("OVERWRITE=yes", "LAUNDER=true")))
+ demo(nc, ask = FALSE)
+ try(st_write(nc, "PG:dbname=postgis", "sids", layer_options = "OVERWRITE=true"))
+
+## End(Not run)
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sf</em> version 1.1-0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

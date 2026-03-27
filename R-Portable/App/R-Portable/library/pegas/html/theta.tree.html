@@ -1,0 +1,152 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Population Parameter THETA Using Genealogy</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for theta.tree {pegas}"><tr><td>theta.tree {pegas}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Population Parameter THETA Using Genealogy
+</h2>
+
+<h3>Description</h3>
+
+<p>These functions estimate the population parameter <i>THETA</i>
+from a genealogy (coded a as phylogenetic tree) under the coalescent.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+theta.tree(phy, theta, fixed = FALSE, analytical = TRUE, log = TRUE)
+theta.tree.hetero(phy, theta, fixed = FALSE, log = TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>phy</code></td>
+<td>
+<p>an object of class <code>"phylo"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>theta</code></td>
+<td>
+<p>a numeric vector.</p>
+</td></tr>
+<tr valign="top"><td><code>fixed</code></td>
+<td>
+<p>a logical specifying whether to estimate <code>theta</code>
+(the default), or to return the likelihoods for all values in
+<code>theta</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>analytical</code></td>
+<td>
+<p>a logical specifying whether to use analytical
+formulae to estimate <code>theta</code> and its standard-error. If
+<code>FALSE</code>, a numerical optimisation of the likelihood is
+performed (this option is ignored if <code>fixed = TRUE</code>)</p>
+</td></tr></table>
+<p>.
+</p>
+<table summary="R argblock">
+<tr valign="top"><td><code>log</code></td>
+<td>
+<p>a logical specifying whether to return the likelihoods on a
+log scale (the default); ignored if <code>fixed = FALSE</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>With <code>theta.tree</code>, the tree <code>phy</code> is considered as a
+genealogy with contemporaneous samples, and therefore should be
+ultrametric. With <code>theta.tree.hetero</code>, the samples may be
+heterochronous so <code>phy</code> can be non-ultrametric. If <code>phy</code> is
+ultrametric, both functions return the same results.
+</p>
+<p>By default, <i>THETA</i> is estimated by maximum likelihood and
+the value given in <code>theta</code> is used as starting value for the
+minimisation function (if several values are given as a vector the
+first one is used). If <code>fixed = TRUE</code>, then the [log-]likelihood
+values are returned corresponding to each value in <code>theta</code>.
+</p>
+<p>The present implementation does a numerical optimisation of the
+log-likelihood function (with <code><a href="../../stats/help/nlminb.html">nlminb</a></code>) with the
+first partial derivative as gradient. It is possible to solve the
+latter and have a direct analytical MLE of <i>THETA</i> (and
+its standard-error), but this does not seem to be faster.
+</p>
+
+
+<h3>Value</h3>
+
+<p>If <code>fixed = FALSE</code>, a list with two elements:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>theta</code></td>
+<td>
+<p>the maximum likelihood estimate of <i>THETA</i>;</p>
+</td></tr>
+<tr valign="top"><td><code>logLik</code></td>
+<td>
+<p>the log-likelihood at its maximum.</p>
+</td></tr>
+</table>
+<p>If <code>fixed = TRUE</code>, a numeric vector with the [log-]likelihood
+values.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Emmanuel Paradis</p>
+
+
+<h3>References</h3>
+
+<p>Kingman, J. F. C. (1982) The coalescent. <em>Stochastic Processes
+and their Applications</em>, <b>13</b>, 235&ndash;248.
+</p>
+<p>Kingman, J. F. C. (1982) On the genealogy of large
+populations. <em>Journal of Applied Probability</em>, <b>19A</b>,
+27&ndash;43.
+</p>
+<p>Wakeley, J. (2009) <em>Coalescent Theory: An Introduction.</em>
+Greenwood Village, CO: Roberts and Company Publishers.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../pegas/help/theta.h.html">theta.h</a></code>, <code><a href="../../pegas/help/theta.s.html">theta.s</a></code>, <code><a href="../../pegas/help/theta.k.html">theta.k</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+tr &lt;- rcoal(50)
+(o &lt;- theta.tree(tr))
+theta.tree(tr, 10, analytical = FALSE) # uses nlminb()
+## profile log-likelihood:
+THETA &lt;- seq(0.5, 2, 0.01)
+logLikelihood &lt;- theta.tree(tr, THETA, fixed = TRUE)
+plot(THETA, logLikelihood, type = "l")
+xx &lt;- seq(o$theta - 1.96 * o$se, o$theta + 1.96 * o$se, 0.01)
+yy &lt;- theta.tree(tr, xx, fixed = TRUE)
+polygon(c(xx, rev(xx)), c(yy, rep(0, length(xx))),
+        border = NA, col = "lightblue")
+segments(o$theta, 0, o$theta, o$logLik, col = "blue")
+abline(v = 1, lty = 3)
+legend("topright", legend = expression("log-likelihood",
+       "True " * theta, hat(theta) * " (MLE)", "95%\ conf. interv."),
+       lty = c(1, 3, 1, 1), lwd = c(1, 1, 1, 15),
+       col = c("black", "black", "blue", "lightblue"))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>pegas</em> version 1.4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,347 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Flexible survival regression using the Royston/Parmar spline...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for flexsurvspline {flexsurv}"><tr><td>flexsurvspline {flexsurv}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Flexible survival regression using the Royston/Parmar spline model.</h2>
+
+<h3>Description</h3>
+
+<p>Flexible parametric modelling of time-to-event data using the spline model
+of Royston and Parmar (2002).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+flexsurvspline(
+  formula,
+  data,
+  weights,
+  bhazard,
+  rtrunc,
+  subset,
+  k = 0,
+  knots = NULL,
+  bknots = NULL,
+  scale = "hazard",
+  timescale = "log",
+  spline = "rp",
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>A formula expression in conventional R linear modelling
+syntax. The response must be a survival object as returned by the
+<code><a href="../../survival/help/Surv.html">Surv</a></code> function, and any covariates are given on the right-hand
+side.  For example,
+</p>
+<p><code>Surv(time, dead) ~ age + sex</code>
+</p>
+<p>specifies a model where the log cumulative hazard (by default, see
+<code>scale</code>) is a linear function of the covariates <code>age</code> and
+<code>sex</code>.
+</p>
+<p>If there are no covariates, specify <code>1</code> on the right hand side, for
+example <code>Surv(time, dead) ~ 1</code>.
+</p>
+<p>Time-varying covariate effects can be specified using the method described
+in <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code> for placing covariates on ancillary
+parameters.  The ancillary parameters here are named <code>gamma1</code>,
+..., <code>gammar</code> where <code>r</code> is the number of knots <code>k</code> plus
+one (the &ldquo;degrees of freedom&rdquo; as defined by Royston and Parmar).  So for
+the default Weibull model, there is just one ancillary parameter
+<code>gamma1</code>.
+</p>
+<p>Therefore a model with one internal spline knot, where the equivalents of
+the Weibull shape and scale parameters, but not the higher-order term
+<code>gamma2</code>, vary with age and sex, can be specified as:
+</p>
+<p><code>Surv(time, dead) ~ age + sex + gamma1(age) + gamma1(sex)</code>
+</p>
+<p>or alternatively (and more safely, see <code>flexsurvreg</code>)
+</p>
+<p><code>Surv(time, dead) ~ age + sex, anc=list(gamma1=~age + sex)</code>
+</p>
+<p><code>Surv</code> objects of <code>type="right"</code>,<code>"counting"</code>,
+<code>"interval1"</code> or <code>"interval2"</code> are supported, corresponding to
+right-censored, left-truncated or interval-censored observations.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A data frame in which to find variables supplied in
+<code>formula</code>.  If not given, the variables should be in the working
+environment.</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>Optional variable giving case weights.</p>
+</td></tr>
+<tr valign="top"><td><code>bhazard</code></td>
+<td>
+<p>Optional variable giving expected hazards for relative
+survival models.</p>
+</td></tr>
+<tr valign="top"><td><code>rtrunc</code></td>
+<td>
+<p>Optional variable giving individual right-truncation times (see <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>).  Note that these models can suffer from weakly identifiable parameters and
+badly-behaved likelihood functions, and it is advised to compare
+convergence for different initial values by supplying different
+<code>inits</code> arguments to <code>flexsurvspline</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>subset</code></td>
+<td>
+<p>Vector of integers or logicals specifying the subset of the
+observations to be used in the fit.</p>
+</td></tr>
+<tr valign="top"><td><code>k</code></td>
+<td>
+<p>Number of knots in the spline. The default <code>k=0</code> gives a
+Weibull, log-logistic or lognormal model, if <code>"scale"</code> is
+<code>"hazard"</code>, <code>"odds"</code> or <code>"normal"</code> respectively.  <code>k</code>
+is equivalent to <code>df-1</code> in the notation of <code>stpm</code> for Stata.  The
+knots are then chosen as equally-spaced quantiles of the log uncensored
+survival times, for example, at the median with one knot, or at the 33%
+and 67% quantiles of log time (or time, see <code>"timescale"</code>) with two
+knots.  To override this default knot placement, specify <code>knots</code>
+instead.</p>
+</td></tr>
+<tr valign="top"><td><code>knots</code></td>
+<td>
+<p>Locations of knots on the axis of log time (or time, see
+<code>"timescale"</code>).  If not specified, knot locations are chosen as
+described in <code>k</code> above.  Either <code>k</code> or <code>knots</code> must be
+specified. If both are specified, <code>knots</code> overrides <code>k</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>bknots</code></td>
+<td>
+<p>Locations of boundary knots, on the axis of log time (or
+time, see <code>"timescale"</code>).  If not supplied, these are are chosen as
+the minimum and maximum log death time.</p>
+</td></tr>
+<tr valign="top"><td><code>scale</code></td>
+<td>
+<p>If <code>"hazard"</code>, the log cumulative hazard is modelled as a
+spline function.
+</p>
+<p>If <code>"odds"</code>, the log cumulative odds is modelled as a spline function.
+</p>
+<p>If <code>"normal"</code>, <i>-InvPhi(S(t))</i> is modelled as a
+spline function, where <i>InvPhi()</i> is the inverse normal
+distribution function <code><a href="../../stats/html/Normal.html">qnorm</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>timescale</code></td>
+<td>
+<p>If <code>"log"</code> (the default) the log cumulative hazard
+(or alternative) is modelled as a spline function of log time.  If
+<code>"identity"</code>, it is modelled as a spline function of time, however
+this model would not satisfy the desirable property that the cumulative hazard
+(or alternative) should approach 0 at time zero.</p>
+</td></tr>
+<tr valign="top"><td><code>spline</code></td>
+<td>
+<p><code>"rp"</code> to use the natural cubic spline basis
+described in Royston and Parmar.
+</p>
+<p><code>"splines2ns"</code> to use the alternative natural cubic spline
+basis from the <code>splines2</code> package (Wang and Yan 2021),
+which may be better behaved due to the basis being orthogonal.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Any other arguments to be passed to or through
+<code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>, for example, <code>anc</code>, <code>inits</code>,
+<code>fixedpars</code>, <code>weights</code>, <code>subset</code>, <code>na.action</code>, and any
+options to control optimisation.  See <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This function works as a wrapper around <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code> by
+dynamically constructing a custom distribution using
+<code><a href="../../flexsurv/help/dsurvspline.html">dsurvspline</a></code>, <code><a href="../../flexsurv/help/psurvspline.html">psurvspline</a></code> and
+<code><a href="../../flexsurv/help/unroll.function.html">unroll.function</a></code>.
+</p>
+<p>In the spline-based survival model of Royston and Parmar (2002), a
+transformation <i>g(S(t,z))</i> of the survival function is modelled as a
+natural cubic spline function of log time <i>x = log(t)</i>
+plus linear effects of covariates <i>z</i>.
+</p>
+<p style="text-align: center;"><i>g(S(t,z)) =
+s(x, gamma) + beta^T z</i></p>
+
+<p>The proportional hazards model (<code>scale="hazard"</code>) defines
+<i>g(S(t,z)) = log(-log(S(t,z))) = log(H(t,z))</i>, the
+log cumulative hazard.
+</p>
+<p>The proportional odds model (<code>scale="odds"</code>) defines
+<i>g(S(t,z)) = log(1/S(t,z) - 1)</i><i>g(S(t,z)) = log(1/S(t,z) - 1)</i>, the log
+cumulative odds.
+</p>
+<p>The probit model (<code>scale="normal"</code>) defines <i>g(S(t,z)) = -InvPhi(S(t,z))</i><i>g(S(t,z))
+= -InvPhi(S(t,z))</i>, where <i>InvPhi()</i> is the inverse normal
+distribution function <code><a href="../../stats/html/Normal.html">qnorm</a></code>.
+</p>
+<p>With no knots, the spline reduces to a linear function, and these models
+are equivalent to Weibull, log-logistic and lognormal models respectively.
+</p>
+<p>The spline coefficients <i>gamma_j: j=1, 2
+&hellip;</i>, which are called the &quot;ancillary parameters&quot; above, may also be
+modelled as linear functions of covariates <i>\mathbf{z}</i>, as
+</p>
+<p style="text-align: center;"><i>gamma_j(z) = &gamma;_{j0} + &gamma;_{j1}z_1 + &gamma;_{j2}z_2 + ... </i></p>
+
+<p>giving a model where the effects of covariates are arbitrarily flexible
+functions of time: a non-proportional hazards or odds model.
+</p>
+<p>Natural cubic splines are cubic splines constrained to be linear beyond
+boundary knots <i>kmin,kmax</i>.  The spline function is
+defined as
+</p>
+<p style="text-align: center;"><i>s(x,gamma) = gamma0 + gamma1 x + gamma2 v1(x) + ... + gamma_{m+1}
+vm(x)</i></p>
+<p style="text-align: center;"><i>s(x,gamma) = gamma0 + gamma1 x + gamma2
+v1(x) + ... + gamma_{m+1} vm(x)</i></p>
+
+<p>where <i>vj(x)</i> is the <i>j</i>th basis function
+</p>
+<p style="text-align: center;"><i>vj(x) =
+(x - kj)^3_+ - &lambda;_j(x - kmin)^3_+ - (1 -&lambda;_j) (x -
+kmax)^3_+</i></p>
+<p style="text-align: center;"><i>vj(x) = (x - kj)^3_+ -
+&lambda;_j(x - kmin)^3_+ - (1 -&lambda;_j) (x - kmax)^3_+</i></p>
+
+<p style="text-align: center;"><i>&lambda;_j =
+(kmax - kj) / (kmax - kmin)</i></p>
+
+<p>and <i>(x - a)_+ = max(0, x - a)</i>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of class <code>"flexsurvreg"</code> with the same elements as
+described in <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>, and including extra components
+describing the spline model.  See in particular:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>k</code></td>
+<td>
+<p>Number of knots.</p>
+</td></tr> <tr valign="top"><td><code>knots</code></td>
+<td>
+<p>Location of knots on the log time
+axis.</p>
+</td></tr> <tr valign="top"><td><code>scale</code></td>
+<td>
+<p>The <code>scale</code> of the model, hazard, odds or normal.</p>
+</td></tr>
+<tr valign="top"><td><code>res</code></td>
+<td>
+<p>Matrix of maximum likelihood estimates and confidence limits.
+Spline coefficients are labelled <code>"gamma..."</code>, and covariate effects
+are labelled with the names of the covariates.
+</p>
+<p>Coefficients <code>gamma1,gamma2,...</code> here are the equivalent of
+<code>s0,s1,...</code> in Stata <code>streg</code>, and <code>gamma0</code> is the equivalent
+of the <code>xb</code> constant term.  To reproduce results, use the
+<code>noorthog</code> option in Stata, since no orthogonalisation is performed on
+the spline basis here.
+</p>
+<p>In the Weibull model, for example, <code>gamma0,gamma1</code> are
+<code>-shape*log(scale), shape</code> respectively in <code><a href="../../stats/html/Weibull.html">dweibull</a></code> or
+<code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code> notation, or (<code>-Intercept/scale</code>,
+<code>1/scale</code>) in <code><a href="../../survival/help/survreg.html">survreg</a></code> notation.
+</p>
+<p>In the log-logistic model with shape <code>a</code> and scale <code>b</code> (as in
+<code><a href="../../eha/help/Loglogistic.html">eha::dllogis</a></code> from the <span class="pkg">eha</span> package), <code>1/b^a</code> is
+equivalent to <code>exp(gamma0)</code>, and <code>a</code> is equivalent to
+<code>gamma1</code>.
+</p>
+<p>In the log-normal model with log-scale mean <code>mu</code> and standard
+deviation <code>sigma</code>, <code>-mu/sigma</code> is equivalent to <code>gamma0</code> and
+<code>1/sigma</code> is equivalent to <code>gamma1</code>.  </p>
+</td></tr> <tr valign="top"><td><code>loglik</code></td>
+<td>
+<p>The
+maximised log-likelihood.  This will differ from Stata, where the sum of
+the log uncensored survival times is added to the log-likelihood in
+survival models, to remove dependency on the time scale.</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Christopher Jackson &lt;chris.jackson@mrc-bsu.cam.ac.uk&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Royston, P. and Parmar, M. (2002).  Flexible parametric
+proportional-hazards and proportional-odds models for censored survival
+data, with application to prognostic modelling and estimation of treatment
+effects. Statistics in Medicine 21(1):2175-2197.
+</p>
+<p>Wang W, Yan J (2021). Shape-Restricted Regression Splines with R
+Package splines2. Journal of Data Science, 19(3), 498-517.
+</p>
+<p>Jackson, C. (2016). flexsurv: A Platform for Parametric Survival Modeling
+in R. Journal of Statistical Software, 70(8), 1-33.
+doi:10.18637/jss.v070.i08
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code> for flexible survival modelling using
+general parametric distributions.
+</p>
+<p><code><a href="../../flexsurv/help/plot.flexsurvreg.html">plot.flexsurvreg</a></code> and <code><a href="../../flexsurv/help/lines.flexsurvreg.html">lines.flexsurvreg</a></code> to plot
+fitted survival, hazards and cumulative hazards from models fitted by
+<code><a href="../../flexsurv/help/flexsurvspline.html">flexsurvspline</a></code> and <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## Best-fitting model to breast cancer data from Royston and Parmar (2002)
+## One internal knot (2 df) and cumulative odds scale
+
+spl &lt;- flexsurvspline(Surv(recyrs, censrec) ~ group, data=bc, k=1, scale="odds")
+
+## Fitted survival
+
+plot(spl, lwd=3, ci=FALSE)
+
+## Simple Weibull model fits much less well
+
+splw &lt;- flexsurvspline(Surv(recyrs, censrec) ~ group, data=bc, k=0, scale="hazard")
+lines(splw, col="blue", ci=FALSE)
+
+## Alternative way of fitting the Weibull
+
+## Not run: 
+splw2 &lt;- flexsurvreg(Surv(recyrs, censrec) ~ group, data=bc, dist="weibull")
+
+## End(Not run)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>flexsurv</em> version 2.3.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

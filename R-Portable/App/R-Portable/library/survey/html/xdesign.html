@@ -1,0 +1,158 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Crossed effects and other sparse correlations</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for xdesign {survey}"><tr><td>xdesign {survey}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Crossed effects and other sparse correlations
+</h2>
+
+<h3>Description</h3>
+
+<p>Defines a design object with multiple dimensions of correlation:
+observations that share any of the <code>id</code> variables are correlated,
+or you can supply an adjacency matrix or Matrix to specify which are
+correlated. Supports crossed designs (eg multiple raters of multiple
+objects) and non-nested observational correlation (eg observations
+sharing primary school or secondary school). Has methods for
+<code>svymean</code>, <code>svytotal</code>, <code>svyglm</code> (so far). 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+xdesign(id = NULL, strata = NULL, weights = NULL, data, fpc = NULL,
+adjacency = NULL, overlap = c("unbiased", "positive"), allow.non.binary = FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>id</code></td>
+<td>
+
+<p>list of formulas specifying cluster identifiers for each clustering dimension (or <code>NULL</code>)
+</p>
+</td></tr>
+<tr valign="top"><td><code>strata</code></td>
+<td>
+
+<p>Not implemented
+</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+
+<p>model formula specifying (sampling) weights
+</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+
+<p>data frame containing all the variables
+</p>
+</td></tr>
+<tr valign="top"><td><code>fpc</code></td>
+<td>
+
+<p>Not implemented
+</p>
+</td></tr>
+<tr valign="top"><td><code>adjacency</code></td>
+<td>
+
+<p>Adjacency matrix or Matrix indicating which pairs of observations
+are correlated
+</p>
+</td></tr>
+<tr valign="top"><td><code>overlap</code></td>
+<td>
+
+<p>See details below
+</p>
+</td></tr>
+<tr valign="top"><td><code>allow.non.binary</code></td>
+<td>
+
+<p>If <code>FALSE</code> check that <code>adjacency</code> is a binary 0/1 or
+<code>TRUE</code>/<code>FALSE</code> matrix or Matrix.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Subsetting for these objects actually drops observations; it is not
+equivalent to just setting weights to zero as for survey
+designs. So, for example, a subset of a balanced design will not be
+a balanced design.
+</p>
+<p>The <code>overlap</code> option controls double-counting of some variance
+terms. Suppose there are two clustering dimensions, <code>~a</code> and
+<code>~b</code>. If we compute variance matrices clustered on <code>a</code> and
+clustered on <code>b</code> and add them, observations that share both
+<code>a</code> and <code>b</code> will be counted twice, giving a positively
+biased estimator.  We can subtract off a variance matrix clustered
+on combinations of <code>a</code> and <code>b</code> to give an unbiased
+variance estimator.  However, the unbiased estimator is not
+guaranteed to be positive definite. In the references, Miglioretti
+and Heagerty use the <code>overlap="positive"</code> estimator and Cameron
+et al use the <code>overlap="unbiased"</code> estimator. 
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>xdesign</code>
+</p>
+
+
+<h3>References</h3>
+
+<p>Miglioretti D, Heagerty PJ (2007) Marginal modeling of nonnested
+multilevel data using standard software. Am J Epidemiol 165(4):453-63
+</p>
+<p>Cameron, A. C., Gelbach, J. B., &amp; Miller, D. L. (2011). Robust Inference
+With Multiway Clustering. Journal of Business &amp; Economic Statistics,
+29(2), 238-249.
+</p>
+<p><a href="https://notstatschat.rbind.io/2021/09/18/crossed-clustering-and-parallel-invention/">https://notstatschat.rbind.io/2021/09/18/crossed-clustering-and-parallel-invention/</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../survey/help/salamander.html">salamander</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+
+## With one clustering dimension, is close to the with-replacement
+##   survey estimator, but not identical unless clusters are equal size
+data(api)
+dclus1r&lt;-svydesign(id=~dnum, weights=~pw, data=apiclus1)
+xclus1&lt;-xdesign(id=list(~dnum), weights=~pw, data=apiclus1)
+xclus1
+
+svymean(~enroll,dclus1r)
+svymean(~enroll,xclus1)
+
+data(salamander)
+xsalamander&lt;-xdesign(id=list(~Male, ~Female), data=salamander,
+    overlap="unbiased")
+xsalamander
+degf(xsalamander)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>survey</em> version 4.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

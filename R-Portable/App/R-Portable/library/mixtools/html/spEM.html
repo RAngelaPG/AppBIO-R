@@ -1,0 +1,227 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Semiparametric EM-like Algorithm for Mixtures of Independent...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for spEM {mixtools}"><tr><td>spEM {mixtools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Semiparametric EM-like Algorithm for Mixtures of Independent Repeated Measurements</h2>
+
+<h3>Description</h3>
+
+<p>Returns semiparametric EM algorithm output (Benaglia et al, 2009) for mixtures
+of multivariate (repeated measures) data where the coordinates of a row (case)
+in the data matrix are assumed to be independent, conditional on the mixture
+component (subpopulation) from which they are drawn.
+For now, this algorithm only implements model (4.7) in 
+Benaglia et al, in which each component and block has exactly
+the same (nonparametric) shape and they differ only by location and scale.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+spEM(x, mu0, blockid = 1:ncol(x), 
+     bw = bw.nrd0(as.vector(as.matrix(x))), constbw = TRUE, 
+     h = bw, eps = 1e-8, 
+     maxiter = 500, stochastic = FALSE, verb = TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>An <i>n x r</i> matrix of data.  Each of the <i>n</i> rows is a case,
+and each case has <i>r</i> repeated measurements.  These measurements are assumed
+to be conditionally independent, conditional on the mixture component (subpopulation) 
+from which the case is drawn.</p>
+</td></tr>
+<tr valign="top"><td><code>mu0</code></td>
+<td>
+<p>Either an <i>m x r</i> matrix specifying the initial
+centers for the <a href="../../stats/html/kmeans.html">kmeans</a> function, or an integer <i>m</i> specifying the 
+number of initial centers, which are then choosen randomly in
+<a href="../../stats/html/kmeans.html">kmeans</a></p>
+</td></tr>
+<tr valign="top"><td><code>blockid</code></td>
+<td>
+<p>A vector of length <i>r</i> identifying coordinates 
+(columns of <code>x</code>) that are
+assumed to be identically distributed (i.e., in the same block).  For instance,
+the default has all distinct elements, indicating that no two coordinates 
+are assumed identically distributed and thus a separate set of <i>m</i> 
+density estimates is produced for each column of <i>x</i>.  On the other hand,
+if <code>blockid=rep(1,ncol(x))</code>, then the coordinates in each row 
+are assumed conditionally i.i.d.</p>
+</td></tr>
+<tr valign="top"><td><code>bw</code></td>
+<td>
+<p>Bandwidth for density estimation, equal to the standard deviation 
+of the kernel density.  By default, a simplistic application of the 
+default <code><a href="../../stats/html/bandwidth.html">bw.nrd0</a></code> 
+bandwidth used by <code><a href="../../stats/html/density.html">density</a></code> to the entire dataset.</p>
+</td></tr>
+<tr valign="top"><td><code>constbw</code></td>
+<td>
+<p>Logical:  If <code>TRUE</code>, use the same bandwidth for
+each iteration and for each component and block.  If <code>FALSE</code>, 
+use a separate bandwidth for each component and block, and update
+this bandwidth at each iteration of the algorithm using a suitably
+modified <code><a href="../../stats/html/bandwidth.html">bw.nrd0</a></code> method as described in 
+Benaglia et al (2011).</p>
+</td></tr>
+<tr valign="top"><td><code>h</code></td>
+<td>
+<p>Alternative way to specify the bandwidth, to provide backward 
+compatibility.</p>
+</td></tr>
+<tr valign="top"><td><code>eps</code></td>
+<td>
+<p>Tolerance limit for declaring algorithm convergence.  Convergence
+is declared whenever the maximum change in any coordinate of the 
+<code>lambda</code> vector (of mixing proportion estimates) does not exceed 
+<code>eps</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>maxiter</code></td>
+<td>
+<p>The maximum number of iterations allowed, for both 
+stochastic and non-stochastic versions; 
+for non-stochastic algorithms (<code>stochastic = FALSE</code>), convergence
+may be declared before <code>maxiter</code> iterations (see <code>eps</code> above).</p>
+</td></tr>
+<tr valign="top"><td><code>stochastic</code></td>
+<td>
+<p>Flag, if FALSE (the default), runs the non-stochastic version
+of the npEM algorithm, as in Benaglia et al (2009). Set to TRUE to
+run a stochastic version which simulates the posteriors at each
+iteration, and runs for <code>maxiter</code> iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>verb</code></td>
+<td>
+<p>If TRUE, print updates for every iteration of the algorithm as
+it runs</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p><code>spEM</code> returns a list of class <code>spEM</code> with the following items:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>The raw data (an <i>n x r</i> matrix).</p>
+</td></tr>
+<tr valign="top"><td><code>posteriors</code></td>
+<td>
+<p>An <i>n x m</i> matrix of posterior probabilities for
+observation. If <code>stochastic = TRUE</code>, this matrix is computed 
+from an average over the <code>maxiter</code> iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>bandwidth</code></td>
+<td>
+<p>If <code>constbw==TRUE</code>, 
+same as the <code>bw</code> input argument; otherwise, value of <code>bw</code> matrix
+at final iteration (since for now this algorithm only implements 
+model (4.7) in Benaglia et al, the bandwidth matrix is reduced to a single
+bandwith scalar).  
+This
+information is needed by any method that produces density estimates from the
+output.</p>
+</td></tr>
+<tr valign="top"><td><code>blockid</code></td>
+<td>
+<p>Same as the <code>blockid</code> input argument, but recoded to have
+positive integer values.  Also needed by any method that produces density 
+estimates from the output.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>The sequence of mixing proportions over iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>lambdahat</code></td>
+<td>
+<p>The final mixing proportions if <code>stochastic = FALSE</code>, 
+or the average mixing proportions if <code>stochastic = TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>mu</code></td>
+<td>
+<p>The sequence of location parameters over iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>muhat</code></td>
+<td>
+<p>The final location parameters if <code>stochastic = FALSE</code>, 
+or the average location parameters if <code>stochastic = TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>sigma</code></td>
+<td>
+<p>The sequence of scale parameters over iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>sigmahat</code></td>
+<td>
+<p>The final scale parameters if <code>stochastic = FALSE</code>, 
+or the average scale parameters if <code>stochastic = TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>loglik</code></td>
+<td>
+<p>The sequence of log-likelihoods over iterations.</p>
+</td></tr>
+</table>
+
+
+<h3>References</h3>
+
+
+<ul>
+<li><p> Benaglia, T., Chauveau, D., and Hunter, D. R., An EM-like algorithm
+for semi- and non-parametric estimation in multivariate mixtures, 
+Journal of Computational and Graphical Statistics, 18, 505-526, 2009.
+</p>
+</li>
+<li><p> Benaglia, T., Chauveau, D. and Hunter, D.R.
+Bandwidth Selection in an EM-like algorithm for nonparametric multivariate mixtures.
+Nonparametric Statistics and Mixture Models: A Festschrift in
+Honor of Thomas P. Hettmansperger. World Scientific Publishing Co., 
+pages 15-27, 2011.
+</p>
+</li>
+<li><p> Bordes, L., Chauveau, D., and Vandekerkhove, P.,
+An EM algorithm for a semiparametric mixture model, 
+Computational Statistics and Data Analysis, 51: 5429-5443, 2007.
+</p>
+</li></ul>
+
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../mixtools/help/plot.spEM.html">plot.spEM</a></code>, <code><a href="../../mixtools/help/normmixrm.sim.html">normmixrm.sim</a></code>, <code><a href="../../mixtools/help/spEMsymloc.html">spEMsymloc</a></code>,
+<code><a href="../../mixtools/help/npEM.html">npEM</a></code>, <code><a href="../../mixtools/help/plotseq.npEM.html">plotseq.npEM</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>## Not run: 
+## simulate a 2-component gaussian mixture with 3 iid repeated measures
+set.seed(100)
+mu &lt;- matrix(c(0, 15), 2, 3)
+sigma &lt;- matrix(c(1, 5), 2, 3)
+x &lt;- rmvnormmix(300, lambda = c(.4,.6), mu = mu, sigma = sigma)
+
+## apply spEM with or without an iterative bandwidth selection
+d &lt;- spEM(x, mu0 = 2, blockid = rep(1,3), constbw = FALSE)
+d2 &lt;- spEM(x, mu0 = 2, blockid = rep(1,3), constbw = TRUE)
+plot(d, xlim=c(-10, 40), ylim = c(0, .16), xlab = "", breaks = 30,
+     cex.lab=1.5, cex.axis=1.5, addlegend=FALSE)
+plot(d2, newplot=FALSE, addlegend=FALSE, lty=2)
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mixtools</em> version 2.0.0.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

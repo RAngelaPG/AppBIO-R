@@ -1,0 +1,179 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Test whether expected stop() or warning() messages are...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for expectStop {splus2R}"><tr><td>expectStop {splus2R}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Test whether expected stop() or warning() messages are produced.</h2>
+
+<h3>Description</h3>
+
+<p>These functions are for use in automated testing using <code>do.test</code>,
+to test whether function give specified
+<code>stop</code> and <code>warning</code> messages.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+expectStop(expr, expected = NULL)
+expectWarnings(expr, expected)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>expr</code></td>
+<td>
+<p> An expression, that should result in a call to <code>stop()</code>
+or <code>warning()</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>expected</code></td>
+<td>
+ <p><code>NULL</code>, or a character string
+containing (part of) the message
+expected from <code>stop</code>.  For <code>expectWarnings</code> a vector of
+character strings containing (parts of) all expected warnings.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>expectStop</code> is useful for checking error checking; that a function
+stops when it should, and gives the right message.
+For example, this may be in a file called by do.test:
+</p>
+<pre>{
+  expectStop(var(1:5, 1:4), "incompatible")
+}
+</pre>
+<p>The function returns <code>TRUE</code> if
+</p>
+
+<ul>
+<li><p> a stop() occurs, and
+</p>
+</li>
+<li><p> the error message is expected.
+</p>
+</li></ul>
+
+<p>Otherwise it returns appropriate messages.
+</p>
+<p><code>expectStop</code> intercepts the error.
+Execution continues, and assignments made earlier are committed.
+</p>
+<p>Similarly, <code>expectWarnings</code> is useful to check that a function
+gives appropriate warnings.
+For example, this may be in a file called by do.test:
+</p>
+<pre>
+expectWarnings(
+  {
+    object1 &lt;- (code generating warning messages);
+    object2 &lt;- (code generating possibly other warning messages);
+    all.equal(object1, object2)
+  },
+  c("expected warning 1",
+    "expected warning 2"))
+</pre>
+<p>The function returns <code>TRUE</code> if
+</p>
+
+<ul>
+<li><p> expr evaluates to <code>TRUE</code>; and
+</p>
+</li>
+<li><p> each warning message produced by evaluating expr contains as a
+substring an element of expected, and each element of expected
+is a substring of at least one of the produced warning messages.
+</p>
+</li></ul>
+
+<p>Otherwise it returns a list with components describing the test failures.
+Normal printing of warning messages is suppressed.
+</p>
+<p>It is possible to test for warnings and a stop in a single expression,
+by nesting calls to the two functions.
+</p>
+
+
+<h3>Value</h3>
+
+<p>If all tests pass, then <code>TRUE</code>.
+Otherwise <code>expectStop</code> returns character strings describing the
+failure, while <code>expectWarnings</code> returns a list with one or
+more of the following components:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>'Test result'</code></td>
+<td>
+<p>the value (if not <code>TRUE</code>) returned by
+evaluating <code>expr</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>'Unexpected warnings'</code></td>
+<td>
+<p>character vector
+of actual warning messages that were not listed in <code>expected</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>'Warnings expected but not found'</code></td>
+<td>
+<p>character vector
+of messages in <code>expected</code> that were not produced.</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Tim Hesterberg</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../splus2R/help/do.test.html">do.test</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Expressions like the following would typically be included in a file
+# that is called by do.test
+
+expectStop(lm(5), expected = "invalid formula")
+
+expectStop(cov2cor( matrix(2:1) ),
+           expected = "'V' is not a square numeric matrix")
+
+expectWarnings( # Test subscript replacement; should discard extra
+                # column and give a warning
+  {
+    x &lt;- data.frame(a=1:3,b=2:4)
+    x[,3] &lt;- x
+    all.equal(ncol(x), 3)
+  },
+  expected = "provided 2 variables to replace 1 var")
+
+# Test for a warning and stop together:
+{
+  f &lt;- function(x){
+    warning("a warning")
+    stop("a stop")
+  }
+  expectStop( expectWarnings( f(3), expected = "a warning"),
+              expected = "a stop")
+}
+# The definition of f and the call to expectStop are included here
+# within {} because that is how they would typically be grouped in
+# a file that is called by do.test.  Also note that f has been saved
+# (the assignment of f is committed, rather than aborted).
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>splus2R</em> version 1.3-5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

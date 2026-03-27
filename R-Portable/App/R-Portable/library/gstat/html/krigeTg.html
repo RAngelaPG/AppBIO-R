@@ -1,0 +1,172 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: TransGaussian kriging using Box-Cox transforms</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for krigeTg {gstat}"><tr><td>krigeTg {gstat}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> TransGaussian kriging using Box-Cox transforms </h2>
+
+<h3>Description</h3>
+
+<p>TransGaussian (ordinary) kriging function using Box-Cox transforms  
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+krigeTg(formula, locations, newdata, model = NULL, ...,
+	nmax = Inf, nmin = 0, maxdist = Inf, block = numeric(0),
+	nsim = 0, na.action = na.pass, debug.level = 1,
+	lambda = 1.0)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p> formula that defines the dependent variable as a linear
+model of independent variables; suppose the dependent variable has name
+<code>z</code>, for ordinary and use a formula like <code>z~1</code>; the dependent
+variable should be NOT transformed.
+</p>
+</td></tr>
+<tr valign="top"><td><code>locations</code></td>
+<td>
+<p> object of class <code>Spatial</code>, with observations </p>
+</td></tr>
+<tr valign="top"><td><code>newdata</code></td>
+<td>
+<p> Spatial object with prediction/simulation locations; 
+the coordinates should have names as defined in <code>locations</code> </p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p> variogram model of the TRANSFORMED dependent variable, 
+see <a href="../../gstat/help/vgm.html">vgm</a>, or <a href="../../gstat/help/fit.variogram.html">fit.variogram</a></p>
+</td></tr>
+<tr valign="top"><td><code>nmax</code></td>
+<td>
+<p> for local kriging: the number of nearest observations that
+should be used for a kriging prediction or simulation, where nearest
+is defined in terms of the space of the spatial locations. By default,
+all observations are used </p>
+</td></tr>
+<tr valign="top"><td><code>nmin</code></td>
+<td>
+<p> for local kriging: if the number of nearest observations
+within distance <code>maxdist</code> is less than <code>nmin</code>, a missing 
+value will be generated; see maxdist </p>
+</td></tr>
+<tr valign="top"><td><code>maxdist</code></td>
+<td>
+<p> for local kriging: only observations within a distance
+of <code>maxdist</code> from the prediction location are used for prediction
+or simulation; if combined with <code>nmax</code>, both criteria apply </p>
+</td></tr>
+<tr valign="top"><td><code>block</code></td>
+<td>
+<p> does not function correctly, afaik </p>
+</td></tr>
+<tr valign="top"><td><code>nsim</code></td>
+<td>
+<p> does not function correctly, afaik </p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+<p> function determining what should be done with missing
+values in 'newdata'.  The default is to predict 'NA'.  Missing values 
+in coordinates and predictors are both dealt with. </p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>value for the Box-Cox transform</p>
+</td></tr>
+<tr valign="top"><td><code>debug.level</code></td>
+<td>
+<p>debug level, passed to <a href="../help/predict.html">predict</a>; use -1 
+to see progress in percentage, and 0 to suppress all printed information </p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p> other arguments that will be passed to <a href="../../gstat/help/gstat.html">gstat</a></p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Function <code>krigeTg</code> uses transGaussian kriging as explained in
+<a href="https://www.math.umd.edu/~bnk/bak/Splus/kriging.html">https://www.math.umd.edu/~bnk/bak/Splus/kriging.html</a>. 
+</p>
+<p>As it uses the R/gstat krige function to derive everything, it needs in
+addition to ordinary kriging on the transformed scale a simple kriging
+step to find m from the difference between the OK and SK prediction
+variance, and a kriging/BLUE estimation step to obtain the estimate
+of <i>mu</i>.
+</p>
+<p>For further details, see <a href="../../gstat/help/krige.html">krige</a> and <a href="../help/predict.html">predict</a>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>an SpatialPointsDataFrame object containing the fields:
+<code>m</code> for the m (Lagrange) parameter for each location;
+<code>var1SK.pred</code> the <i>c0 Cinv</i> correction obtained by
+<code>muhat</code> for the mean estimate at each location;
+<code>var1SK.var</code> the simple kriging variance;
+<code>var1.pred</code> the OK prediction on the transformed scale;
+<code>var1.var</code> the OK kriging variance on the transformed scale;
+<code>var1TG.pred</code> the transGaussian kriging predictor;
+<code>var1TG.var</code> the transGaussian kriging variance, obtained by
+<i>phi'(muhat, lambda)^2 * var1.var</i>
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Edzer Pebesma </p>
+
+
+<h3>References</h3>
+
+<p> N.A.C. Cressie, 1993, Statistics for Spatial Data,
+Wiley. 
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><a href="../../gstat/help/gstat.html">gstat</a>, <a href="../help/predict.html">predict</a> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+library(sp)
+data(meuse)
+coordinates(meuse) = ~x+y
+data(meuse.grid)
+gridded(meuse.grid) = ~x+y
+v = vgm(1, "Exp", 300)
+x1 = krigeTg(zinc~1,meuse,meuse.grid,v, lambda=1) # no transform
+x2 = krige(zinc~1,meuse,meuse.grid,v)
+summary(x2$var1.var-x1$var1TG.var)
+summary(x2$var1.pred-x1$var1TG.pred)
+lambda = -0.25
+m = fit.variogram(variogram((zinc^lambda-1)/lambda ~ 1,meuse), vgm(1, "Exp", 300))
+x = krigeTg(zinc~1,meuse,meuse.grid,m,lambda=-.25)
+spplot(x["var1TG.pred"], col.regions=bpy.colors())
+summary(meuse$zinc)
+summary(x$var1TG.pred)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>gstat</em> version 2.1-5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

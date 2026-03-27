@@ -1,0 +1,200 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Credential function registry</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for cred_funs {gargle}"><tr><td>cred_funs {gargle}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Credential function registry</h2>
+
+<h3>Description</h3>
+
+<p>Functions to query or manipulate the registry of credential functions
+consulted by <code><a href="../../gargle/help/token_fetch.html">token_fetch()</a></code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+cred_funs_list()
+
+cred_funs_add(...)
+
+cred_funs_set(funs, ls = deprecated())
+
+cred_funs_clear()
+
+cred_funs_list_default()
+
+cred_funs_set_default()
+
+local_cred_funs(
+  funs = cred_funs_list_default(),
+  action = c("replace", "modify"),
+  .local_envir = caller_env()
+)
+
+with_cred_funs(
+  funs = cred_funs_list_default(),
+  code,
+  action = c("replace", "modify")
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>&lt;<code><a href="../../rlang/help/dyn-dots.html">dynamic-dots</a></code>&gt; One or more credential
+functions, in <code>name = value</code> form. Each credential function is subject to a
+superficial check that it at least &quot;smells like&quot; a credential function: its
+first argument must be named <code>scopes</code>, and its signature must include
+<code>...</code>. To remove a credential function, you can use a specification like
+<code>name = NULL</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>funs</code></td>
+<td>
+<p>A named list of credential functions.</p>
+</td></tr>
+<tr valign="top"><td><code>ls</code></td>
+<td>
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#deprecated"><img src="../help/figures/lifecycle-deprecated.svg" alt='[Deprecated]' /></a> This argument has been renamed
+to <code>funs</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>action</code></td>
+<td>
+<p>Whether to use <code>funs</code> to replace or modify the registry with
+funs:
+</p>
+
+<ul>
+<li> <p><code>"replace"</code> does <code>cred_funs_set(funs)</code>
+</p>
+</li>
+<li> <p><code>"modify"</code> does <code>cred_funs_add(!!!funs)</code>
+</p>
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>.local_envir</code></td>
+<td>
+<p>The environment to use for scoping. Defaults to current
+execution environment.</p>
+</td></tr>
+<tr valign="top"><td><code>code</code></td>
+<td>
+<p>Code to run with temporary credential function registry.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A list of credential functions or <code>NULL</code>.
+</p>
+
+
+<h3>Functions</h3>
+
+
+<ul>
+<li> <p><code>cred_funs_list()</code>: Get the list of registered credential functions.
+</p>
+</li>
+<li> <p><code>cred_funs_add()</code>: Register one or more new credential fetching functions.
+Function(s) are added to the <em>front</em> of the list. So:
+</p>
+
+<ul>
+<li><p> &quot;First registered, last tried.&quot;
+</p>
+</li>
+<li><p> &quot;Last registered, first tried.&quot;
+</p>
+</li></ul>
+
+<p>Can also be used to <em>remove</em> a function from the registry.
+</p>
+</li>
+<li> <p><code>cred_funs_set()</code>: Register a list of credential fetching functions.
+</p>
+</li>
+<li> <p><code>cred_funs_clear()</code>: Clear the credential function registry.
+</p>
+</li>
+<li> <p><code>cred_funs_list_default()</code>: Return the default list of credential functions.
+</p>
+</li>
+<li> <p><code>cred_funs_set_default()</code>: Reset the registry to the gargle default.
+</p>
+</li>
+<li> <p><code>local_cred_funs()</code>: Modify the credential function registry in the current
+scope. It is an example of the <code style="white-space: pre;">local_*()</code> functions in <span class="pkg">withr</span>.
+</p>
+</li>
+<li> <p><code>with_cred_funs()</code>: Evaluate <code>code</code> with a temporarily modified credential
+function registry. It is an example of the <code style="white-space: pre;">with_*()</code> functions in
+<span class="pkg">withr</span>.
+</p>
+</li></ul>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../gargle/help/token_fetch.html">token_fetch()</a></code>, which is where the registry is actually used.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+names(cred_funs_list())
+
+creds_one &lt;- function(scopes, ...) {}
+
+cred_funs_add(one = creds_one)
+cred_funs_add(two = creds_one, three = creds_one)
+names(cred_funs_list())
+
+cred_funs_add(two = NULL)
+names(cred_funs_list())
+
+# restore the default list
+cred_funs_set_default()
+
+# remove one specific credential fetcher
+cred_funs_add(credentials_gce = NULL)
+names(cred_funs_list())
+
+# force the use of one specific credential fetcher
+cred_funs_set(list(credentials_user_oauth2 = credentials_user_oauth2))
+names(cred_funs_list())
+
+# restore the default list
+cred_funs_set_default()
+
+# run some code with a temporary change to the registry
+# creds_one ONLY
+with_cred_funs(
+  list(one = creds_one),
+  names(cred_funs_list())
+)
+# add creds_one to the list
+with_cred_funs(
+  list(one = creds_one),
+  names(cred_funs_list()),
+  action = "modify"
+)
+# remove credentials_gce
+with_cred_funs(
+  list(credentials_gce = NULL),
+  names(cred_funs_list()),
+  action = "modify"
+)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>gargle</em> version 1.6.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

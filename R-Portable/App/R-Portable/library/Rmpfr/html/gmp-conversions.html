@@ -1,0 +1,125 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Conversion Utilities gmp &lt;-&gt; Rmpfr</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for gmp-conversions {Rmpfr}"><tr><td>gmp-conversions {Rmpfr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Conversion Utilities gmp &lt;-&gt; Rmpfr</h2>
+
+<h3>Description</h3>
+
+<p>Coerce from and to big integers (<code><a href="../../gmp/help/bigz.html">bigz</a></code>) and
+<code><a href="../../Rmpfr/help/mpfr.html">mpfr</a></code> numbers.
+</p>
+<p>Further, coerce from big rationals (<code><a href="../../gmp/help/bigq.html">bigq</a></code>) to
+<code><a href="../../Rmpfr/help/mpfr.html">mpfr</a></code> numbers.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+.bigz2mpfr(x, precB = NULL, rnd.mode = c('N','D','U','Z','A'))
+.bigq2mpfr(x, precB = NULL, rnd.mode = c('N','D','U','Z','A'))
+.mpfr2bigz(x, mod = NA)
+.mpfr2bigq(x)
+
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>an <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> object of class <code>bigz</code>, <code>bigq</code> or <code>mpfr</code>
+respectively.</p>
+</td></tr>
+<tr valign="top"><td><code>precB</code></td>
+<td>
+<p>precision in bits for the result.  The default,
+<code>NULL</code>, means to use the <em>minimal</em> precision necessary for
+correct representation.</p>
+</td></tr>
+<tr valign="top"><td><code>rnd.mode</code></td>
+<td>
+<p>a 1-letter string specifying how <em>rounding</em>
+should happen at C-level conversion to MPFR, see details of
+<code><a href="../../Rmpfr/help/mpfr.html">mpfr</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>mod</code></td>
+<td>
+<p>a possible modulus, see <code><a href="../../gmp/help/as.bigz.html">as.bigz</a></code> in
+package <span class="pkg">gmp</span>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Note that we also provide the natural (S4) coercions,
+<code>as(x, "mpfr")</code> for <code>x</code> inheriting from class <code>"bigz"</code>
+or <code>"bigq"</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a numeric vector of the same length as <code>x</code>, of the desired class.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../Rmpfr/help/mpfr.html">mpfr</a>()</code>, <code><a href="../../gmp/help/as.bigz.html">as.bigz</a></code> and
+<code><a href="../../gmp/help/as.bigq.html">as.bigq</a></code> in package <span class="pkg">gmp</span>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+ S &lt;- gmp::Stirling2(50,10)
+ show(S)
+ SS &lt;- S * as.bigz(1:3)^128
+ stopifnot(all.equal(log2(SS[2]) - log2(S), 128, tolerance=1e-15),
+           identical(SS, .mpfr2bigz(.bigz2mpfr(SS))))
+
+ .bigz2mpfr(S)            # 148 bit precision
+ .bigz2mpfr(S, precB=256) # 256 bit
+
+ ## rational --&gt; mpfr:
+ sq &lt;- SS / as.bigz(2)^100
+ MP &lt;- as(sq, "mpfr")
+ stopifnot(identical(MP, .bigq2mpfr(sq)),
+           SS == MP * as(2, "mpfr")^100)
+
+ ## New since 2024-01-20:   mpfr --&gt; big rational "bigq"
+ Pi &lt;- Const("pi", 128)
+ m &lt;- Pi* 2^(-5:5)
+ (m &lt;- c(m, mpfr(2, 128)^(-5:5)))
+
+ ## 1 x large num/denom, then 2^(-5:5) as frac
+ tail( Q &lt;- .mpfr2bigq(m) , 12)
+ getDenom &lt;- Rmpfr:::getDenom
+ stopifnot(is.whole(m * (d.m &lt;- getDenom(m))))
+ stopifnot(all.equal(m, mpfr(Q, 130), tolerance = 2^-130)) # I see even
+           all.equal(m, mpfr(Q, 130), tolerance = 0) # TRUE
+
+ m &lt;- m * mpfr(2, 128)^200 # quite a bit larger
+ tail( Q. &lt;- .mpfr2bigq(m) , 12) # large integers ..
+ stopifnot(is.whole(m * (d.m &lt;- getDenom(m))))
+ stopifnot(all.equal(m, mpfr(Q., 130), tolerance = 2^-130)) # I see even
+           all.equal(m, mpfr(Q., 130), tolerance = 0) # TRUE
+
+ m2 &lt;- m * mpfr(2, 128)^20000 ## really huge
+ stopifnot(is.whole(m2 * (d.m2 &lt;- getDenom(m2))))
+ denominator(Q2 &lt;- .mpfr2bigq(m2)) ## all 1 ! (all m2 ~~ 2^20200 )
+ stopifnot(all.equal(m2, mpfr(Q2, 130), tolerance = 2^-130)) # I see even
+           all.equal(m2, mpfr(Q2, 130), tolerance = 0) # TRUE
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>Rmpfr</em> version 1.1-2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Fit Linear Mixed-Effects Models</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for lmer {lmerTest}"><tr><td>lmer {lmerTest}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Fit Linear Mixed-Effects Models</h2>
+
+<h3>Description</h3>
+
+<p>This function overloads <code><a href="../../lme4/help/lmer.html">lmer</a></code> from the <span class="pkg">lme4</span>-package
+(<code>lme4::lmer</code>) and adds a couple of slots needed for the computation of
+Satterthwaite denominator degrees of freedom. All arguments are the same as
+for <code>lme4::lmer</code> and all the usual <code>lmer</code>-methods work.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+lmer(
+  formula,
+  data = NULL,
+  REML = TRUE,
+  control = lmerControl(),
+  start = NULL,
+  verbose = 0L,
+  subset,
+  weights,
+  na.action,
+  offset,
+  contrasts = NULL,
+  devFunOnly = FALSE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>a two-sided linear formula object describing both the
+fixed-effects and random-effects part of the model, with the
+response on the left of a <code>~</code> operator and the terms, separated
+by <code>+</code> operators, on the right.  Random-effects terms are
+distinguished by vertical bars (<code>|</code>) separating expressions
+for design matrices from grouping factors. By default, non-scalar
+random effects (where the design matrix has more than one column,
+e.g. <code>(1+x|f)</code>) are fitted with <em>unstructured</em> (general
+positive semidefinite) covariance matrices.
+</p>
+
+<ul>
+<li><p> Two vertical bars
+(<code>||</code>) can be used to specify multiple uncorrelated random
+effects for the same grouping variable. 
+With default settings, the <code>||</code>-syntax <em>works
+only for design matrices containing numeric (continuous) predictors</em>;
+to fit models with independent categorical effects, use
+<code>diag(f|g)</code> or set <code>options(lme4.doublevert.default = "diag_special")</code> (see
+<code>help(getDoublevertDefault)</code> in <span class="pkg">lme4</span> version <code>2.0-0</code> or higher).
+</p>
+</li>
+<li><p> Tags preceding a random effect term specify covariance
+structure:
+</p>
+
+<ul>
+<li> <p><code>us</code> (default: <code>us(f|g)</code> is equivalent to <code>(f|g)</code>):
+unstructured, positive semi-definite
+</p>
+</li>
+<li> <p><code>diag</code>: diagonal (all correlations set to zero).
+Specify <code>diag(f|g, hom = TRUE)</code>
+to fit a homogeneous diagonal covariance matrix
+</p>
+</li>
+<li> <p><code>cs</code>: compound symmetric (all pairwise correlations
+set identical). Specify <code>cs(f|g, hom = TRUE)</code> for homogeneous
+variances.
+</p>
+</li>
+<li> <p><code>ar1</code>: autoregressive order 1. Note that AR1 models
+are homogeneous by default; specify <code>ar1(f|g, hom = FALSE)</code>
+for heterogeneous variances.
+</p>
+</li></ul>
+ 
+</li></ul>
+ 
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>an optional data frame containing the variables named in
+<code>formula</code>.  By default the variables are taken from the
+environment from which <code>lmer</code> is called. While <code>data</code> is
+optional, the package authors <em>strongly</em> recommend its use,
+especially when later applying methods such as <code>update</code> and
+<code>drop1</code> to the fitted model (<em>such methods are not
+guaranteed to work properly if <code>data</code> is omitted</em>). If
+<code>data</code> is omitted, variables will be taken from the environment
+of <code>formula</code> (if specified as a formula) or from the parent
+frame (if specified as a character vector).</p>
+</td></tr>
+<tr valign="top"><td><code>REML</code></td>
+<td>
+<p>logical scalar - Should the estimates be chosen to
+optimize the REML criterion (as opposed to the log-likelihood)?</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+<p>a list (of correct class, resulting from
+<code><a href="../../lme4/help/lmerControl.html">lmerControl</a>()</code> or <code><a href="../../lme4/help/glmerControl.html">glmerControl</a>()</code>
+respectively) containing control parameters, including the nonlinear
+optimizer to be used and parameters to be passed through to the
+nonlinear optimizer, see the <code>*lmerControl</code> documentation for
+details.</p>
+</td></tr>
+<tr valign="top"><td><code>start</code></td>
+<td>
+<p>a numeric vector or a named <a href="../../base/html/list.html">list</a> with one optional
+component named <code>par</code> or <code>theta</code>, giving starting values
+for covariance parameters.  Numeric <code>start</code> is equivalent to
+<code>list(par = start)</code>.  Parameters corresponding to unstructured
+covariance matrices are on the scale of the Cholesky factor of the
+relative covariance matrix.  By default, all relative covariance
+matrices are identity matrices.</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>integer scalar.  If <code>&gt; 0</code> verbose output is
+generated during the optimization of the parameter estimates.  If
+<code>&gt; 1</code> verbose output is generated during the individual
+penalized iteratively reweighted least squares (PIRLS) steps.</p>
+</td></tr>
+<tr valign="top"><td><code>subset</code></td>
+<td>
+<p>an optional expression indicating the subset of the rows
+of <code>data</code> that should be used in the fit. This can be a logical
+vector, or a numeric vector indicating which observation numbers are
+to be included, or a character vector of the row names to be
+included.  All observations are included by default.</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>an optional vector of &lsquo;prior weights&rsquo; to be used
+in the fitting process.  Should be <code>NULL</code> or a numeric vector.
+Prior <code>weights</code> are <em>not</em> normalized or standardized in
+any way.  In particular, the diagonal of the residual covariance
+matrix is the squared residual standard deviation parameter
+<code><a href="../../lme4/help/sigma.html">sigma</a></code> times the vector of inverse <code>weights</code>.
+Therefore, if the <code>weights</code> have relatively large magnitudes,
+then in order to compensate, the <code><a href="../../lme4/help/sigma.html">sigma</a></code> parameter will
+also need to have a relatively large magnitude.</p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+<p>a function that indicates what should happen when the
+data contain <code>NA</code>s.  The default action (<code>na.omit</code>,
+inherited from the 'factory fresh' value of
+<code>getOption("na.action")</code>) strips any observations with any
+missing values in any variables.</p>
+</td></tr>
+<tr valign="top"><td><code>offset</code></td>
+<td>
+<p>this can be used to specify an <em>a priori</em> known
+component to be included in the linear predictor during
+fitting. This should be <code>NULL</code> or a numeric vector of length
+equal to the number of cases.  One or more <code><a href="../../stats/html/offset.html">offset</a></code>
+terms can be included in the formula instead or as well, and if more
+than one is specified their sum is used.  See
+<code><a href="../../stats/html/model.extract.html">model.offset</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>contrasts</code></td>
+<td>
+<p>an optional list. See the <code>contrasts.arg</code> of
+<code>model.matrix.default</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>devFunOnly</code></td>
+<td>
+<p>logical - return only the deviance evaluation
+function. Note that because the deviance function operates on
+variables stored in its environment, it may not return
+<em>exactly</em> the same values on subsequent calls (but the results
+should always be within machine tolerance).</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>For details about <code>lmer</code> see <code><a href="../../lme4/help/lmer.html">lmer</a></code>
+(<code>help(lme4::lmer)</code>). The description of all arguments below is taken
+verbatim and unedited from the <span class="pkg">lme4</span>-package.
+</p>
+<p>In cases when a valid <code>lmer</code>-object
+(<code>lmerMod</code>) is produced, but when the computations needed for
+Satterthwaite df fails, the <code>lmerMod</code> object is returned - not an
+<code>lmerModLmerTest</code> object.
+</p>
+
+
+<h3>Value</h3>
+
+<p>an S4 object of class <code>"lmerModLmerTest"</code>
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Rune Haubo B. Christensen and Alexandra Kuznetsova for the overload
+in <span class="pkg">lmerTest</span> &ndash; <span class="pkg">lme4</span>-authors for the underlying implementation
+in <span class="pkg">lme4</span>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../lme4/help/lmer.html">lmer</a></code> and <code><a href="../../lmerTest/help/lmerModLmerTest.html">lmerModLmerTest</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+data("sleepstudy", package="lme4")
+m &lt;- lmer(Reaction ~ Days + (Days | Subject), sleepstudy)
+class(m) # lmerModLmerTest
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>lmerTest</em> version 3.2-1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

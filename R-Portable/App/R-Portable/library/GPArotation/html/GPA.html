@@ -1,0 +1,326 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Rotation Optimization</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for GPA {GPArotation}"><tr><td>GPA {GPArotation}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Rotation Optimization</h2>
+
+<h3>Description</h3>
+
+<p>Gradient projection rotation optimization routine used by various rotation
+objective.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+    GPFRSorth(A, Tmat=diag(ncol(A)), normalize=FALSE, eps=1e-5, maxit=1000, 
+       method="varimax", methodArgs=NULL, randomStarts=0)
+    GPFRSoblq(A, Tmat=diag(ncol(A)), normalize=FALSE, eps=1e-5, maxit=1000, 
+       method="quartimin", methodArgs=NULL, randomStarts=0)
+
+    GPForth(A, Tmat=diag(ncol(A)), normalize=FALSE, eps=1e-5, maxit=1000, 
+       method="varimax", methodArgs=NULL)
+    GPFoblq(A, Tmat=diag(ncol(A)), normalize=FALSE, eps=1e-5, maxit=1000, 
+       method="quartimin", methodArgs=NULL)
+    </pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>A</code></td>
+<td>
+<p>initial factor loadings matrix for which the rotation 
+criterian is to be optimized.</p>
+</td></tr>
+<tr valign="top"><td><code>Tmat</code></td>
+<td>
+<p>initial rotation matrix.</p>
+</td></tr>
+<tr valign="top"><td><code>normalize</code></td>
+<td>
+<p>see details.</p>
+</td></tr>
+<tr valign="top"><td><code>eps</code></td>
+<td>
+<p>convergence is assumed when the norm of the gradient is smaller
+than eps.</p>
+</td></tr>
+<tr valign="top"><td><code>maxit</code></td>
+<td>
+<p>maximum number of iterations allowed in the main loop.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>rotation objective criterian.</p>
+</td></tr>
+<tr valign="top"><td><code>methodArgs</code></td>
+<td>
+<p>a list ofmethodArgs arguments passed to the rotation objective</p>
+</td></tr>
+<tr valign="top"><td><code>randomStarts</code></td>
+<td>
+<p>number of random starts (<code>GPFRSorth</code> and <code>GPFRSoblq</code>)</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Gradient projection (GP) rotation optimization routines developed by
+Jennrich (2001, 2002) and Bernaards and Jennrich (2005).
+These functions can be used directly
+to rotate a loadings matrix, or indirectly through a rotation
+objective passed to a factor estimation routine such as <code><a href="../../stats/html/factanal.html">factanal</a></code>.
+A rotation of a matrix <code>A</code> is defined as <code>A %*% solve(t(Th))</code>. 
+In case of orthogonal rotation, the factors the rotation matrix
+<code>Tmat</code> is orthonormal, and the rotation simplifies 
+to <code>A %*% Th</code>. The rotation matrix <code>Th</code> is computed by GP rotation.
+</p>
+<p>The <code>GPFRsorth</code> and <code>GPFRSoblq</code> functions are the primary functions 
+for orthogonal and oblique rotations, respectively. These two functions 
+serve as wrapper functions for  <code>GPForth</code> and <code>GPFoblq</code>, with the
+added functionality of multiple random starts. 
+<code>GPForth</code> is the main GP algorithm for orthogonal rotation.
+<code>GPFoblq</code> is the main GP algorithm for oblique rotation.
+The <code>GPForth</code> and <code>GPFoblq</code> may be also be called directly. 
+</p>
+<p>Arguments in the wrapper functions <code>GPFRsorth</code> and <code>GPFRSoblq</code> 
+are passed to GP algorithms. Functions require an initial loadings matrix 
+<code>A</code> which fixes the equivalence class over which the optimization is done. 
+It must be the solution to the orthogonal factor analysis problem as obtained 
+from <code>factanal</code> or other factor estimation routines. 
+The initial rotation matrix is given by the <code>Tmat</code>. 
+By default the GP algorithm use the identity matrix as the initial rotation matrix. 
+</p>
+<p>For some rotation criteria local minima may exist. To start from random 
+initial rotation matrices, the <code>randomStarts</code> argument is available
+in <code>GPFRSorth</code> and <code>GPFRSoblq</code>. The returned object includes 
+the rotated loadings matrix with the lowest criterion value <code>f</code> 
+among attemnpted starts.Technically, this does not have to be the global 
+minimum. The <code>randomStarts</code> argument
+is not available <code>GPForth</code> and <code>GPFoblq</code>. However, for 
+<code>GPForth</code> and <code>GPFoblq</code> a single random
+initial rotation matrix may be set by <code>Tmat = <a href="../../GPArotation/help/Random.Start.html">Random.Start</a>(ncol(A))</code>.
+</p>
+<p>The argument <code>method</code> can be used to specify a string indicating
+the rotation objective. Oblique rotation defaults to &quot;<code>quartimin</code>&quot; 
+and orthogonal rotation defaults to &quot;<code>varimax</code>&quot;. Available rotation objectives
+are &quot;<code>oblimin</code>&quot;, &quot;<code>quartimin</code>&quot;, &quot;<code>target</code>&quot;, &quot;<code>pst</code>&quot;,
+&quot;<code>oblimax</code>&quot;, &quot;<code>entropy</code>&quot;, &quot;<code>quartimax</code>&quot;, &quot;<code>Varimax</code>&quot;, 
+&quot;<code>simplimax</code>&quot;, &quot;<code>bentler</code>&quot;, &quot;<code>tandemI</code>&quot;, &quot;<code>tandemII</code>&quot;, 
+&quot;<code>geomin</code>&quot;, &quot;<code>cf</code>&quot;, &quot;<code>infomax</code>&quot;, &quot;<code>mccammon</code>&quot;, &quot;<code>bifactor</code>&quot;, &quot;<code>lp</code>&quot;
+and &quot;<code>varimin</code>&quot;. The string is prefixed with &quot;<code>vgQ.</code>&quot; to give the actual function call. 
+See <code><a href="../../GPArotation/help/vgQ.html">vgQ</a></code> for details.
+</p>
+<p>Some rotation criteria (&quot;<code>oblimin</code>&quot;, &quot;<code>target</code>&quot;, &quot;<code>pst</code>&quot;, &quot;<code>simplimax</code>&quot;,
+&quot;<code>geomin</code>&quot;, &quot;<code>cf</code>&quot;, <code>"lp"</code>) require one or more additional arguments. See
+<code><a href="../../GPArotation/help/rotations.html">rotations</a></code> for details and default values, if applicable. 
+</p>
+<p>Note that &quot;<code>lp</code>&quot; rotation uses a modeified version of the GPA rotation algorithm;
+for details on the use of <i>Lp</i> rotation, please see <a href="../../GPArotation/help/Lp+20rotation.html">Lp rotation</a>.
+</p>
+<p>For examples of the indirect use see <code><a href="../../GPArotation/help/rotations.html">rotations</a></code>. 
+</p>
+<p>The argument <code>normalize</code> gives an indication of if and how any
+normalization should be done before rotation, and then undone after rotation.
+If <code>normalize</code> is <code>FALSE</code> (the default) no normalization is done.
+If <code>normalize</code> is <code>TRUE</code> then Kaiser normalization is done. (So
+squared row entries of normalized <code>A</code> sum to 1.0. This is sometimes called
+Horst normalization.)
+If <code>normalize</code> is a vector of length equal to the number of indicators (=
+number of rows of <code>A</code>) then the colums are divided by <code>normalize</code> 
+before rotation and multiplied by <code>normalize</code> after rotation. 
+If <code>normalize</code> is a function then it should take <code>A</code> as an argument
+and return a vector which is used like the vector above. See Nguyen and Waller (2022)
+for detailed investigation of normalization on factor rotations, including 
+potential effect on qualitative interpretation of loadings.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>GPArotation</code> object which is a list with elements 
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>loadings</code></td>
+<td>
+<p>The rotated loadings, one column for each factor. If randomStarts
+were requested then this is the rotated loadings matrix with the 
+lowest criterion value.</p>
+</td></tr>
+<tr valign="top"><td><code>Th</code></td>
+<td>
+<p>The rotation matrix, loadings <code>%*% t(Th) = A</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>Table</code></td>
+<td>
+<p>A matrix recording the iterations of the rotation optimization.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>A string indicating the rotation objective function.</p>
+</td></tr>
+<tr valign="top"><td><code>orthogonal</code></td>
+<td>
+<p>A logical indicating if the rotation is orthogonal.</p>
+</td></tr>
+<tr valign="top"><td><code>convergence</code></td>
+<td>
+<p>A logical indicating if convergence was obtained.</p>
+</td></tr>
+<tr valign="top"><td><code>Phi</code></td>
+<td>
+<p><code>t(Th) %*% Th</code>.  The covariance matrix of the rotated factors.
+This will be the identity matrix for orthogonal
+rotations so is omitted (<code>NULL</code>) for the result from <code>GPFRSorth</code> and <code>GPForth</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>Gq</code></td>
+<td>
+<p>The gradient of the objective function at the rotated loadings.</p>
+</td></tr>
+<tr valign="top"><td><code>randStartChar</code></td>
+<td>
+<p>A vector with characteristics of random starts 
+(GPFRSorth and GPFRSoblq only; omitted if <code>randomStarts =&lt; 1</code>).</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Coen A. Bernaards and Robert I. Jennrich
+with some R modifications by Paul Gilbert</p>
+
+
+<h3>References</h3>
+
+<p>Bernaards, C.A. and Jennrich, R.I. (2005) Gradient Projection Algorithms 
+and Software for Arbitrary Rotation Criteria in Factor Analysis. 
+<em>Educational and Psychological Measurement</em>, <b>65</b>, 676&ndash;696.
+</p>
+<p>Jennrich, R.I. (2001). A simple general procedure for orthogonal rotation.
+<em>Psychometrika</em>, <b>66</b>, 289&ndash;306.
+</p>
+<p>Jennrich, R.I. (2002). A simple general method for oblique rotation. 
+<em>Psychometrika</em>, <b>67</b>, 7&ndash;19.
+</p>
+<p>Nguyen, H.V. and Waller, N.G. (2022). Local minima and factor rotations
+in exploratory factor analysis. <em> Psychological Methods</em>. 
+Advance online publication. https://doi.org/10.1037/met0000467
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../GPArotation/help/Random.Start.html">Random.Start</a></code>,
+<code><a href="../../stats/help/factanal.html">factanal</a></code>,
+<code><a href="../../GPArotation/help/oblimin.html">oblimin</a></code>,
+<code><a href="../../GPArotation/help/quartimin.html">quartimin</a></code>,
+<code><a href="../../GPArotation/help/targetT.html">targetT</a></code>,
+<code><a href="../../GPArotation/help/targetQ.html">targetQ</a></code>,
+<code><a href="../../GPArotation/help/pstT.html">pstT</a></code>,
+<code><a href="../../GPArotation/help/pstQ.html">pstQ</a></code>,
+<code><a href="../../GPArotation/help/oblimax.html">oblimax</a></code>,
+<code><a href="../../GPArotation/help/entropy.html">entropy</a></code>,
+<code><a href="../../GPArotation/help/quartimax.html">quartimax</a></code>,
+<code><a href="../../GPArotation/help/Varimax.html">Varimax</a></code>,
+<code><a href="../../stats/help/varimax.html">varimax</a></code>,
+<code><a href="../../GPArotation/help/simplimax.html">simplimax</a></code>,
+<code><a href="../../GPArotation/help/bentlerT.html">bentlerT</a></code>,
+<code><a href="../../GPArotation/help/bentlerQ.html">bentlerQ</a></code>,
+<code><a href="../../GPArotation/help/tandemI.html">tandemI</a></code>,
+<code><a href="../../GPArotation/help/tandemII.html">tandemII</a></code>,
+<code><a href="../../GPArotation/help/geominT.html">geominT</a></code>,
+<code><a href="../../GPArotation/help/geominQ.html">geominQ</a></code>,
+<code><a href="../../GPArotation/help/bigeominT.html">bigeominT</a></code>,
+<code><a href="../../GPArotation/help/bigeominQ.html">bigeominQ</a></code>,
+<code><a href="../../GPArotation/help/cfT.html">cfT</a></code>,
+<code><a href="../../GPArotation/help/cfQ.html">cfQ</a></code>,
+<code><a href="../../GPArotation/help/equamax.html">equamax</a></code>,
+<code><a href="../../GPArotation/help/parsimax.html">parsimax</a></code>,
+<code><a href="../../GPArotation/help/infomaxT.html">infomaxT</a></code>,
+<code><a href="../../GPArotation/help/infomaxQ.html">infomaxQ</a></code>,
+<code><a href="../../GPArotation/help/mccammon.html">mccammon</a></code>,
+<code><a href="../../GPArotation/help/varimin.html">varimin</a></code>,
+<code><a href="../../GPArotation/help/bifactorT.html">bifactorT</a></code>,
+<code><a href="../../GPArotation/help/bifactorQ.html">bifactorQ</a></code>,
+<code><a href="../../GPArotation/help/lpT.html">lpT</a></code>,
+<code><a href="../../GPArotation/help/lpQ.html">lpQ</a></code>,
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+  # see rotations for more examples	
+	
+  data(Harman, package = "GPArotation")
+  GPFRSorth(Harman8, method = "quartimax")
+  quartimax(Harman8)
+  GPFRSoblq(Harman8, method = "quartimin", normalize = TRUE)
+  loadings( quartimin(Harman8, normalize = TRUE) )
+
+  # using random starts
+  data("WansbeekMeijer", package = "GPArotation")
+  fa.unrotated  &lt;- factanal(factors = 3, covmat=NetherlandsTV, normalize=TRUE, rotation="none")
+  GPFRSoblq(loadings(fa.unrotated), normalize = TRUE, method = "oblimin", randomStarts = 100)
+  oblimin(loadings(fa.unrotated), randomStarts=100)
+  data(Thurstone, package = "GPArotation")
+  geominQ(box26, normalize = TRUE, randomStarts=100)
+  
+  # displaying results of factor analysis rotation output
+  origdigits &lt;- options("digits")
+  Abor.unrotated &lt;- factanal(factors = 2, covmat = ability.cov, rotation = "none")
+  Abor &lt;- oblimin(loadings(Abor.unrotated), randomStarts = 20)
+  Abor
+  print(Abor)
+  print(Abor, sortLoadings=FALSE) #this matches the output passed to factanal
+  print(Abor, Table=TRUE)
+  print(Abor, rotateMat=TRUE)
+  print(Abor, digits=2)
+  # by default provides the structure matrix for oblique rotation
+  summary(Abor)
+  summary(Abor, Structure=FALSE)
+  options(digits = origdigits$digits)
+  
+  # GPArotation output does sort loadings, but use print to obtain if needed
+  set.seed(334)
+  xusl &lt;- quartimin(Harman8, normalize = TRUE, randomStarts=100)
+  # loadings without ordering (default)
+  loadings(xusl)
+  max(abs(print(xusl)$loadings - xusl$loadings)) == 0 # FALSE
+  # output sorted loadings via print (not default)
+  xsl &lt;- print(xusl)
+  max(abs(print(xsl)$loadings - xsl$loadings)) == 0 # TRUE
+  
+  # Kaiser normalization is used when normalize=TRUE
+  factanal(factors = 2, covmat = ability.cov, rotation = "oblimin", 
+  			control=list(rotate=list(normalize = TRUE)))
+  # Cureton-Mulaik normalization can be done by passing values to the rotation
+  # may result in convergence problems
+  NormalizingWeightCM &lt;- function (L) {
+    Dk &lt;- diag(sqrt(diag(L %*% t(L)))^-1) %*% L
+    wghts &lt;- rep(0, nrow(L))
+    fpls &lt;- Dk[, 1]
+    acosi &lt;- acos(ncol(L)^(-1/2))
+    for (i in 1:nrow(L)) {
+    	num &lt;- (acosi - acos(abs(fpls[i])))
+        dem &lt;- (acosi - (function(a, m) ifelse(abs(a) &lt; (m^(-1/2)), pi/2, 0))(fpls[i], ncol(L)))
+        wghts[i] &lt;- cos(num/dem * pi/2)^2 + 0.001
+    	}
+    Dv &lt;- wghts * sqrt(diag(L %*% t(L)))^-1        
+    Dv
+  }
+  quartimin(Harman8, normalize = NormalizingWeightCM(Harman8), randomStarts=100)
+  quartimin(Harman8, normalize = TRUE, randomStarts=100)
+	
+  </pre>
+
+<hr /><div style="text-align: center;">[Package <em>GPArotation</em> version 2025.3-1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

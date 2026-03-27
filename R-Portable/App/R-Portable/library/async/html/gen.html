@@ -1,0 +1,158 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Create an iterator using sequential code.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for gen {async}"><tr><td>gen {async}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Create an iterator using sequential code.</h2>
+
+<h3>Description</h3>
+
+<p><code>gen({...})</code> with an expression written in its argument, creates a
+generator, an object which computes an indefinite sequence.
+</p>
+<p>When written inside a generator expression, <code>yield(expr)</code> causes the
+generator to return the given value, then pause until the next value is
+requested.
+</p>
+<p>When running in a generator expression, <code style="white-space: pre;">yieldFrom(it))</code>, given
+a list or <a href="../../async/help/iteror.html">iteror</a> in its argument, will yield successive values from that
+iteror until it is exhausted, then continue.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+gen(
+  expr,
+  ...,
+  split_pipes = FALSE,
+  compileLevel = getOption("async.compileLevel")
+)
+
+yield(expr)
+
+yieldFrom(it, err)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>expr</code></td>
+<td>
+<p>An expression, to be turned into an iterator.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Undocumented.</p>
+</td></tr>
+<tr valign="top"><td><code>split_pipes</code></td>
+<td>
+<p>Silently rewrite expressions where &quot;yield&quot;
+appears in chained calls. See <a href="../../async/help/async.html">async</a>.</p>
+</td></tr>
+<tr valign="top"><td><code>compileLevel</code></td>
+<td>
+<p>Current levels are 0 (no compilation) or
+-1 (name munging only).</p>
+</td></tr>
+<tr valign="top"><td><code>it</code></td>
+<td>
+<p>A list, <a href="../../async/help/iteror.html">iteror</a> or compatible object.</p>
+</td></tr>
+<tr valign="top"><td><code>err</code></td>
+<td>
+<p>An error handler</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>On the &quot;inside&quot;, that is the point of view of code you write in
+<code>{...}</code>, is ordinary sequential code using conditionals, branches,
+loops and such, outputting one value after another with <code>yield()</code>.
+For example, this code creates a generator that computes a random
+walk:
+</p>
+<div class="sourceCode r"><pre>rwalk &lt;- gen({
+  x &lt;- 0;
+  repeat {
+    x &lt;- x + rnorm(1)
+    yield(x)
+  }
+})
+</pre></div>
+<p>On the &quot;outside,&quot; that is, the object returned by <code>gen()</code>, a
+generator behaves like an iterator over an indefinite
+collection. So we can collect the first 100 values from the above
+generator and compute their mean:
+</p>
+<div class="sourceCode"><pre>rwalk |&gt; itertools2::take(100) |&gt; as.numeric() |&gt; mean()
+</pre></div>
+<p>When <code>nextOr(rwalk, ...)</code> is called, the generator executes its
+&quot;inside&quot; expression, in a local environment, until it reaches a
+call to <code style="white-space: pre;">yield().</code> THe generator 'pauses', preserving its execution
+state, and <code>nextElem</code> then returns what was passed to <code>yield</code>. The
+next time <code>nextElem(rwalk)</code> is called, the generator resumes
+executing its inside expression starting after the <code>yield()</code>.
+</p>
+<p>If you call <code>gen</code> with a function expression, as in:
+</p>
+<div class="sourceCode"><pre>gseq &lt;- gen(function(x) for (i in 1:x) yield(i))
+</pre></div>
+<p>then instead of returning a single generator it will return a
+<em>generator function</em> (i.e. a function that constructs and returns a
+generator.) The above is morally equivalent to:
+</p>
+<div class="sourceCode"><pre>gseq &lt;- function(x) {force(x); gen(for (i in 1:x) yield(i))}
+</pre></div>
+<p>so the generator function syntax just saves you writing the <a href="../../base/html/force.html">force</a>
+call.
+</p>
+<p>A generator expression can use any R functions, but a call to
+<code>yield</code> may only appear in the arguments of a &quot;pausable&quot; function.
+The <code>async</code> package has several built-in pausable functions corresponding
+to base R's control flow functions, such as <code>if</code>, <code>while</code>, <code>tryCatch</code>,
+<code style="white-space: pre;">&lt;-</code>, <code>{}</code>, <code>||</code> and so on (see <a href="../../async/help/pausables.html">pausables</a> for more details.)  A call
+to <code>yield</code> may only appear in an argument of one of these pausable
+functions. So this random walk generator:
+</p>
+<div class="sourceCode r"><pre>rwalk &lt;- gen({x &lt;- 0; repeat {x &lt;- yield(x + rnorm(1))}})
+</pre></div>
+<p>is legal, because <code>yield</code> appears within arguments to <code>{}</code>,
+<code>repeat</code>, and <code style="white-space: pre;">&lt;-</code>, for which this package has pausable
+definitions. However, this:
+</p>
+<div class="sourceCode r"><pre>rwalk &lt;- gen({x &lt;- rnorm(1); repeat {x &lt;- rnorm(1) + yield(x)}})
+</pre></div>
+<p>is not legal, because <code>yield</code> appears in an argument to <code>+</code>, which
+does not have a pausable definition.
+</p>
+
+
+<h3>Value</h3>
+
+<p>'gen(...) returns an <a href="../../async/help/iteror.html">iteror</a>.
+</p>
+<p><code>yield(x)</code> returns the same value x.
+</p>
+<p>yieldFrom returns NULL, invisibly.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+i_chain &lt;- function(...) {
+  iterators &lt;- list(...)
+  gen(for (it in iterators) yieldFrom(it))
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>async</em> version 0.3.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

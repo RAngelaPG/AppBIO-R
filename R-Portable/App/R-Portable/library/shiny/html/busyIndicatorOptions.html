@@ -1,0 +1,197 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Customize busy indicator options</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for busyIndicatorOptions {shiny}"><tr><td>busyIndicatorOptions {shiny}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Customize busy indicator options</h2>
+
+<h3>Description</h3>
+
+<p>Shiny automatically includes busy indicators, which more specifically means:
+</p>
+
+<ol>
+<li><p> Calculating/recalculating outputs have a spinner overlay.
+</p>
+</li>
+<li><p> Outputs fade out/in when recalculating.
+</p>
+</li>
+<li><p> When no outputs are calculating/recalculating, but Shiny is busy
+doing something else (e.g., a download, side-effect, etc), a page-level
+pulsing banner is shown.
+</p>
+</li></ol>
+
+<p>This function allows you to customize the appearance of these busy indicators
+by including the result of this function inside the app's UI. Note that,
+unless <code>spinner_selector</code> (or <code>fade_selector</code>) is specified, the spinner/fade
+customization applies to the parent element. If the customization should
+instead apply to the entire page, set <code>spinner_selector = 'html'</code> and
+<code>fade_selector = 'html'</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+busyIndicatorOptions(
+  ...,
+  spinner_type = NULL,
+  spinner_color = NULL,
+  spinner_size = NULL,
+  spinner_delay = NULL,
+  spinner_selector = NULL,
+  fade_opacity = NULL,
+  fade_selector = NULL,
+  pulse_background = NULL,
+  pulse_height = NULL,
+  pulse_speed = NULL
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Currently ignored.</p>
+</td></tr>
+<tr valign="top"><td><code>spinner_type</code></td>
+<td>
+<p>The type of spinner. Pre-bundled types include:
+'ring', 'ring2', 'ring3', 'bars', 'bars2', 'bars3', 'pulse', 'pulse2', 'pulse3', 'dots', 'dots2', 'dots3'.
+</p>
+<p>A path to a local SVG file can also be provided. The SVG should adhere to
+the following rules:
+</p>
+
+<ul>
+<li><p> The SVG itself should contain the animation.
+</p>
+</li>
+<li><p> It should avoid absolute sizes (the spinner's containing DOM element
+size is set in CSS by <code>spinner_size</code>, so it should fill that container).
+</p>
+</li>
+<li><p> It should avoid setting absolute colors (the spinner's containing DOM element
+color is set in CSS by <code>spinner_color</code>, so it should inherit that color).
+</p>
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>spinner_color</code></td>
+<td>
+<p>The color of the spinner. This can be any valid CSS
+color. Defaults to the app's &quot;primary&quot; color if Bootstrap is on the page.</p>
+</td></tr>
+<tr valign="top"><td><code>spinner_size</code></td>
+<td>
+<p>The size of the spinner. This can be any valid CSS size.</p>
+</td></tr>
+<tr valign="top"><td><code>spinner_delay</code></td>
+<td>
+<p>The amount of time to wait before showing the spinner.
+This can be any valid CSS time and can be useful for not showing the spinner
+if the computation finishes quickly.</p>
+</td></tr>
+<tr valign="top"><td><code>spinner_selector</code></td>
+<td>
+<p>A character string containing a CSS selector for
+scoping the spinner customization. The default (<code>NULL</code>) will apply the
+spinner customization to the parent element of the spinner.</p>
+</td></tr>
+<tr valign="top"><td><code>fade_opacity</code></td>
+<td>
+<p>The opacity (a number between 0 and 1) for recalculating
+output. Set to 1 to &quot;disable&quot; the fade.</p>
+</td></tr>
+<tr valign="top"><td><code>fade_selector</code></td>
+<td>
+<p>A character string containing a CSS selector for
+scoping the spinner customization. The default (<code>NULL</code>) will apply the
+spinner customization to the parent element of the spinner.</p>
+</td></tr>
+<tr valign="top"><td><code>pulse_background</code></td>
+<td>
+<p>A CSS background definition for the pulse. The
+default uses a
+<a href="https://developer.mozilla.org/en-US/docs/Web/CSS/gradient/linear-gradient">linear-gradient</a>
+of the theme's indigo, purple, and pink colors.</p>
+</td></tr>
+<tr valign="top"><td><code>pulse_height</code></td>
+<td>
+<p>The height of the pulsing banner. This can be any valid
+CSS size.</p>
+</td></tr>
+<tr valign="top"><td><code>pulse_speed</code></td>
+<td>
+<p>The speed of the pulsing banner. This can be any valid CSS
+time.</p>
+</td></tr>
+</table>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../shiny/help/useBusyIndicators.html">useBusyIndicators()</a></code> to disable/enable busy indicators.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+
+library(bslib)
+
+card_ui &lt;- function(id, spinner_type = id) {
+  card(
+    busyIndicatorOptions(spinner_type = spinner_type),
+    card_header(paste("Spinner:", spinner_type)),
+    plotOutput(shiny::NS(id, "plot"))
+  )
+}
+
+card_server &lt;- function(id, simulate = reactive()) {
+  moduleServer(
+    id = id,
+    function(input, output, session) {
+      output$plot &lt;- renderPlot({
+        Sys.sleep(1)
+        simulate()
+        plot(x = rnorm(100), y = rnorm(100))
+      })
+    }
+  )
+}
+
+ui &lt;- page_fillable(
+  useBusyIndicators(),
+  input_task_button("simulate", "Simulate", icon = icon("refresh")),
+  layout_columns(
+    card_ui("ring"),
+    card_ui("bars"),
+    card_ui("dots"),
+    card_ui("pulse"),
+    col_widths = 6
+  )
+)
+
+server &lt;- function(input, output, session) {
+  simulate &lt;- reactive(input$simulate)
+  card_server("ring", simulate)
+  card_server("bars", simulate)
+  card_server("dots", simulate)
+  card_server("pulse", simulate)
+}
+
+shinyApp(ui, server)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>shiny</em> version 1.13.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

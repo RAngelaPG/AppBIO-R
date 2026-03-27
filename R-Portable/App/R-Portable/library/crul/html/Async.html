@@ -1,0 +1,800 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Simple async client</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for Async {crul}"><tr><td>Async {crul}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Simple async client</h2>
+
+<h3>Description</h3>
+
+<p>An async client to work with many URLs, but all with the same HTTP method
+</p>
+
+
+<h3>Details</h3>
+
+<p>See <code><a href="../../crul/help/HttpClient.html">HttpClient()</a></code> for information on parameters.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a list, with objects of class <code><a href="../../crul/help/HttpResponse.html">HttpResponse()</a></code>.
+Responses are returned in the order they are passed in. We print the
+first 10.
+</p>
+
+
+<h3>Failure behavior</h3>
+
+<p>HTTP requests mostly fail in ways that you are probably familiar with,
+including when there's a 400 response (the URL not found), and when the
+server made a mistake (a 500 series HTTP status code).
+</p>
+<p>But requests can fail sometimes where there is no HTTP status code, and
+no agreed upon way to handle it other than to just fail immediately.
+</p>
+<p>When a request fails when using synchronous requests (see <a href="../../crul/help/HttpClient.html">HttpClient</a>)
+you get an error message that stops your code progression
+immediately saying for example:
+</p>
+
+<ul>
+<li><p> &quot;Could not resolve host: https://foo.com&quot;
+</p>
+</li>
+<li><p> &quot;Failed to connect to foo.com&quot;
+</p>
+</li>
+<li><p> &quot;Resolving timed out after 10 milliseconds&quot;
+</p>
+</li></ul>
+
+<p>However, for async requests we don't want to fail immediately because
+that would stop the subsequent requests from occurring. Thus, when
+we find that a request fails for one of the reasons above we
+give back a <a href="../../crul/help/HttpResponse.html">HttpResponse</a> object just like any other response, and:
+</p>
+
+<ul>
+<li><p> capture the error message and put it in the <code>content</code> slot of the
+response object (thus calls to <code>content</code> and <code>parse()</code> work correctly)
+</p>
+</li>
+<li><p> give back a <code>0</code> HTTP status code. we handle this specially when testing
+whether the request was successful or not with e.g., the <code>success()</code>
+method
+</p>
+</li></ul>
+
+
+
+<h3>R6 classes</h3>
+
+<p>This is an R6 class from the package <span class="pkg">R6</span>. Find out more
+about R6 at <a href="https://r6.r-lib.org/">https://r6.r-lib.org/</a>. After creating an instance of an R6
+class (e.g., <code>x &lt;- HttpClient$new(url = "https://hb.opencpu.org")</code>) you can
+access values and methods on the object <code>x</code>.
+</p>
+
+
+<h3>Public fields</h3>
+
+<div class="r6-fields">
+
+<dl>
+<dt><code>urls</code></dt><dd><p>(character) one or more URLs</p>
+</dd>
+<dt><code>opts</code></dt><dd><p>any curl options</p>
+</dd>
+<dt><code>proxies</code></dt><dd><p>named list of headers</p>
+</dd>
+<dt><code>auth</code></dt><dd><p>an object of class <code>auth</code></p>
+</dd>
+<dt><code>headers</code></dt><dd><p>named list of headers</p>
+</dd>
+</dl>
+
+</div>
+
+
+<h3>Methods</h3>
+
+
+
+<h4>Public methods</h4>
+
+
+<ul>
+<li> <p><a href="#method-Async-print"><code>Async$print()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Async-new"><code>Async$new()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Async-get"><code>Async$get()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Async-post"><code>Async$post()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Async-put"><code>Async$put()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Async-patch"><code>Async$patch()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Async-delete"><code>Async$delete()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Async-head"><code>Async$head()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Async-retry"><code>Async$retry()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Async-verb"><code>Async$verb()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-Async-clone"><code>Async$clone()</code></a>
+</p>
+</li></ul>
+
+
+<hr>
+<a id="method-Async-print"></a>
+
+
+
+<h4>Method <code>print()</code></h4>
+
+<p>print method for Async objects
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Async$print(x, ...)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>x</code></dt><dd><p>self</p>
+</dd>
+<dt><code>...</code></dt><dd><p>ignored</p>
+</dd>
+</dl>
+
+</div>
+
+
+<hr>
+<a id="method-Async-new"></a>
+
+
+
+<h4>Method <code>new()</code></h4>
+
+<p>Create a new Async object
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Async$new(urls, opts, proxies, auth, headers)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>urls</code></dt><dd><p>(character) one or more URLs</p>
+</dd>
+<dt><code>opts</code></dt><dd><p>any curl options</p>
+</dd>
+<dt><code>proxies</code></dt><dd><p>a <code><a href="../../crul/help/proxy.html">proxy()</a></code> object</p>
+</dd>
+<dt><code>auth</code></dt><dd><p>an <code><a href="../../crul/help/auth.html">auth()</a></code> object</p>
+</dd>
+<dt><code>headers</code></dt><dd><p>named list of headers</p>
+</dd>
+</dl>
+
+</div>
+
+
+
+<h5>Returns</h5>
+
+<p>A new <code>Async</code> object.
+</p>
+
+
+<hr>
+<a id="method-Async-get"></a>
+
+
+
+<h4>Method <code>get()</code></h4>
+
+<p>execute the <code>GET</code> http verb for the <code>urls</code>
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Async$get(
+  path = NULL,
+  query = list(),
+  disk = NULL,
+  stream = NULL,
+  mock = getOption("crul_mock", NULL),
+  ...
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>path</code></dt><dd><p>(character) URL path, appended to the base URL</p>
+</dd>
+<dt><code>query</code></dt><dd><p>(list) query terms, as a named list</p>
+</dd>
+<dt><code>disk</code></dt><dd><p>a path to write to. if NULL (default), memory used.
+See <code><a href="../../curl/help/curl_fetch.html">curl::curl_fetch_disk()</a></code> for help.</p>
+</dd>
+<dt><code>stream</code></dt><dd><p>an R function to determine how to stream data. if
+<code>NULL</code> (default), memory used. See <code><a href="../../curl/help/curl_fetch.html">curl::curl_fetch_stream()</a></code>
+for help</p>
+</dd>
+<dt><code>mock</code></dt><dd><p>A mocking function. If supplied, this function is called
+with the request. It should return either <code>NULL</code> (if it doesn't want to
+handle the request) or a <a href="../../crul/help/HttpResponse.html">HttpResponse</a> (if it does).</p>
+</dd>
+<dt><code>...</code></dt><dd><p>curl options, only those in the acceptable set from
+<code><a href="../../curl/help/curl_options.html">curl::curl_options()</a></code> except the following: httpget, httppost, post,
+postfields, postfieldsize, and customrequest</p>
+</dd>
+</dl>
+
+</div>
+
+
+
+<h5>Examples</h5>
+
+<div class="r example copy">
+<pre>\dontrun{
+(cc &lt;- Async$new(urls = c(
+    'https://hb.opencpu.org/',
+    'https://hb.opencpu.org/get?a=5',
+    'https://hb.opencpu.org/get?foo=bar'
+  )))
+(res &lt;- cc$get())
+}
+</pre>
+</div>
+
+
+<hr>
+<a id="method-Async-post"></a>
+
+
+
+<h4>Method <code>post()</code></h4>
+
+<p>execute the <code>POST</code> http verb for the <code>urls</code>
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Async$post(
+  path = NULL,
+  query = list(),
+  body = NULL,
+  encode = "multipart",
+  disk = NULL,
+  stream = NULL,
+  mock = getOption("crul_mock", NULL),
+  ...
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>path</code></dt><dd><p>(character) URL path, appended to the base URL</p>
+</dd>
+<dt><code>query</code></dt><dd><p>(list) query terms, as a named list</p>
+</dd>
+<dt><code>body</code></dt><dd><p>body as an R list</p>
+</dd>
+<dt><code>encode</code></dt><dd><p>one of form, multipart, json, or raw</p>
+</dd>
+<dt><code>disk</code></dt><dd><p>a path to write to. if NULL (default), memory used.
+See <code><a href="../../curl/help/curl_fetch.html">curl::curl_fetch_disk()</a></code> for help.</p>
+</dd>
+<dt><code>stream</code></dt><dd><p>an R function to determine how to stream data. if
+<code>NULL</code> (default), memory used. See <code><a href="../../curl/help/curl_fetch.html">curl::curl_fetch_stream()</a></code>
+for help</p>
+</dd>
+<dt><code>mock</code></dt><dd><p>A mocking function. If supplied, this function is called
+with the request. It should return either <code>NULL</code> (if it doesn't want to
+handle the request) or a <a href="../../crul/help/HttpResponse.html">HttpResponse</a> (if it does).</p>
+</dd>
+<dt><code>...</code></dt><dd><p>curl options, only those in the acceptable set from
+<code><a href="../../curl/help/curl_options.html">curl::curl_options()</a></code> except the following: httpget, httppost, post,
+postfields, postfieldsize, and customrequest</p>
+</dd>
+</dl>
+
+</div>
+
+
+<hr>
+<a id="method-Async-put"></a>
+
+
+
+<h4>Method <code>put()</code></h4>
+
+<p>execute the <code>PUT</code> http verb for the <code>urls</code>
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Async$put(
+  path = NULL,
+  query = list(),
+  body = NULL,
+  encode = "multipart",
+  disk = NULL,
+  stream = NULL,
+  mock = getOption("crul_mock", NULL),
+  ...
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>path</code></dt><dd><p>(character) URL path, appended to the base URL</p>
+</dd>
+<dt><code>query</code></dt><dd><p>(list) query terms, as a named list</p>
+</dd>
+<dt><code>body</code></dt><dd><p>body as an R list</p>
+</dd>
+<dt><code>encode</code></dt><dd><p>one of form, multipart, json, or raw</p>
+</dd>
+<dt><code>disk</code></dt><dd><p>a path to write to. if NULL (default), memory used.
+See <code><a href="../../curl/help/curl_fetch.html">curl::curl_fetch_disk()</a></code> for help.</p>
+</dd>
+<dt><code>stream</code></dt><dd><p>an R function to determine how to stream data. if
+<code>NULL</code> (default), memory used. See <code><a href="../../curl/help/curl_fetch.html">curl::curl_fetch_stream()</a></code>
+for help</p>
+</dd>
+<dt><code>mock</code></dt><dd><p>A mocking function. If supplied, this function is called
+with the request. It should return either <code>NULL</code> (if it doesn't want to
+handle the request) or a <a href="../../crul/help/HttpResponse.html">HttpResponse</a> (if it does).</p>
+</dd>
+<dt><code>...</code></dt><dd><p>curl options, only those in the acceptable set from
+<code><a href="../../curl/help/curl_options.html">curl::curl_options()</a></code> except the following: httpget, httppost, post,
+postfields, postfieldsize, and customrequest</p>
+</dd>
+</dl>
+
+</div>
+
+
+<hr>
+<a id="method-Async-patch"></a>
+
+
+
+<h4>Method <code>patch()</code></h4>
+
+<p>execute the <code>PATCH</code> http verb for the <code>urls</code>
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Async$patch(
+  path = NULL,
+  query = list(),
+  body = NULL,
+  encode = "multipart",
+  disk = NULL,
+  stream = NULL,
+  mock = getOption("crul_mock", NULL),
+  ...
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>path</code></dt><dd><p>(character) URL path, appended to the base URL</p>
+</dd>
+<dt><code>query</code></dt><dd><p>(list) query terms, as a named list</p>
+</dd>
+<dt><code>body</code></dt><dd><p>body as an R list</p>
+</dd>
+<dt><code>encode</code></dt><dd><p>one of form, multipart, json, or raw</p>
+</dd>
+<dt><code>disk</code></dt><dd><p>a path to write to. if NULL (default), memory used.
+See <code><a href="../../curl/help/curl_fetch.html">curl::curl_fetch_disk()</a></code> for help.</p>
+</dd>
+<dt><code>stream</code></dt><dd><p>an R function to determine how to stream data. if
+<code>NULL</code> (default), memory used. See <code><a href="../../curl/help/curl_fetch.html">curl::curl_fetch_stream()</a></code>
+for help</p>
+</dd>
+<dt><code>mock</code></dt><dd><p>A mocking function. If supplied, this function is called
+with the request. It should return either <code>NULL</code> (if it doesn't want to
+handle the request) or a <a href="../../crul/help/HttpResponse.html">HttpResponse</a> (if it does).</p>
+</dd>
+<dt><code>...</code></dt><dd><p>curl options, only those in the acceptable set from
+<code><a href="../../curl/help/curl_options.html">curl::curl_options()</a></code> except the following: httpget, httppost, post,
+postfields, postfieldsize, and customrequest</p>
+</dd>
+</dl>
+
+</div>
+
+
+<hr>
+<a id="method-Async-delete"></a>
+
+
+
+<h4>Method <code>delete()</code></h4>
+
+<p>execute the <code>DELETE</code> http verb for the <code>urls</code>
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Async$delete(
+  path = NULL,
+  query = list(),
+  body = NULL,
+  encode = "multipart",
+  disk = NULL,
+  stream = NULL,
+  mock = getOption("crul_mock", NULL),
+  ...
+)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>path</code></dt><dd><p>(character) URL path, appended to the base URL</p>
+</dd>
+<dt><code>query</code></dt><dd><p>(list) query terms, as a named list</p>
+</dd>
+<dt><code>body</code></dt><dd><p>body as an R list</p>
+</dd>
+<dt><code>encode</code></dt><dd><p>one of form, multipart, json, or raw</p>
+</dd>
+<dt><code>disk</code></dt><dd><p>a path to write to. if NULL (default), memory used.
+See <code><a href="../../curl/help/curl_fetch.html">curl::curl_fetch_disk()</a></code> for help.</p>
+</dd>
+<dt><code>stream</code></dt><dd><p>an R function to determine how to stream data. if
+<code>NULL</code> (default), memory used. See <code><a href="../../curl/help/curl_fetch.html">curl::curl_fetch_stream()</a></code>
+for help</p>
+</dd>
+<dt><code>mock</code></dt><dd><p>A mocking function. If supplied, this function is called
+with the request. It should return either <code>NULL</code> (if it doesn't want to
+handle the request) or a <a href="../../crul/help/HttpResponse.html">HttpResponse</a> (if it does).</p>
+</dd>
+<dt><code>...</code></dt><dd><p>curl options, only those in the acceptable set from
+<code><a href="../../curl/help/curl_options.html">curl::curl_options()</a></code> except the following: httpget, httppost, post,
+postfields, postfieldsize, and customrequest</p>
+</dd>
+</dl>
+
+</div>
+
+
+<hr>
+<a id="method-Async-head"></a>
+
+
+
+<h4>Method <code>head()</code></h4>
+
+<p>execute the <code>HEAD</code> http verb for the <code>urls</code>
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Async$head(path = NULL, mock = getOption("crul_mock", NULL), ...)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>path</code></dt><dd><p>(character) URL path, appended to the base URL</p>
+</dd>
+<dt><code>mock</code></dt><dd><p>A mocking function. If supplied, this function is called
+with the request. It should return either <code>NULL</code> (if it doesn't want to
+handle the request) or a <a href="../../crul/help/HttpResponse.html">HttpResponse</a> (if it does).</p>
+</dd>
+<dt><code>...</code></dt><dd><p>curl options, only those in the acceptable set from
+<code><a href="../../curl/help/curl_options.html">curl::curl_options()</a></code> except the following: httpget, httppost, post,
+postfields, postfieldsize, and customrequest</p>
+</dd>
+</dl>
+
+</div>
+
+
+<hr>
+<a id="method-Async-retry"></a>
+
+
+
+<h4>Method <code>retry()</code></h4>
+
+<p>execute the <code>RETRY</code> http verb for the <code>urls</code>. see <code><a href="../../crul/help/HttpRequest.html">HttpRequest$retry</a></code> method for parameters
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Async$retry(...)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>...</code></dt><dd><p>curl options, only those in the acceptable set from
+<code><a href="../../curl/help/curl_options.html">curl::curl_options()</a></code> except the following: httpget, httppost, post,
+postfields, postfieldsize, and customrequest</p>
+</dd>
+</dl>
+
+</div>
+
+
+<hr>
+<a id="method-Async-verb"></a>
+
+
+
+<h4>Method <code>verb()</code></h4>
+
+<p>execute any supported HTTP verb
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Async$verb(verb, ...)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>verb</code></dt><dd><p>(character) a supported HTTP verb: get, post, put, patch, delete,
+head.</p>
+</dd>
+<dt><code>...</code></dt><dd><p>curl options, only those in the acceptable set from
+<code><a href="../../curl/help/curl_options.html">curl::curl_options()</a></code> except the following: httpget, httppost, post,
+postfields, postfieldsize, and customrequest</p>
+</dd>
+</dl>
+
+</div>
+
+
+
+<h5>Examples</h5>
+
+<div class="r example copy">
+<pre>\dontrun{
+cc &lt;- Async$new(
+  urls = c(
+    'https://hb.opencpu.org/',
+    'https://hb.opencpu.org/get?a=5',
+    'https://hb.opencpu.org/get?foo=bar'
+  )
+)
+(res &lt;- cc$verb('get'))
+lapply(res, function(z) z$parse("UTF-8"))
+}
+</pre>
+</div>
+
+
+<hr>
+<a id="method-Async-clone"></a>
+
+
+
+<h4>Method <code>clone()</code></h4>
+
+<p>The objects of this class are cloneable with this method.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>Async$clone(deep = FALSE)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>deep</code></dt><dd><p>Whether to make a deep clone.</p>
+</dd>
+</dl>
+
+</div>
+
+
+
+
+<h3>See Also</h3>
+
+<p>Other async: 
+<code><a href="../../crul/help/AsyncQueue.html">AsyncQueue</a></code>,
+<code><a href="../../crul/help/AsyncVaried.html">AsyncVaried</a></code>,
+<code><a href="../../crul/help/HttpRequest.html">HttpRequest</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+cc &lt;- Async$new(
+  urls = c(
+    'https://hb.opencpu.org/',
+    'https://hb.opencpu.org/get?a=5',
+    'https://hb.opencpu.org/get?foo=bar'
+  )
+)
+cc
+(res &lt;- cc$get())
+res[[1]]
+res[[1]]$url
+res[[1]]$success()
+res[[1]]$status_http()
+res[[1]]$response_headers
+res[[1]]$method
+res[[1]]$content
+res[[1]]$parse("UTF-8")
+lapply(res, function(z) z$parse("UTF-8"))
+
+# curl options/headers with async
+urls = c(
+ 'https://hb.opencpu.org/',
+ 'https://hb.opencpu.org/get?a=5',
+ 'https://hb.opencpu.org/get?foo=bar'
+)
+cc &lt;- Async$new(urls = urls,
+  opts = list(verbose = TRUE),
+  headers = list(foo = "bar")
+)
+cc
+(res &lt;- cc$get())
+
+# using auth with async
+dd &lt;- Async$new(
+  urls = rep('https://hb.opencpu.org/basic-auth/user/passwd', 3),
+  auth = auth(user = "foo", pwd = "passwd"),
+  opts = list(verbose = TRUE)
+)
+dd
+res &lt;- dd$get()
+res
+vapply(res, function(z) z$status_code, double(1))
+vapply(res, function(z) z$success(), logical(1))
+lapply(res, function(z) z$parse("UTF-8"))
+
+# failure behavior
+## e.g. when a URL doesn't exist, a timeout, etc.
+urls &lt;- c("http://stuffthings.gvb", "https://foo.com",
+  "https://hb.opencpu.org/get")
+conn &lt;- Async$new(urls = urls)
+res &lt;- conn$get()
+res[[1]]$parse("UTF-8") # a failure
+res[[2]]$parse("UTF-8") # a failure
+res[[3]]$parse("UTF-8") # a success
+
+# retry
+urls = c("https://hb.opencpu.org/status/404", "https://hb.opencpu.org/status/429")
+conn &lt;- Async$new(urls = urls)
+res &lt;- conn$retry(verb="get")
+
+# mock
+cc &lt;- Async$new(
+  urls = c(
+    'https://hb.opencpu.org/',
+    'https://hb.opencpu.org/get?a=5',
+    'https://hb.opencpu.org/get?foo=bar'
+  )
+)
+fun &lt;- function(req) {
+  HttpResponse$new(method = "GET", url = "http://google.com",
+    status_code = 401L)
+}
+cc$get(mock = fun)
+
+
+## ------------------------------------------------
+## Method `Async$get`
+## ------------------------------------------------
+
+## Not run: 
+(cc &lt;- Async$new(urls = c(
+    'https://hb.opencpu.org/',
+    'https://hb.opencpu.org/get?a=5',
+    'https://hb.opencpu.org/get?foo=bar'
+  )))
+(res &lt;- cc$get())
+
+## End(Not run)
+
+## ------------------------------------------------
+## Method `Async$verb`
+## ------------------------------------------------
+
+## Not run: 
+cc &lt;- Async$new(
+  urls = c(
+    'https://hb.opencpu.org/',
+    'https://hb.opencpu.org/get?a=5',
+    'https://hb.opencpu.org/get?foo=bar'
+  )
+)
+(res &lt;- cc$verb('get'))
+lapply(res, function(z) z$parse("UTF-8"))
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>crul</em> version 1.6.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

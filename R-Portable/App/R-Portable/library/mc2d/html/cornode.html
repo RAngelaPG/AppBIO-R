@@ -1,0 +1,158 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Builds a Rank Correlation using the Iman and Conover Method.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for cornode {mc2d}"><tr><td>cornode {mc2d}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Builds a Rank Correlation using the Iman and Conover Method.
+</h2>
+
+<h3>Description</h3>
+
+<p>This function builds a rank correlation structure between columns of
+a matrix or between <span class="samp">mcnode</span> objects using the Iman and Conover
+method (1982).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+cornode(..., target, outrank=FALSE, result=FALSE, seed=NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>A matrix (each of its <span class="samp">n</span> columns but the first
+one will be reordered) or <span class="samp">n mcnode</span> objects (each elements but
+the first one will be reordered).</p>
+</td></tr>
+<tr valign="top"><td><code>target</code></td>
+<td>
+<p>A scalar (only if <span class="samp">n=2</span>) or a <span class="samp">(n x n)</span>
+matrix of correlation.</p>
+</td></tr>
+<tr valign="top"><td><code>outrank</code></td>
+<td>
+<p>Should the order be returned?</p>
+</td></tr>
+<tr valign="top"><td><code>result</code></td>
+<td>
+<p>Should the correlation eventually obtained be printed?</p>
+</td></tr>
+<tr valign="top"><td><code>seed</code></td>
+<td>
+<p>The random seed used for building the correlation. If
+<span class="samp">NULL</span> the <span class="samp">seed</span> is unchanged.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The arguments should be named.
+</p>
+<p>The function accepts for <span class="samp">data</span> a matrix or: 
+</p>
+
+<ul>
+<li><p> some <span class="samp">"V" mcnode</span> objects separated by a comma;
+</p>
+</li>
+<li><p> some <span class="samp">"U" mcnode</span> objects separated by a comma;
+</p>
+</li>
+<li><p> some <span class="samp">"VU" mcnode</span> objects separated by a comma. In that
+case, the structure is built columns by columns (the first column of
+each <span class="samp">"VU" mcnode</span> will have a correlation structure, the second
+ones will have a correlation structure, ....).
+</p>
+</li>
+<li><p> one <span class="samp">"V" mcnode</span> as a first element and some <span class="samp">"VU"
+mcnode</span> objects, separated by a comma. In that case, the structure is
+built between the <span class="samp">"V" mcnode</span> and each column of the <span class="samp">"VU"
+mcnode</span> objects. The correlation result (<span class="samp">result = TRUE</span>) is not
+provided in that case.</p>
+</li></ul>
+
+<p>The number of variates of the elements should be equal.
+</p>
+<p><span class="samp">target</span> should be a scalar (two columns only) or a real
+symmetric positive-definite square matrix. Only the upper triangular
+part of <span class="samp">target</span> is used (see <code><a href="../../Matrix/html/chol.html">chol</a></code>).
+</p>
+<p>The final correlation structure should be checked because it is not
+always possible to build the target correlation structure.
+</p>
+<p>In a Monte-Carlo simulation, note that the order of the values
+within each <span class="samp">mcnode</span> will be changed by this function (excepted
+for the first one of the list). As a consequence, previous links
+between variables will be broken. The <span class="samp">outrank</span> option may help
+to rebuild these links (see the Examples).
+</p>
+
+
+<h3>Value</h3>
+
+<p>If <span class="samp">rank = FALSE</span>: the matrix or a list of rearranged
+<span class="samp">mcnode</span>s. 
+</p>
+<p>If <span class="samp">rank = TRUE</span>: the order to be used to rearranged the matrix
+or the <span class="samp">mcnodes</span> to build the desired correlation structure.
+</p>
+
+
+<h3>References</h3>
+
+<p>Iman, R. L., &amp; Conover, W. J. (1982). A distribution-free approach to inducing rank correlation among input variables. <em>Communication in Statistics - Simulation and Computation</em>, 11(3), 311-334. 
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+x1 &lt;- rnorm(1000)
+x2 &lt;- rnorm(1000)
+x3 &lt;- rnorm(1000)
+mat &lt;- cbind(x1, x2, x3)
+## Target
+(corr &lt;- matrix(c(1, 0.5, 0.2, 0.5, 1, 0.2, 0.2, 0.2, 1), ncol=3))
+## Before
+cor(mat, method="spearman")
+matc &lt;- cornode(mat, target=corr, result=TRUE)
+## The first row is unchanged
+all(matc[, 1] == mat[, 1])
+
+##Using mcnode and outrank
+cook &lt;- mcstoc(rempiricalD, values=c(0, 1/5, 1/50), prob=c(0.027, 0.373, 0.600), nsv=1000)
+serving &lt;- mcstoc(rgamma, shape=3.93, rate=0.0806, nsv=1000)
+roundserv &lt;- mcdata(round(serving), nsv=1000)
+## Strong relation between roundserv and serving (of course)
+cor(cbind(cook, roundserv, serving), method="spearman")
+
+##The classical way to build the correlation structure 
+matcorr &lt;- matrix(c(1, 0.5, 0.5, 1), ncol=2)
+matc &lt;- cornode(cook=cook, roundserv=roundserv, target=matcorr)
+## The structure between cook and roundserv is OK but ...
+## the structure between roundserv and serving is lost
+cor(cbind(cook=matc$cook, serv=matc$roundserv, serving), method="spearman")
+
+##An alternative way to build the correlation structure
+matc &lt;- cornode(cook=cook, roundserv=roundserv, target=matcorr, outrank=TRUE)
+## Rebuilding the structure
+roundserv[] &lt;- roundserv[matc$roundserv, , ]
+serving[] &lt;- serving[matc$roundserv, , ]
+## The structure between cook and roundserv is OK and ...
+## the structure between roundserv and serving is preserved
+cor(cbind(cook, roundserv, serving), method="spearman")
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mc2d</em> version 0.2.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

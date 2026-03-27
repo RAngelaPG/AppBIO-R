@@ -1,0 +1,117 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Check validity or make an invalid geometry valid</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for valid {sf}"><tr><td>valid {sf}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Check validity or make an invalid geometry valid</h2>
+
+<h3>Description</h3>
+
+<p>Checks whether a geometry is valid, or makes an invalid geometry valid
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+st_is_valid(x, ...)
+
+## S3 method for class 'sfc'
+st_is_valid(x, ..., NA_on_exception = TRUE, reason = FALSE)
+
+## S3 method for class 'sf'
+st_is_valid(x, ...)
+
+## S3 method for class 'sfg'
+st_is_valid(x, ...)
+
+st_make_valid(x, ...)
+
+## S3 method for class 'sfg'
+st_make_valid(x, ...)
+
+## S3 method for class 'sfc'
+st_make_valid(
+  x,
+  ...,
+  oriented = FALSE,
+  s2_options = s2::s2_options(snap = s2::s2_snap_precision(1e+07), ...),
+  geos_method = "valid_structure",
+  geos_keep_collapsed = TRUE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>object of class <code>sfg</code>, <code>sfc</code> or <code>sf</code></p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>passed on to <a href="../../s2/help/s2_options.html">s2_options</a></p>
+</td></tr>
+<tr valign="top"><td><code>NA_on_exception</code></td>
+<td>
+<p>logical; if TRUE, for polygons that would otherwise raise a GEOS error (exception, e.g. for a POLYGON having more than zero but less than 4 points, or a LINESTRING having one point) return an <code>NA</code> rather than raising an error, and suppress warning messages (e.g. about self-intersection); if FALSE, regular GEOS errors and warnings will be emitted.</p>
+</td></tr>
+<tr valign="top"><td><code>reason</code></td>
+<td>
+<p>logical; if <code>TRUE</code>, return a character with, for each geometry, the reason for invalidity, <code>NA</code> on exception, or <code>"Valid Geometry"</code> otherwise.</p>
+</td></tr>
+<tr valign="top"><td><code>oriented</code></td>
+<td>
+<p>logical; only relevant if <code>st_is_longlat(x)</code> is <code>TRUE</code>; see <a href="../../sf/help/s2.html">s2</a></p>
+</td></tr>
+<tr valign="top"><td><code>s2_options</code></td>
+<td>
+<p>only relevant if <code>st_is_longlat(x)</code> is <code>TRUE</code>; options for <a href="../../s2/help/s2_rebuild.html">s2_rebuild</a>, see <a href="../../s2/help/s2_options.html">s2_options</a> and Details.</p>
+</td></tr>
+<tr valign="top"><td><code>geos_method</code></td>
+<td>
+<p>character; either &quot;valid_linework&quot; (Original method, combines all rings into a set of noded lines and then extracts valid polygons from that linework) or &quot;valid_structure&quot; (Structured method, first makes all rings valid then merges shells and subtracts holes from shells to generate valid result. Assumes that holes and shells are correctly categorized.) (requires GEOS &gt;= 3.10.1)</p>
+</td></tr>
+<tr valign="top"><td><code>geos_keep_collapsed</code></td>
+<td>
+<p>logical; When this parameter is not set to <code>FALSE</code>, the &quot;valid_structure&quot; method will keep any component that has collapsed into a lower dimensionality. For example, a ring collapsing to a line, or a line collapsing to a point (requires GEOS &gt;= 3.10.1)</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>For projected geometries, <code>st_make_valid</code> uses the <code>lwgeom_makevalid</code> method also used by the PostGIS command <code>ST_makevalid</code> if the GEOS version linked to is smaller than 3.8.0, and otherwise the version shipped in GEOS; for geometries having ellipsoidal coordinates <code>s2::s2_rebuild</code> is being used.
+</p>
+<p>if <code>s2_options</code> is not specified and <code>x</code> has a non-zero precision set, then this precision value will be used as the value in <code>s2_snap_precision</code>, passed on to <code>s2_options</code>, rather than the 1e7 default.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>st_is_valid</code> returns a logical vector indicating for each geometries of <code>x</code> whether it is valid. <code>st_make_valid</code> returns an object with a topologically valid geometry.
+</p>
+<p>Object of the same class as <code>x</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+p1 = st_as_sfc("POLYGON((0 0, 0 10, 10 0, 10 10, 0 0))")
+st_is_valid(p1)
+st_is_valid(st_sfc(st_point(0:1), p1[[1]]), reason = TRUE)
+library(sf)
+x = st_sfc(st_polygon(list(rbind(c(0,0),c(0.5,0),c(0.5,0.5),c(0.5,0),c(1,0),c(1,1),c(0,1),c(0,0)))))
+suppressWarnings(st_is_valid(x))
+y = st_make_valid(x)
+st_is_valid(y)
+y %&gt;% st_cast()
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sf</em> version 1.1-0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

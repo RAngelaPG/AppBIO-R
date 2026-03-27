@@ -1,0 +1,179 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Fit a Variogram Model to a Sample Variogram</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for fit.variogram {gstat}"><tr><td>fit.variogram {gstat}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Fit a Variogram Model to a Sample Variogram </h2>
+
+<h3>Description</h3>
+
+<p>Fit ranges and/or sills from a simple or nested variogram model 
+to a sample variogram </p>
+
+
+<h3>Usage</h3>
+
+<pre>
+fit.variogram(object, model, fit.sills = TRUE, fit.ranges = TRUE,
+	fit.method = 7, debug.level = 1, warn.if.neg = FALSE, fit.kappa = FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p> sample variogram, output of <a href="../../gstat/help/variogram.html">variogram</a> </p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p> variogram model, output of <a href="../../gstat/help/vgm.html">vgm</a>; see Details below
+for details on how <code>NA</code> values in <code>model</code> are initialised. </p>
+</td></tr>
+<tr valign="top"><td><code>fit.sills</code></td>
+<td>
+<p> logical; determines whether the partial sill
+coefficients (including nugget variance) should be fitted; or logical
+vector: determines for each partial sill parameter whether it should be
+fitted or fixed.  </p>
+</td></tr>
+<tr valign="top"><td><code>fit.ranges</code></td>
+<td>
+<p> logical; determines whether the range coefficients
+(excluding that of the nugget component) should be fitted; or logical
+vector: determines for each range parameter whether it should be fitted
+or fixed.  </p>
+</td></tr>
+<tr valign="top"><td><code>fit.method</code></td>
+<td>
+<p> fitting method, used by gstat. The default method uses
+weights $N_h/h^2$ with $N_h$ the number of point pairs and $h$ the
+distance. This criterion is not supported by theory, but by practice. 
+For other values of <code>fit.method</code>, see details. </p>
+</td></tr>
+<tr valign="top"><td><code>debug.level</code></td>
+<td>
+<p> integer; set gstat internal debug level </p>
+</td></tr>
+<tr valign="top"><td><code>warn.if.neg</code></td>
+<td>
+<p> logical; if TRUE a warning is issued whenever
+a sill value of a direct variogram becomes negative </p>
+</td></tr>
+<tr valign="top"><td><code>fit.kappa</code></td>
+<td>
+<p> logical; if <code>TRUE</code>, a sequence of 0.3, 0.4,...,5 will
+be searched for optimal fit; alternatively another sequence can be given to
+this argument </p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>If any of the initial parameters of <code>model</code> are <code>NA</code>,
+they are given default values as follows. The range parameter
+is given one third of the maximum value of <code>object$dist</code>.
+The nugget value is given the mean value of the first three values
+of <code>object$gamma</code>.  The partial sill is given the mean of the
+last five values of <code>object$gamma</code>.
+</p>
+<p>Values for <code>fit.method</code> are 1: weights equal to
+$N_j$; 2: weights equal to $N_j/((gamma(h_j))^2)$; 5 (ignore, use
+<a href="../../gstat/help/fit.variogram.reml.html">fit.variogram.reml</a>); 6: unweighted (OLS); 7: $N_j/(h_j^2)$. 
+</p>
+
+
+<h3>Value</h3>
+
+<p>returns a fitted variogram model (of class <code>variogramModel</code>).
+</p>
+<p>This is a <code>data.frame</code> with two attributes: (i) <code>singular</code>
+a logical attribute that indicates whether the non-linear fit
+converged (FALSE), or ended in a singularity (TRUE), and (ii)
+<code>SSErr</code> a numerical attribute with the (weighted) sum of
+squared errors of the fitted model. See Notes below.
+</p>
+
+
+<h3>Note</h3>
+
+<p> If fitting the range(s) is part of the job of this function,
+the results may well depend on the starting values, given in
+argument <code>model</code>, which is generally the case for non-linear
+regression problems. This function uses internal C code, which
+uses Levenberg-Marquardt.
+</p>
+<p>If for a direct (i.e. not a cross) variogram a sill parameter
+(partial sill or nugget) becomes negative, fit.variogram is called
+again with this parameter set to zero, and with a FALSE flag to
+further fit this sill. This implies that the search does not move
+away from search space boundaries.
+</p>
+<p>On singular model fits: If your variogram turns out to be a flat,
+horizontal or sloping line, then fitting a three parameter model such
+as the exponential or spherical with nugget is a bit heavy: there's an
+infinite number of possible combinations of sill and range (both very
+large) to fit to a sloping line. In this case, the returned, singular
+model may still be useful: just try and plot it. Gstat converges when
+the parameter values stabilize, and this may not be the case. Another
+case of singular model fits happens when a model that reaches the sill
+(such as the spherical) is fit with a nugget, and the range parameter
+starts, or converges to a value smaller than the distance of the second
+sample variogram estimate. In this case, again, an infinite number of
+possibilities occur essentially for fitting a line through a single
+(first sample variogram) point. In both cases, fixing one or more of
+the variogram model parameters may help you out.
+</p>
+<p>The function will accept anisotropic sample variograms as input. It will
+fit a model for a given direction interval if the sample variogram 
+only includes this direction. It is not possible to fit 
+a multiple direction model to each direction of the sample variogram, 
+in this case the model will be fitted to an average of all directions.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Edzer Pebesma </p>
+
+
+<h3>References</h3>
+
+<p>Pebesma, E.J., 2004. Multivariable geostatistics in S: the gstat package.
+Computers and Geosciences, 30: 683-691.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><a href="../../gstat/help/variogram.html">variogram</a>,
+<a href="../../gstat/help/vgm.html">vgm</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(sp)
+data(meuse)
+coordinates(meuse) = ~x+y
+vgm1 &lt;- variogram(log(zinc)~1, meuse)
+fit.variogram(vgm1, vgm(1, "Sph", 300, 1))
+fit.variogram(vgm1, vgm("Sph"))
+
+# optimize the value of kappa in a Matern model, using ugly &lt;&lt;- side effect:
+f = function(x) attr(m.fit &lt;&lt;- fit.variogram(vgm1, vgm(,"Mat",nugget=NA,kappa=x)),"SSErr")
+optimize(f, c(0.1, 5))
+plot(vgm1, m.fit)
+# best fit from the (0.3, 0.4, 0.5. ... , 5) sequence:
+(m &lt;- fit.variogram(vgm1, vgm("Mat"), fit.kappa = TRUE))
+attr(m, "SSErr")
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>gstat</em> version 2.1-5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

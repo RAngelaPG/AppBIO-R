@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Developing Patterns</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+});
+</script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+
+
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Developing Patterns</h1>
+
+
+
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">library</span>(<span class="st">&quot;gridpattern&quot;</span>)</span></code></pre></div>
+<div id="developing-patterns---overview" class="section level2">
+<h2>Developing Patterns - overview</h2>
+<p>To develop a pattern for use with <code>{gridpattern}</code> (and packages that use it such as <code>{ggpattern}</code>) you will need to:</p>
+<ol style="list-style-type: decimal">
+<li>Decide whether this is a geometry-based pattern or an array-based pattern.</li>
+<li>Create a function with the required arguments and return value</li>
+<li>Use <code>options()</code> to let <code>{gridpattern}</code> know that a certain pattern name should be delegated to your function.</li>
+</ol>
+<p>This vignette shows how to:</p>
+<ul>
+<li>write a <code>create_pattern()</code> function of the correct signature for a geometry-based pattern or array-based pattern</li>
+<li>Instruct <code>{gridpattern}</code> on where to find this user-defined pattern</li>
+</ul>
+<div id="table-of-contents" class="section level3">
+<h3>Table of Contents</h3>
+<ul>
+<li><a href="#classes">The two pattern classes</a></li>
+<li><a href="#aes">List of all pattern aesthetics</a></li>
+<li><a href="#aes-by-pattern">Aesthetic use by <code>{ggpattern}</code> patterns</a></li>
+<li><a href="#geometry-based">Geometry-based pattern functions</a></li>
+<li><a href="#array-based">Array-based pattern functions</a></li>
+<li><a href="#geometry-example-1">Geometry-based example #1 (recreate polygon)</a></li>
+<li><a href="#geometry-example-2">Geometry-based example #2 (using other patterns)</a></li>
+<li><a href="#array-example">Array-based example</a></li>
+<li><a href="#other-example">Other examples</a></li>
+</ul>
+</div>
+</div>
+<div id="pattern-classification---geometry-based-and-array-based" class="section level2">
+<h2><a name="classes"></a> Pattern Classification - geometry-based and array-based</h2>
+<p>There are only 2 high-level classes of pattern supported by <code>gridpattern</code> - geometry-based and array-based.</p>
+<p><strong>Geometry-based</strong> patterns create a series of geometry objects and trim them (using <code>sf::st_intersection()</code>, <code>gridGeometry::polyclipGrob()</code>, <code>gridpattern::clippingPathGrob()</code>, etc) to be within the boundary of the grob. For example, the ‘stripes’ pattern in <code>gridpattern</code> is a series of equally spaced rectangular polygons.</p>
+<p><strong>Array-based</strong> patterns are RGBA image arrays. Any supplied image will be processed by <code>gridpattern</code> to ensure it is masked to only apply to the area within the grob’s boundary.</p>
+</div>
+<div id="ggpattern-aesthetics---descriptions-and-defaults" class="section level2">
+<h2><a name="aes"></a> <code>{ggpattern}</code> Aesthetics - Descriptions and Defaults</h2>
+<p>Although custom <code>{gridpattern}</code> pattern parameters need not limit itself to the set of aesthetics provided by <code>{ggpattern}</code> doing so may make your pattern more useful for others:</p>
+<details open="true">
+<p><summary> <code>{ggpattern}</code> aesthetic summary - click to open/close </summary></p>
+<table>
+<colgroup>
+<col width="22%"></col>
+<col width="38%"></col>
+<col width="9%"></col>
+<col width="29%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>aesthetic</th>
+<th>description</th>
+<th>default</th>
+<th>possible values</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>pattern</code></td>
+<td>Name of the pattern to draw</td>
+<td>‘stripe’</td>
+<td><code>gridpattern::names_pattern</code></td>
+</tr>
+<tr class="even">
+<td><code>pattern_alpha</code></td>
+<td>Alpha</td>
+<td>1</td>
+<td>value in range [0, 1] or <code>NA</code></td>
+</tr>
+<tr class="odd">
+<td><code>pattern_angle</code></td>
+<td>Rotation angle (entire pattern)</td>
+<td>30</td>
+<td>angle in degrees</td>
+</tr>
+<tr class="even">
+<td><code>pattern_aspect_ratio</code></td>
+<td>Aspect ratio adjustment</td>
+<td>NA</td>
+<td>usual range [0.01, 10]</td>
+</tr>
+<tr class="odd">
+<td><code>pattern_colour</code></td>
+<td>Stroke colour</td>
+<td>‘grey20’</td>
+<td>colour</td>
+</tr>
+<tr class="even">
+<td><code>pattern_density</code></td>
+<td>Approx. fraction of area the pattern fills</td>
+<td>0.2</td>
+<td>value in range [0, 1]</td>
+</tr>
+<tr class="odd">
+<td><code>pattern_filename</code></td>
+<td>Image filename/URL</td>
+<td>’’</td>
+<td>Filename/URL</td>
+</tr>
+<tr class="even">
+<td><code>pattern_fill2</code></td>
+<td>Second fill colour</td>
+<td>‘#4169E1’</td>
+<td>colour</td>
+</tr>
+<tr class="odd">
+<td><code>pattern_fill</code></td>
+<td>Fill colour</td>
+<td>‘grey80’</td>
+<td>colour</td>
+</tr>
+<tr class="even">
+<td><code>pattern_filter</code></td>
+<td>Image scaling filter</td>
+<td>‘lanczos’</td>
+<td><code>magick::filter_types</code></td>
+</tr>
+<tr class="odd">
+<td><code>pattern_frequency</code></td>
+<td>Frequency</td>
+<td>0.1</td>
+<td></td>
+</tr>
+<tr class="even">
+<td><code>pattern_gravity</code></td>
+<td>Image placement</td>
+<td>‘center’</td>
+<td><code>magick::gravity_types</code></td>
+</tr>
+<tr class="odd">
+<td><code>pattern_grid</code></td>
+<td>Pattern grid type</td>
+<td>‘square’</td>
+<td>‘square’, ‘hex’, ‘hex_circle’</td>
+</tr>
+<tr class="even">
+<td><code>pattern_key_scale_factor</code></td>
+<td>Scale factor for pattern in legend</td>
+<td>1</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td><code>pattern_linetype</code></td>
+<td>Stroke linetype</td>
+<td>1</td>
+<td>linetype</td>
+</tr>
+<tr class="even">
+<td><code>pattern_linewidth</code></td>
+<td>Stroke linewidth</td>
+<td>1</td>
+<td>linewidth</td>
+</tr>
+<tr class="odd">
+<td><code>pattern_option_1 - 5</code></td>
+<td>Generic options for expansion</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr class="even">
+<td><code>pattern_orientation</code></td>
+<td>Orientation</td>
+<td>‘vertical’</td>
+<td>‘vertical’, ‘horizontal’, ‘radial’</td>
+</tr>
+<tr class="odd">
+<td><code>pattern_phase</code></td>
+<td>Phase</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr class="even">
+<td><code>pattern_res</code></td>
+<td>Pattern resolution (pixels per inch)</td>
+<td>NA</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td><code>pattern_rot</code></td>
+<td>Rotation angle (shape within pattern)</td>
+<td>0</td>
+<td>angle in degrees</td>
+</tr>
+<tr class="even">
+<td><code>pattern_scale</code></td>
+<td>Scale</td>
+<td>1</td>
+<td>Multiplier</td>
+</tr>
+<tr class="odd">
+<td><code>pattern_shape</code></td>
+<td>Plotting shape</td>
+<td>1</td>
+<td>shapes</td>
+</tr>
+<tr class="even">
+<td><code>pattern_size</code></td>
+<td>Size factor (e.g. fontsize)</td>
+<td>1</td>
+<td>fontsize</td>
+</tr>
+<tr class="odd">
+<td><code>pattern_spacing</code></td>
+<td>Spacing between repetitions of pattern</td>
+<td>0.05</td>
+<td>value in range [0, 1] (snpc units)</td>
+</tr>
+<tr class="even">
+<td><code>pattern_subtype</code></td>
+<td>Generic control option</td>
+<td>NA</td>
+<td>pattern-dependent</td>
+</tr>
+<tr class="odd">
+<td><code>pattern_type</code></td>
+<td>Generic control option</td>
+<td>NA</td>
+<td>pattern-dependent</td>
+</tr>
+<tr class="even">
+<td><code>pattern_xoffset</code></td>
+<td>Shift pattern along x axis</td>
+<td>0</td>
+<td>value in range [0, 1] (snpc units)</td>
+</tr>
+<tr class="odd">
+<td><code>pattern_yoffset</code></td>
+<td>Shift pattern along y axis</td>
+<td>0</td>
+<td>value in range [0, 1] (snpc units)</td>
+</tr>
+</tbody>
+</table>
+</summary>
+</details>
+<p>Note <code>{ggpattern}</code> may also pass other geom aesthetics of possible interest such as <code>fill</code>. Also note that <code>{ggpattern}</code> will only pass pattern aesthetics values of length one but if the pattern is called directly by <code>gridpattern::patternGrob()</code> then the pattern may be passed pattern parameters of arbitrary length.</p>
+</div>
+<div id="geometry-based-pattern-functions---formal-arguments-and-return-values" class="section level2">
+<h2><a name="geometry-based"></a> Geometry-based pattern functions - Formal Arguments and Return Values</h2>
+<p>All geometry-based pattern creation functions must:</p>
+<ol style="list-style-type: decimal">
+<li><p>Have the exact function signature: <code>function(params, boundary_df, aspect_ratio, legend)</code></p>
+<ul>
+<li><code>params</code> - parameters for the pattern (the aesthetics) e.g <code>pattern_fill</code></li>
+<li><code>boundary_df</code> - data.frame containing polygon information i.e. The <code>polygon_df</code> format.</li>
+<li><code>aspect_ratio</code> - the best guess that <code>{gridpattern}</code> / <code>{ggpattern}</code> is able to make as to the aspect ratio of the <strong>viewport</strong> in which this pattern is being rendered.</li>
+<li><code>legend</code> logical value to indicate whether or not this function is being called to render a key legend or the in-place geom fill.</li>
+</ul></li>
+<li><p>Return a grid grob object. This can be any valid grob including a <code>grid::grobTree()</code>. The user should make sure it lies within the boundary represented by <code>boundary_df</code> either by clipping with functions like <code>sf::st_intersection()</code>, <code>gridGeometry::polyclipGrob()</code>, <code>gridpattern::clippingPathGrob()</code>, etc. or using bounded grob functions like <code>gridpattern::patternGrob()</code> or <code>grid::polygonGrob()</code>.</p></li>
+</ol>
+</div>
+<div id="array-based-pattern-functions---formal-arguments-and-return-values" class="section level2">
+<h2><a name="array-based"></a> Array-based pattern functions - Formal Arguments and Return Values</h2>
+<p>All array-based pattern creation functions must:</p>
+<ol style="list-style-type: decimal">
+<li>Have the exact function signature: <code>function(width, height, params, legend)</code>
+<ul>
+<li><code>width,height</code> - dimensions of the bounding box of the geom area</li>
+<li><code>params</code> - parameters from the geom (the aesthetics) e.g <code>pattern_fill</code></li>
+<li><code>legend</code> logical value to indicate whether or not this function is being called to render a key legend or the in-place geom fill.</li>
+</ul></li>
+<li>Return a 3D array of RGBA values (all values in the range [0, 1]). <code>gridpattern</code> itself will mask this image so that it only applies to the area within the grob’s boundary.</li>
+</ol>
+</div>
+<div id="the-polygon_df-data.frame-format" class="section level2">
+<h2><a name="polygon_df"></a> The <code>polygon_df</code> data.frame format</h2>
+<p>The <code>polygon_df</code> is a very simple data.frame format to contain polygon values. This is used to pass the coordinates of the geom boundary from the geom to the pattern generating function.</p>
+<p>It contains only ‘x’ and ‘y’ columns for the coordinates, and an ‘id’ column used to signify which polygon the coordinates belong to.</p>
+<p>The following <code>polygon_df</code> data.frame contains 2 polygons:</p>
+<table>
+<caption>example data in ‘polygon_df’ format</caption>
+<thead>
+<tr class="header">
+<th align="right">x</th>
+<th align="right">y</th>
+<th align="right">id</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
+<td align="right">0</td>
+<td align="right">1</td>
+</tr>
+<tr class="odd">
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">1</td>
+</tr>
+<tr class="odd">
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">2</td>
+</tr>
+<tr class="even">
+<td align="right">2</td>
+<td align="right">0</td>
+<td align="right">2</td>
+</tr>
+<tr class="odd">
+<td align="right">2</td>
+<td align="right">1</td>
+<td align="right">2</td>
+</tr>
+<tr class="even">
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">2</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="associating-a-function-with-gridpattern-pattern-name" class="section level2">
+<h2><a name="user-funcs"></a> Associating a function with <code>{gridpattern}</code> pattern name</h2>
+<p>There are two global <code>option()</code> values which can be set - one for geometry-based patterns, and the other for array-based patterns.</p>
+<p>The global values should point to a named list, where the names are the pattern names you want to use within <code>{gridpattern}</code>, and the named values are the actual functions. Note for backwards-compatibility with the original <code>{ggpattern}</code> system these options start with <code>ggpattern</code> instead of <code>gridpattern</code>.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="kw">options</span>(<span class="dt">ggpattern_array_funcs    =</span> <span class="kw">list</span>(<span class="dt">your_pattern_name =</span> your_pattern_function))</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="kw">options</span>(<span class="dt">ggpattern_geometry_funcs =</span> <span class="kw">list</span>(<span class="dt">your_pattern_name =</span> your_pattern_function))</span></code></pre></div>
+<p>Pattern names must be different from any of the builtin patterns included in <code>{gridpattern}</code>.</p>
+</div>
+<div id="example-geometry-based-pattern-1-recreate-polygon" class="section level2">
+<h2><a name="geometry-example-1"></a> Example geometry-based pattern #1 (recreate polygon)</h2>
+<p>All geometry-based pattern creation functions must:</p>
+<ol style="list-style-type: decimal">
+<li>Have the exact function signature: <code>function(params, boundary_df, aspect_ratio, legend)</code>
+<ul>
+<li><code>params</code> - parameters from the geom (the aesthetics) e.g <code>pattern_fill</code></li>
+<li><code>boundary_df</code> - data.frame containing polygon information i.e. The <code>polygon_df</code> format.</li>
+<li><code>aspect_ratio</code> - the best guess that <code>{gridpattern}</code> / <code>{ggpattern}</code> is able to make as to the aspect ratio of the <strong>viewport</strong> in which this pattern is being rendered.</li>
+<li><code>legend</code> logical value to indicate whether or not this function is being called to render a key legend or the in-place geom fill.</li>
+</ul></li>
+<li>Return a grid grob bounded by the boundary represented by <code>boundary_df</code> (including grid structures like a <code>grid::grobTree()</code>).</li>
+</ol>
+<p>For this example we’ll create a simple single color fill pattern based on <code>grid::polygonGrob()</code> called ‘polygon’.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a>create_pattern_polygon &lt;-<span class="st"> </span><span class="cf">function</span>(params, boundary_df, aspect_ratio, <span class="dt">legend =</span> <span class="ot">FALSE</span>) {</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a>    x &lt;-<span class="st"> </span>boundary_df<span class="op">$</span>x</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>    y &lt;-<span class="st"> </span>boundary_df<span class="op">$</span>y</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>    id &lt;-<span class="st"> </span>boundary_df<span class="op">$</span>id</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a>    alpha &lt;-<span class="st"> </span><span class="kw">ifelse</span>(<span class="kw">is.na</span>(params<span class="op">$</span>pattern_alpha), <span class="dv">1</span>, params<span class="op">$</span>pattern_alpha)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a>    gp &lt;-<span class="st"> </span>grid<span class="op">::</span><span class="kw">gpar</span>(<span class="dt">alpha =</span> alpha, </span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>                     <span class="dt">col =</span> params<span class="op">$</span>pattern_colour,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a>                     <span class="dt">fill =</span> params<span class="op">$</span>pattern_fill,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a>                     <span class="dt">lty =</span> params<span class="op">$</span>pattern_linetype,</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a>                     <span class="dt">lwd =</span> params<span class="op">$</span>pattern_linewidth)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a>    grid<span class="op">::</span><span class="kw">polygonGrob</span>(<span class="dt">x =</span> x, <span class="dt">y =</span> y, <span class="dt">id =</span> id, <span class="dt">default.units =</span> <span class="st">&quot;npc&quot;</span>, <span class="dt">gp =</span> gp)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a>}</span></code></pre></div>
+<p>A global option <code>ggpattern_geometry_funcs</code> is a named list which contains geometry-based pattern creating functions to use outside of <code>ggpattern</code>.</p>
+<p>The <strong>name</strong> used in this list corresponds to the <code>pattern</code> name used with the geom - in this case we will be using <code>pattern = &#39;polygon&#39;</code>.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="kw">options</span>(<span class="dt">ggpattern_geometry_funcs =</span> <span class="kw">list</span>(<span class="dt">polygon =</span> create_pattern_polygon))</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="kw">grid.pattern</span>(<span class="st">&quot;polygon&quot;</span>, <span class="dt">fill =</span> <span class="st">&quot;red&quot;</span>, <span class="dt">size =</span> <span class="dv">4</span>, <span class="dt">linetype =</span> <span class="st">&quot;dashed&quot;</span>, </span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>             <span class="dt">x =</span> <span class="kw">c</span>(<span class="fl">0.05</span>, <span class="fl">0.05</span>, <span class="fl">0.305</span>, <span class="fl">0.305</span>), <span class="dt">y =</span> <span class="kw">c</span>(<span class="fl">0.05</span>, <span class="fl">0.305</span>, <span class="fl">0.305</span>, <span class="fl">0.05</span>))</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a><span class="kw">grid.pattern</span>(<span class="st">&quot;polygon&quot;</span>, <span class="dt">fill =</span> <span class="st">&quot;green&quot;</span>, <span class="dt">alpha =</span> <span class="fl">0.2</span>, </span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>             <span class="dt">x =</span> <span class="kw">c</span>(<span class="fl">0.35</span>, <span class="fl">0.35</span>, <span class="fl">0.65</span>, <span class="fl">0.65</span>), <span class="dt">y =</span> <span class="kw">c</span>(<span class="fl">0.35</span>, <span class="fl">0.65</span>, <span class="fl">0.65</span>, <span class="fl">0.35</span>))</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a><span class="kw">grid.pattern</span>(<span class="st">&quot;polygon&quot;</span>, <span class="dt">fill =</span> <span class="st">&quot;blue&quot;</span>, <span class="dt">colour =</span> <span class="st">&quot;grey&quot;</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a>             <span class="dt">x =</span> <span class="kw">c</span>(<span class="fl">0.7</span>, <span class="fl">0.7</span>, <span class="fl">1.0</span>, <span class="fl">1.0</span>), <span class="dt">y =</span> <span class="kw">c</span>(<span class="fl">0.7</span>, <span class="fl">1.0</span>, <span class="fl">1.0</span>, <span class="fl">0.7</span>))</span></code></pre></div>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASAAAAEgCAMAAAAjXV6yAAABDlBMVEUAAP8TE/gZGfYqKvEzMzM1MjI1NTU3MjI3Nzc4MjI6MTFCLy9ELy9JLS1KSkpMTExOTk5TU1NUVFRVVVVcXFxdKSldXV1fX95iJydlZdxmZmZsbNptbW1ubtl1IiJ5IiJ9ISF9fX2FhYWHh4eJiYmKioqMjIyNHR2RkZGSks2dGBiiFxekFxelpaWtFBSxExOxFBS0ExO1EhK1tbW5ubm6ERG76bvB8cHD88PFxcXHx8fM/8zODAzPz8/QDAzQ0NDT09PUCwvWCgrd3d3eCAje3t7fCAjgCAji4uLkBwfk5OTl5eXmBgbnBgbsBQXu7u7wBATyAwPy8vL4AgL5+fn6+vr9AQH+AAD/AAD///+07+JZAAAACXBIWXMAAA7DAAAOwwHHb6hkAAADxUlEQVR4nO3d124cZRiAYQNLb6H35gRCi2khxPROQgshgZj7vxEWTNnZjfTa0oxHtp7ncH5ptd97sNLufJrd+uOk2H3uqQm8tjX3XKPZvWVrAk8IJJBA+wQKAgWBgkBBoCBQECgIFAQKAgWBgkBBoCBQECgIFAQKAgWBgkBBoCBQECgIFAQKAgWBgkBBoCBQECgIFAQKAgWBgkBBoCBQECgIFAQKAgWBgkBBoCBQECgIFAQKAgWBgkBBoCBQECgIFAQKAgWBgkBBoCBQECgIFAQKAgWBgkBBoCBQECgIFAQKAgWBgkBBoCBQECgIFAQKu7fdOoFnTk6gzz6cxMkJNBGBgkBBoCBQECgIFAQKAgWBgkBBoCBQOJJAV76fxJWjeO9HEujShQ8mcOHSUbz3owl08aMJXBRIIIH2CRQECgIFgYJAQaAgUBAoCBQECgIFgYJAQaAgUBAoCBQECgIFgYJAQaAgUBAoCBQECgIFgYJAQaAgUBAoCBQECgIFgYJAQaAgUBAoCBQECgIFgYJAQaAgUBAoCBQECgIFgYJAQaAgUBAoCBQECgIFgYJAQaAgUBAoCBQECgIFgYJAQaAgUBAoCBQECgIFgYJAQaAgUBAoCBQ89D/424gTTKAgUBAoCBQECgIFgYJAQaAwCHT9zEOn/vbsV6uXP3/61JrDnR9rg0DnFv96dPXyA4sNhzo/1gaBtv8b8P69//1+z2aAPp9roLHdPNDdb60E2Hvj9vX5D3A+10Bj2wj0+uWlq3sDv1xec4DzuQYa20agnb1xzDXQ2AQKAgWBgkBBoDAIdHoZ6G2BBgaBzi8Wd34r0MDw2/z5s5+Ok+fLF175daaJRrb2c8c4efau3btYvDTPQGObJtB3yw+zR+YZaGzTBPp6GejheQYam0BBoCBQECgIFAQKAgWBwjDQN+/+LNDQINAndy3uG6XQSQ308nKudwQamOYXRYEEEugf0wT6aflCj8810rgmuqvx/OKO9+YaaVwTBbrxxQ9zTTQy98WCQEGgIFAQKAgUBAoCBYGC/aBgPyjYDwr2g4L9oOC+WBAoCBQECgIFgYJAQaAgULAfFOwHBftBwXZHECgIFOwHBftBwX5QcF8sCBQECgIFgYJAQaCwEejFnZ2d968NZv14Z81BzucaaGw3f0zgkzdW5n9z/SGABzqfa6CxbewH7ftxJcBjmwEOcD7XQGNb3w/a9+BvK1fPbM5/qPPjbW0/6PT2X14dfJG6fm57zeHOjzePSw4CBYGCQEGgIFAQKAgUBAoCBYGCQOFPa+EX3rhybpkAAAAASUVORK5CYII=" alt="Three rectangles each filled with a single color" /></p>
+</div>
+<div id="example-geometry-based-pattern-function-2-using-other-patterns" class="section level2">
+<h2><a name="geometry-example-2"></a> Example geometry-based pattern function #2 (using other patterns)</h2>
+<p>All geometry-based pattern creation functions must:</p>
+<ol style="list-style-type: decimal">
+<li>Have the exact function signature: <code>function(params, boundary_df, aspect_ratio, legend)</code>
+<ul>
+<li><code>params</code> - parameters from the geom (the aesthetics) e.g <code>pattern_fill</code></li>
+<li><code>boundary_df</code> - data.frame containing polygon information i.e. The <code>polygon_df</code> format.</li>
+<li><code>aspect_ratio</code> - the best guess that <code>{gridpattern}</code> / <code>{ggpattern}</code> is able to make as to the aspect ratio of the <strong>viewport</strong> in which this pattern is being rendered.</li>
+<li><code>legend</code> logical value to indicate whether or not this function is being called to render a key legend or the in-place geom fill.</li>
+</ul></li>
+<li>Return a grid grob bounded by the boundary represented by <code>boundary_df</code> (including grid structures like a <code>grid::grobTree()</code>).</li>
+</ol>
+<p>For this example we’ll create an example that re-uses the pre-existing ‘stripe’, ‘circle’, and ‘gradient’ patterns and combines them into a new ‘complex’ pattern.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a>create_pattern_complex &lt;-<span class="st"> </span><span class="cf">function</span>(params, boundary_df, aspect_ratio, <span class="dt">legend =</span> <span class="ot">FALSE</span>) {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a>    args &lt;-<span class="st"> </span><span class="kw">as.list</span>(params)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a>    args &lt;-<span class="st"> </span>args[<span class="kw">grep</span>(<span class="st">&quot;^pattern_&quot;</span>, <span class="kw">names</span>(args))]</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a>    args<span class="op">$</span>x &lt;-<span class="st"> </span>boundary_df<span class="op">$</span>x</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a>    args<span class="op">$</span>y &lt;-<span class="st"> </span>boundary_df<span class="op">$</span>y</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a>    args<span class="op">$</span>id &lt;-<span class="st"> </span>boundary_df<span class="op">$</span>id</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a>    args<span class="op">$</span>prefix &lt;-<span class="st"> &quot;&quot;</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true"></a></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true"></a>    args_stripe &lt;-<span class="st"> </span>args</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true"></a>    args_stripe<span class="op">$</span>pattern &lt;-<span class="st"> &quot;stripe&quot;</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true"></a>    args_stripe<span class="op">$</span>pattern_density &lt;-<span class="st"> </span><span class="fl">0.5</span> <span class="op">*</span><span class="st"> </span>args<span class="op">$</span>pattern_density</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true"></a>    args_stripe<span class="op">$</span>pattern_spacing &lt;-<span class="st"> </span><span class="dv">2</span> <span class="op">*</span><span class="st"> </span>args<span class="op">$</span>pattern_spacing</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true"></a>    grob_stripe &lt;-<span class="st"> </span><span class="kw">do.call</span>(gridpattern<span class="op">::</span>patternGrob, args_stripe)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true"></a>    args_circle &lt;-<span class="st"> </span>args</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true"></a>    args_circle<span class="op">$</span>pattern &lt;-<span class="st"> &quot;regular_polygon&quot;</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true"></a>    args_circle<span class="op">$</span>pattern_shape &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;circle&quot;</span>, <span class="st">&quot;null&quot;</span>)</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true"></a>    args_circle<span class="op">$</span>pattern_yoffset &lt;-<span class="st"> </span>args<span class="op">$</span>pattern_spacing <span class="op">+</span><span class="st"> </span>args<span class="op">$</span>pattern_yoffset</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true"></a>    args_circle<span class="op">$</span>pattern_type =<span class="st"> &quot;horizontal&quot;</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true"></a>    grob_circle &lt;-<span class="st"> </span><span class="kw">do.call</span>(gridpattern<span class="op">::</span>patternGrob, args_circle)</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true"></a></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true"></a>    args_gradient &lt;-<span class="st"> </span>args</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true"></a>    args_gradient<span class="op">$</span>pattern &lt;-<span class="st"> &quot;gradient&quot;</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true"></a>    args_gradient<span class="op">$</span>pattern_fill &lt;-<span class="st"> &quot;#00000070&quot;</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true"></a>    args_gradient<span class="op">$</span>pattern_fill2 &lt;-<span class="st"> &quot;#FFFFFF70&quot;</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true"></a>    args_gradient<span class="op">$</span>pattern_orientation &lt;-<span class="st"> &quot;vertical&quot;</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true"></a>    grob_gradient &lt;-<span class="st"> </span><span class="kw">do.call</span>(gridpattern<span class="op">::</span>patternGrob, args_gradient)</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true"></a></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true"></a>    grid<span class="op">::</span><span class="kw">grobTree</span>(grob_stripe, grob_circle, grob_gradient)</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true"></a>}</span></code></pre></div>
+<p>A global option <code>ggpattern_geometry_funcs</code> is a named list which contains geometry-based pattern creating functions to use outside of <code>ggpattern</code>.</p>
+<p>The <strong>name</strong> used in this list corresponds to the <code>pattern</code> name used with the geom - in this case we will be using <code>pattern = &#39;complex&#39;</code>.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="kw">options</span>(<span class="dt">ggpattern_geometry_funcs =</span> <span class="kw">list</span>(<span class="dt">complex =</span> create_pattern_complex))</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="kw">grid.pattern</span>(<span class="st">&quot;complex&quot;</span>, <span class="dt">fill =</span> <span class="st">&quot;red&quot;</span>, <span class="dt">angle =</span> <span class="dv">45</span>, <span class="dt">spacing =</span> <span class="fl">0.05</span>, <span class="dt">density =</span> <span class="fl">0.3</span>,</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a>             <span class="dt">x =</span> <span class="kw">c</span>(<span class="fl">0.0</span>, <span class="fl">0.0</span>, <span class="fl">0.3</span>, <span class="fl">0.3</span>), <span class="dt">y =</span> <span class="kw">c</span>(<span class="fl">0.0</span>, <span class="fl">0.3</span>, <span class="fl">0.3</span>, <span class="fl">0.0</span>))</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a><span class="kw">grid.pattern</span>(<span class="st">&quot;complex&quot;</span>, <span class="dt">fill =</span> <span class="st">&quot;green&quot;</span>, <span class="dt">angle =</span> <span class="dv">45</span>, <span class="dt">spacing =</span> <span class="fl">0.2</span>, <span class="dt">density =</span> <span class="fl">0.2</span>,</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a>             <span class="dt">x =</span> <span class="kw">c</span>(<span class="fl">0.35</span>, <span class="fl">0.35</span>, <span class="fl">0.65</span>, <span class="fl">0.65</span>), <span class="dt">y =</span> <span class="kw">c</span>(<span class="fl">0.35</span>, <span class="fl">0.65</span>, <span class="fl">0.65</span>, <span class="fl">0.35</span>))</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true"></a><span class="kw">grid.pattern</span>(<span class="st">&quot;complex&quot;</span>, <span class="dt">fill =</span> <span class="st">&quot;blue&quot;</span>, <span class="dt">angle =</span> <span class="dv">45</span>, <span class="dt">spacing =</span> <span class="fl">0.1</span>, <span class="dt">density =</span> <span class="fl">0.3</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true"></a>             <span class="dt">x =</span> <span class="kw">c</span>(<span class="fl">0.7</span>, <span class="fl">0.7</span>, <span class="fl">1.0</span>, <span class="fl">1.0</span>), <span class="dt">y =</span> <span class="kw">c</span>(<span class="fl">0.7</span>, <span class="fl">1.0</span>, <span class="fl">1.0</span>, <span class="fl">0.7</span>))</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true"></a>grid<span class="op">::</span><span class="kw">grid.polygon</span>(<span class="dt">x =</span> <span class="kw">c</span>(<span class="fl">0.0</span>, <span class="fl">0.0</span>, <span class="fl">0.3</span>, <span class="fl">0.3</span>, <span class="fl">0.35</span>, <span class="fl">0.35</span>, <span class="fl">0.65</span>, <span class="fl">0.65</span>, <span class="fl">0.7</span>, <span class="fl">0.7</span>, <span class="fl">1.0</span>, <span class="fl">1.0</span>),</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true"></a>                   <span class="dt">y =</span> <span class="kw">c</span>(<span class="fl">0.0</span>, <span class="fl">0.3</span>, <span class="fl">0.3</span>, <span class="fl">0.0</span>, <span class="fl">0.35</span>, <span class="fl">0.65</span>, <span class="fl">0.65</span>, <span class="fl">0.35</span>, <span class="fl">0.7</span>, <span class="fl">1.0</span>, <span class="fl">1.0</span>, <span class="fl">0.7</span>), </span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true"></a>                   <span class="dt">id =</span> <span class="kw">rep</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>, <span class="dt">each =</span> <span class="dv">4</span>), </span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true"></a>                   <span class="dt">gp =</span> grid<span class="op">::</span><span class="kw">gpar</span>(<span class="dt">col =</span> <span class="st">&quot;black&quot;</span>, <span class="dt">fill =</span> <span class="ot">NA</span>, <span class="dt">lwd=</span><span class="dv">4</span>))</span></code></pre></div>
+<p><img src="data:image/png;base64,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" alt="Three rectangles each with a &#39;stripe&#39;, &#39;circle&#39;, and &#39;gradient&#39; pattern" /></p>
+</div>
+<div id="example-array-based-pattern-function" class="section level2">
+<h2><a name="array-example"></a> Example array-based pattern function</h2>
+<p>All array-based pattern creation functions must:</p>
+<ol style="list-style-type: decimal">
+<li>Have the exact function signature: <code>function(width, height, params, legend)</code>
+<ul>
+<li><code>width,height</code> - dimensions of the bounding box of the geom area</li>
+<li><code>params</code> - parameters from the geom (the aesthetics) e.g <code>pattern_fill</code></li>
+<li><code>legend</code> logical value to indicate whether or not this function is being called to render a key legend or the in-place geom fill.</li>
+</ul></li>
+<li>Return a 3D array of RGBA values (all values in the range [0, 1]).</li>
+</ol>
+<p>For this example we’ll create a simple example that cycles through RGBA values.</p>
+<p>Parameters for this pattern:</p>
+<ul>
+<li><code>pattern_type</code> is used to distinguish between source data for the pattern</li>
+</ul>
+<p><strong>Note</strong>: This pattern exploits vector recyling in the creation of the RGBA array, and as dimensions change the alignment of the R, G, B and A planes will not remain in a fixed relationship. Thus if you change the shape of the rendered image, you will change the nature of the pattern.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a>create_pattern_simple &lt;-<span class="st"> </span><span class="cf">function</span>(width, height, params, legend) {</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a>  </span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true"></a>  <span class="co"># Ensure the selected pattern is sane.</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true"></a>  choice &lt;-<span class="st"> </span>params<span class="op">$</span>pattern_type</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true"></a>  <span class="cf">if</span> (<span class="kw">is.null</span>(choice) <span class="op">||</span><span class="st"> </span><span class="kw">is.na</span>(choice) <span class="op">||</span><span class="st"> </span><span class="op">!</span><span class="kw">is.character</span>(choice)) {</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true"></a>    choice &lt;-<span class="st"> &#39;a&#39;</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true"></a>  }</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true"></a>  </span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true"></a>  <span class="co"># Choose the values with which to fill the array</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true"></a>  values &lt;-<span class="st"> </span><span class="cf">switch</span>(</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true"></a>    choice,</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true"></a>    <span class="dt">a =</span> <span class="kw">rep</span>(<span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>), <span class="dt">each =</span> <span class="dv">3</span>),</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true"></a>    <span class="dt">b =</span> <span class="kw">rep</span>(<span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="fl">0.5</span>, <span class="fl">0.5</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="fl">0.5</span>), <span class="dt">each =</span> <span class="dv">7</span>),</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true"></a>    <span class="dt">c =</span> <span class="kw">rep</span>(<span class="kw">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="fl">0.05</span>), <span class="dt">each =</span> <span class="dv">7</span>),</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true"></a>    <span class="kw">rep</span>(<span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>), <span class="dt">each =</span> <span class="dv">3</span>)</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true"></a>  )</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true"></a>  <span class="co"># Create an RGBA array of the requested dimensions</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true"></a>  simple_array &lt;-<span class="st"> </span><span class="kw">array</span>(values, <span class="dt">dim =</span> <span class="kw">c</span>(height, width, <span class="dv">4</span>))</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true"></a></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true"></a>  simple_array</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true"></a>}</span></code></pre></div>
+<p>A global option <code>ggpattern_array_funcs</code> is a named list which contains geometry-based pattern creating functions to use outside of <code>ggpattern</code>.</p>
+<p>The <strong>name</strong> used in this list corresponds to the <code>pattern</code> name used with the geom - in this case we will be using <code>pattern = &#39;simple&#39;</code>.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a><span class="kw">options</span>(<span class="dt">ggpattern_array_funcs =</span> <span class="kw">list</span>(<span class="dt">simple =</span> create_pattern_simple))</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true"></a>grid<span class="op">::</span><span class="kw">grid.polygon</span>(<span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>), <span class="dt">y =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>), </span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true"></a>                   <span class="dt">gp =</span> grid<span class="op">::</span><span class="kw">gpar</span>(<span class="dt">col=</span><span class="ot">NA</span>, <span class="dt">fill=</span><span class="st">&quot;grey&quot;</span>))</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true"></a><span class="kw">grid.pattern</span>(<span class="st">&quot;simple&quot;</span>, <span class="dt">type =</span> <span class="st">&quot;a&quot;</span>,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true"></a>             <span class="dt">x =</span> <span class="kw">c</span>(<span class="fl">0.0</span>, <span class="fl">0.0</span>, <span class="fl">0.3</span>, <span class="fl">0.3</span>), <span class="dt">y =</span> <span class="kw">c</span>(<span class="fl">0.0</span>, <span class="fl">0.3</span>, <span class="fl">0.3</span>, <span class="fl">0.0</span>))</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true"></a><span class="kw">grid.pattern</span>(<span class="st">&quot;simple&quot;</span>, <span class="dt">type =</span> <span class="st">&quot;b&quot;</span>,</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true"></a>             <span class="dt">x =</span> <span class="kw">c</span>(<span class="fl">0.35</span>, <span class="fl">0.35</span>, <span class="fl">0.65</span>, <span class="fl">0.65</span>), <span class="dt">y =</span> <span class="kw">c</span>(<span class="fl">0.35</span>, <span class="fl">0.65</span>, <span class="fl">0.65</span>, <span class="fl">0.35</span>))</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true"></a><span class="kw">grid.pattern</span>(<span class="st">&quot;simple&quot;</span>, <span class="dt">type =</span> <span class="st">&quot;c&quot;</span>,</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true"></a>             <span class="dt">x =</span> <span class="kw">c</span>(<span class="fl">0.7</span>, <span class="fl">0.7</span>, <span class="fl">1.0</span>, <span class="fl">1.0</span>), <span class="dt">y =</span> <span class="kw">c</span>(<span class="fl">0.7</span>, <span class="fl">1.0</span>, <span class="fl">1.0</span>, <span class="fl">0.7</span>))</span></code></pre></div>
+<p><img src="data:image/png;base64,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" alt="Three rectangles each filled with an &#39;array&#39; pattern" /></p>
+</div>
+<div id="other-examples" class="section level2">
+<h2><a name="other-example"></a> Other examples</h2>
+<p>The <code>{ggpattern}</code> package contains a vignette on developing <code>{gridpattern}</code> / <code>{ggpattern}</code> patterns with a few more examples: <a href="https://coolbutuseless.github.io/package/ggpattern/articles/" class="uri">https://coolbutuseless.github.io/package/ggpattern/articles/</a></p>
+<p>Also the <code>{gridpattern}</code> source contains the full source code for 19 patterns: <a href="https://github.com/trevorld/gridpattern/tree/main/R" class="uri">https://github.com/trevorld/gridpattern/tree/main/R</a></p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Efficient computation of principal components and singular...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for fast.prcomp {gmodels}"><tr><td>fast.prcomp {gmodels}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Efficient computation of principal components and singular value
+decompositions.</h2>
+
+<h3>Description</h3>
+
+<p>The standard <code><a href="../../stats/help/prcomp.html">stats::prcomp()</a></code> and <code><a href="../../base/html/svd.html">svd()</a></code> function are
+very inefficient for wide matrixes. <code>fast.prcomp</code> and <code>fast.svd</code>
+are modified versions which are efficient even for matrixes that are very
+wide.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+fast.prcomp(x, retx = TRUE, center = TRUE, scale. = FALSE, tol = NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>data matrix</p>
+</td></tr>
+<tr valign="top"><td><code>retx</code></td>
+<td>
+<p>a logical value indicating whether the rotated variables
+should be returned.</p>
+</td></tr>
+<tr valign="top"><td><code>center</code></td>
+<td>
+<p>a logical value indicating whether the variables
+should be shifted to be zero centered. Alternately, a vector of
+length equal the number of columns of <code>x</code> can be supplied.
+The value is passed to <code>scale</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>scale.</code></td>
+<td>
+<p>a logical value indicating whether the variables should
+be scaled to have unit variance before the analysis takes
+place.  The default is <code>FALSE</code> for consistency with S, but
+in general scaling is advisable.  Alternatively, a vector of length
+equal the number of columns of <code>x</code> can be supplied.  The
+value is passed to <code><a href="../../base/html/scale.html">scale</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>tol</code></td>
+<td>
+<p>a value indicating the magnitude below which components
+should be omitted. (Components are omitted if their
+standard deviations are less than or equal to <code>tol</code> times the
+standard deviation of the first component.)  With the default null
+setting, no components are omitted (unless <code>rank.</code> is specified
+less than <code>min(dim(x))</code>.).  Other settings for tol could be
+<code>tol = 0</code> or <code>tol = sqrt(.Machine$double.eps)</code>, which
+would omit essentially constant components.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The current implementation of the function <code><a href="../../base/html/svd.html">svd()</a></code> in S-Plus and R
+is much slower when operating on a matrix with a large number of columns
+than on the transpose of this matrix, which has a large number of rows. As a
+consequence, <code><a href="../../stats/help/prcomp.html">stats::prcomp()</a></code>, which uses <code><a href="../../base/html/svd.html">svd()</a></code>, is
+also very slow when applied to matrixes with a large number of rows.
+</p>
+<p>The simple solution is to use <code><a href="../../base/html/svd.html">La.svd()</a></code> instead of
+<code><a href="../../base/html/svd.html">svd()</a></code>.  A suitable patch to <code><a href="../../stats/help/prcomp.html">stats::prcomp()</a></code> has been
+submitted.  In the mean time, the function <code>fast.prcomp</code> has been
+provided as a short-term work-around.
+</p>
+
+<dl>
+<dt>list(&quot;fast.prcomp&quot;)</dt><dd><p>is a modified versiom of
+<code><a href="../../stats/help/prcomp.html">stats::prcomp()</a></code> that calls <code><a href="../../base/html/svd.html">La.svd()</a></code> instead of
+<code><a href="../../base/html/svd.html">svd()</a></code> </p>
+</dd>
+<dt>list(&quot;fast.svd&quot;)</dt><dd><p>is simply a wrapper around
+<code><a href="../../base/html/svd.html">La.svd()</a></code>.  </p>
+</dd>
+</dl>
+
+
+
+<h3>Value</h3>
+
+<p>See the documetation for <code><a href="../../stats/help/prcomp.html">stats::prcomp()</a></code> or
+<code><a href="../../base/html/svd.html">svd()</a></code> .
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Modifications by Gregory R. Warnes <a href="mailto:greg@warnes.net">greg@warnes.net</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../stats/help/prcomp.html">stats::prcomp()</a></code>, <code><a href="../../base/help/svd.html">base::svd()</a></code>, <code><a href="../../base/help/svd.html">base::La.svd()</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+
+  # create test matrix
+  set.seed(4943546)
+  nr &lt;- 50
+  nc &lt;- 2000
+  x  &lt;- matrix( rnorm( nr*nc), nrow=nr, ncol=nc )
+  tx &lt;- t(x)
+
+  # SVD directly on matrix is SLOW:
+  system.time( val.x &lt;- svd(x)$u )
+
+  # SVD on t(matrix) is FAST:
+  system.time( val.tx &lt;- svd(tx)$v )
+
+  # and the results are equivalent:
+  max( abs(val.x) - abs(val.tx) )
+
+  # Time gap dissapears using fast.svd:
+  system.time( val.x &lt;- fast.svd(x)$u )
+  system.time( val.tx &lt;- fast.svd(tx)$v )
+  max( abs(val.x) - abs(val.tx) )
+
+
+  library(stats)
+
+  # prcomp directly on matrix is SLOW:
+  system.time( pr.x &lt;- prcomp(x) )
+
+  # prcomp.fast is much faster
+  system.time( fast.pr.x &lt;- fast.prcomp(x) )
+
+  # and the results are equivalent
+  max( pr.x$sdev - fast.pr.x$sdev )
+  max( abs(pr.x$rotation[,1:49]) - abs(fast.pr.x$rotation[,1:49]) )
+  max( abs(pr.x$x) - abs(fast.pr.x$x)  )
+
+  # (except for the last and least significant component):
+  max( abs(pr.x$rotation[,50]) - abs(fast.pr.x$rotation[,50]) )
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>gmodels</em> version 2.19.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

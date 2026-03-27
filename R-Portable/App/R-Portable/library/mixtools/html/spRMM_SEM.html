@@ -1,0 +1,240 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Stochastic EM algorithm for semiparametric scaled mixture of...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for spRMM_SEM {mixtools}"><tr><td>spRMM_SEM {mixtools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Stochastic EM algorithm for semiparametric scaled mixture of censored data</h2>
+
+<h3>Description</h3>
+
+<p>Stochastic EM algorithm for semiparametric scaled mixture for randomly right censored data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+  spRMM_SEM(t, d = NULL, lambda = NULL, scaling = NULL, 
+          centers = 2, kernelft = triang_wkde, 
+          bw = rep(bw.nrd0(t),length(t)), averaged = TRUE,
+          epsilon = 1e-08, maxit = 100, batchsize = 1, verb = FALSE) </pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>t</code></td>
+<td>
+<p>A vector of <i>n</i> real positive lifetime (possibly censored) durations.
+If <code>d</code> is not <code>NULL</code> then a vector of random censoring times
+<code>c</code> occurred,  
+so that <i>x= min(x,c)</i> and <i>d = I(x &lt;= c)</i>.</p>
+</td></tr>
+<tr valign="top"><td><code>d</code></td>
+<td>
+<p>The vector of censoring indication, where 1 means observed lifetime data, 
+and 0 means censored lifetime data.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>Initial value of mixing proportions.
+If <code>NULL</code>, then <code>lambda</code> is set to <code>rep(1/k,k)</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>scaling</code></td>
+<td>
+<p>Initial value of scaling between components, 
+set to 1 if <code>NULL</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>centers</code></td>
+<td>
+<p>initial centers for initial call to kmeans for initialization.</p>
+</td></tr>
+<tr valign="top"><td><code>kernelft</code></td>
+<td>
+<p>.</p>
+</td></tr>
+<tr valign="top"><td><code>bw</code></td>
+<td>
+<p>Bandwidth in the kernel hazard estimates.</p>
+</td></tr>
+<tr valign="top"><td><code>averaged</code></td>
+<td>
+<p>averaged.</p>
+</td></tr>
+<tr valign="top"><td><code>epsilon</code></td>
+<td>
+<p>Tolerance limit.</p>
+</td></tr>
+<tr valign="top"><td><code>maxit</code></td>
+<td>
+<p>The number of iterations allowed.</p>
+</td></tr>
+<tr valign="top"><td><code>batchsize</code></td>
+<td>
+<p>The batchsize (see reference below).</p>
+</td></tr>
+<tr valign="top"><td><code>verb</code></td>
+<td>
+<p>If TRUE, print updates for every iteration of the algorithm as
+it runs</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p><code>spRMM_SEM</code> returns a list of class <code>"spRMM"</code> with the following items:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>t</code></td>
+<td>
+<p>The input data.</p>
+</td></tr>
+<tr valign="top"><td><code>d</code></td>
+<td>
+<p>The input censoring indicator.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>The estimates for the mixing proportions.</p>
+</td></tr>
+<tr valign="top"><td><code>scaling</code></td>
+<td>
+<p>The estimates for the components scaling.</p>
+</td></tr>
+<tr valign="top"><td><code>posterior</code></td>
+<td>
+<p>An <i>n x 2</i> matrix of posterior probabilities for
+observation, after convergence of the algorithm.</p>
+</td></tr>
+<tr valign="top"><td><code>loglik</code></td>
+<td>
+<p>The (pseudo) log-likelihood value at convergence of the algorithm.</p>
+</td></tr>
+<tr valign="top"><td><code>all.loglik</code></td>
+<td>
+<p>The sequence of log-likelihood values over iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>all.lambda</code></td>
+<td>
+<p>The sequence of mixing proportions over iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>all.scaling</code></td>
+<td>
+<p>The sequence of scaling parameter over iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>meanpost</code></td>
+<td>
+<p>Posterior probabilities averaged over iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>survival</code></td>
+<td>
+<p>Kaplan-Meier last iteration estimate (a <code>stepfun</code> object).</p>
+</td></tr>
+<tr valign="top"><td><code>hazard</code></td>
+<td>
+<p>Hazard rate last iteration estimate evaluated at <code>final.t</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>final.t</code></td>
+<td>
+<p>Last iteration unscaled sample (see reference).</p>
+</td></tr>
+<tr valign="top"><td><code>s.hat</code></td>
+<td>
+<p>Kaplan-Meier average estimate.</p>
+</td></tr>
+<tr valign="top"><td><code>t.hat</code></td>
+<td>
+<p>Ordered unscaled sample, for testing purpose.</p>
+</td></tr>
+<tr valign="top"><td><code>avg.od</code></td>
+<td>
+<p>For testing purpose only.</p>
+</td></tr>
+<tr valign="top"><td><code>hazard.hat</code></td>
+<td>
+<p>Hazard rate average estimate on <code>t.hat</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>batch.t</code></td>
+<td>
+<p>Batch sample (not ordered), see reference.</p>
+</td></tr>
+<tr valign="top"><td><code>batch.d</code></td>
+<td>
+<p>Associated event indicators just <code>rep(d,batchsize)</code>, for testing purpose.</p>
+</td></tr>
+<tr valign="top"><td><code>sumNaNs</code></td>
+<td>
+<p>Internal control of numerical stability.</p>
+</td></tr>
+<tr valign="top"><td><code>ft</code></td>
+<td>
+<p>A character vector giving the name of the function.</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Didier Chauveau</p>
+
+
+<h3>References</h3>
+
+
+<ul>
+<li><p> Bordes, L., and Chauveau, D. (2016),
+Stochastic EM algorithms for parametric and semiparametric mixture models 
+for right-censored lifetime data, 
+Computational Statistics, Volume 31, Issue 4, pages 1513-1538.
+<a href="https://link.springer.com/article/10.1007/s00180-016-0661-7">https://link.springer.com/article/10.1007/s00180-016-0661-7</a>
+</p>
+</li></ul>
+
+
+
+<h3>See Also</h3>
+
+<p>Related functions: 
+<code><a href="../../mixtools/help/plotspRMM.html">plotspRMM</a></code>,
+<code><a href="../../mixtools/help/summary.spRMM.html">summary.spRMM</a></code>.
+</p>
+<p>Other models and algorithms for censored lifetime data
+(name convention is model_algorithm):
+<code><a href="../../mixtools/help/expRMM_EM.html">expRMM_EM</a></code>,
+<code><a href="../../mixtools/help/weibullRMM_SEM.html">weibullRMM_SEM</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+n=500 # sample size
+m=2 # nb components
+lambda=c(0.4, 0.6) # parameters
+meanlog=3; sdlog=0.5; scale=0.1
+set.seed(12)
+# simulate a scaled mixture of lognormals
+x &lt;- rlnormscalemix(n, lambda, meanlog, sdlog, scale)
+cs=runif(n,20,max(x)+400) # Censoring (uniform) and incomplete data
+t &lt;- apply(cbind(x,cs),1,min)
+d &lt;- 1*(x &lt;= cs)
+tauxc &lt;- 100*round( 1-mean(d),3)
+cat(tauxc, "percents of data censored.\n")
+
+c0 &lt;- c(25, 180) # data-driven initial centers (visible modes)
+sc0 &lt;- 25/180    # and scaling
+s &lt;- spRMM_SEM(t, d, scaling = sc0, centers = c0, bw = 15, maxit = 100)
+
+plotspRMM(s) # default
+summary(s)   # S3 method for class "spRMM"
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mixtools</em> version 2.0.0.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: EM-like Algorithm for Nonparametric Mixture Models with...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mvnpEM {mixtools}"><tr><td>mvnpEM {mixtools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>EM-like Algorithm for Nonparametric Mixture Models 
+with Conditionally Independent Multivariate Component Densities</h2>
+
+<h3>Description</h3>
+
+<p>An extension of the original <code><a href="../../mixtools/help/npEM.html">npEM</a></code> algorithm, for mixtures
+of multivariate data where the coordinates of a row (case)
+in the data matrix are assumed to be made of independent but multivariate blocks (instead of just coordinates), 
+conditional on the mixture
+component (subpopulation) from which they are drawn (Chauveau and Hoang 2015).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+mvnpEM(x, mu0, blockid = 1:ncol(x), samebw = TRUE, 
+       bwdefault = apply(x,2,bw.nrd0), init = NULL,
+       eps = 1e-8, maxiter = 500, verb = TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>An <i>n x r</i> matrix of data.  Each of the <i>n</i> rows is a case,
+and each case has <i>r</i> repeated measurements.  These measurements are assumed
+to be conditionally independent, conditional on the mixture component (subpopulation) 
+from which the case is drawn.</p>
+</td></tr>
+<tr valign="top"><td><code>mu0</code></td>
+<td>
+<p>Either an <i>m x r</i> matrix specifying the initial
+centers for the <a href="../../stats/html/kmeans.html">kmeans</a> function, or an integer <i>m</i> specifying the 
+number of initial centers, which are then chosen randomly in <a href="../../stats/html/kmeans.html">kmeans</a></p>
+</td></tr>
+<tr valign="top"><td><code>blockid</code></td>
+<td>
+<p>A vector of length <i>r</i> identifying coordinates 
+(columns of <code>x</code>) that are in the same block.  The default has all distinct elements, 
+indicating that the model has <i>r</i> blocks of dimension 1, in which case the model is handled 
+directly by the <code><a href="../../mixtools/help/npEM.html">npEM</a></code> algorithm.
+See example below for actual multivariate blocks example.</p>
+</td></tr>
+<tr valign="top"><td><code>samebw</code></td>
+<td>
+<p>Logical:  If <code>TRUE</code>, use the same bandwidth per coordinate for
+all iteration and all components.  If <code>FALSE</code>, 
+use a separate bandwidth for each component and coordinate, and update
+this bandwidth at each iteration of the algorithm using a suitably
+modified <code><a href="../../stats/html/bandwidth.html">bw.nrd0</a></code> method as described in 
+Benaglia et al (2011) and Chauveau and Hoang (2015).</p>
+</td></tr>
+<tr valign="top"><td><code>bwdefault</code></td>
+<td>
+<p>Bandwidth default for density estimation,a simplistic application of the 
+default <code><a href="../../stats/html/bandwidth.html">bw.nrd0</a></code> for each coordinate (column) of the data.</p>
+</td></tr> 
+<tr valign="top"><td><code>init</code></td>
+<td>
+<p>Initialization method, based on an initial <i>n x m</i>
+matrix for the posterior probabilities. If <code>NULL</code>,
+a  <code><a href="../../stats/html/kmeans.html">kmeans</a></code> clustering with <code>mu0</code> initial centers is applied to the data and the 
+initial matrix of posteriors is built from the result.</p>
+</td></tr>
+<tr valign="top"><td><code>eps</code></td>
+<td>
+<p>Tolerance limit for declaring algorithm convergence.  Convergence
+is declared whenever the maximum change in any coordinate of the 
+<code>lambda</code> vector (of mixing proportion estimates) does not exceed 
+<code>eps</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>maxiter</code></td>
+<td>
+<p>The maximum number of iterations allowed; convergence
+may be declared before <code>maxiter</code> iterations (see <code>eps</code> above).</p>
+</td></tr>
+<tr valign="top"><td><code>verb</code></td>
+<td>
+<p>Verbose mode; if TRUE, print updates for every iteration of the algorithm as
+it runs</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p><code>mvnpEM</code> returns a list of class <code>mvnpEM</code> with the following items:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>The raw data (an <i>n x r</i> matrix).</p>
+</td></tr>
+<tr valign="top"><td><code>posteriors</code></td>
+<td>
+<p>An <i>n x m</i> matrix of posterior probabilities for
+each observation (row).</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>The sequence of mixing proportions over iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>blockid</code></td>
+<td>
+<p>The <code>blockid</code> input argument. Needed by any method that produces density 
+estimates from the output, like <code><a href="../../mixtools/help/plot.mvnpEM.html">plot.mvnpEM</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>samebw</code></td>
+<td>
+<p>The <code>samebw</code> input argument. 
+Needed by any method that produces density estimates from the output, like <code><a href="../../mixtools/help/plot.mvnpEM.html">plot.mvnpEM</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>bandwidth</code></td>
+<td>
+<p>The final bandwidth matrix 
+after convergence of the algorithm.
+Its shape depends on the <code>samebw</code> input argument. If <code>samebw = TRUE</code>, a 
+vectors with the bandwidth value for each of the <code>r</code> coordinates (same for all components and iterations).
+If <code>samebw = FALSE</code>, a <i>m x r</i> matrix, where each row is associated to one component 
+and gives the <i>r</i> bandwidth values, one for each coordinate.
+Needed by any method that produces density estimates from the output, like <code><a href="../../mixtools/help/plot.mvnpEM.html">plot.mvnpEM</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>lambdahat</code></td>
+<td>
+<p>The final mixing proportions.</p>
+</td></tr>
+<tr valign="top"><td><code>loglik</code></td>
+<td>
+<p>The sequence of pseudo log-likelihood values over iterations.</p>
+</td></tr>
+</table>
+
+
+<h3>References</h3>
+
+
+<ul>
+<li><p> Benaglia, T., Chauveau, D., and Hunter, D. R. (2009), An EM-like algorithm
+for semi- and non-parametric estimation in multivariate mixtures, 
+Journal of Computational and Graphical Statistics, 18, 505-526.
+</p>
+</li>
+<li><p> Benaglia, T., Chauveau, D. and Hunter, D.R. (2011),
+Bandwidth Selection in an EM-like algorithm for nonparametric multivariate mixtures.
+Nonparametric Statistics and Mixture Models: A Festschrift in
+Honor of Thomas P. Hettmansperger. World Scientific Publishing Co., 
+pages 15-27.
+</p>
+</li>
+<li><p>  Chauveau, D., and Hoang, V. T. L. (2015),
+Nonparametric mixture models with conditionally independent multivariate component densities, 
+Preprint under revision.
+<a href="https://hal.science/hal-01094837">https://hal.science/hal-01094837</a>
+</p>
+</li></ul>
+
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../mixtools/help/plot.mvnpEM.html">plot.mvnpEM</a></code>, <code><a href="../../mixtools/help/npEM.html">npEM</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Example as in Chauveau and Hoang (2015) with 6 coordinates
+## Not run: 
+m=2; r=6; blockid &lt;-c(1,1,2,2,3,3) # 3 bivariate blocks 
+# generate some data x ...
+a &lt;- mvnpEM(x, mu0=2, blockid, samebw=F) # adaptive bandwidth
+plot(a) # this S3 method produces 6 plots of univariate marginals
+summary(a)
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mixtools</em> version 2.0.0.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

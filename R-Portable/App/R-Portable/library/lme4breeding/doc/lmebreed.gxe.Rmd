@@ -1,0 +1,444 @@
+---
+title: "Fitting genotype by environment models in lme4breeding"
+author: "Giovanny Covarrubias-Pazaran"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{GxE models in lme4breeding}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+The purpose of this vignette is to show how to fit different genotype by environment (GxE) models using the lme4breeding package:   
+
+1) Multienvironment model: Main effect model (M)
+2.1) Multienvironment model: Diagonal model (DG)
+2.2) Heterogeneous residuals
+3) Multienvironment model: Compund symmetry model (CS)
+3.2) Multienvironment model: Main + Diagonal model (M+DG)
+4) Multienvironment model: Unstructured model (US)
+5) Multienvironment model: Random regression model (RR)
+5.2) Multienvironment model: Finlay-Wilkinson regression
+6) Multienvironment model: Factor analytic (reduced rank) model (FA)
+7) Two stage analysis
+8) How to deal with massive GxE genomic models or massive number of individuals
+
+## Introduction
+
+When the breeder decides to run a trial and apply selection in a single environment (whether because the amount of seed is a limitation or there's no availability for a location) the breeder takes the risk of selecting material for a target population of environments (TPEs) using an environment that is not representative of the larger TPE. Therefore, many breeding programs try to base their selection decision on multi-environment trial (MET) data. Models could be adjusted by adding additional information like spatial information, experimental design information, etc. In this tutorial we will focus mainly on the covariance structures for GxE and the incorporation of relationship matrices for the genotype effect.
+
+## 1) MET: main effect model
+
+A multi-environment model is the one that is fitted when the breeding program can afford more than one location in order to cover the target population of environments (TPE). The main effect model assumes that GxE doesn't exist and that the main genotype effect plus the fixed effect for environment is enough to predict the genotype effect in all locations of interest.
+
+```{r setup, include=FALSE} 
+# knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+library(lme4breeding)
+```
+
+```{r}
+data(DT_example, package="enhancer")
+DT <- DT_example
+A <- A_example
+
+ansMain <- lmeb(Yield ~ Env + (1|Name),
+                        relmat = list(Name = A ),
+                         verbose = 0L, trace=0L, data=DT)
+vc <- VarCorr(ansMain); print(vc,comp=c("Variance"))
+
+```
+
+In this model, the only term to be estimated is the one for the germplasm (here called `Name`). For the sake of example we have added a relationship matrix among the levels of the random effect `Name`. This is just a diagonal matrix with as many rows and columns as levels present in the random effect `Name`, but any other non-diagonal relationship matrix could be used.
+
+## 2.1) MET: diagonal model (DG)
+
+A multi-environment model is the one that is fitted when the breeding program can afford more than one location. The diagonal model assumes that GxE exists and that the genotype variation is expressed differently at each location, therefore fitting a variance component for the genotype effect at each location. The main drawback is that this model assumes no covariance among locations, as if genotypes were independent (despite the fact that is the same genotypes). The fixed effect for environment plus the location-specific BLUP is used to predict the genotype effect in each locations of interest.
+
+```{r}
+
+ansDG <- lmeb(Yield ~ Env + (0+Env || Name),
+                      relmat = list(Name = A ),
+                       verbose = 0L, trace=0L, data=DT)
+vc <- VarCorr(ansDG); print(vc,comp=c("Variance"))
+ve <- attr(vc, "sc")^2; ve
+
+```
+
+## 2,2) Heterogeneous residuals
+
+The lme4breeding has a reserved word named 'unitsR' to call for residuals. We will show how to fit heterogeneous residuals at the level of each environment with the previous diagonal model.
+
+```{r}
+ansCSDG <- lmeb(Yield ~ Env + (0+Env || Name) + (0+Env || unitsR),
+                      relmat = list(Name = A ),
+                       verbose = 0L, trace=0L, data=DT)
+vc <- VarCorr(ansCSDG); print(vc,comp=c("Variance"))
+ve <- attr(vc, "sc")^2; ve
+```
+
+## 3) MET: compund symmetry model (CS)
+
+A multi-environment model is the one that is fitted when the breeding program can afford more than one location. The compound symmetry model assumes that GxE exists and that a main genotype variance-covariance component is expressed across all location. In addition, it assumes that a main genotype-by-environment variance is expressed across all locations. The main drawback is that the model assumes the same variance and covariance among locations. The fixed effect for environment plus the main effect for BLUP plus genotype-by-environment effect is used to predict the genotype effect in each location of interest.
+
+```{r}
+
+DT$EnvName <- paste(DT$Env, DT$Name, sep = ":")
+E <- Matrix::Diagonal(length(unique(DT$Env)));
+colnames(E) <- rownames(E) <- unique(DT$Env);E
+EA <- Matrix::kronecker(E,A, make.dimnames = TRUE)
+ansCS <- lmeb(Yield ~ Env + (1|Name) + (1|EnvName),
+                    relmat = list(Name = A, EnvName=  EA ),
+                     verbose = 0L, trace=0L, data=DT)
+vc <- VarCorr(ansCS); print(vc,comp=c("Variance"))
+ve <- attr(vc, "sc")^2; ve
+```
+
+### 3.2) MET: main + diagonal (M+DG)
+
+A multi-environment model is the one that is fitted when the breeding program can afford more than one location. The compound symmetry model assumes that GxE exists and that a main genotype variance-covariance component is expressed across all location. In addition, it assumes that a main genotype-by-environment variance is expressed across all locations. The main drawback is that the model assumes the same variance and covariance among locations. The fixed effect for environment plus the main effect for BLUP plus genotype-by-environment effect is used to predict the genotype effect in each location of interest.
+
+```{r}
+ansCSDG <- lmeb(Yield ~ Env + (Env || Name),
+                      relmat = list(Name = A ),
+                       verbose = 0L, trace=0L, data=DT)
+vc <- VarCorr(ansCSDG); print(vc,comp=c("Variance"))
+ve <- attr(vc, "sc")^2; ve
+```
+
+## 4) MET: unstructured model (US)
+
+A multi-environment model is the one that is fitted when the breeding program can afford more than one location. The unstructured model is the most flexible model assuming that GxE exists and that an environment-specific variance exists in addition to as many covariances for each environment-to-environment combinations. The main drawback is that is difficult to make this models converge because of the large number of variance components, the fact that some of these variance or covariance components are zero, and the difficulty in choosing good starting values. The fixed effect for environment plus the environment specific BLUP (adjusted by covariances) is used to predict the genotype effect in each location of interest.
+
+```{r}
+
+ansUS <- lmeb(Yield ~ Env + (0+Env | Name),
+                    relmat = list(Name = A ),
+                     verbose = 0L, trace=0L, data=DT)
+vc <- VarCorr(ansUS); print(vc,comp=c("Variance"))
+ve <- attr(vc, "sc")^2; ve
+
+```
+
+## 5) MET: random regression model
+
+A multi-environment model is the one that is fitted when the breeding program can afford more than one location. The random regression model assumes that the environment can be seen as a continuous variable and therefore a variance component for the intercept and a variance component for the slope can be fitted. The number of variance components will depend on the order of the Legendre polynomial fitted.
+
+```{r}
+
+# library(orthopolynom)
+# DT$EnvN <- as.numeric(as.factor(DT$Env))
+# # add new columns to dataset
+# Z <- with(DT, smm(leg(EnvN,1)) )
+# for(i in 1:ncol(Z)){DT[,colnames(Z)[i]] <- Z[,i]}
+# ansRR <- lmeb(Yield ~ Env + (0+leg0+leg1| Name),
+#                   relmat = list(Name = A ),
+#                   verbose = 0L, trace=0L,
+#                   data=DT)
+# vc <- VarCorr(ansRR); print(vc,comp=c("Variance"))
+# ve <- attr(vc, "sc")^2; ve
+
+```
+
+In addition, we can fit this without covariance between random slope and intercept:
+
+```{r}
+# ansRR2 <- lmeb(Yield ~ Env + (0+leg0+leg1|| Name),
+#                   relmat = list(Name = A ),
+#                   verbose = 0L, trace=0L,
+#                   data=DT)
+# vc <- VarCorr(ansRR2); print(vc,comp=c("Variance"))
+# ve <- attr(vc, "sc")^2; ve
+
+```
+
+### 5.2) Finlay-Wilkinson regression
+
+```{r}
+
+data(DT_h2, package="enhancer")
+DT <- DT_h2
+## build the environmental index
+ei <- aggregate(y~Env, data=DT,FUN=mean)
+colnames(ei)[2] <- "envIndex"
+ei$envIndex <- ei$envIndex - mean(ei$envIndex,na.rm=TRUE) # center the envIndex to have clean VCs
+ei <- ei[with(ei, order(envIndex)), ]
+## add the environmental index to the original dataset
+DT2 <- merge(DT,ei, by="Env")
+DT2 <- DT2[with(DT2, order(Name)), ]
+
+ansFW <- lmeb(y~ Env + (envIndex || Name),  verbose = 0L, trace=0L, data=DT2)
+vc <- VarCorr(ansFW); print(vc,comp=c("Variance"))
+ve <- attr(vc, "sc")^2; ve
+
+```
+
+Alternatively, you can also add the covariance between both the main effect (intercept) and the sensitivity (slope).
+
+```{r}
+
+ansFW2 <- lmeb(y~ Env + (envIndex | Name),  verbose = 0L, trace=0L, data=DT2)
+vc <- VarCorr(ansFW2); print(vc,comp=c("Variance"))
+ve <- attr(vc, "sc")^2; ve
+
+```
+
+## 6) Factor analytic (reduced rank) model
+
+When the number of environments where genotypes are evaluated is big and we want to consider the genetic covariance between environments and location-specific variance components we cannot fit an unstructured covariance in the model since the number of parameters is too big and the matrix can become non-full rank leading to singularities. In those cases is suggested a dimensionality reduction technique. Among those the factor analytic structures proposed by many research groups (Piepho, Smith, Cullis, Thompson, Meyer, etc.) are the way to go. lme4breeding has a reduced-rank factor analytic implementation available through the rrm() function. Here we show an example of how to fit the model:
+
+```{r}
+
+data(DT_h2, package="enhancer")
+DT <- DT_h2
+DT=DT[with(DT, order(Env)), ]
+head(DT)
+indNames <- na.omit(unique(DT$Name))
+A <- diag(length(indNames))
+rownames(A) <- colnames(A) <- indNames
+
+# fit diagonal model first to produce a two-way table of genotype by env BLUPs
+Z <- with(DT, smm(Env))
+diagFormula <- paste0( "y ~ Env + (0+", paste(colnames(Z), collapse = "+"), "|| Name)")
+for(i in 1:ncol(Z)){DT[,colnames(Z)[i]] <- Z[,i]}
+ans1a <- lmeb(as.formula(diagFormula),
+                  relmat = list(Name = A ),
+                  verbose = 0L, trace=0L, 
+                  data=DT)
+vc <- VarCorr(ans1a); 
+H0 <- ranef(ans1a)$Name # GxE table
+
+# Use the GxE table to obtain loadings and build loadings columns in dataset
+nPC=3
+Z <- with(DT,  rrm(Env, H = H0, nPC = nPC) ) 
+for(i in 1:ncol(Z)){DT[,colnames(Z)[i]] <- Z[,i]}
+# fit the FA model (rr + diag) to calculate factor scores
+ansFA <- lmeb(y ~ Env + (0+PC1+PC2+PC3|Name) + (0+Env|| Name),
+                  relmat = list(Name = A ),
+                  verbose = 0L, trace=0L, data=DT)
+
+u <- ranef(ansFA)$Name # all BLUPs
+scores <- as.matrix(u[,1:nPC])  # extract factor scores
+loadings=with(DT, rrm(Env, nPC = nPC, H = H0, # lodings (latent covars)
+                      returnGamma = TRUE) )$Gamma
+
+vc <- VarCorr(ansFA); print(vc,comp=c("Variance")) # extract all varcomps
+vcFA <- vc[[1]] # G of PCs only
+vcDG <- diag( unlist(lapply(vc[2:16], function(x){x[[1]]})) ) # G of diag model
+vcUS <- loadings %*% vcFA %*% t(loadings) # G of unstructured model
+G <- vcUS + vcDG # total G as the sum of both Gs
+colfunc <- colorRampPalette(c("steelblue4","springgreen","yellow"))
+hv <- heatmap(cov2cor(G), col = colfunc(100), symm = TRUE)
+
+uFA <- scores %*% t(loadings) # recover UNS effects
+uDG <- as.matrix(u[,(nPC+1):ncol(u)]) # recover DIAG effects 
+u <- uFA + uDG # total effects
+
+```
+
+As can be seen genotype BLUPs for all environments can be recovered by multiplying the loadings (Gamma) by the factor scores. This is a parsomonious way to model an unstructured covariance. As an additional information, notice that we calculate the factor loadings from BLUPs and the mixed model only calculates the factor scores. This is different to the asreml software where loadings are calculated as variance components through REML. Despite the difference we have run multiple examples and simulations and the BLUPs from both approaches are on average >0.98 correlated so you can be confident that our approach is robust. 
+
+## 7) Two stage analysis
+
+It is common then to fit a first model that accounts for the variation of random design elements, e.g., locations, years, blocks, and fixed genotype effects to obtain the estimated marginal means (EMMs) or best linear unbiased estimators (BLUEs) as adjusted entry means. These adjusted entry means are then used as the phenotype or response variable in GWAS and genomic prediction studies.
+
+```{r}
+
+##########
+## stage 1
+##########
+data(DT_h2, package="enhancer")
+DT <- DT_h2
+head(DT)
+envs <- unique(DT$Env)
+vals <- list()
+for(i in 1:length(envs)){
+  ans1 <- lmeb(y~Name + (1|Block), trace = 0L, verbose = 0L,
+                   data= droplevels(DT[which(DT$Env == envs[i]),]) )
+  b <- fixef(ans1) 
+  b[2:length(b)] <- b[2:length(b)] + b[1]
+  ids <- colnames(model.matrix(~Name-1, data=droplevels(DT[which(DT$Env == envs[i]),]) ))
+  ids <- gsub("Name","",ids)
+  vals[[i]] <- data.frame(Estimate=b , stdError= diag( vcov(ans1)), Effect= ids, Env= envs[i])
+}
+DT2 <- do.call(rbind, vals)
+
+##########
+## stage 2
+##########
+DT2$w <- 1/DT2$stdError
+ans2 <- lmeb(Estimate~Env + (1|Effect) + (1|Env:Effect), weights = w,
+                 data=DT2,  verbose = 0L, trace=0L
+                 )
+vc <- VarCorr(ans2); print(vc,comp=c("Variance"))
+ve <- attr(vc, "sc")^2; ve
+
+```
+
+
+## 8) How to deal with massive GxE models or a massive number of individuals
+
+Up to now, the problem of dealing with a massive number of environments and genotyped
+individuals is a headeache for everyone. In this section i just aim to give you some ideas
+of what you could do to fit massive models with limited trade-off in accuracy.
+
+The lme4breeding package includes the argument 'rotation' to implement the proposed
+eigen decomposition of the genomic relationship matrix and be able to fit a fully sparse
+mixed model (Lee and Van der Werf, 2006). This trick can be used in any software that can
+take the relationship matrix. The main inconvenience is that the current mathematical 
+derivation only allows for a single random effect and this needs to be balanced and
+complete (no missing data). Still extremely powerful:
+
+```{r}
+
+# load data (phenotypes and genotypes)
+data(DT_big, package="enhancer")
+DT = DT_big
+M = apply(M_big,2,as.numeric) # change from bits to numeric
+rownames(M) <- rownames(M_big)
+DT[,"envf_repf"] = paste(DT[,"envf"],DT[,"repf"],sep="_")
+DT <- DT[with(DT, order(envf_repf, id)), ]
+
+# we will make up missing data
+indsNa <- sample(unique(DT$id), 200)
+nas <- which(DT$id %in% indsNa) # sample(1:nrow(DT), round(nrow(DT)*.25))
+DT$value[nas]=NA
+DT$value <- imputev(DT$value, by=DT$envf_repf)
+DT$nas <- 0; DT$nas[nas]=1
+
+# compute the relationship matrix
+MMT <- tcrossprod(M)
+m <- sum(diag(MMT))/nrow(MMT)
+MMT <- MMT/m
+MMT <- MMT + diag(1e-05, ncol(MMT), ncol(MMT))
+
+## Fit the main effect model
+lmod <- lmeb(formula=value~(1|id), data = DT, 
+                  relmat = list(id = MMT), 
+                  verbose = 0L, trace=0L, rotation=TRUE
+)
+
+# extract GEBVs
+ran0 <- ranef(lmod, condVar=FALSE)
+xx=as.data.frame(as.matrix(ran0$id) %*% matrix(rep(1,50), nrow=1) )
+xx$id <- rownames(xx)
+
+# Compare against
+xxl <- reshape(xx, idvar = "id", varying = list(1:(ncol(xx)-1)),
+               v.names = "gebv", direction = "long", timevar = "envf_repf",
+               times = unique(DT$envf_repf) )
+DTc <- merge(DT, xxl, by=c("id","envf_repf"), all.x = TRUE)
+# with(DTc[which(DTc$nas ==1),], plot(gebv,gv))
+with(DTc[which(DTc$nas ==1),], cor(gebv,gv)) # accuracy is 0.39 
+
+
+```
+ 
+Next, we have to deal with a big number of environments (in the order of hundreds). This requires a massive amount of computational time when the genomic relationship matrix needs to be included. My proposal (please cite this vignette if you use it since I am not planning to publish it), is:
+
+1) Define the unit of environment to balance (e.g., environment by replicate)
+2) Make your dataset fully balanced for the environment unit using the 'balanceData' function (each individual should show up everywhere)
+3) Impute with the mean value of each environment the missing-data cells (e.g., using the imputev function)
+4) Perform the eigen decomposition of the relationship matrix as define at the beginning of this section using the rotation argument.
+4) Run a GxE diagonal model with the argument rotation=TRUE
+5) Use the results to run more complex models like heterogeneous residual variance or a reduced rank GxE model (e.g., 3 factors) as specified in the section 6 of this vignette.
+
+My simulations show that this model is extremely accurate to predict the environment-specific breeding values along with the across-environment breeding values. The computation time is extremely low and the accuracy is comparable to the classical model which would take hundreds of times more computation to get similar results
+
+```{r}
+## Fit the diagonal model
+lmod <- lmeb(formula=value~(0+envf_repf||id), data = DT, 
+                 relmat = list(id = MMT), nIters = 1000,
+                 verbose = 0L, trace=0L, rotation=TRUE
+)
+
+# Extract GEBVs
+ran0 <- ranef(lmod, condVar=FALSE)
+xx=as.data.frame(ran0$id)# u=H0
+xx$id <- rownames(xx)
+
+# Compare against
+xxl <- reshape(xx, idvar = "id", varying = list(1:(ncol(xx)-1)),
+               v.names = "gebv", direction = "long", timevar = "envf_repf",
+               times = colnames(xx)[1:(ncol(xx)-1)])
+DTc <- merge(DT, xxl, by=c("id","envf_repf"), all.x = TRUE)
+# with(DTc[which(DTc$nas ==1),], plot(gebv,gv))
+with(DTc[which(DTc$nas ==1),], cor(gebv,gv)) # accuracy is ~0.62
+
+```
+
+Additionally, you could fit a different residual variance at each environments by creating the record number variable as a factor. Among the several ways you could do that here is one:
+
+```{r}
+
+# lmodRes <- lmeb(formula=value~(0+envf_repf||id) + (0+envf_repf||unitsR), data = DT,
+#                  relmat = list(id = MMT), nIters=1000,
+#                  verbose = 0L, trace=0L, rotation=TRUE
+# )
+# 
+# # Extract GEBVs
+# ran0 <- ranef(lmodRes, condVar=FALSE)
+# xx=as.data.frame(ran0$id)# u=H0
+# xx$id <- rownames(xx)
+# 
+# # Compare against
+# xxl <- reshape(xx, idvar = "id", varying = list(1:(ncol(xx)-1)),
+#                v.names = "gebv", direction = "long", timevar = "envf_repf",
+#                times = colnames(xx)[1:(ncol(xx)-1)])
+# DTc <- merge(DT, xxl, by=c("id","envf_repf"), all.x = TRUE)
+# with(DTc[which(DTc$nas ==1),], plot(gebv,gv))
+# with(DTc[which(DTc$nas ==1),], cor(gebv,gv)) # accuracy is ~0.62
+
+```
+
+Last but not least, you can use the results from the diagonal model to fit a reduced rank model:
+
+```{r}
+# # get latent covariates and add them to the dataset
+# Gammas <- with(DT,  rrm(envf_repf, H = ran0$id, nPC = 3, returnGamma = TRUE))
+# Zrr <- Gammas$Zstar
+# for(i in 1:ncol(Zrr)){DT[,colnames(Zrr)[i]] <- Zrr[,i]}
+# # fit the model
+# ansRR <- lmeb(value~(0+PC1+PC2+PC3|id) + (0+envf_repf||id), data = DT, 
+#                  relmat = list(id = MMT), nIters = 1000,
+#                  verbose = 0L, trace=0L, rotation=TRUE
+# )
+# vc <- VarCorr(ansRR); print(vc,comp=c("Variance"))
+# ve <- attr(vc, "sc")^2; ve
+# 
+# loadings=Gammas$Gamma
+# Gint <- loadings %*% vc$id %*% t(loadings)
+# Gspec <- diag( unlist(lapply(vc[2:(length(vc))], function(x){x[[1]]})) )
+# G <- Gint + Gspec
+# u <- ranef(ansRR, condVar=FALSE)$id
+# uInter <- as.matrix(u[,1:3]) %*% t(as.matrix(loadings))
+# uSpec <- as.matrix(u[,-c(1:3)])
+# u <- uSpec + uInter
+# 
+# xx=as.data.frame(u)# u=H0
+# xx$id <- rownames(xx)
+# xxl <- reshape(xx, idvar = "id", varying = list(1:(ncol(xx)-1)),
+#                v.names = "gebv", direction = "long", timevar = "envf_repf",
+#                times = colnames(xx)[1:(ncol(xx)-1)])
+# DTc <- merge(DT, xxl, by=c("id","envf_repf"), all.x = TRUE)
+# with(DTc[which(DTc$nas ==1),], plot(gebv,gv))
+# with(DTc[which(DTc$nas ==1),], cor(gebv,gv)) # accuracy is 0.62
+
+```
+
+For the sake of time we are not running the last two models. Also because the heterogeneous residual model and reduced rank models do not increase the accuracy in this particular example since the simulated data didn't take additional noise factors into account.
+
+Notice that we have fitted a multi-environmental model with 1K individuals in 25 environments, with 2 replicates in each environment with a genomic relationship matrix in a few seconds. It hardly gets any better than this.
+
+## Literature
+
+Giovanny Covarrubias-Pazaran (2024).  lme4breeding: enabling genetic evaluation in the age of genomic data. To be submitted.
+
+Bates Douglas, Maechler Martin, Bolker Ben, Walker Steve. 2015. Fitting Linear Mixed-Effects Models Using lme4. Journal of Statistical Software, 67(1), 1-48.
+
+Bernardo Rex. 2010. Breeding for quantitative traits in plants. Second edition. Stemma Press. 390 pp.
+
+Henderson C.R. 1975. Best Linear Unbiased Estimation and Prediction under a Selection Model. Biometrics vol. 31(2):423-447.
+
+Searle. 1993. Applying the EM algorithm to calculating ML and REML estimates of variance components. Paper invited for the 1993 American Statistical Association Meeting, San Francisco.
+
+Welham, S., Cullis, B., Gogel, B., Gilmour, A., and Thompson, R. (2004). Prediction in linear mixed models. Australian and New Zealand Journal of Statistics, 46, 325 - 347.

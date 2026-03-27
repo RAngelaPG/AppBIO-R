@@ -1,0 +1,108 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Bootstrap confidence intervals for flexsurv output functions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for bootci.fmsm {flexsurv}"><tr><td>bootci.fmsm {flexsurv}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Bootstrap confidence intervals for flexsurv output functions</h2>
+
+<h3>Description</h3>
+
+<p>Calculate a confidence interval for a model output by repeatedly replacing the parameters in a fitted model object with a draw from the multivariate normal distribution of the maximum likelihood estimates, then recalculating the output function.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+bootci.fmsm(
+  x,
+  B,
+  fn,
+  cl = 0.95,
+  attrs = NULL,
+  cores = NULL,
+  sample = FALSE,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>Output from <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code> or
+<code><a href="../../flexsurv/help/flexsurvspline.html">flexsurvspline</a></code>, representing a fitted survival model object.  Or a list of such objects, defining a multi-state model.</p>
+</td></tr>
+<tr valign="top"><td><code>B</code></td>
+<td>
+<p>Number of parameter draws to use</p>
+</td></tr>
+<tr valign="top"><td><code>fn</code></td>
+<td>
+<p>Function to bootstrap the results of.  It must have an argument named <code>x</code> giving a fitted flexsurv model object.  This may return a value with any format, e.g. list, matrix or vector, as long as it can be converted to a numeric vector with <code>unlist</code>.   See the example below.</p>
+</td></tr>
+<tr valign="top"><td><code>cl</code></td>
+<td>
+<p>Width of symmetric confidence interval, by default 0.95</p>
+</td></tr>
+<tr valign="top"><td><code>attrs</code></td>
+<td>
+<p>Any attributes of the value returned from <code>fn</code> which we want confidence intervals for.  These will be unlisted, if possible, and appended to the result vector.</p>
+</td></tr>
+<tr valign="top"><td><code>cores</code></td>
+<td>
+<p>Number of cores to use for parallel processing.</p>
+</td></tr>
+<tr valign="top"><td><code>sample</code></td>
+<td>
+<p>If <code>TRUE</code> then the bootstrap sample itself is returned.  If <code>FALSE</code> then the quantiles of the sample are returned giving a confidence interval.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Additional arguments to pass to <code>fn</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A matrix with two rows, giving the upper and lower confidence limits respectively.  Each row is a vector of the same length as the unlisted result of the function corresponding to <code>fncall</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## How to use bootci.fmsm
+
+## Write a function with one argument called x giving a fitted model,
+## and returning some results of the model.  The results may be in any form.   
+
+tmat &lt;- rbind(c(NA,1,2),c(NA,NA,3),c(NA,NA,NA))
+bexp &lt;- flexsurvreg(Surv(Tstart, Tstop, status) ~ trans, data=bosms3, dist="exp")
+
+summfn &lt;- function(x, t){
+ resp &lt;-  flexsurv::pmatrix.fs(x, trans=tmat, t=t)
+ rest &lt;- flexsurv::totlos.fs(x, trans=tmat, t=t)
+ list(resp, rest)
+}
+
+## Use bootci.fmsm to obtain the confidence interval
+## The matrix columns are in the order of the unlisted results of the original
+## summfn.  You will have to rearrange them into the format that you want.
+## If summfn has any extra arguments, in this case \code{t}, make sure they are
+## passed through via the ... argument to bootci.fmsm
+
+bootci.fmsm(bexp, B=3, fn=summfn, t=10)
+bootci.fmsm(bexp, B=3, fn=summfn, t=5)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>flexsurv</em> version 2.3.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

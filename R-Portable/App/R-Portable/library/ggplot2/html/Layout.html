@@ -1,0 +1,351 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Layout</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for Layout {ggplot2}"><tr><td>Layout {ggplot2}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Layout</h2>
+
+<h3>Description</h3>
+
+<p>The Layout class is a chaperone class discouraged for extension. The class
+fulfils the following tasks. The class houses the Coord and Facet classes
+and tracks their stateful parameters. In addition, it manages the position
+scales for each panel. It is responsible for keeping track of panel
+specifications and matching pieces of the data to scales and parameters in
+panel-wise manners.
+</p>
+
+
+<h3>Details</h3>
+
+<p>The Layout class is only exported for extensions that re-implement a
+<code>ggplot_build()</code> method for their specific class of plots. It is discouraged
+to subclass the Layout class and for all purposes be considered an internal
+structure. It has no user-facing constructor to put an small barrier in the
+way.
+</p>
+<p>The class is used throughout <code>ggplot_build()</code>, with the notable exception of
+the <code>render()</code> method, which is used in <code>ggplot_gtable()</code> instead.
+</p>
+
+
+<h3>Fields</h3>
+
+
+<dl>
+<dt><code>coord,coord_params</code></dt><dd><p>A <code><a href="../../ggplot2/help/Coord.html">&lt;Coord&gt;</a></code> ggproto object and a list
+of the coordinate system's parameters. Parameters get populated by the
+<code>Coord$setup_params()</code> method.</p>
+</dd>
+<dt><code>facet,facet_params</code></dt><dd><p>A <code><a href="../../ggplot2/help/Facet.html">&lt;Facet&gt;</a></code> ggproto object and a list
+of the faceting specification's parameters. Parameters get populated by
+the <code>Facet$setup_params()</code> method.</p>
+</dd>
+<dt><code>layout</code></dt><dd><p>A data frame with a row for each panel. The data frame
+contains integer columns <code>PANEL</code>, <code>SCALE_X</code>, <code>SCALE_Y</code>, <code>ROW</code> and <code>COL</code>
+representing a panel ID, scale indices and placement locations. In addition,
+the layout may contain faceting variables or other additional information.
+This field gets populated by the <code>Facet$compute_layout()</code> method.</p>
+</dd>
+<dt><code>panel_scales_x,panel_scales_y</code></dt><dd><p>A list of <code>x</code> and <code>y</code> position scales
+parallel to the layout field's <code>SCALE_X</code> and <code>SCALE_Y</code> levels respectively.
+This fields gets populated by the <code>Facet$init_scales()</code> method.</p>
+</dd>
+<dt><code>panel_params</code></dt><dd><p>A named list of parameters per panel populated by the
+<code>Coord$setup_panel_params()</code> method. Contains <code style="white-space: pre;">&lt;ViewScale&gt;</code> entries for
+the <code>x</code> and <code>y</code> variables in addition to ranges and other information the
+coordinate system might need to transform or render guides and grids.</p>
+</dd>
+<dt><code>setup</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for setting up the relevant information for the layout
+of the plot. It populates the <code>facet_params</code>, <code>coord_params</code> and <code>layout</code>
+fields and appends a <code>PANEL</code> variable to the layer data.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Layout$setup(data, plot_data, plot_env)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A list of data frames with layer data.</p>
+</dd>
+<dt><code>plot_data</code></dt><dd><p>The data frame in the <code>data</code> field of the ggplot
+object.</p>
+</dd>
+<dt><code>plot_env</code></dt><dd><p>The environment in the <code>plot_env</code> field of the
+ggplot object.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A list of data frames from the <code>data</code> argument with a <code>PANEL</code> variable
+corresponding to rows in the <code>layout</code> field.
+Also called for the side effects of populating fields.</p>
+</dd>
+<dt><code>train_position</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for training position scales and optionally initiating
+them. Implementation is via the <code>Facet$train_scales()</code> and
+<code>Facet$init_scales()</code> methods.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Layout$train_position(data, x_scale, y_scale)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A list of data frames with layer data.</p>
+</dd>
+<dt><code>x_scale</code>,<code>y_scale</code></dt><dd><p>A single prototype position scale for the <code>x</code>
+and <code>y</code> aesthetics respectively.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>Nothing, this method is called for the side effect of training scales and
+optionally populating the <code>panel_scales_x</code> and <code>panel_scales_y</code> fields.</p>
+</dd>
+<dt><code>map_position</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for mapping position aesthetics. For discrete scales this
+converts discrete levels to a numeric representation, usually integers. For
+continuous scales, this applies out-of-bounds handling.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Layout$map_position(data)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A list of data frames with layer data.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A list of data frames per the <code>data</code> argument with mapped position
+aesthetics.</p>
+</dd>
+<dt><code>reset_scales</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for resetting scale ranges. After computing stats and
+position adjustments, scales need to be reset and re-trained to have an
+accurate measure of the data limits. This goes through the
+<code>panel_scales_x</code> and <code>panel_scales_y</code> fields and invokes the
+<code>Scale$reset()</code> method.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Layout$reset_scales()
+</pre></div>
+<p><strong>Value</strong>
+</p>
+<p>Nothing, it is called for the side-effect of resetting scale ranges.</p>
+</dd>
+<dt><code>setup_panel_params</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for executing <code>Coord$setup_panel_params()</code> once per panel
+with the appropriate scales. For efficiency reasons, the setup is invoked
+once per unique combination of <code>x</code> and <code>y</code> scale.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Layout$setup_panel_params()
+</pre></div>
+<p><strong>Value</strong>
+</p>
+<p>Nothing, it is called for the side effect of populating the <code>panel_params</code>
+field.</p>
+</dd>
+<dt><code>setup_panel_guides</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for setting up and training the position guides (axes)
+once per panel with the appropriate scales. For efficiency reasons,
+the guides are setup once per unique  combination of <code>x</code> and <code>y</code> scale.
+It calls the <code>Coord$setup_panel_guides()</code> and <code>Coord$train_panel_guides()</code>
+methods.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Layout$setup_panel_guides(guides, layers)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>guides</code></dt><dd><p>A <code style="white-space: pre;">&lt;Guides&gt;</code> ggproto object from the <code>guides</code> field of
+the ggplot object.</p>
+</dd>
+<dt><code>layers</code></dt><dd><p>A list of layers from the <code>layers</code> field of the ggplot
+object.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>Nothing, it is called for the side effect of augmenting each entry of the
+<code>panel_params</code> field with position guides.</p>
+</dd>
+<dt><code>setup_panel_guides</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for setting up the <code>Facet$finish_data()</code> hook.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Layout$finish_data(data)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A list of data frames with layer data.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A list of data frames with layer data.</p>
+</dd>
+<dt><code>render</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for drawing and assembling the core plot. Mostly it
+delegates tasks to the specific Facet methods for drawing components.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Layout$render(panels, data, theme, labels)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>panels</code></dt><dd><p>A list parallel to layers. Each element is another list
+with grobs for each panel, generated by <code>Layer$draw_geom()</code>.</p>
+</dd>
+<dt><code>data</code></dt><dd><p>A list of data frames with layer data.</p>
+</dd>
+<dt><code>theme</code></dt><dd><p>A <a href="../../ggplot2/help/complete_theme.html">complete theme</a>.</p>
+</dd>
+<dt><code>labels</code></dt><dd><p>A list of labels from the <code>labels</code> field of the ggplot
+object.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A gtable containing a plot with panels, axes, axis titles and strips.</p>
+</dd>
+<dt><code>resolve_label</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for prying the axis titles from guides, scales or plot
+labels.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Layout$resolve_label(scale, labels)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>scale</code></dt><dd><p>A single scale from the <code>panel_scales_x</code> or
+<code>panel_scales_y</code> fields.</p>
+</dd>
+<dt><code>labels</code></dt><dd><p>A list of labels from the <code>labels</code> field of the ggplot
+object.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A named list containing a two titles named <code>"primary"</code> and <code>"secondary"</code>.</p>
+</dd>
+<dt><code>render_labels</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for drawing axis title grobs. The position guides
+themselves do not typically render the axis title grobs as they are
+orchestrated by the layout to draw one title even for multiple axes.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Layout$render_labels(labels, theme)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>labels</code></dt><dd><p>A named list containing an <code>x</code> list and a <code>y</code> list. The
+<code>x</code> and <code>y</code> lists have <code>primary</code> and <code>secondary</code> labels. It originates
+from the <code>Coord$labels()</code> method.</p>
+</dd>
+<dt><code>theme</code></dt><dd><p>A <a href="../../ggplot2/help/complete_theme.html">complete theme</a>.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A list with the same structure and names as the <code>labels</code> argument, but with
+grobs instead of text.</p>
+</dd>
+<dt><code>get_scales</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for retrieving panel specific scales. It is called in
+the <code>Stat$compute_layer()</code> and <code>Position$compute_layer()</code> methods. The
+<code>Geom</code> uses the <code>panel_params</code> field instead of the raw scales.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Layout$get_scales(i)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>i</code></dt><dd><p>A scalar integer panel index giving the panel for which to
+retrieve scales</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A named list of scales giving the <code>x</code> and <code>y</code> scale for the panel.</p>
+</dd>
+</dl>
+
+
+<h3>See Also</h3>
+
+<p>Other Layout components: 
+<code><a href="../../ggplot2/help/Coord.html">Coord</a></code>,
+<code><a href="../../ggplot2/help/Facet.html">Facet</a></code>
+</p>
+<p>Other chaperone classes: 
+<code><a href="../../ggplot2/help/Layer-class.html">Layer-class</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Some dummy layout components
+facet &lt;- facet_null()
+coord &lt;- coord_cartesian()
+
+# Use in custom `ggplot_build()` methods
+layout &lt;- ggproto(NULL, Layout, facet = facet, coord = coord)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ggplot2</em> version 4.0.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

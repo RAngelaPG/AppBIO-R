@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Koen Hufkens" />
+
+<meta name="date" content="2023-01-19" />
+
+<title>CDS workflow functionality</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+
+
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">CDS workflow functionality</h1>
+<h4 class="author">Koen Hufkens</h4>
+<h4 class="date">2023-01-19</h4>
+
+
+
+<div id="running-workflows-on-copernicus-climate-data-store" class="section level2">
+<h2>Running workflows on Copernicus’ Climate Data Store</h2>
+<p><a href="https://www.copernicus.eu/en">Copernicus.eu</a> provides a
+set of interesting data sets for research, education, and applied earth
+sciences on their <a href="https://cds.climate.copernicus.eu">Climate
+Data Store</a> (CDS). However, in many cases through the conventional
+API you can only download the raw data at their native temporal
+resolution.</p>
+<p>Many people however don’t require hourly or 6-hourly data for their
+research purposes. Using the standard API therefore results in queries
+of large amount of data which then need to be temporally down-sampled to
+get, for example, daily mean temperature values.</p>
+<p>Many of these issues can be side stepped by using the <a href="https://cds.climate.copernicus.eu/toolbox/doc/api.html">CDS
+Toolbox workflows</a>. These allow you to execute <code>python</code>
+code on CDS servers, as provided through an R script.</p>
+</div>
+<div id="the-workflow-syntax" class="section level2">
+<h2>The Workflow syntax</h2>
+<p>Below we’ll use a CDS Toolbox python script to extract a time series
+for a variable at a given (point) location. This is a common operation
+for people working with point (site/location) data.</p>
+<p>On the CDS website the example script
+<code>03 Extract time series and plot graph</code> in the toolbox editor
+allows you to extract a daily mean time series for a given (defined)
+variable and a given location. The code below is normally used within
+the context of the CDS Toolbox Editor platform. However, we can reuse
+the same code within the context of a <code>ecmwfr</code> workflow
+request.</p>
+<p>The code below lists all available variables to consider in
+combination with an API call defining the data ranges available (both
+spatial and temporal). This example is limited to the years 2008 - 2017
+and 6-hourly time steps (although more data is available).</p>
+<p>We will make one minor change to the original script which is
+critical for the success of our workflow. Instead of returning a figure,
+we will want to return the data on which the figure is based. We
+therefore changed the last line of the original file to
+<code>return data_daily</code>. We also set the output format from a
+live figure to a download. We can then save this script as a normal
+python script in any editor. For this example the data was saved into a
+file called <code>era5.py</code></p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> cdstoolbox <span class="im">as</span> ct</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>layout <span class="op">=</span> {</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;input_ncols&#39;</span>: <span class="dv">3</span>,</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>variables <span class="op">=</span> {</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;Near-Surface Air Temperature&#39;</span>: <span class="st">&#39;2m_temperature&#39;</span>,</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;Eastward Near-Surface Wind&#39;</span>: <span class="st">&#39;10m_u_component_of_wind&#39;</span>,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;Northward Near-Surface Wind&#39;</span>: <span class="st">&#39;10m_v_component_of_wind&#39;</span>,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;Sea Level Pressure&#39;</span>: <span class="st">&#39;mean_sea_level_pressure&#39;</span>,</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;Sea Surface Temperature&#39;</span>: <span class="st">&#39;sea_surface_temperature&#39;</span>,</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="at">@ct.application</span>(title<span class="op">=</span><span class="st">&#39;Extract a time series and plot graph&#39;</span>, layout<span class="op">=</span>layout)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="at">@ct.input.dropdown</span>(<span class="st">&#39;var&#39;</span>, label<span class="op">=</span><span class="st">&#39;Variable&#39;</span>, values<span class="op">=</span>variables.keys(), description<span class="op">=</span><span class="st">&#39;Sample variables&#39;</span>)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="at">@ct.input.text</span>(<span class="st">&#39;lon&#39;</span>, label<span class="op">=</span><span class="st">&#39;Longitude&#39;</span>, <span class="bu">type</span><span class="op">=</span><span class="bu">float</span>, default<span class="op">=</span><span class="fl">75.</span>, description<span class="op">=</span><span class="st">&#39;Decimal degrees&#39;</span>)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="at">@ct.input.text</span>(<span class="st">&#39;lat&#39;</span>, label<span class="op">=</span><span class="st">&#39;Latitude&#39;</span>, <span class="bu">type</span><span class="op">=</span><span class="bu">float</span>, default<span class="op">=</span><span class="fl">43.</span>, description<span class="op">=</span><span class="st">&#39;Decimal degrees&#39;</span>)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="co"># @ct.output.livefigure() # Disable live figure!</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="at">@ct.output.download</span>() <span class="co"># Enable a plain download</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> plot_time_series(var, lon, lat):</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="co">    Application main steps:</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="co">    - set the application layout with 3 columns for the input and output at the bottom</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="co">    - retrieve a variable over a defined time range</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="co">    - select a location, defined by longitude and latitude coordinates</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="co">    - compute the daily average</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="co">    - show the result as a timeseries on an interactive chart</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="co">    &quot;&quot;&quot;</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Time range</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>    data <span class="op">=</span> ct.catalogue.retrieve(</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>        <span class="st">&#39;reanalysis-era5-single-levels&#39;</span>,</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>        {</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>            <span class="st">&#39;variable&#39;</span>: variables[var],</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>            <span class="st">&#39;grid&#39;</span>: [<span class="st">&#39;3&#39;</span>, <span class="st">&#39;3&#39;</span>],</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>            <span class="st">&#39;product_type&#39;</span>: <span class="st">&#39;reanalysis&#39;</span>,</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>            <span class="st">&#39;year&#39;</span>: [</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>                <span class="st">&#39;2008&#39;</span>, <span class="st">&#39;2009&#39;</span>, <span class="st">&#39;2010&#39;</span>,</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>                <span class="st">&#39;2011&#39;</span>, <span class="st">&#39;2012&#39;</span>, <span class="st">&#39;2013&#39;</span>,</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>                <span class="st">&#39;2014&#39;</span>, <span class="st">&#39;2015&#39;</span>, <span class="st">&#39;2016&#39;</span>,</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>                <span class="st">&#39;2017&#39;</span></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>            ],</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>            <span class="st">&#39;month&#39;</span>: [</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>                <span class="st">&#39;01&#39;</span>, <span class="st">&#39;02&#39;</span>, <span class="st">&#39;03&#39;</span>, <span class="st">&#39;04&#39;</span>, <span class="st">&#39;05&#39;</span>, <span class="st">&#39;06&#39;</span>,</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>                <span class="st">&#39;07&#39;</span>, <span class="st">&#39;08&#39;</span>, <span class="st">&#39;09&#39;</span>, <span class="st">&#39;10&#39;</span>, <span class="st">&#39;11&#39;</span>, <span class="st">&#39;12&#39;</span></span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>            ],</span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>            <span class="st">&#39;day&#39;</span>: [</span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>                <span class="st">&#39;01&#39;</span>, <span class="st">&#39;02&#39;</span>, <span class="st">&#39;03&#39;</span>, <span class="st">&#39;04&#39;</span>, <span class="st">&#39;05&#39;</span>, <span class="st">&#39;06&#39;</span>,</span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>                <span class="st">&#39;07&#39;</span>, <span class="st">&#39;08&#39;</span>, <span class="st">&#39;09&#39;</span>, <span class="st">&#39;10&#39;</span>, <span class="st">&#39;11&#39;</span>, <span class="st">&#39;12&#39;</span>,</span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>                <span class="st">&#39;13&#39;</span>, <span class="st">&#39;14&#39;</span>, <span class="st">&#39;15&#39;</span>, <span class="st">&#39;16&#39;</span>, <span class="st">&#39;17&#39;</span>, <span class="st">&#39;18&#39;</span>,</span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>                <span class="st">&#39;19&#39;</span>, <span class="st">&#39;20&#39;</span>, <span class="st">&#39;21&#39;</span>, <span class="st">&#39;22&#39;</span>, <span class="st">&#39;23&#39;</span>, <span class="st">&#39;24&#39;</span>,</span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>                <span class="st">&#39;25&#39;</span>, <span class="st">&#39;26&#39;</span>, <span class="st">&#39;27&#39;</span>, <span class="st">&#39;28&#39;</span>, <span class="st">&#39;29&#39;</span>, <span class="st">&#39;30&#39;</span>,</span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>                <span class="st">&#39;31&#39;</span></span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>            ],</span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>            <span class="st">&#39;time&#39;</span>: [<span class="st">&#39;00:00&#39;</span>, <span class="st">&#39;06:00&#39;</span>, <span class="st">&#39;12:00&#39;</span>, <span class="st">&#39;18:00&#39;</span>],</span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Location selection</span></span>
+<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Extract the closest point to selected lon/lat (no interpolation).</span></span>
+<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a>    <span class="co"># If wrong number is set for latitude, the closest available one is chosen:</span></span>
+<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a>    <span class="co"># e.g. if lat = 4000 -&gt; lat = 90.</span></span>
+<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a>    <span class="co"># If wrong number is set for longitude, first a wrap in [-180, 180] is made,</span></span>
+<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a>    <span class="co"># then the closest one present is chosen:</span></span>
+<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a>    <span class="co"># e.g. if lon = 200 -&gt; lon = -160.</span></span>
+<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a>    data_sel <span class="op">=</span> ct.geo.extract_point(data, lon<span class="op">=</span>lon, lat<span class="op">=</span>lat)</span>
+<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Daily mean on selection</span></span>
+<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a>    data_daily <span class="op">=</span> ct.climate.daily_mean(data_sel)</span>
+<span id="cb1-75"><a href="#cb1-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-76"><a href="#cb1-76" aria-hidden="true" tabindex="-1"></a>    fig <span class="op">=</span> ct.chart.line(data_daily)</span>
+<span id="cb1-77"><a href="#cb1-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-78"><a href="#cb1-78" aria-hidden="true" tabindex="-1"></a>    <span class="co">#return fig</span></span>
+<span id="cb1-79"><a href="#cb1-79" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> data_daily</span></code></pre></div>
+<p>With the script adjusted and saved we can now use it in our
+<code>ecmwfr</code> workflow run as follows.</p>
+<p>First we read in the python script as a long string into R. Use
+<code>readlines()</code> and collapse the various lines using the
+appropriate <code>\n</code> separator.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">readLines</span>(<span class="st">&quot;era5.py&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">paste0</span>(<span class="at">collapse =</span> <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code></pre></div>
+<p>We then have to formulate a query which sets the right variables in
+the python script, mainly the parameters <code>var</code>,
+<code>lat</code> and <code>lon</code>. The request is a nested list with
+a <code>code</code> argument, containing the code you want to run, a
+<code>kwargs</code> variable containing a named list of variables to
+forward to the code, a <code>workflow_name</code> defining the python
+application you want to call (in this case
+<code>plot_time_series</code>, and a <code>target</code> output variable
+name setting the filename of the resulting output.</p>
+<p>With a correct query specified we can now run this workflow request
+using a normal <code>wf_request()</code> call, which will run the code
+on the CDS server and return the result to the target file.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># A query for 2m surface temperature</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>request <span class="ot">=</span> <span class="fu">list</span>(</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">code =</span> code,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">kwargs =</span> <span class="fu">list</span>(</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">var =</span> <span class="st">&quot;2m_temperature&quot;</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">lat =</span> <span class="dv">50</span>,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">lon =</span> <span class="dv">20</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">workflow_name =</span> <span class="st">&quot;plot_time_series&quot;</span>, <span class="co"># name of the python subroutine / app</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">target =</span> <span class="st">&quot;test.nc&quot;</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co"># download the data</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>file <span class="ot">&lt;-</span> <span class="fu">wf_request</span>(</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">user =</span> USER_ID,</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">request =</span> request,</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">path =</span> <span class="fu">tempdir</span>()</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div>
+<p>Once the file is downloaded we can open this file using the
+<code>ncdf4</code> library. Depending on the python script used you will
+be returned either <code>netCDF</code> formatted geospatial data
+(i.e. maps) or non-geospatial data. In this case the returned data is
+not geospatial, a time-series for our desired location.</p>
+<p>Below we open the <code>netCDF</code> file and read in the
+temperature (t2m) data into variable <code>t</code>.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># open the netcdf file and print the meta-data</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> ncdf4<span class="sc">::</span><span class="fu">nc_open</span>(<span class="fu">file.path</span>(<span class="fu">tempdir</span>(),<span class="st">&quot;test.nc&quot;</span>))</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(f)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># read in the temperature data stored in field &quot;t2m&quot;</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co"># and the dates from the &quot;time&quot; field</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>temp <span class="ot">&lt;-</span> ncdf4<span class="sc">::</span><span class="fu">ncvar_get</span>(<span class="at">nc =</span> f, <span class="st">&quot;t2m&quot;</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>time <span class="ot">&lt;-</span> ncdf4<span class="sc">::</span><span class="fu">ncvar_get</span>(<span class="at">nc =</span> f, <span class="st">&quot;time&quot;</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co"># get the starting point of the time series</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co"># and add the increments (time)</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>start <span class="ot">&lt;-</span> ncdf4<span class="sc">::</span><span class="fu">ncatt_get</span>(f, <span class="st">&quot;time&quot;</span>)<span class="sc">$</span>units</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>start <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(start, <span class="at">format =</span> <span class="st">&quot;days since %Y-%m-%d 00:00:00&quot;</span>)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>time <span class="ot">&lt;-</span> start <span class="sc">+</span> time</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co"># close the file once done</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>ncdf4<span class="sc">::</span><span class="fu">nc_close</span>(f)</span></code></pre></div>
+<p>We can now plot this data</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(time, temp, <span class="at">ylab =</span> <span class="st">&quot;Temperature (K)&quot;</span>)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

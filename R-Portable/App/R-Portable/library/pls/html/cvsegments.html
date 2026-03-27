@@ -1,0 +1,165 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Generate segments for cross-validation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for cvsegments {pls}"><tr><td>cvsegments {pls}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Generate segments for cross-validation</h2>
+
+<h3>Description</h3>
+
+<p>The function generates a list of segments for cross-validation.  It can
+generate random, consecutive and interleaved segments, and supports keeping
+replicates in the same segment.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+cvsegments(
+  N,
+  k,
+  length.seg = ceiling(N/k),
+  nrep = 1,
+  type = c("random", "consecutive", "interleaved"),
+  stratify = NULL
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>N</code></td>
+<td>
+<p>Integer.  The number of rows in the data set.</p>
+</td></tr>
+<tr valign="top"><td><code>k</code></td>
+<td>
+<p>Integer.  The number of segments to return.</p>
+</td></tr>
+<tr valign="top"><td><code>length.seg</code></td>
+<td>
+<p>Integer.  The length of the segments.  If given, it
+overrides <code>k</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>nrep</code></td>
+<td>
+<p>Integer.  The number of (consecutive) rows that are replicates
+of the same object.  Replicates will always be kept in the same segment.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>One of <code>"random"</code>, <code>"consecutive"</code> and
+<code>"interleaved"</code>.  The type of segments to generate.  Default is
+<code>"random"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>stratify</code></td>
+<td>
+<p>Either a <code>list</code> of indices or an integer <code>vector</code>
+indicating which stratum each sample (or set of replicates) belongs to (see
+Details).</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>If <code>length.seg</code> is specified, it is used to calculate the number of
+segments to generate.  Otherwise <code>k</code> must be specified.  If
+<i>k*length.seg &lt;&gt; N</i>, the <i>k*length.seg - N</i> last
+segments will contain only <i>length.seg - 1</i> indices.
+</p>
+<p>If <code>type</code> is <code>"random"</code>, the indices are allocated to segments in
+random order.  If it is <code>"consecutive"</code>, the first segment will contain
+the first <i>length.seg</i> indices, and so on.  If <code>type</code> is
+<code>"interleaved"</code>, the first segment will contain the indices <i>1,
+length.seg+1, 2*lenght.seg+1, &hellip;, (k-1)*length.seg+1</i>, and so on.
+</p>
+<p>If <i>nrep &gt; </i>, it is assumed that each <code>nrep</code> consecutive rows are
+replicates (repeated measurements) of the same object, and care is taken
+that replicates are never put in different segments.
+</p>
+<p>Warning: If <code>k</code> does not divide <code>N</code>, a specified <code>length.seg</code>
+does not divide <code>N</code>, or <code>nrep</code> does not divide <code>length.seg</code>,
+the number of segments and/or the segment length will be adjusted as needed.
+Warnings are printed for some of these cases, and one should always inspect
+the resulting segments to make sure they are as expected.
+</p>
+<p>Stratification of samples is enabled by the <code>stratify</code> argument.  This
+is useful if there are sub-groups in the data set that should have a
+proportional representation in the cross-validation segments or if the
+response is categorical (classifiation). If <code>stratify</code> is combined with
+<code>nrep</code>, <code>stratify</code> corresponds to the sets of replicates (see
+example).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of vectors.  Each vector contains the indices for one
+segment.  The attribute <code>"incomplete"</code> contains the number of
+incomplete segments, and the attribute <code>"type"</code> contains the type of
+segments.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Bjørn-Helge Mevik, Ron Wehrens and Kristian Hovde Liland
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Converting a factor to segments: <code><a href="../../pls/help/fac2seg.html">fac2seg</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## Segments for 10-fold randomised cross-validation:
+cvsegments(100, 10)
+
+## Segments with four objects, taken consecutive:
+(segs &lt;- cvsegments(60, length.seg = 4, type = "cons"))
+data(gasoline)
+plsr(octane ~ NIR, data=gasoline, ncomp=5, validation="CV", segments=segs)
+
+## Incomplete segments
+segs &lt;- cvsegments(50, length.seg = 3)
+attr(segs, "incomplete")
+
+## Leave-one-out cross-validation:
+cvsegments(100, 100)
+## Leave-one-out with variable/unknown data set size n:
+n &lt;- 50
+cvsegments(n, length.seg = 1)
+
+## Data set with replicates
+cvsegments(100, 25, nrep = 2)
+## Note that rows 1 and 2 are in the same segment, rows 3 and 4 in the
+## same segment, and so on.
+
+## Stratification
+cvsegments(10, 3, type = "consecutive", stratify = c(rep(1,7), rep(2,3)))
+## Note that the last three samples are spread across the segments
+## according to the stratification vector.
+cvsegments(20, 3, type = "consecutive", nrep = 2, stratify = c(rep(1,7), rep(2,3)))
+## Note the length of stratify matching number of replicate sets, not samples.
+
+## Converting a factor to segments
+fac &lt;- factor(c("a", "b", "a", "b", "c", "c"))
+fac2seg(fac)
+## Starting from a numeric vector
+num &lt;- c(1, 2, 1, 2, 3, 3)
+fac2seg(factor(num))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>pls</em> version 2.9-0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

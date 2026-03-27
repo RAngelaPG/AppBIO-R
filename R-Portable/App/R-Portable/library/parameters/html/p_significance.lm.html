@@ -1,0 +1,360 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Practical Significance (ps)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for p_significance.lm {parameters}"><tr><td>p_significance.lm {parameters}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Practical Significance (ps)</h2>
+
+<h3>Description</h3>
+
+<p>Compute the probability of <strong>Practical Significance</strong> (<em>ps</em>),
+which can be conceptualized as a unidirectional equivalence test. It returns
+the probability that an effect is above a given threshold corresponding to a
+negligible effect in the median's direction, considering a parameter's <em>full</em>
+confidence interval. In other words, it returns the probability of a clear
+direction of an effect, which is larger than the smallest effect size of
+interest (e.g., a minimal important difference). Its theoretical range is
+from zero to one, but the <em>ps</em> is typically larger than 0.5 (to indicate
+practical significance).
+</p>
+<p>In comparison the the <code><a href="../../parameters/help/equivalence_test.html">equivalence_test()</a></code> function, where the <em>SGPV</em>
+(second generation p-value) describes the proportion of the <em>full</em> confidence
+interval that is <em>inside</em> the ROPE, the value returned by <code>p_significance()</code>
+describes the <em>larger</em> proportion of the <em>full</em> confidence interval that is
+<em>outside</em> the ROPE. This makes <code>p_significance()</code> comparable to
+<code><a href="../../bayestestR/help/p_direction.html">bayestestR::p_direction()</a></code>, however, while <code>p_direction()</code> compares to a
+point-null by default, <code>p_significance()</code> compares to a range-null.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'lm'
+p_significance(
+  x,
+  threshold = "default",
+  ci = 0.95,
+  vcov = NULL,
+  vcov_args = NULL,
+  verbose = TRUE,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A statistical model.</p>
+</td></tr>
+<tr valign="top"><td><code>threshold</code></td>
+<td>
+<p>The threshold value that separates significant from
+negligible effect, which can have following possible values:
+</p>
+
+<ul>
+<li> <p><code>"default"</code>, in which case the range is set to <code>0.1</code> if input is a vector,
+and based on <code><a href="../../bayestestR/help/rope_range.html">rope_range()</a></code> if a (Bayesian) model is provided.
+</p>
+</li>
+<li><p> a single numeric value (e.g., 0.1), which is used as range around zero
+(i.e. the threshold range is set to -0.1 and 0.1, i.e. reflects a symmetric
+interval)
+</p>
+</li>
+<li><p> a numeric vector of length two (e.g., <code>c(-0.2, 0.1)</code>), useful for
+asymmetric intervals
+</p>
+</li>
+<li><p> a list of numeric vectors, where each vector corresponds to a parameter
+</p>
+</li>
+<li><p> a list of <em>named</em> numeric vectors, where names correspond to parameter
+names. In this case, all parameters that have no matching name in <code>threshold</code>
+will be set to <code>"default"</code>.
+</p>
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>ci</code></td>
+<td>
+<p>Confidence Interval (CI) level. Default to <code>0.95</code> (<code style="white-space: pre;">95%</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>vcov</code></td>
+<td>
+<p>Variance-covariance matrix used to compute uncertainty estimates
+(e.g., for robust standard errors). This argument accepts a covariance
+matrix, a function which returns a covariance matrix, or a string which
+identifies the function to be used to compute the covariance matrix.
+</p>
+
+<ul>
+<li><p> A covariance matrix
+</p>
+</li>
+<li><p> A function which returns a covariance matrix (e.g., <code>stats::vcov()</code>)
+</p>
+</li>
+<li><p> A string which indicates the kind of uncertainty estimates to return.
+</p>
+
+<ul>
+<li><p> Heteroskedasticity-consistent: <code>"HC"</code>, <code>"HC0"</code>, <code>"HC1"</code>, <code>"HC2"</code>,
+<code>"HC3"</code>, <code>"HC4"</code>, <code>"HC4m"</code>, <code>"HC5"</code>. See <code>?sandwich::vcovHC</code>
+</p>
+</li>
+<li><p> Cluster-robust: <code>"CR"</code>, <code>"CR0"</code>, <code>"CR1"</code>, <code>"CR1p"</code>, <code>"CR1S"</code>,
+<code>"CR2"</code>, <code>"CR3"</code>. See <code>?clubSandwich::vcovCR</code>
+</p>
+</li>
+<li><p> Bootstrap: <code>"BS"</code>, <code>"xy"</code>, <code>"residual"</code>, <code>"wild"</code>, <code>"mammen"</code>,
+<code>"fractional"</code>, <code>"jackknife"</code>, <code>"norm"</code>, <code>"webb"</code>. See
+<code>?sandwich::vcovBS</code>
+</p>
+</li>
+<li><p> Other <code>sandwich</code> package functions: <code>"HAC"</code>, <code>"PC"</code>, <code>"CL"</code>, <code>"OPG"</code>,
+<code>"PL"</code>.
+</p>
+</li></ul>
+
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>vcov_args</code></td>
+<td>
+<p>List of arguments to be passed to the function identified by
+the <code>vcov</code> argument. This function is typically supplied by the
+<strong>sandwich</strong> or <strong>clubSandwich</strong> packages. Please refer to their
+documentation (e.g., <code>?sandwich::vcovHAC</code>) to see the list of available
+arguments. If no estimation type (argument <code>type</code>) is given, the default
+type for <code>"HC"</code> equals the default from the <strong>sandwich</strong> package; for type
+<code>"CR"</code>, the default is set to <code>"CR3"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>Toggle warnings and messages.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Arguments passed to other methods.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>p_significance()</code> returns the proportion of the <em>full</em> confidence
+interval range (assuming a normally or t-distributed, equal-tailed interval,
+based on the model) that is outside a certain range (the negligible effect,
+or ROPE, see argument <code>threshold</code>). If there are values of the distribution
+both below and above the ROPE, <code>p_significance()</code> returns the higher
+probability of a value being outside the ROPE. Typically, this value should
+be larger than 0.5 to indicate practical significance. However, if the range
+of the negligible effect is rather large compared to the range of the
+confidence interval, <code>p_significance()</code> will be less than 0.5, which
+indicates no clear practical significance.
+</p>
+<p>Note that the assumed interval, which is used to calculate the practical
+significance, is an estimation of the <em>full interval</em> based on the chosen
+confidence level. For example, if the 95% confidence interval of a
+coefficient ranges from -1 to 1, the underlying <em>full (normally or
+t-distributed) interval</em> approximately ranges from -1.9 to 1.9, see also
+following code:
+</p>
+<div class="sourceCode"><pre># simulate full normal distribution
+out &lt;- bayestestR::distribution_normal(10000, 0, 0.5)
+# range of "full" distribution
+range(out)
+# range of 95% CI
+round(quantile(out, probs = c(0.025, 0.975)), 2)
+</pre></div>
+<p>This ensures that the practical significance always refers to the general
+compatible parameter space of coefficients. Therefore, the <em>full interval</em> is
+similar to a Bayesian posterior distribution of an equivalent Bayesian model,
+see following code:
+</p>
+<div class="sourceCode"><pre>library(bayestestR)
+library(brms)
+m &lt;- lm(mpg ~ gear + wt + cyl + hp, data = mtcars)
+m2 &lt;- brm(mpg ~ gear + wt + cyl + hp, data = mtcars)
+# probability of significance (ps) for frequentist model
+p_significance(m)
+# similar to ps of Bayesian models
+p_significance(m2)
+# similar to ps of simulated draws / bootstrap samples
+p_significance(simulate_model(m))
+</pre></div>
+
+
+<h3>Value</h3>
+
+<p>A data frame with columns for the parameter names, the confidence
+intervals and the values for practical significance. Higher values indicate
+more practical significance (upper bound is one).
+</p>
+
+
+<h3>Statistical inference - how to quantify evidence</h3>
+
+<p>There is no standardized approach to drawing conclusions based on the
+available data and statistical models. A frequently chosen but also much
+criticized approach is to evaluate results based on their statistical
+significance (<em>Amrhein et al. 2017</em>).
+</p>
+<p>A more sophisticated way would be to test whether estimated effects exceed
+the &quot;smallest effect size of interest&quot;, to avoid even the smallest effects
+being considered relevant simply because they are statistically significant,
+but clinically or practically irrelevant (<em>Lakens et al. 2018, Lakens 2024</em>).
+</p>
+<p>A rather unconventional approach, which is nevertheless advocated by various
+authors, is to interpret results from classical regression models either in
+terms of probabilities, similar to the usual approach in Bayesian statistics
+(<em>Schweder 2018; Schweder and Hjort 2003; Vos 2022</em>) or in terms of relative
+measure of &quot;evidence&quot; or &quot;compatibility&quot; with the data (<em>Greenland et al. 2022;
+Rafi and Greenland 2020</em>), which nevertheless comes close to a probabilistic
+interpretation.
+</p>
+<p>A more detailed discussion of this topic is found in the documentation of
+<code><a href="../../parameters/help/p_function.html">p_function()</a></code>.
+</p>
+<p>The <strong>parameters</strong> package provides several options or functions to aid
+statistical inference. These are, for example:
+</p>
+
+<ul>
+<li> <p><code><a href="../../parameters/help/equivalence_test.lm.html">equivalence_test()</a></code>, to compute the (conditional)
+equivalence test for frequentist models
+</p>
+</li>
+<li> <p><code><a href="../../parameters/help/p_significance.lm.html">p_significance()</a></code>, to compute the probability of
+<em>practical significance</em>, which can be conceptualized as a unidirectional
+equivalence test
+</p>
+</li>
+<li> <p><code><a href="../../parameters/help/p_function.html">p_function()</a></code>, or <em>consonance function</em>, to compute p-values and
+compatibility (confidence) intervals for statistical models
+</p>
+</li>
+<li><p> the <code>pd</code> argument (setting <code>pd = TRUE</code>) in <code>model_parameters()</code> includes
+a column with the <em>probability of direction</em>, i.e. the probability that a
+parameter is strictly positive or negative. See <code><a href="../../bayestestR/help/p_direction.html">bayestestR::p_direction()</a></code>
+for details. If plotting is desired, the <code><a href="../../parameters/help/p_direction.lm.html">p_direction()</a></code>
+function can be used, together with <code>plot()</code>.
+</p>
+</li>
+<li><p> the <code>s_value</code> argument (setting <code>s_value = TRUE</code>) in <code>model_parameters()</code>
+replaces the p-values with their related <em>S</em>-values (<em>Rafi and Greenland 2020</em>)
+</p>
+</li>
+<li><p> finally, it is possible to generate distributions of model coefficients by
+generating bootstrap-samples (setting <code>bootstrap = TRUE</code>) or simulating
+draws from model coefficients using <code><a href="../../parameters/help/simulate_model.html">simulate_model()</a></code>. These samples
+can then be treated as &quot;posterior samples&quot; and used in many functions from
+the <strong>bayestestR</strong> package.
+</p>
+</li></ul>
+
+<p>Most of the above shown options or functions derive from methods originally
+implemented for Bayesian models (<em>Makowski et al. 2019</em>). However, assuming
+that model assumptions are met (which means, the model fits well to the data,
+the correct model is chosen that reflects the data generating process
+(distributional model family) etc.), it seems appropriate to interpret
+results from classical frequentist models in a &quot;Bayesian way&quot; (more details:
+documentation in <code><a href="../../parameters/help/p_function.html">p_function()</a></code>).
+</p>
+
+
+<h3>Note</h3>
+
+<p>There is also a <a href="https://easystats.github.io/see/articles/bayestestR.html"><code>plot()</code>-method</a>
+implemented in the <a href="https://easystats.github.io/see/"><strong>see</strong>-package</a>.
+</p>
+
+
+<h3>References</h3>
+
+
+<ul>
+<li><p> Amrhein, V., Korner-Nievergelt, F., and Roth, T. (2017). The earth is
+flat (p &gt; 0.05): Significance thresholds and the crisis of unreplicable
+research. PeerJ, 5, e3544. doi: <a href="https://doi.org/10.7717/peerj.3544">10.7717/peerj.3544</a>
+</p>
+</li>
+<li><p> Greenland S, Rafi Z, Matthews R, Higgs M. To Aid Scientific Inference,
+Emphasize Unconditional Compatibility Descriptions of Statistics. (2022)
+https://arxiv.org/abs/1909.08583v7 (Accessed November 10, 2022)
+</p>
+</li>
+<li><p> Lakens, D. (2024). Improving Your Statistical Inferences (Version v1.5.1).
+Retrieved from https://lakens.github.io/statistical_inferences/.
+doi: <a href="https://doi.org/10.5281/ZENODO.6409077">10.5281/ZENODO.6409077</a>
+</p>
+</li>
+<li><p> Lakens, D., Scheel, A. M., and Isager, P. M. (2018). Equivalence Testing
+for Psychological Research: A Tutorial. Advances in Methods and Practices
+in Psychological Science, 1(2), 259–269.
+</p>
+</li>
+<li><p> Makowski, D., Ben-Shachar, M. S., Chen, S. H. A., and Lüdecke, D. (2019).
+Indices of Effect Existence and Significance in the Bayesian Framework.
+Frontiers in Psychology, 10, 2767. doi: <a href="https://doi.org/10.3389/fpsyg.2019.02767">10.3389/fpsyg.2019.02767</a>
+</p>
+</li>
+<li><p> Rafi Z, Greenland S. Semantic and cognitive tools to aid statistical
+science: replace confidence and significance by compatibility and surprise.
+BMC Medical Research Methodology (2020) 20:244.
+</p>
+</li>
+<li><p> Schweder T. Confidence is epistemic probability for empirical science.
+Journal of Statistical Planning and Inference (2018) 195:116–125.
+doi: <a href="https://doi.org/10.1016/j.jspi.2017.09.016">10.1016/j.jspi.2017.09.016</a>
+</p>
+</li>
+<li><p> Schweder T, Hjort NL. Frequentist analogues of priors and posteriors.
+In Stigum, B. (ed.), Econometrics and the Philosophy of Economics: Theory
+Data Confrontation in Economics, pp. 285-217. Princeton University Press,
+Princeton, NJ, 2003
+</p>
+</li>
+<li><p> Vos P, Holbert D. Frequentist statistical inference without repeated sampling.
+Synthese 200, 89 (2022). doi: <a href="https://doi.org/10.1007/s11229-022-03560-x">10.1007/s11229-022-03560-x</a>
+</p>
+</li></ul>
+
+
+
+<h3>See Also</h3>
+
+<p>For more details, see <code><a href="../../bayestestR/help/p_significance.html">bayestestR::p_significance()</a></code>. See also
+<code><a href="../../parameters/help/equivalence_test.html">equivalence_test()</a></code>, <code><a href="../../parameters/help/p_function.html">p_function()</a></code> and <code><a href="../../bayestestR/help/p_direction.html">bayestestR::p_direction()</a></code>
+for functions related to checking effect existence and significance.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+data(qol_cancer)
+model &lt;- lm(QoL ~ time + age + education, data = qol_cancer)
+
+p_significance(model)
+p_significance(model, threshold = c(-0.5, 1.5))
+
+# based on heteroscedasticity-robust standard errors
+p_significance(model, vcov = "HC3")
+
+if (require("see", quietly = TRUE)) {
+  result &lt;- p_significance(model)
+  plot(result)
+}
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>parameters</em> version 0.28.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

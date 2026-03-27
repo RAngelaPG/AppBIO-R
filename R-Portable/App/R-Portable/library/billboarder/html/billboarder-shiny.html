@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Shiny bindings for billboarder</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for billboarder-shiny {billboarder}"><tr><td>billboarder-shiny {billboarder}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Shiny bindings for billboarder</h2>
+
+<h3>Description</h3>
+
+<p>Output and render functions for using billboarder within Shiny
+applications and interactive Rmd documents.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+billboarderOutput(outputId, width = "100%", height = "400px")
+
+renderBillboarder(expr, env = parent.frame(), quoted = FALSE)
+
+billboarderProxy(
+  shinyId,
+  data = NULL,
+  session = shiny::getDefaultReactiveDomain()
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>outputId</code></td>
+<td>
+<p>output variable to read from</p>
+</td></tr>
+<tr valign="top"><td><code>width, height</code></td>
+<td>
+<p>Must be a valid CSS unit (like <code>'100%'</code>,
+<code>'400px'</code>, <code>'auto'</code>) or a number, which will be coerced to a
+string and have <code>'px'</code> appended.</p>
+</td></tr>
+<tr valign="top"><td><code>expr</code></td>
+<td>
+<p>An expression that generates a billboarder</p>
+</td></tr>
+<tr valign="top"><td><code>env</code></td>
+<td>
+<p>The environment in which to evaluate <code>expr</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>quoted</code></td>
+<td>
+<p>Is <code>expr</code> a quoted expression (with <code>quote()</code>)? This
+is useful if you want to save an expression in a variable.</p>
+</td></tr>
+<tr valign="top"><td><code>shinyId</code></td>
+<td>
+<p>single-element character vector indicating the output ID of the
+chart to modify (if invoked from a Shiny module, the namespace will be added
+automatically)</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A <code>data.frame</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>session</code></td>
+<td>
+<p>the Shiny session object to which the chart belongs; usually the
+default value will suffice</p>
+</td></tr>
+</table>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../billboarder/help/proxy_example.html">proxy_example</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+if (interactive()) {
+  library(shiny)
+  
+  ui &lt;- fluidPage(
+    tags$h2("Include billboard charts in Shiny"),
+    fluidRow(
+      column(
+        width = 6,
+        billboarderOutput("mybb1"),
+        tags$p("Click on a bar to get the value:"),
+        verbatimTextOutput("res_click")
+      ),
+      column(
+        width = 6,
+        billboarderOutput("mybb2")
+      )
+    )
+  )
+  
+  server &lt;- function(input, output, session) {
+    
+    output$mybb1 &lt;- renderBillboarder({
+      
+      dat &lt;- data.frame(
+        label = paste("Label", 1:5),
+        value = sample.int(100, 5)
+      )
+      
+      billboarder() %&gt;%
+        bb_barchart(
+          data = dat,
+          mapping = bbaes(label, value),
+          rotated = TRUE
+        )
+    })
+    
+    output$res_click &lt;- renderPrint({
+      input$mybb1_click
+    })
+    
+    
+    output$mybb2 &lt;- renderBillboarder({
+      
+      data(AirPassengers)
+      
+      air_passengers &lt;- data.frame(
+        date = as.Date(paste(
+          rep(1949:1960, each = 12),
+          rep(1:12, times = 12),
+          "01", sep = "-"
+        )), 
+        passengers = AirPassengers
+      )
+      
+      billboarder() %&gt;% 
+        bb_linechart(
+          data = air_passengers, 
+          mapping = bbaes(date, passengers), type = "spline"
+        ) %&gt;% 
+        bb_x_axis(tick = list(format = "%Y", fit = FALSE))
+    })
+    
+  }
+  
+  shinyApp(ui, server)
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>billboarder</em> version 0.5.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

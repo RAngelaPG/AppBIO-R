@@ -1,0 +1,175 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Predict the P-Splines Hierarchical Curve Data Model</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for predict.psHDM {statgenHTP}"><tr><td>predict.psHDM {statgenHTP}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Predict the P-Splines Hierarchical Curve Data Model</h2>
+
+<h3>Description</h3>
+
+<p>Function that predicts the P-spline Hierarchical Curve Data Model (see
+<code><a href="../../statgenHTP/help/fitSplineHDM.html">fitSplineHDM</a></code>) on a dense grid. It provides standard errors
+for curves at each level of the hierarchy. User has to be aware that
+standard errors at the plot level demand large memory. We suggest set
+that option at the <code>FALSE</code> level
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'psHDM'
+predict(
+  object,
+  newtimes,
+  pred = list(pop = TRUE, geno = TRUE, plot = TRUE),
+  se = list(pop = TRUE, geno = TRUE, plot = FALSE),
+  trace = TRUE,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>An object of class &quot;psHDM&quot; as obtained after fitting
+(<code><a href="../../statgenHTP/help/fitSplineHDM.html">fitSplineHDM</a></code>) the P-spline Hierarchical Curve Data Model</p>
+</td></tr>
+<tr valign="top"><td><code>newtimes</code></td>
+<td>
+<p>A numeric vector with timepoints at which predictions are
+desired</p>
+</td></tr>
+<tr valign="top"><td><code>pred</code></td>
+<td>
+<p>A list that controls the hierarchical levels at which
+predictions are desired (population/genotypes/plots).  The default is
+<code>TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>se</code></td>
+<td>
+<p>A list that controls the hierarchical levels at which standard
+errors are desired (population/genotypes/plots).  The default is
+<code>TRUE</code> except at the plot level.</p>
+</td></tr>
+<tr valign="top"><td><code>trace</code></td>
+<td>
+<p>An optional value that controls the function trace.
+The default is <code>TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Not used.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>psHDM</code>, a list with the following outputs:
+predict.psHDM
+<code>newtimes</code> A numeric vector with the timepoints at which predictions
+and/or standard errors have been obtained.
+<code>popLevel</code> A data.frame with the estimated population trajectories
+and first and second order derivatives, and if required their respective
+standard errors, at the <code>newtimes</code>.
+<code>genoLevel</code> A data.frame with the estimated genotype-specific
+deviations and trajectories and their respective first and second order
+derivatives, and if required their respective standard errors,
+at the <code>newtimes</code>.
+<code>plotLevel</code> A data.frame with the estimated plot-specific
+deviations and trajectories and their respective first and second order
+derivatives, and if required their respective standard errors,
+at the <code>newtimes</code>.
+<code>plotObs</code> A data.frame with the raw data at the original timepoints.
+</p>
+
+
+<h3>References</h3>
+
+<p>Pérez-Valencia, D.M., Rodríguez-Álvarez, M.X., Boer, M.P. et al.
+A two-stage approach for the spatio-temporal analysis of high-throughput
+phenotyping data. Sci Rep 12, 3177 (2022). doi: <a href="https://doi.org/10.1038/s41598-022-06935-9">10.1038/s41598-022-06935-9</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other functions for fitting hierarchical curve data models: 
+<code><a href="../../statgenHTP/help/fitSplineHDM.html">fitSplineHDM</a>()</code>,
+<code><a href="../../statgenHTP/help/plot.psHDM.html">plot.psHDM</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## The data from the Phenovator platform have been corrected for spatial
+## trends and outliers for single observations have been removed.
+
+## We need to specify the genotype-by-treatment interaction.
+## Treatment: water regime (WW, WD).
+spatCorrectedArch[["treat"]] &lt;- substr(spatCorrectedArch[["geno.decomp"]],
+                                      start = 1, stop = 2)
+spatCorrectedArch[["genoTreat"]] &lt;-
+  interaction(spatCorrectedArch[["genotype"]],
+             spatCorrectedArch[["treat"]], sep = "_")
+
+## Fit P-Splines Hierarchical Curve Data Model for selection of genotypes.
+fit.psHDM  &lt;- fitSplineHDM(inDat = spatCorrectedArch,
+                          trait = "LeafArea_corr",
+                          genotypes = c("GenoA14_WD", "GenoA51_WD",
+                                       "GenoB11_WW", "GenoB02_WD",
+                                       "GenoB02_WW"),
+                          time = "timeNumber",
+                          pop = "geno.decomp",
+                          genotype = "genoTreat",
+                          plotId = "plotId",
+                          difVar = list(geno = FALSE, plot = FALSE),
+                          smoothPop = list(nseg = 4, bdeg = 3, pord = 2),
+                          smoothGeno = list(nseg = 4, bdeg = 3, pord = 2),
+                          smoothPlot = list(nseg = 4, bdeg = 3, pord = 2),
+                          weights = "wt",
+                          trace = FALSE)
+
+## Predict the P-Splines Hierarchical Curve Data Model on a dense grid
+## with standard errors at the population and genotype levels
+pred.psHDM &lt;- predict(object = fit.psHDM,
+                     newtimes = seq(min(fit.psHDM$time[["timeNumber"]]),
+                                   max(fit.psHDM$time[["timeNumber"]]),
+                                   length.out = 100),
+                     pred = list(pop = TRUE, geno = TRUE, plot = TRUE),
+                     se = list(pop = TRUE, geno = TRUE, plot = FALSE))
+
+## Plot the P-Spline predictions at the three levels of the hierarchy
+
+## Plots at population level.
+plot(pred.psHDM,
+    plotType = "popTra")
+
+## Plots at genotype level.
+plot(pred.psHDM,
+    plotType = "popGenoTra")
+
+## Plots of derivatives at genotype level.
+plot(pred.psHDM,
+    plotType = "popGenoDeriv")
+
+## Plots of deviations at genotype level.
+plot(pred.psHDM,
+    plotType = "genoDev")
+
+## Plots at plot level.
+plot(pred.psHDM,
+    plotType = "genoPlotTra")
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>statgenHTP</em> version 1.0.9.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

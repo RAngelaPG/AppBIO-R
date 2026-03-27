@@ -1,0 +1,731 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Facets</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for Facet {ggplot2}"><tr><td>Facet {ggplot2}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Facets</h2>
+
+<h3>Description</h3>
+
+<p>All <code style="white-space: pre;">facet_*()</code> functions returns a <code>Facet</code> object or an object of a
+<code>Facet</code> subclass. This object describes how to assign data to different
+panels, how to apply positional scales and how to lay out the panels, once
+rendered.
+</p>
+
+
+<h3>Details</h3>
+
+<p>Extending facets can range from the simple modifications of current facets,
+to very laborious rewrites with a lot of <code><a href="../../gtable/help/gtable.html">gtable()</a></code>
+manipulation.For some examples of both, please see the extension vignette.
+The object and its parameters are chaperoned by the <a href="../../ggplot2/help/Layout.html">Layout</a> class.
+</p>
+<p><code>Facet</code> subclasses, like other extendible ggproto classes, have a range
+of methods that can be modified. Some of these are required for all new
+subclasses, while other only need to be modified if need arises.
+</p>
+<p>The required methods are:
+</p>
+
+<ul>
+<li> <p><code>compute_layout</code>
+</p>
+</li>
+<li> <p><code>map_data()</code>
+</p>
+</li>
+<li> <p><code>draw_panels()</code> or its subsidiaries:
+</p>
+
+<ul>
+<li> <p><code>init_gtable()</code>
+</p>
+</li>
+<li> <p><code>attach_axes()</code>
+</p>
+</li>
+<li> <p><code>attach_strips()</code>
+</p>
+</li></ul>
+
+</li></ul>
+
+<p>In addition to the methods above, it can be useful to override the default
+behaviour of one or more of the following methods:
+</p>
+
+<ul>
+<li> <p><code>setup_params()</code>
+</p>
+</li>
+<li> <p><code>init_scales()</code>
+</p>
+</li>
+<li> <p><code>train_scale()</code>
+</p>
+</li>
+<li> <p><code>finish_data()</code>
+</p>
+</li>
+<li> <p><code>draw_back()</code>, <code>draw_front()</code> or <code>draw_labels()</code>
+</p>
+</li></ul>
+
+<p>All extension methods receive the content of the params field as the params
+argument, so the constructor function will generally put all relevant
+information into this field.
+</p>
+
+
+<h3>Fields</h3>
+
+
+<dl>
+<dt><code>shink</code></dt><dd><p>A scalar boolean which when <code>TRUE</code>, will shrink scales to
+fit output statistics rather than raw data. If <code>FALSE</code>, will only include
+raw data before statistical summary. By exception this is not part of the
+<code>params</code> field.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A named list of parameters populated by the constructor
+function.</p>
+</dd>
+<dt><code>setup_params</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for modifying or checking the parameters based on the
+data. The default method includes a <code>.possible_columns</code> variable giving
+column names.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Facet$setup_params(data, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A list of data frames. The first item is the global data,
+which is followed by layer data in subsequent items.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of current parameters.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A list of parameters</p>
+</dd>
+<dt><code>setup_data</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for modifying or checking the data prior to adding
+defaults. The default method returns data unaltered.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Facet$setup_data(data, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A list of data frames. The first item is the global data,
+which is followed by layer data in subsequent items.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters coming from the <code>setup_params()</code>
+method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A list of data frames of the same length as the <code>data</code> argument</p>
+</dd>
+<dt><code>compute_layout</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for creating the correspondence between faceting
+variable levels, panels and position scales. It places panels like cells
+in a matrix.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Facet$compute_layout(data, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A list of data frames. The first item is the global data,
+which is followed by layer data in subsequent items.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters coming from the <code>setup_params()</code>
+method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A data frame with 1 row per panel, containing at least integer columns
+<code>ROW</code>, <code>COL</code>, <code>PANEL</code>, <code>SCALE_X</code> and <code>SCALE_Y</code>. Can contain additional
+information in terms of columns, typically faceting variables.</p>
+</dd>
+<dt><code>map_data</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for to create the <code>PANEL</code> variable in layer data. The
+<code>PANEL</code> variable is a special variable that tracks the relationship between
+rows in the layer data and the panels described in the <code>layout</code> input.
+</p>
+<p>In addition, #' this function may copy or discard rows as needed, for
+example when adding margins in FacetGrid.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Facet$map_data(data, layout, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A list of data frames containing layer data.</p>
+</dd>
+<dt><code>layout</code></dt><dd><p>A data frame computed by the <code>compute_layout()</code> method.
+Typically contains the faceting variables, <code>ROW</code>, <code>COL</code>, <code>PANEL</code>,
+<code>SCALE_X</code> and <code>SCALE_Y</code> variables.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters coming from the <code>setup_params()</code>
+method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A list of data frames containing layer data including a <code>PANEL</code> variable.</p>
+</dd>
+<dt><code>init_scales</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for initialising position scales. Given a prototype scale
+for <code>x</code> and <code>y</code>, creates layout specific scales to accommodate
+the relationships between panels and scales. By default, the prototype
+scales are cloned for each <code>SCALE_X</code> and <code>SCALE_Y</code> level. The function is
+called separately; once for <code>x</code> and once for <code>y</code>.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Facet$init_scales(layout, x_scale, y_scale, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>layout</code></dt><dd><p>A data frame computed by the <code>compute_layout()</code> method.
+Typically contains the faceting variables, <code>ROW</code>, <code>COL</code>, <code>PANEL</code>,
+<code>SCALE_X</code> and <code>SCALE_Y</code> variables.</p>
+</dd>
+<dt><code>x_scale</code>,<code>y_scale</code></dt><dd><p>A position scale for the <code>x</code> and <code>y</code>
+aesthetics respectively.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters coming from the <code>setup_params()</code>
+method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A named list with <code>x</code> and <code>y</code> elements containing a list of panel scales
+for each <code>SCALE_X</code> and/or <code>SCALE_Y</code> level respectively.</p>
+</dd>
+<dt><code>train_scales</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for training position scales. The default trains each
+scale on the data related to its panels.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Facet$train_scales(x_scales, y_scales, layout, data, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>x_scales</code>,<code>y_scales</code></dt><dd><p>A list of panel scales for each <code>SCALE_X</code>
+and <code>SCALE_Y</code> level respectively.</p>
+</dd>
+<dt><code>layout</code></dt><dd><p>A data frame computed by the <code>compute_layout()</code> method.
+Typically contains the faceting variables, <code>ROW</code>, <code>COL</code>, <code>PANEL</code>,
+<code>SCALE_X</code> and <code>SCALE_Y</code> variables.</p>
+</dd>
+<dt><code>data</code></dt><dd><p>A list of data frames containing layer data.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters coming from the <code>setup_params()</code>
+method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>Nothing, this method is called for its side-effect of training the scales.</p>
+</dd>
+<dt><code>setup_panel_params</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method as a hook to give facets input over panel parameters. By
+default, returns panel parameters unaltered.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Facet$setup_panel_params(panel_params, coord, ...)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>panel_params</code></dt><dd><p>A named list of view scales, ranges and other
+optional parameters from <code>Coord$setup_panel_params()</code>.</p>
+</dd>
+<dt><code>coord</code></dt><dd><p>A <code style="white-space: pre;">&lt;Coord&gt;</code> ggproto object.</p>
+</dd>
+<dt><code>...</code></dt><dd><p>Currently not in use. For future expansion.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A list of panel parameters.</p>
+</dd>
+<dt><code>finish_data</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method as a hook for making last-minute modifications to layer
+data before it is rendered by Geoms. The default is to not modify the data.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Facet$finish_data(data, layout, x_scales, y_scales, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A data frame containing layer data of a single layer.</p>
+</dd>
+<dt><code>layout</code></dt><dd><p>A data frame computed by the <code>compute_layout()</code> method.
+Typically contains the faceting variables, <code>ROW</code>, <code>COL</code>, <code>PANEL</code>,
+<code>SCALE_X</code> and <code>SCALE_Y</code> variables.</p>
+</dd>
+<dt><code>x_scales</code>,<code>y_scales</code></dt><dd><p>A list of panel scales for each <code>SCALE_X</code>
+and <code>SCALE_Y</code> level respectively.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters coming from the <code>setup_params()</code>
+method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A data frame containing layer data.</p>
+</dd>
+<dt><code>draw_panel_content</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method to assemble the panel contents. It delegates the
+<code>draw_back()</code> and <code>draw_front()</code> methods, as well as <code>Coord$draw_panel()</code>.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Facet$draw_panel_content(
+  panels,
+  layout,
+  x_scales,
+  y_scales,
+  ranges,
+  coord,
+  theme,
+  params,
+  ...
+)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>panels</code></dt><dd><p>A list parallel to layers. Each element is another list
+with grobs for each panel, generated by <code>Layer$draw_geom()</code>.</p>
+</dd>
+<dt><code>layout</code></dt><dd><p>A data frame computed by the <code>compute_layout()</code> method.
+Typically contains the faceting variables, <code>ROW</code>, <code>COL</code>, <code>PANEL</code>,
+<code>SCALE_X</code> and <code>SCALE_Y</code> variables.</p>
+</dd>
+<dt><code>x_scales</code>,<code>y_scales</code></dt><dd><p>A list of panel scales for each <code>SCALE_X</code>
+and <code>SCALE_Y</code> level respectively.</p>
+</dd>
+<dt><code>ranges</code></dt><dd><p>A list of panel parameters from the
+<code>setup_panel_params()</code> augmented with position guides.</p>
+</dd>
+<dt><code>coord</code></dt><dd><p>A <code style="white-space: pre;">&lt;Coord&gt;</code> ggproto object.</p>
+</dd>
+<dt><code>data</code></dt><dd><p>A list of data frames containing layer data.</p>
+</dd>
+<dt><code>theme</code></dt><dd><p>A <a href="../../ggplot2/help/complete_theme.html">complete theme</a> object.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters coming from the <code>setup_params()</code>
+method.</p>
+</dd>
+<dt><code>...</code></dt><dd><p>Currently not in use.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A list of grobs, one for each level of the <code>PANEL</code> layout variable. Grob
+can be <code>zeroGrob()</code> to draw nothing.</p>
+</dd>
+<dt><code>draw_back,draw_front</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method draw facet background (back) and foreground (front) for
+panels. The front and back will sandwich the grobs created by layers. The
+default methods draw nothing.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Facet$draw_back(data, layout, x_scales, y_scales, theme, params)
+Facet$draw_front(data, layout, x_scales, y_scales, theme, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A list of data frames containing layer data.</p>
+</dd>
+<dt><code>layout</code></dt><dd><p>A data frame computed by the <code>compute_layout()</code> method.
+Typically contains the faceting variables, <code>ROW</code>, <code>COL</code>, <code>PANEL</code>,
+<code>SCALE_X</code> and <code>SCALE_Y</code> variables.</p>
+</dd>
+<dt><code>x_scales</code>,<code>y_scales</code></dt><dd><p>A list of panel scales for each <code>SCALE_X</code>
+and <code>SCALE_Y</code> level respectively.</p>
+</dd>
+<dt><code>theme</code></dt><dd><p>A <a href="../../ggplot2/help/complete_theme.html">complete theme</a> object.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters coming from the <code>setup_params()</code>
+method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A list of grobs, one for each level of the <code>PANEL</code> layout variable. Grob
+can be <code>zeroGrob()</code> to draw nothing.</p>
+</dd>
+<dt><code>draw_panels</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method that orchestrates the majority of facet drawing. It is
+responsible for assembling a gtable with panel content decorated with axes
+and strips. The resulting gtable is the basis for the plot in its entirety.
+It delegates these tasks to the <code>init_gtable()</code>, <code>attach_axes()</code> and
+<code>attach_strips()</code> methods.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Facet$draw_panels(
+  panels,
+  layout,
+  x_scales,
+  y_scales,
+  ranges,
+  coord,
+  data,
+  theme,
+  params
+)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>panels</code></dt><dd><p>A list of grobs, one per panel.</p>
+</dd>
+<dt><code>layout</code></dt><dd><p>A data frame computed by the <code>compute_layout()</code> method.
+Typically contains the faceting variables, <code>ROW</code>, <code>COL</code>, <code>PANEL</code>,
+<code>SCALE_X</code> and <code>SCALE_Y</code> variables.</p>
+</dd>
+<dt><code>x_scales</code>,<code>y_scales</code></dt><dd><p>A list of panel scales for each <code>SCALE_X</code>
+and <code>SCALE_Y</code> level respectively.</p>
+</dd>
+<dt><code>ranges</code></dt><dd><p>A list of panel parameters from the
+<code>setup_panel_params()</code> augmented with position guides.</p>
+</dd>
+<dt><code>coord</code></dt><dd><p>A <code style="white-space: pre;">&lt;Coord&gt;</code> ggproto object.</p>
+</dd>
+<dt><code>data</code></dt><dd><p>A list of data frames containing layer data.</p>
+</dd>
+<dt><code>theme</code></dt><dd><p>A <a href="../../ggplot2/help/complete_theme.html">complete theme</a> object.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters coming from the <code>setup_params()</code>
+method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A <code><a href="../../gtable/help/gtable.html">gtable</a></code> object.</p>
+</dd>
+<dt><code>init_gtable</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method that initiates a gtable object containing panels set
+at the appropriate <code>ROW</code> and <code>COL</code> cells from the layout. The panels are
+separated by the <code style="white-space: pre;">panel.spacing.{x/y}</code> spacing.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Facet$init_gtable(panels, layout, theme, ranges, params, aspect_ratio)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>panels</code></dt><dd><p>A list of grobs, one per panel.</p>
+</dd>
+<dt><code>layout</code></dt><dd><p>A data frame computed by the <code>compute_layout()</code> method.
+Typically contains the faceting variables, <code>ROW</code>, <code>COL</code>, <code>PANEL</code>,
+<code>SCALE_X</code> and <code>SCALE_Y</code> variables.</p>
+</dd>
+<dt><code>theme</code></dt><dd><p>A <a href="../../ggplot2/help/complete_theme.html">complete theme</a> object.</p>
+</dd>
+<dt><code>ranges</code></dt><dd><p>A list of panel parameters from the
+<code>setup_panel_params()</code> augmented with position guides.</p>
+</dd>
+<dt><code>aspect_ratio</code></dt><dd><p>A scalar numeric for the panel aspect ratio or
+<code>NULL</code> for no aspect ratio.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A <code><a href="../../gtable/help/gtable.html">gtable</a></code> object containing panel grobs prefixed with
+<code>"panel"</code>.</p>
+</dd>
+<dt><code>attach_axes</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method that renders position guides (axes) and attaches these
+to the gtable with panels. The default method returns the gtable unaltered.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Facet$attach_axes(table, layout, ranges, coord, theme, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>table</code></dt><dd><p>A <code><a href="../../gtable/help/gtable.html">gtable</a></code> object populated with panels from the
+<code>init_gtable()</code> method.</p>
+</dd>
+<dt><code>layout</code></dt><dd><p>A data frame computed by the <code>compute_layout()</code> method.
+Typically contains the faceting variables, <code>ROW</code>, <code>COL</code>, <code>PANEL</code>,
+<code>SCALE_X</code> and <code>SCALE_Y</code> variables.</p>
+</dd>
+<dt><code>ranges</code></dt><dd><p>A list of panel parameters from the
+<code>setup_panel_params()</code> augmented with position guides.</p>
+</dd>
+<dt><code>coord</code></dt><dd><p>A <code style="white-space: pre;">&lt;Coord&gt;</code> ggproto object.</p>
+</dd>
+<dt><code>theme</code></dt><dd><p>A <a href="../../ggplot2/help/complete_theme.html">complete theme</a> object.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters coming from the <code>setup_params()</code>
+method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A <code><a href="../../gtable/help/gtable.html">gtable</a></code> object.</p>
+</dd>
+<dt><code>attach_strips</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method that renders strips and attaches these to the gtable
+with panels and axes. The <code>format_strip_labels()</code> method is used to format
+the strip text. The default method returns the gtable unaltered.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Facet$attach_strips(table, layout, ranges, coord, theme, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>table</code></dt><dd><p>A <code><a href="../../gtable/help/gtable.html">gtable</a></code> object from the <code>attach_axes()</code>
+method.</p>
+</dd>
+<dt><code>layout</code></dt><dd><p>A data frame computed by the <code>compute_layout()</code> method.
+Typically contains the faceting variables, <code>ROW</code>, <code>COL</code>, <code>PANEL</code>,
+<code>SCALE_X</code> and <code>SCALE_Y</code> variables.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters coming from the <code>setup_params()</code>
+method.</p>
+</dd>
+<dt><code>theme</code></dt><dd><p>A <a href="../../ggplot2/help/complete_theme.html">complete theme</a> object.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A <code><a href="../../gtable/help/gtable.html">gtable</a></code> object.</p>
+</dd>
+<dt><code>format_strip_labels</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method that formats the text for strips. It is used in the
+<code>attach_strips</code> methods, but also the <code>get_strip_labels()</code> function.
+The default method returns <code>NULL</code>.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Facet$format_strip_labels(layout, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>layout</code></dt><dd><p>A data frame computed by the <code>compute_layout()</code> method.
+Typically contains the faceting variables, <code>ROW</code>, <code>COL</code>, <code>PANEL</code>,
+<code>SCALE_X</code> and <code>SCALE_Y</code> variables.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters coming from the <code>setup_params()</code>
+method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A list containing a data frame with strip labels.</p>
+</dd>
+<dt><code>set_panel_size</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method that enforces the <code>panel.widths</code> and <code>panel.heights</code>
+theme settings.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Facet$set_panel_size(table, theme)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>table</code></dt><dd><p>A <code><a href="../../gtable/help/gtable.html">gtable</a></code> object populated by the
+<code>draw_panels()</code> method.</p>
+</dd>
+<dt><code>theme</code></dt><dd><p>A <a href="../../ggplot2/help/complete_theme.html">complete theme</a> object.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>The <code>table</code> object, optionally with different <code>widths</code> and <code>heights</code>
+properties.</p>
+</dd>
+<dt><code>attach_axes</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method that renders axis titles and adds them to the gtable.
+The default is to add one title at each side depending on the position
+and presence of axes.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Facet$draw_labels(
+  panels,
+  layout,
+  x_scales,
+  y_scales,
+  ranges,
+  coord,
+  data,
+  theme,
+  labels,
+  params
+)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>panels</code></dt><dd><p>A <code><a href="../../gtable/help/gtable.html">gtable</a></code> object initiated by the
+<code>draw_panels()</code> method.</p>
+</dd>
+<dt><code>layout</code></dt><dd><p>A data frame computed by the <code>compute_layout()</code> method.
+Typically contains the faceting variables, <code>ROW</code>, <code>COL</code>, <code>PANEL</code>,
+<code>SCALE_X</code> and <code>SCALE_Y</code> variables.</p>
+</dd>
+<dt><code>x_scales</code>,<code>y_scales</code></dt><dd><p>A list of panel scales for each <code>SCALE_X</code>
+and <code>SCALE_Y</code> level respectively.</p>
+</dd>
+<dt><code>ranges</code></dt><dd><p>A list of panel parameters from the
+<code>setup_panel_params()</code> augmented with position guides.</p>
+</dd>
+<dt><code>coord</code></dt><dd><p>A <code style="white-space: pre;">&lt;Coord&gt;</code> ggproto object.</p>
+</dd>
+<dt><code>data</code></dt><dd><p>A list of data frames containing layer data.</p>
+</dd>
+<dt><code>theme</code></dt><dd><p>A <a href="../../ggplot2/help/complete_theme.html">complete theme</a> object.</p>
+</dd>
+<dt><code>labels</code></dt><dd><p>A named list containing an <code>x</code> list and <code>y</code> list. The
+<code>x</code> and <code>y</code> lists have <code>primary</code> and <code>secondary</code> labels.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters coming from the <code>setup_params()</code>
+method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A <code><a href="../../gtable/help/gtable.html">gtable</a></code> object.</p>
+</dd>
+<dt><code>vars</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method that returns the names of faceting variables. The
+default method returns an character vector with 0 length.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Facet$vars()
+</pre></div>
+<p><strong>Value</strong>
+</p>
+<p>A character vector</p>
+</dd>
+</dl>
+
+
+<h3>Conventions</h3>
+
+<p>The object name that a new class is assigned to is typically the same as the
+class name. Facet class names are in UpperCamelCase and start with the
+<code style="white-space: pre;">Facet*</code> prefix, like <code>FacetNew</code>.
+</p>
+<p>A constructor function is usually paired with a Facet class. The constructor
+copies the facet class and populates the <code>params</code> field. The constructor
+function name should take the Facet class name and be formatted with
+snake_case, so that <code>FacetNew</code> becomes <code>facet_new()</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>The the <a href="https://ggplot2-book.org/extensions#new-facets">new facets section</a> of the online ggplot2 book.
+</p>
+<p>Run <code>vignette("extending-ggplot2")</code>, in particular the &quot;Creating a
+new faceting&quot; section.
+</p>
+<p>Other Layout components: 
+<code><a href="../../ggplot2/help/Coord.html">Coord</a></code>,
+<code><a href="../../ggplot2/help/Layout.html">Layout</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Please see extension vignette
+NULL
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ggplot2</em> version 4.0.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

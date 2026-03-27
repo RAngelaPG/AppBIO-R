@@ -1,0 +1,141 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Determine an optimal lambda penalty value through...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for lavPredictY_cv {lavaan}"><tr><td>lavPredictY_cv {lavaan}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Determine an optimal lambda penalty value through cross-validation</h2>
+
+<h3>Description</h3>
+
+<p>This function can be used to determine an optimal lambda value for the
+<code>lavPredictY</code> function. based on cross-validation.</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+lavPredictY_cv(object, data = NULL,
+              xnames = lav_object_vnames(object, "ov.x"),
+              ynames = lav_object_vnames(object, "ov.y"),
+              n.folds = 10L,
+              lambda.seq = seq(0, 1, 0.1))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>An object of class <code><a href="../../lavaan/help/lavaan-class.html">lavaan</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A data.frame, containing the same variables as the data.frame that
+was used when fitting the model in <code>object</code>.</p>
+</td></tr> 
+<tr valign="top"><td><code>xnames</code></td>
+<td>
+<p>The names of the observed variables that should be treated as the
+x-variables. Can also be a list to allow for a separate set of variable names
+per group (or block).</p>
+</td></tr>
+<tr valign="top"><td><code>ynames</code></td>
+<td>
+<p>The names of the observed variables that should be treated as the
+y-variables. It is for these variables that the function will predict the
+(model-based) values for each observation. Can also be a list to allow for a
+separate set of variable names per group (or block).</p>
+</td></tr>
+<tr valign="top"><td><code>n.folds</code></td>
+<td>
+<p>Integer. The number of folds to be used during
+cross-validation.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda.seq</code></td>
+<td>
+<p>An R <code>seq()</code> containing the range of lambda penalty
+values to be tested during cross-validation.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This function is used to generate an optimal lambda value for
+<code>lavPredictY</code> predictions to improve prediction accuracy.
+</p>
+
+
+<h3>References</h3>
+
+<p>de Rooij, M., Karch, J.D., Fokkema, M., Bakk, Z., Pratiwi, B.C, and 
+Kelderman, H. (2022) SEM-Based Out-of-Sample Predictions,
+Structural Equation Modeling: A Multidisciplinary Journal.
+DOI:10.1080/10705511.2022.2061494
+</p>
+<p>Molina, M. D., Molina, L., &amp; Zappaterra, M. W. (2024). Aspects of Higher
+Consciousness: A Psychometric Validation and Analysis of a New Model of
+Mystical Experience. doi: <a href="https://doi.org/10.31219/osf.io/cgb6e">10.31219/osf.io/cgb6e</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../lavaan/help/lavPredictY.html">lavPredictY</a></code> to predict the values of (observed) y-variables given
+the values of (observed) x-variables in a structural equation model.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+colnames(PoliticalDemocracy) &lt;- c("z1", "z2", "z3", "z4", 
+                                  "y1", "y2", "y3", "y4", 
+                                  "x1", "x2", "x3")
+
+model &lt;- '
+  # latent variable definitions
+  ind60 =~ x1 + x2 + x3
+  dem60 =~ z1 + z2 + z3 + z4
+  dem65 =~ y1 + y2 + y3 + y4
+  # regressions
+  dem60 ~ ind60
+  dem65 ~ ind60 + dem60
+  # residual correlations
+  z1 ~~ y1
+  z2 ~~ z4 + y2
+  z3 ~~ y3
+  z4 ~~ y4
+  y2 ~~ y4
+'
+fit &lt;- sem(model, data = PoliticalDemocracy, meanstructure = TRUE)
+
+percent &lt;- 0.5
+nobs &lt;- lavInspect(fit, "ntotal")
+idx &lt;- sort(sample(x = nobs, size = floor(percent*nobs)))
+
+xnames = c("z1", "z2", "z3", "z4", "x1", "x2", "x3")
+ynames = c("y1", "y2", "y3", "y4")
+
+reg.results &lt;- lavPredictY_cv(
+    fit,
+    PoliticalDemocracy[-idx, ],
+    xnames = xnames,
+    ynames = ynames,
+    n.folds = 10L,
+    lambda.seq = seq(from = .6, to = 2.5, by = .1)
+)
+lam &lt;- reg.results$lambda.min
+
+lavPredictY(fit, newdata = PoliticalDemocracy[idx,],
+                 ynames  = ynames,
+                 xnames  = xnames,
+                 lambda  = lam)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>lavaan</em> version 0.6-21 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

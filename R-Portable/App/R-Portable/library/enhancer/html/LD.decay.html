@@ -1,0 +1,115 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Calculation of linkage disequilibrium decay</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for LD.decay {enhancer}"><tr><td>LD.decay {enhancer}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Calculation of linkage disequilibrium decay</h2>
+
+<h3>Description</h3>
+
+<p>This function calculates the LD decay based on a marker matrix and a map with distances between markers in cM or base pairs.  
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+LD.decay(markers,map,silent=FALSE,unlinked=FALSE,gamma=0.95)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>markers</code></td>
+<td>
+<p>a numeric matrix of markers (columns) by individuals (rows) in -1, 0, 1 format.</p>
+</td></tr>
+<tr valign="top"><td><code>map</code></td>
+<td>
+<p>a data frame with 3 columns &quot;Locus&quot; (name of markers), &quot;LG&quot; (linkage group or chromosome), and &quot;Position&quot; (in cM or base pairs). </p>
+</td></tr>
+<tr valign="top"><td><code>silent</code></td>
+<td>
+<p>a TRUE/FALSE value statement indicating if the program should or should not display the progress bar. silent=TRUE means that will not be displayed.</p>
+</td></tr>
+<tr valign="top"><td><code>unlinked</code></td>
+<td>
+<p>a TRUE/FALSE value statement indicating if the program should or should not calculate the alpha(see next argument) percentile of interchromosomal LD.</p>
+</td></tr>
+<tr valign="top"><td><code>gamma</code></td>
+<td>
+<p>a percentile value for LD breakage to be used in the calculation of interchromosomal LD extent.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+
+<dl>
+<dt>$resp</dt><dd><p> a list with 3 elements; &quot;by.LG&quot;, &quot;all.LG&quot;, &quot;LDM&quot;. The first element (by.LG) is a list with as many elements as chromosomes where each contains a matrix with 3 columns, the distance, the r2 value, and the p-value associated to the chi-square test for disequilibrium. The second element (all.LG) has a big matrix with distance, r2 values and p-values, for each point from all chromosomes in a single data.frame. The third element (LDM) is the matrix of linkage disequilibrium between pairs of markers.
+</p>
+<p>If unlinked is selected the program should return the gamma percentile interchromosomal LD (r2) for each chromosome and average.
+</p>
+</dd>
+</dl>
+
+
+
+<h3>References</h3>
+
+<p>Laido, Giovanni, et al. Linkage disequilibrium and genome-wide association mapping in tetraploid wheat (Triticum turgidum L.). PloS one 9.4 (2014): e95211.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+nInds=300
+nMarks=500
+
+#random population of nInds lines with nMarks markers
+M &lt;- matrix(rep(0,nInds*nMarks),nInds,nMarks)
+for (i in 1:nInds) {
+  M[i,] &lt;- ifelse(runif(nMarks)&lt;0.5,-1,1)
+}
+rownames(M) &lt;- paste0("ind",1:nInds)
+colnames(M) &lt;- paste0("mark",1:nMarks)
+
+mapM = data.frame(Locus=colnames(M),Position=1:nMarks,LG=1)
+
+res &lt;- LD.decay(M, mapM)
+
+ 
+ #### subset only markers with significant LD
+res$all.LG &lt;- res$all.LG[which(res$all.LG$p &lt; .001),]
+#### plot the LD decay
+with(res$all.LG, plot(r2~d,col=transp("cadetblue"),
+                    xlim=c(0,55), ylim=c(0,1),
+                    pch=20,cex=0.5,yaxt="n",
+                    xaxt="n",ylab=expression(r^2),
+                    xlab="Distance in cM")
+                    )
+axis(1, at=seq(0,55,5), labels=seq(0,55,5))
+axis(2,at=seq(0,1,.1), labels=seq(0,1,.1), las=1)
+
+#### if you want to add the loess regression lines
+#### this could take a long time!!!
+# mod &lt;- loess(r2 ~ d, data=res$all.LG)
+# par(new=TRUE)
+# lilo &lt;- predict(mod,data.frame(d=1:55))
+# plot(lilo, bty="n", xaxt="n", yaxt="n", col="green",
+#     type="l", ylim=c(0,1),ylab="",xlab="",lwd=2)
+# res3 &lt;- LD.decay(markers=CPgeno, map=mapCP,
+#                unlinked = TRUE,gamma = .95)
+# abline(h=res3$all.LG, col="red")
+ 
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>enhancer</em> version 1.1.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

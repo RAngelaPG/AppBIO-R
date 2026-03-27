@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Convert an Rd object to Rd file format</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for Rdo2Rdf {Rdpack}"><tr><td>Rdo2Rdf {Rdpack}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Convert an Rd object to Rd file format
+</h2>
+
+<h3>Description</h3>
+
+<p>Converts an Rd object to Rd format and saves it to a file or returns
+it as a character vector. It escapes percents where necessary and
+(optionally) backslashes in the examples section.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+Rdo2Rdf(rdo, deparse = FALSE, ex_restore = FALSE, file = NULL,
+        rcode = TRUE, srcfile = NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>rdo</code></td>
+<td>
+<p>an Rd object or a character vector, see &lsquo;Details&rsquo;.</p>
+</td></tr>
+<tr valign="top"><td><code>deparse</code></td>
+<td>
+<p>logical, passed to the print method for Rd objects,
+see &lsquo;Details&rsquo;.
+</p>
+</td></tr>
+<tr valign="top"><td><code>ex_restore</code></td>
+<td>
+<p>logical, if <code>TRUE</code> escapes backslashes where
+necessary.
+</p>
+</td></tr>
+<tr valign="top"><td><code>file</code></td>
+<td>
+<p>a filename where to store the result. If <code>NULL</code> or
+&quot;missing&quot;, the result is returned as a character vector.
+</p>
+</td></tr>
+<tr valign="top"><td><code>rcode</code></td>
+<td>
+<p>if TRUE, duplicate backslahes in RCODE elements, see
+Details.
+</p>
+</td></tr>
+<tr valign="top"><td><code>srcfile</code></td>
+<td>
+<p>NULL or a file name, see 'Details'.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The description here is rather technical and incomplete. In any case
+it concerns almost exclusively Rd files which use escape sequences
+containing multiple consecutive backslashes or escaped curly braces
+(such things appear in regular expressions, for example).
+</p>
+<p>In principle, this function should be redundant, since the
+<code>print</code> and <code>as.character</code> methods for objects of class &quot;Rd&quot;
+would be expected to do the job. I was not able to get the desired
+result that way (the <code>deparse</code> option to <code>print</code> did not
+work completely for me either).
+</p>
+<p>Arguments <code>ex_restore</code> and <code>rcode</code> were added on an ad-hoc
+basis. <code>rcode</code> is more recent and causes <code>Rdo2Rdf</code> to
+duplicate backslashes found in any element <code>Rd_tag</code>-ed with
+&quot;RCODE&quot;. <code>ex_restore</code> does the same but only for the examples
+section. In effect, if <code>rcode</code> is TRUE, <code>ex_restore</code> is
+ignored.
+</p>
+<p>The initial intent of this function (and the package Rdpack as a whole
+was not to refer to the Rd source file. However, there is some
+flexibility in the Rd syntax that does not allow the source file to be
+restored identically from the parsed object. This concerns mainly
+backslahes (and to some extent curly braces) which in certain contexts
+may or may not be escaped and the parsed object is the same. Although
+this does not affect functionality, it may be annoying if the escapes
+in sections not examined by <code>reprompt</code> were changed.
+</p>
+<p>If <code>srcfile</code> is the name of a file, the file is parsed and the Rd
+text of sections of <code>rdo</code> that are identical to sections from
+<code>srcfile</code> is taken directly from <code>srcfile</code>, ensuring that
+they will be identical to the original.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>NULL</code>, if <code>file</code> is not <code>NULL</code>. Otherwise the Rd
+formatted text as a character vector.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Here is an example when the author's Rd source cannot be restored
+exactly from the parsed object.
+</p>
+<p>In the Rd source &quot;author&quot; has two backslashes here: <code style="white-space: pre;">\author</code>.
+</p>
+<p>In the Rd source &quot;author&quot; has one backslash here: <code style="white-space: pre;">\author</code>.
+</p>
+<p>Both sentences are correct and the parsed file contains only one
+backslash in both cases. If <code>reprompt</code> looks only at the parsed
+object it will export one backslash in both cases. So, further
+reprompt()-ing will not change them again. This is if <code>reprompt</code>
+is called with <code>sec_copy = FALSE</code>.  With the default
+<code>sec_copy = TRUE</code>, <code>reprompt</code> calls <code>Rdo2Rdf</code> with
+argument <code>srcfile</code> set to the name of the Rd file and since
+<code>reprompt</code> does not modify section &quot;Note&quot;, its text is copied
+from the file and the author's original preserved.
+</p>
+<p>However, the arguments of <code style="white-space: pre;">\eqn</code> are parse_Rd-ed differently (or
+so it seems) even though they are also in verbatim.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Georgi N. Boshnakov</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# # this keeps the backslashes in "author" (see Note above)
+# reprompt(infile="./man/Rdo2Rdf.Rd")
+
+# # this outputs "author" preceded by one backslash only.
+# reprompt(infile="./man/Rdo2Rdf.Rd", sec_copy = FALSE)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>Rdpack</em> version 2.6.6 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

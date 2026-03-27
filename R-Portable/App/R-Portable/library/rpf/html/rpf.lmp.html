@@ -1,0 +1,135 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Create logistic function of a monotonic polynomial (LMP)...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for rpf.lmp {rpf}"><tr><td>rpf.lmp {rpf}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Create logistic function of a monotonic polynomial (LMP) model</h2>
+
+<h3>Description</h3>
+
+<p>This model is a dichotomous response model originally proposed by
+Liang (2007) and is implemented using the parameterization by
+Falk &amp; Cai (2016).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+rpf.lmp(q = 0, multidimensional = FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>q</code></td>
+<td>
+<p>a non-negative integer that controls the order of the
+polynomial (2q+1) with a default of q=0 (1st order polynomial = 2PL).</p>
+</td></tr>
+<tr valign="top"><td><code>multidimensional</code></td>
+<td>
+<p>whether to use a multidimensional model.
+Defaults to <code>FALSE</code>. The multidimensional version is not yet
+available.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The LMP model replaces the linear predictor part of the
+two-parameter logistic function with a monotonic polynomial,
+<i>m(theta; omega, alpha, tau)</i>,
+</p>
+<p style="text-align: center;"><i>P(pick=1|omega,xi,alpha,tau,th) = 1/(1+exp(-(xi + m(theta;omega,alpha,tau))))</i></p>
+
+<p>where <i>alpha</i> and <i>tau</i> are vectors
+of length q.
+</p>
+<p>The order of the polynomial is always odd and is controlled by
+the user specified non-negative integer, q. The model contains
+2+2*q parameters and are used in conjunction with the <code><a href="../../rpf/help/rpf.prob.html">rpf.prob</a></code>
+or <code><a href="../../rpf/help/rpf.dTheta.html">rpf.dTheta</a></code> function in the following order:
+<i>omega</i> - the natural log of the slope of the item model when q=0,
+<i>xi</i> - the intercept,
+<i>alpha</i> and <i>tau</i> - two parameters that control bends in
+the polynomial. These latter parameters are repeated in the same order for
+models with q&gt;0. For example, a q=2 polynomial with have an item
+parameter vector of: <i>
+omega, xi, alpha1, tau1, alpha2, tau2</i>.
+</p>
+<p>In general, the polynomial looks like the following:
+</p>
+<p style="text-align: center;"><i>m(theta;omega,alpha,tau) = b_1*theta + b_2*theta^2 + &hellip; + b_(2q+1)*theta^{2q+1}</i></p>
+
+<p>However, the coefficients, b, are not directly estimated, but are a function of the
+item parameters. In particular, the derivative <i>m'(theta;omega,alpha,tau)</i> is
+parameterized in the following way:
+</p>
+<p style="text-align: center;"><i>m'(theta) = m'(theta;omega,alpha,tau) = exp(omega) &prod;_{u=1}^q (1-2*alpha_u*theta + (alpha_u^2 + exp(tau_u))*theta^2) (if q &gt; 0) \
+ exp(omega) (if q = 0)</i></p>
+
+<p>See Falk &amp; Cai (2016) for more details as to how the polynomial is constructed.
+At the lowest order polynomial (q=0) the model reduces to the
+two-parameter logistic (2PL) model. However, parameterization of the
+slope parameter, <i>omega</i>, is currently different than
+the 2PL (i.e., slope = exp(<i>omega</i>)). This parameterization
+ensures that the response function is always monotonically increasing
+without requiring constrained optimization.
+</p>
+<p>For an alternative parameterization that releases constraints
+on <i>omega</i>, allowing for monotonically decreasing functions,
+see <code><a href="../../rpf/help/rpf.grmp.html">rpf.grmp</a></code>. And for polytomous items, see both
+<code><a href="../../rpf/help/rpf.grmp.html">rpf.grmp</a></code> and <code><a href="../../rpf/help/rpf.gpcmp.html">rpf.gpcmp</a></code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>an item model
+</p>
+
+
+<h3>References</h3>
+
+<p>Falk, C. F., &amp; Cai, L. (2016). Maximum marginal likelihood
+estimation of a monotonic polynomial generalized partial credit model with
+applications to multiple group analysis. <em>Psychometrika, 81</em>, 434-460.
+doi: <a href="https://doi.org/10.1007/s11336-014-9428-7">10.1007/s11336-014-9428-7</a>
+</p>
+<p>Liang (2007). <em>A semi-parametric approach to estimating item response
+functions</em>. Unpublished doctoral dissertation, Department of Psychology,
+The Ohio State University.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other response model: 
+<code><a href="../../rpf/help/rpf.drm.html">rpf.drm</a>()</code>,
+<code><a href="../../rpf/help/rpf.gpcmp.html">rpf.gpcmp</a>()</code>,
+<code><a href="../../rpf/help/rpf.grm.html">rpf.grm</a>()</code>,
+<code><a href="../../rpf/help/rpf.grmp.html">rpf.grmp</a>()</code>,
+<code><a href="../../rpf/help/rpf.mcm.html">rpf.mcm</a>()</code>,
+<code><a href="../../rpf/help/rpf.nrm.html">rpf.nrm</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+spec &lt;- rpf.lmp(1) # 3rd order polynomial
+theta&lt;-seq(-3,3,.1)
+p&lt;-rpf.prob(spec, c(-.11,.37,.24,-.21),theta)
+
+spec &lt;- rpf.lmp(2) # 5th order polynomial
+p&lt;-rpf.prob(spec, c(.69,.71,-.5,-8.48,.52,-3.32),theta)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rpf</em> version 1.0.15 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

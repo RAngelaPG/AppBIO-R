@@ -1,0 +1,218 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Choropleth</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for e_map {echarts4r}"><tr><td>e_map {echarts4r}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Choropleth</h2>
+
+<h3>Description</h3>
+
+<p>Draw maps.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+e_map(e, serie, map = "world", name = NULL, rm_x = TRUE, rm_y = TRUE, ...)
+
+e_map_(
+  e,
+  serie = NULL,
+  map = "world",
+  name = NULL,
+  rm_x = TRUE,
+  rm_y = TRUE,
+  ...
+)
+
+e_svg(e, serie, map = "world", name = NULL, rm_x = TRUE, rm_y = TRUE, ...)
+
+e_svg_(
+  e,
+  serie = NULL,
+  map = "world",
+  name = NULL,
+  rm_x = TRUE,
+  rm_y = TRUE,
+  ...
+)
+
+e_map_3d(
+  e,
+  serie,
+  map = "world",
+  name = NULL,
+  coord_system = NULL,
+  rm_x = TRUE,
+  rm_y = TRUE,
+  ...
+)
+
+e_map_3d_(
+  e,
+  serie = NULL,
+  map = "world",
+  name = NULL,
+  coord_system = NULL,
+  rm_x = TRUE,
+  rm_y = TRUE,
+  ...
+)
+
+e_map_3d_custom(
+  e,
+  id,
+  value,
+  height,
+  map = NULL,
+  name = NULL,
+  rm_x = TRUE,
+  rm_y = TRUE,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>e</code></td>
+<td>
+<p>An <code>echarts4r</code> object as returned by <code><a href="../../echarts4r/help/e_charts.html">e_charts</a></code> or
+a proxy as returned by <code><a href="../../echarts4r/help/echarts4rProxy.html">echarts4rProxy</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>serie</code></td>
+<td>
+<p>Values to plot.</p>
+</td></tr>
+<tr valign="top"><td><code>map</code></td>
+<td>
+<p>Map type.</p>
+</td></tr>
+<tr valign="top"><td><code>name</code></td>
+<td>
+<p>name of the serie.</p>
+</td></tr>
+<tr valign="top"><td><code>rm_x, rm_y</code></td>
+<td>
+<p>Whether to remove x and y axis, defaults to <code>TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Any other option to pass, check See Also section.</p>
+</td></tr>
+<tr valign="top"><td><code>coord_system</code></td>
+<td>
+<p>Coordinate system to use, one of <code>cartesian3D</code>, <code>geo3D</code>, <code>globe</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>id, value, height</code></td>
+<td>
+<p>Columns corresponding to registered map.</p>
+</td></tr>
+</table>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../echarts4r/help/e_country_names.html">e_country_names</a></code>,
+<a href="https://echarts.apache.org/en/option.html#series-map">Additional map arguments</a>,
+<a href="https://echarts.apache.org/en/option-gl.html#series-map3D">Additional map 3D arguments</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+choropleth &lt;- data.frame(
+  countries = c(
+    "France",
+    "Brazil",
+    "China",
+    "Russia",
+    "Canada",
+    "India",
+    "United States",
+    "Argentina",
+    "Australia"
+  ),
+  values = round(runif(9, 10, 25))
+)
+
+choropleth |&gt;
+  e_charts(countries) |&gt;
+  e_map(values) |&gt;
+  e_visual_map(min = 10, max = 25)
+
+choropleth |&gt;
+  e_charts(countries) |&gt;
+  e_map_3d(values, shading = "lambert") |&gt;
+  e_visual_map(min = 10, max = 30)
+
+# custom
+buildings &lt;- jsonlite::read_json(
+  paste0(
+    "https://echarts.apache.org/examples/",
+    "data-gl/asset/data/buildings.json"
+  )
+)
+
+heights &lt;- purrr::map(buildings$features, "properties") |&gt;
+  purrr::map("height") |&gt;
+  unlist()
+
+names &lt;- purrr::map(buildings$features, "properties") |&gt;
+  purrr::map("name") |&gt;
+  unlist()
+
+data &lt;- dplyr::tibble(
+  name = names,
+  value = round(runif(length(names), 0, 1), 6),
+  height = heights / 10
+)
+
+data |&gt;
+  e_charts() |&gt;
+  e_map_register("buildings", buildings) |&gt;
+  e_map_3d_custom(name, value, height) |&gt;
+  e_visual_map(
+    show = FALSE,
+    min = 0.4,
+    max = 1
+  )
+
+# timeline
+choropleth &lt;- data.frame(
+  countries = rep(choropleth$countries, 3)
+) |&gt;
+  dplyr::mutate(
+    grp = c(
+      rep(2016, nrow(choropleth)),
+      rep(2017, nrow(choropleth)),
+      rep(2018, nrow(choropleth))
+    ),
+    values = runif(27, 1, 10)
+  )
+
+choropleth |&gt;
+  group_by(grp) |&gt;
+  e_charts(countries, timeline = TRUE) |&gt;
+  e_map(values) |&gt;
+  e_visual_map(min = 1, max = 10)
+
+choropleth |&gt;
+  group_by(grp) |&gt;
+  e_charts(countries, timeline = TRUE) |&gt;
+  e_map_3d(values) |&gt;
+  e_visual_map(min = 1, max = 10)
+
+## End(Not run)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>echarts4r</em> version 0.5.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Predict Method for PLSR and PCR</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for predict.mvr {pls}"><tr><td>predict.mvr {pls}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Predict Method for PLSR and PCR</h2>
+
+<h3>Description</h3>
+
+<p>Prediction for mvr (PCR, PLSR) models.  New responses or scores are
+predicted using a fitted model and a new matrix of observations.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'mvr'
+predict(
+  object,
+  newdata,
+  ncomp = 1:object$ncomp,
+  comps,
+  type = c("response", "scores"),
+  na.action = na.pass,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>an <code>mvr</code> object.  The fitted model</p>
+</td></tr>
+<tr valign="top"><td><code>newdata</code></td>
+<td>
+<p>a data frame.  The new data.  If missing, the training data
+is used.</p>
+</td></tr>
+<tr valign="top"><td><code>ncomp, comps</code></td>
+<td>
+<p>vector of positive integers.  The components to use in
+the prediction.  See below.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>character.  Whether to predict scores or response values</p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+<p>function determining what should be done with missing
+values in <code>newdata</code>.  The default is to predict <code>NA</code>.  See
+<code><a href="../../stats/html/na.fail.html">na.omit</a></code> for alternatives.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>further arguments.  Currently not used</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>When <code>type</code> is <code>"response"</code> (default), predicted response values
+are returned.  If <code>comps</code> is missing (or is <code>NULL</code>), predictions
+for <code>length(ncomp)</code> models with <code>ncomp[1]</code> components,
+<code>ncomp[2]</code> components, etc., are returned.  Otherwise, predictions for
+a single model with the exact components in <code>comps</code> are returned.
+(Note that in both cases, the intercept is always included in the
+predictions.  It can be removed by subtracting the <code>Ymeans</code> component
+of the fitted model.)
+</p>
+<p>When <code>type</code> is <code>"scores"</code>, predicted score values are returned for
+the components given in <code>comps</code>.  If <code>comps</code> is missing or
+<code>NULL</code>, <code>ncomps</code> is used instead.
+</p>
+<p>It is also possible to supply a matrix instead of a data frame as
+<code>newdata</code>, which is then assumed to be the <i>X</i> data matrix.  Note
+that the usual checks for the type of the data are then omitted.  Also note
+that this is <em>only</em> possible with <code>predict</code>; it will not work in
+functions like <code><a href="../../pls/help/predplot.html">predplot</a></code>, <code><a href="../../pls/help/RMSEP.html">RMSEP</a></code> or
+<code><a href="../../pls/help/R2.html">R2</a></code>, because they also need the response variable of the new
+data.
+</p>
+
+
+<h3>Value</h3>
+
+<p>When <code>type</code> is <code>"response"</code>, a three dimensional array of
+predicted response values is returned.  The dimensions correspond to the
+observations, the response variables and the model sizes, respectively.
+</p>
+<p>When <code>type</code> is <code>"scores"</code>, a score matrix is returned.
+</p>
+
+
+<h3>Note</h3>
+
+<p>A warning message like <span class="samp">'newdata' had 10 rows but variable(s)
+found have 106 rows</span> means that not all variables were found in the
+<code>newdata</code> data frame.  This (usually) happens if the formula contains
+terms like <code>yarn$NIR</code>.  Do not use such terms; use the <code>data</code>
+argument instead.  See <code><a href="../../pls/help/mvr.html">mvr</a></code> for details.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Ron Wehrens and Bjørn-Helge Mevik
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../pls/help/mvr.html">mvr</a></code>, <code><a href="../../pls/help/summary.mvr.html">summary.mvr</a></code>,
+<code><a href="../../pls/help/coef.mvr.html">coef.mvr</a></code>, <code><a href="../../pls/help/plot.mvr.html">plot.mvr</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+data(yarn)
+nir.mvr &lt;- mvr(density ~ NIR, ncomp = 5, data = yarn[yarn$train,])
+
+## Predicted responses for models with 1, 2, 3 and 4 components
+pred.resp &lt;- predict(nir.mvr, ncomp = 1:4, newdata = yarn[!yarn$train,])
+
+## Predicted responses for a single model with components 1, 2, 3, 4
+predict(nir.mvr, comps = 1:4, newdata = yarn[!yarn$train,])
+
+## Predicted scores
+predict(nir.mvr, comps = 1:3, type = "scores", newdata = yarn[!yarn$train,])
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>pls</em> version 2.9-0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

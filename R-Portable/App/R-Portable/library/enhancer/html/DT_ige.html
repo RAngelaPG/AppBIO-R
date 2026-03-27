@@ -1,0 +1,140 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Data to fit indirect genetic effects.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for DT_ige {enhancer}"><tr><td>DT_ige {enhancer}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Data to fit indirect genetic effects.
+</h2>
+
+<h3>Description</h3>
+
+<p>This dataset contains phenotpic data for 98 individuals where they are measured with the purpose of identifying the effect of the neighbour in a focal individual. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>data("DT_ige")</pre>
+
+
+<h3>Format</h3>
+
+<p>The format is:
+chr &quot;DT_ige&quot;
+</p>
+
+
+<h3>Source</h3>
+
+<p>This data was masked from a shared study.
+</p>
+
+
+<h3>References</h3>
+
+<p>Giovanny Covarrubias-Pazaran (2024).  lme4breeding: enabling genetic evaluation in the age of genomic data. To be submitted to Bioinformatics.
+</p>
+<p>Douglas Bates, Martin Maechler, Ben Bolker, Steve Walker (2015). Fitting Linear Mixed-Effects Models Using lme4. Journal of Statistical Software, 67(1), 1-48.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+data(DT_ige)
+DT &lt;- DT_ige
+
+
+########################################
+############### sommer #################
+########################################
+if(requireNamespace("sommer")){
+library(sommer)
+# Indirect genetic effects model without covariance between DGE and IGE
+modIGE &lt;- mmes(trait ~ block, dateWarning = FALSE,
+               random = ~ focal + neighbour,
+               rcov = ~ units, nIters=100,
+              data = DT)
+summary(modIGE)$varcomp
+pmonitor(modIGE)
+
+# Indirect genetic effects model with covariance between DGE and IGE using relationship matrices
+modIGE &lt;- mmes(trait ~ block, dateWarning = FALSE,
+               random = ~ covm( vsm(ism(focal)), vsm(ism(neighbour)) ),
+               rcov = ~ units, nIters=100,
+              data = DT)
+summary(modIGE)$varcomp
+pmonitor(modIGE)
+
+# form relationship matrix
+Ai &lt;- solve(A_ige + diag(1e-5, nrow(A_ige),nrow(A_ige) ))
+Ai &lt;- as(as(as( Ai,  "dMatrix"), "generalMatrix"), "CsparseMatrix")
+attr(Ai, 'inverse')=TRUE
+# Indirect genetic effects model with covariance between DGE and IGE using relationship matrices
+modIGE &lt;- mmes(trait ~ block, dateWarning = FALSE,
+               random = ~ covm( vsm(ism(focal), Gu=Ai), vsm(ism(neighbour), Gu=Ai) ),
+               rcov = ~ units, nIters=100,
+              data = DT)
+summary(modIGE)$varcomp
+pmonitor(modIGE)
+
+}
+##############################################
+############### lme4breeding #################
+##############################################
+if(requireNamespace("lme4breeding")){
+library(lme4breeding)
+# Indirect genetic effects model without covariance between DGE and IGE
+modIGE &lt;- lmeb(trait ~ block + (1|focal) + (1|neighbour),
+              data = DT)
+vc &lt;- VarCorr(modIGE); print(vc,comp=c("Variance"))
+
+## Add relationship matrices
+A_ige &lt;- A_ige + diag(1e-4, ncol(A_ige), ncol(A_ige) )
+modIGE &lt;- lmeb(trait ~ block + (1|focal) + (1|neighbour),
+                   relmat = list(focal=A_ige,
+                                 neighbour=A_ige),
+                   data = DT)
+vc &lt;- VarCorr(modIGE); print(vc,comp=c("Variance"))
+
+## Indirect genetic effects model with covariance between DGE and IGE using relationship matrices
+## Relationship matrix
+A_ige &lt;- A_ige + diag(1e-4, ncol(A_ige), ncol(A_ige) )
+## Define 2 dummy variables to make a fake covariance
+## for two different random effects
+DT$fn &lt;- DT$nn &lt;- 1
+## Create the incidence matrix for the first random effect
+Zf &lt;- Matrix::sparse.model.matrix( ~ focal-1, data=DT )
+colnames(Zf) &lt;- gsub("focal","", colnames(Zf))
+## Create the incidence matrix for the second random effect
+Zn &lt;- Matrix::sparse.model.matrix( ~ neighbour-1, data=DT )
+colnames(Zn) &lt;- gsub("neighbour","", colnames(Zn))
+## Fit the model
+modIGE &lt;- lmeb(trait ~ block + (0+fn+nn|both),
+                   addmat = list(both=list(Zf,Zn)),
+                   relmat = list(both=A_ige),
+                   data = DT)
+vc &lt;- VarCorr(modIGE); print(vc,comp=c("Variance"))
+sigma(modIGE)^2 # error variance
+
+blups &lt;- ranef(modIGE)
+condVAR &lt;- lapply(blups, function(x){attr(x, which="postVar")}) # take sqrt() for SEs
+pairs(blups$both)
+cov2cor(vc$both)
+
+}
+
+########## end ###########
+
+
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>enhancer</em> version 1.1.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

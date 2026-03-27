@@ -1,0 +1,214 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Get information about currently bound arguments.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for arg_env {nseval}"><tr><td>arg_env {nseval}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Get information about currently bound arguments.</h2>
+
+<h3>Description</h3>
+
+<p>These are shortcut methods for querying current bindings.  For
+example, <code>arg_env(x)</code> is equivalent to <code>env(arg(x))</code>,
+<code>is_forced(x, y)</code> is equivalent to <code>forced(arg_list(x,y))</code>,
+<code>dots_exprs(...)</code> is equivalent to <code>exprs(dots(...))</code>, and so
+on. The shortcut forms skip the construction of the
+intermediate <a href="../../nseval/help/quotation.html">quotation</a> objects.
+</p>
+<p><code>dots_exprs(...)</code> quotes its arguments and returns a
+list of expressions. It is equivalent to <code>exprs(dots(...))</code> (and
+is nearly equivalent to <code>alist(...)</code>, one difference being that
+dots_exprs will expand <code>...</code>.)
+</p>
+<p><code>is_literal(x)</code> returns TRUE if an argument <code>x</code> could be a
+source literal. Specifically it tests whether <code>x</code> is bound to a
+singleton vector or a <a href="../../nseval/help/missing_value.html">missing_value</a>. This check happens without
+forcing <code>x</code>.
+</p>
+<p><code>is_missing(...)</code> checks whether an argument is
+missing, without forcing. It is similar to <a href="../../base/html/missing.html">missing</a> but can take
+multiple arguments, and can be called in more situations, such as
+from a nested inner function.
+</p>
+<p><code>is_missing_(syms, envs)</code> is a normally evaluating version
+of is_missing.  <code>syms</code> should be a symbol, character vector or
+list of such. <code>envs</code> should be an environment, or list of
+environments. Vector recycling rules apply, so you can call with
+a vector of names and one env, or vice versa.
+</p>
+<p><code>is_promise</code> returns TRUE if the given variable is bound to
+a promise. Not all arguments are bound to promises; byte-compiled
+code often omits creating a promise for literal or missing arguments.
+</p>
+<p><code>is_default</code>  determines whether an argument is bound to the
+function's default value for that argument. It must be called
+before the arguments have been forced (afterwards it will return
+FALSE).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+arg_env(sym, env = arg_env_(quote(sym), environment()))
+
+arg_env_(sym, env = arg_env_(quote(sym), environment()))
+
+arg_expr(sym, env = arg_env_(quote(sym), environment()))
+
+arg_expr_(sym, env = arg_env_(quote(sym), environment()))
+
+arg_value(
+  sym,
+  env = arg_env_(quote(sym), environment()),
+  ifnotforced = stop("Variable is not forced, so has no value")
+)
+
+arg_value_(
+  sym,
+  env = arg_env_(quote(sym), environment()),
+  ifnotforced = stop("Variable is not forced, so has no value")
+)
+
+dots_envs(...)
+
+dots_exprs(...)
+
+is_forced(...)
+
+is_forced_(syms, envs)
+
+is_literal(...)
+
+is_literal_(syms, envs)
+
+is_missing(...)
+
+is_missing_(syms, envs, unwrap = TRUE)
+
+## S3 method for class 'quotation'
+is_missing_(syms, ..., unwrap = TRUE)
+
+is_promise(...)
+
+is_promise_(syms, envs)
+
+## S3 method for class 'quotation'
+is_promise_(syms, ...)
+
+is_default(...)
+
+is_default_(syms, envs)
+
+## S3 method for class 'quotation'
+is_default_(syms, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>sym</code></td>
+<td>
+<p>For plain <code>arg_env</code>, etc, a bare name, which is
+quoted. For the underscore versions <code>arg_env_</code>, something that
+evaluates to a name or character.</p>
+</td></tr>
+<tr valign="top"><td><code>env</code></td>
+<td>
+<p>The environment to search in.</p>
+</td></tr>
+<tr valign="top"><td><code>ifnotforced</code></td>
+<td>
+<p>What to return if calling arg_value on a promise
+that has not been forced.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Bare variable names (for <code style="white-space: pre;">is_*</code>) or expressions (for
+<code style="white-space: pre;">dots_*</code>). Not forced.</p>
+</td></tr>
+<tr valign="top"><td><code>syms</code></td>
+<td>
+<p>A character vector or list of symbols.</p>
+</td></tr>
+<tr valign="top"><td><code>envs</code></td>
+<td>
+<p>An environment or list of environments.</p>
+</td></tr>
+<tr valign="top"><td><code>unwrap</code></td>
+<td>
+<p>Whether to recursively <a href="../../nseval/help/unwrap.html">unwrap</a> before testing for
+missingness.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Throughout this package, some functions come in two forms, a &quot;bare&quot;
+version which quotes its first argument literally, and a
+normally-evaluating version with a trailing underscore in its
+name. So <code>is_forced(x)</code> chiecks whether &quot;x&quot; is a missing variable,
+while <code>is_forced_(x, environment())</code> checks whether &quot;x&quot; contains
+the <em>name</em> of another variable which is missing. The following are
+all equivalent:
+</p>
+
+<ul>
+<li> <p><code>arg_env(x)</code>
+</p>
+</li>
+<li> <p><code>{y &lt;- quo(x); arg_env_(y)}</code>
+</p>
+</li>
+<li> <p><code>arg_env_(quote(x), environment())</code>
+</p>
+</li>
+<li> <p><code>arg_env_(quo(x))</code>
+</p>
+</li>
+<li> <p><code>env(arg_(quo(x)))</code>.
+</p>
+</li></ul>
+
+<p>When used with quotation objects, the <code style="white-space: pre;">is_*_</code> functions
+with trailing underscore work at one level of indirection
+compared to quotation methods. For example, <code>missing_(x)</code> tests
+whether <code>expr(x)</code> is <code style="white-space: pre;">[missing_value()]</code>, whereas <code>is_missing_(x)</code>
+assumes <code>expr(x)</code> is a <em>name</em> and checks if that name refers to a
+variable that is missing. The following are equivalent:
+</p>
+
+<ul>
+<li> <p><code>is_missing(x)</code>
+</p>
+</li>
+<li> <p><code>is_missing_(quo(x))</code>
+</p>
+</li>
+<li> <p><code>missing_(arg(x))</code>
+</p>
+</li></ul>
+
+<p>When used with a <code>quotation</code> or <code>dots</code>, is_missing(q)
+looks for the variable(s) specified by expr(q) in environment env(q)]'.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>arg_env</code> returns an environment.
+</p>
+<p><code>arg_expr</code> returns the expression bound to a named argument.
+</p>
+<p><code>arg_value</code> returns the value bound to a named argument.
+</p>
+<p><code>is_forced</code> and other <code style="white-space: pre;">is_*</code> return a logical vector with
+optional names.
+</p>
+
+<hr /><div style="text-align: center;">[Package <em>nseval</em> version 0.5.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

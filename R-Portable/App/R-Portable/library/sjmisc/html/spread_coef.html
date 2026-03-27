@@ -1,0 +1,130 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Spread model coefficients of list-variables into columns</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for spread_coef {sjmisc}"><tr><td>spread_coef {sjmisc}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Spread model coefficients of list-variables into columns</h2>
+
+<h3>Description</h3>
+
+<p>This function extracts coefficients (and standard error and
+p-values) of fitted model objects from (nested) data frames,
+which are saved in a list-variable, and spreads the coefficients
+into new colummns.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+spread_coef(data, model.column, model.term, se, p.val, append = TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A (nested) data frame with a list-variable that contains fitted
+model objects (see 'Details').</p>
+</td></tr>
+<tr valign="top"><td><code>model.column</code></td>
+<td>
+<p>Name or index of the list-variable that contains the
+fitted model objects.</p>
+</td></tr>
+<tr valign="top"><td><code>model.term</code></td>
+<td>
+<p>Optional, name of a model term. If specified, only this model
+term (including p-value) will be extracted from each model and
+added as new column.</p>
+</td></tr>
+<tr valign="top"><td><code>se</code></td>
+<td>
+<p>Logical, if <code>TRUE</code>, standard errors for estimates will also be extracted.</p>
+</td></tr>
+<tr valign="top"><td><code>p.val</code></td>
+<td>
+<p>Logical, if <code>TRUE</code>, p-values for estimates will also be extracted.</p>
+</td></tr>
+<tr valign="top"><td><code>append</code></td>
+<td>
+<p>Logical, if <code>TRUE</code> (default), this function returns
+<code>data</code> with new columns for the model coefficients; else,
+a new data frame with model coefficients only are returned.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This function requires a (nested) data frame (e.g. created by the
+<code><a href="../../tidyr/help/nest.html">nest</a></code>-function of the <span class="pkg">tidyr</span>-package),
+where several fitted models are saved in a list-variable (see
+'Examples'). Since nested data frames with fitted models stored as list-variable
+are typically fit with an identical formula, all models have the same
+dependent and independent variables and only differ in their
+subsets of data. The function then extracts all coefficients from
+each model and saves each estimate in a new column. The result
+is a data frame, where each <em>row</em> is a model with each
+model's coefficients in an own <em>column</em>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data frame with columns for each coefficient of the models
+that are stored in the list-variable of <code>data</code>; or, if
+<code>model.term</code> is given, a data frame with the term's estimate.
+If <code>se = TRUE</code> or <code>p.val = TRUE</code>, the returned data frame
+also contains columns for the coefficients' standard error and
+p-value.
+If <code>append = TRUE</code>, the columns are appended to <code>data</code>,
+i.e. <code>data</code> is also returned.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+if (require("dplyr") &amp;&amp; require("tidyr") &amp;&amp; require("purrr")) {
+  data(efc)
+
+  # create nested data frame, grouped by dependency (e42dep)
+  # and fit linear model for each group. These models are
+  # stored in the list variable "models".
+  model.data &lt;- efc %&gt;%
+    filter(!is.na(e42dep)) %&gt;%
+    group_by(e42dep) %&gt;%
+    nest() %&gt;%
+    mutate(
+      models = map(data, ~lm(neg_c_7 ~ c12hour + c172code, data = .x))
+    )
+
+  # spread coefficients, so we can easily access and compare the
+  # coefficients over all models. arguments `se` and `p.val` default
+  # to `FALSE`, when `model.term` is not specified
+  spread_coef(model.data, models)
+  spread_coef(model.data, models, se = TRUE)
+
+  # select only specific model term. `se` and `p.val` default to `TRUE`
+  spread_coef(model.data, models, c12hour)
+
+  # spread_coef can be used directly within a pipe-chain
+  efc %&gt;%
+    filter(!is.na(e42dep)) %&gt;%
+    group_by(e42dep) %&gt;%
+    nest() %&gt;%
+    mutate(
+      models = map(data, ~lm(neg_c_7 ~ c12hour + c172code, data = .x))
+    ) %&gt;%
+    spread_coef(models)
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sjmisc</em> version 2.8.11 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

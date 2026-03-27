@@ -26,18 +26,7 @@ inline
 mtSpOp<out_eT, T1, op_type>::mtSpOp(const T1& in_m)
   : m(in_m)
   {
-  arma_debug_sigprint();
-  }
-
-
-
-template<typename out_eT, typename T1, typename op_type>
-inline
-mtSpOp<out_eT, T1, op_type>::mtSpOp(const T1& in_m, const typename T1::elem_type in_aux)
-  : m(in_m)
-  , aux(in_aux)
-  {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   }
 
 
@@ -49,7 +38,7 @@ mtSpOp<out_eT, T1, op_type>::mtSpOp(const T1& in_m, const uword in_aux_uword_a, 
   , aux_uword_a(in_aux_uword_a)
   , aux_uword_b(in_aux_uword_b)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   }
 
 
@@ -62,7 +51,7 @@ mtSpOp<out_eT, T1, op_type>::mtSpOp(const char junk, const T1& in_m, const out_e
   {
   arma_ignore(junk);
   
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   }
 
 
@@ -71,7 +60,7 @@ template<typename out_eT, typename T1, typename op_type>
 inline
 mtSpOp<out_eT, T1, op_type>::~mtSpOp()
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   }
 
 

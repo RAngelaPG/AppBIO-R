@@ -1,0 +1,210 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Git Worktrees</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for git_worktree {gert}"><tr><td>git_worktree {gert}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Git Worktrees</h2>
+
+<h3>Description</h3>
+
+<p>Worktrees represent an alternative location to checkout a branch into. Rather
+than checking out a branch in your main working tree (which changes the
+branch you are currently on and forces you to stash any existing work), you
+can instead check that branch out into a separate <em>linked worktree</em> with its
+own working tree. Practically, a worktree is just a separate folder that a
+branch is checked out into, with some extra git metadata that links it back
+to the main working tree.
+</p>
+<p><code>git_worktree_list()</code> returns a data frame of information about the worktrees
+linked to the main working tree.
+</p>
+<p><code>git_worktree_exists()</code> lets you check whether or not a worktree by the name
+of <code>name</code> exists for this <code>repo</code>.
+</p>
+<p><code>git_worktree_path()</code> returns the file path to the worktree.
+</p>
+<p><code>git_worktree_add()</code> creates a new worktree called <code>name</code> in the folder
+pointed to by <code>path</code>, and checks <code>branch</code> out into it.
+</p>
+<p><code>git_worktree_remove()</code> removes a worktree. It does so by deleting the folder
+provided as the <code>path</code> to <code>git_worktree_add()</code>, and then cleaning up some git
+metadata in the main working tree that linked the main working tree to the
+removed worktree. The <code>branch</code> checked out by the worktree is not deleted.
+Note that this is just a wrapper around <code>git_worktree_prune()</code> that sets some
+desirable defaults for aggressive removal.
+</p>
+<p><code>git_worktree_prune()</code> is more cautious than <code>git_worktree_remove()</code>. It
+refuses to prune <em>valid</em> or <em>locked</em> worktrees by default, and also refuses
+the delete the working tree of the worktree by default (i.e. the folder at
+<code>path</code>). It is automatically run by git itself on periodic intervals to prune
+outdated worktrees. For interactive usage, you typically want
+<code>git_worktree_remove()</code> instead. <code>git_worktree_is_prunable()</code> lets you check
+if a worktree is prunable with the given options.
+</p>
+<p><code>git_worktree_lock()</code>, <code>git_worktree_unlock()</code>, and
+<code>git_worktree_is_locked()</code> help you manage whether or not a worktree is
+<em>locked</em>. When a worktree is locked, it is not automatically cleaned up by
+<code>git_worktree_prune()</code> (and git itself) on periodic intervals, even when it
+looks <em>invalid</em>. This is typically only useful when your worktree is on a
+hard drive that isn't always connected (which can make it look <em>invalid</em> when
+disconnected, typically making it a candidate for automatic pruning).
+</p>
+<p><code>git_worktree_is_valid()</code> checks whether a worktree is valid or not. A
+<em>valid</em> worktree requires both the git data structures inside the main
+working tree and this worktree to be present.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+git_worktree_list(repo = ".")
+
+git_worktree_exists(name, repo = ".")
+
+git_worktree_path(name, repo = ".")
+
+git_worktree_add(name, path, branch, lock = FALSE, local = TRUE, repo = ".")
+
+git_worktree_remove(name, repo = ".")
+
+git_worktree_prune(
+  name,
+  prune_valid = FALSE,
+  prune_locked = FALSE,
+  prune_working_tree = FALSE,
+  repo = "."
+)
+
+git_worktree_is_prunable(
+  name,
+  prune_valid = FALSE,
+  prune_locked = FALSE,
+  repo = "."
+)
+
+git_worktree_lock(name, repo = ".")
+
+git_worktree_unlock(name, repo = ".")
+
+git_worktree_is_locked(name, repo = ".")
+
+git_worktree_is_valid(name, repo = ".")
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>repo</code></td>
+<td>
+<p>The path to the git repository. If the directory is not a
+repository, parent directories are considered (see <a href="../../gert/help/git_find.html">git_find</a>). To disable
+this search, provide the filepath protected with <code><a href="../../base/html/AsIs.html">I()</a></code>. When using this
+parameter, always explicitly call by name (i.e. <code style="white-space: pre;">repo = </code>) because future
+versions of gert may have additional parameters.</p>
+</td></tr>
+<tr valign="top"><td><code>name</code></td>
+<td>
+<p>The name of the worktree.</p>
+</td></tr>
+<tr valign="top"><td><code>path</code></td>
+<td>
+<p>The path to checkout <code>branch</code> into. Importantly, the path up to
+the folder name must exist, but the folder name itself must not exist yet
+and will be created.</p>
+</td></tr>
+<tr valign="top"><td><code>branch</code></td>
+<td>
+<p>The branch to checkout into <code>path</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>lock</code></td>
+<td>
+<p>Whether or not to lock the worktree on creation.</p>
+</td></tr>
+<tr valign="top"><td><code>local</code></td>
+<td>
+<p>set TRUE to only check for local branches, FALSE to check for remote
+branches. Use NULL to return all branches.</p>
+</td></tr>
+<tr valign="top"><td><code>prune_valid</code></td>
+<td>
+<p>Whether or not to forcibly prune a <em>valid</em> worktree.</p>
+</td></tr>
+<tr valign="top"><td><code>prune_locked</code></td>
+<td>
+<p>Whether or not to forcibly prune a <em>locked</em> worktree.</p>
+</td></tr>
+<tr valign="top"><td><code>prune_working_tree</code></td>
+<td>
+<p>Whether or not to also remove the folder that the
+worktree was using, i.e. the <code>path</code> supplied to <code>git_worktree_add()</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>See Also</h3>
+
+<p>Other git: 
+<code><a href="../../gert/help/git_archive.html">git_archive</a></code>,
+<code><a href="../../gert/help/git_branch.html">git_branch</a>()</code>,
+<code><a href="../../gert/help/git_commit.html">git_commit</a>()</code>,
+<code><a href="../../gert/help/git_config.html">git_config</a>()</code>,
+<code><a href="../../gert/help/git_diff.html">git_diff</a>()</code>,
+<code><a href="../../gert/help/git_fetch.html">git_fetch</a>()</code>,
+<code><a href="../../gert/help/git_ignore.html">git_ignore</a></code>,
+<code><a href="../../gert/help/git_merge.html">git_merge</a>()</code>,
+<code><a href="../../gert/help/git_rebase.html">git_rebase</a>()</code>,
+<code><a href="../../gert/help/git_remote.html">git_remote</a></code>,
+<code><a href="../../gert/help/git_repo.html">git_repo</a></code>,
+<code><a href="../../gert/help/git_reset.html">git_reset</a>()</code>,
+<code><a href="../../gert/help/git_signature.html">git_signature</a>()</code>,
+<code><a href="../../gert/help/git_stash.html">git_stash</a></code>,
+<code><a href="../../gert/help/git_tag.html">git_tag</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+repo &lt;- git_init(tempfile("gert-examples-repo"))
+
+writeLines("hello", file.path(repo, 'hello.txt'))
+git_add('hello.txt', repo = repo)
+git_commit("First commit", author = "jeroen &lt;jeroen@blabla.nl&gt;", repo = repo)
+
+# Create a branch that is going to be used for the worktree,
+# but don't check it out!
+git_branch_create(branch = "branch", checkout = FALSE, repo = repo)
+
+path &lt;- tempfile("gert-examples-worktree")
+
+# Add a worktree for this branch
+git_worktree_add(
+  name = "worktree",
+  path = path,
+  branch = "branch",
+  repo = repo
+)
+
+# Worktree info
+git_worktree_list(repo = repo)
+
+# Note how the files are checked out here
+dir(path, all.files = TRUE)
+
+# And the branch that we are on at `path` is `"branch"`
+git_branch(repo = path)
+
+# Cleanup worktree, and the folder at `path`
+git_worktree_remove("worktree", repo = repo)
+
+# Cleanup repo
+unlink(repo, recursive = TRUE)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>gert</em> version 2.3.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

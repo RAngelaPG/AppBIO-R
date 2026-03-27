@@ -2,7 +2,7 @@
 // detail/config.hpp
 // ~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2023 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2025 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -341,6 +341,19 @@
 # endif // !defined(BOOST_ASIO_DISABLE_VARIADIC_LAMBDA_CAPTURES)
 #endif // !defined(BOOST_ASIO_HAS_VARIADIC_LAMBDA_CAPTURES)
 
+// Support for inline variables.
+#if !defined(BOOST_ASIO_HAS_INLINE_VARIABLES)
+# if !defined(BOOST_ASIO_DISABLE_INLINE_VARIABLES)
+#  if (__cplusplus >= 201703) && (__cpp_inline_variables >= 201606)
+#   define BOOST_ASIO_HAS_INLINE_VARIABLES 1
+#   define BOOST_ASIO_INLINE_VARIABLE inline
+#  endif // (__cplusplus >= 201703) && (__cpp_inline_variables >= 201606)
+# endif // !defined(BOOST_ASIO_DISABLE_INLINE_VARIABLES)
+#endif // !defined(BOOST_ASIO_HAS_INLINE_VARIABLES)
+#if !defined(BOOST_ASIO_INLINE_VARIABLE)
+# define BOOST_ASIO_INLINE_VARIABLE
+#endif // !defined(BOOST_ASIO_INLINE_VARIABLE)
+
 // Default alignment.
 #if defined(__STDCPP_DEFAULT_NEW_ALIGNMENT__)
 # define BOOST_ASIO_DEFAULT_ALIGN __STDCPP_DEFAULT_NEW_ALIGNMENT__
@@ -360,9 +373,21 @@
 #  if (__cplusplus >= 201703)
 #   if defined(__clang__)
 #    if defined(BOOST_ASIO_HAS_CLANG_LIBCXX)
-#     if (_LIBCPP_STD_VER > 14) && defined(_LIBCPP_HAS_ALIGNED_ALLOC) \
-        && !defined(_LIBCPP_MSVCRT) && !defined(__MINGW32__)
-#      if defined(__APPLE__)
+#     if (_LIBCPP_STD_VER > 14)
+#      if defined(__FreeBSD__) || defined(__Fuchsia__) || defined(__wasi__) \
+         || defined(__NetBSD__) || defined(__OpenBSD__)
+#       define BOOST_ASIO_HAS_STD_ALIGNED_ALLOC 1
+#      elif defined(__linux__)
+#       if defined(_LIBCPP_HAS_MUSL_LIBC)
+#        define BOOST_ASIO_HAS_STD_ALIGNED_ALLOC 1
+#       else // !defined(_LIBCPP_HAS_MUSL_LIBC)
+#        if (__GLIBC__ > 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 17)
+#         define BOOST_ASIO_HAS_STD_ALIGNED_ALLOC 1
+#        endif // (__GLIBC__ > 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 17)
+#       endif // !defined(_LIBCPP_HAS_MUSL_LIBC)
+#      elif defined(__ANDROID__) && (__ANDROID_API__ >= 28)
+#       define BOOST_ASIO_HAS_STD_ALIGNED_ALLOC 1
+#      elif defined(__APPLE__)
 #       if defined(__MAC_OS_X_VERSION_MIN_REQUIRED)
 #        if (__MAC_OS_X_VERSION_MIN_REQUIRED >= 101500)
 #         define BOOST_ASIO_HAS_STD_ALIGNED_ALLOC 1
@@ -380,11 +405,8 @@
 #         define BOOST_ASIO_HAS_STD_ALIGNED_ALLOC 1
 #        endif // (__WATCH_OS_VERSION_MIN_REQUIRED >= 60000)
 #       endif // defined(__WATCH_OS_X_VERSION_MIN_REQUIRED)
-#      else // defined(__APPLE__)
-#       define BOOST_ASIO_HAS_STD_ALIGNED_ALLOC 1
 #      endif // defined(__APPLE__)
-#     endif // (_LIBCPP_STD_VER > 14) && defined(_LIBCPP_HAS_ALIGNED_ALLOC)
-            //   && !defined(_LIBCPP_MSVCRT) && !defined(__MINGW32__)
+#     endif // (_LIBCPP_STD_VER > 14)
 #    elif defined(_GLIBCXX_HAVE_ALIGNED_ALLOC)
 #     define BOOST_ASIO_HAS_STD_ALIGNED_ALLOC 1
 #    endif // defined(_GLIBCXX_HAVE_ALIGNED_ALLOC)
@@ -423,13 +445,6 @@
 #  define BOOST_ASIO_HAS_BOOST_DATE_TIME 1
 # endif // !defined(BOOST_ASIO_DISABLE_BOOST_DATE_TIME)
 #endif // !defined(BOOST_ASIO_HAS_BOOST_DATE_TIME)
-
-// Boost support for the Coroutine library.
-#if !defined(BOOST_ASIO_HAS_BOOST_COROUTINE)
-# if !defined(BOOST_ASIO_DISABLE_BOOST_COROUTINE)
-#  define BOOST_ASIO_HAS_BOOST_COROUTINE 1
-# endif // !defined(BOOST_ASIO_DISABLE_BOOST_COROUTINE)
-#endif // !defined(BOOST_ASIO_HAS_BOOST_COROUTINE)
 
 // Boost support for the Context library's fibers.
 #if !defined(BOOST_ASIO_HAS_BOOST_CONTEXT_FIBER)
@@ -532,9 +547,9 @@
 #    define BOOST_ASIO_HAS_STD_INVOKE_RESULT 1
 #   endif // (_MSC_VER >= 1911 && _MSVC_LANG >= 201703)
 #  else // defined(BOOST_ASIO_MSVC)
-#   if (__cplusplus >= 201703)
+#   if (__cplusplus >= 201703) && (__cpp_lib_is_invocable >= 201703)
 #    define BOOST_ASIO_HAS_STD_INVOKE_RESULT 1
-#   endif // (__cplusplus >= 201703)
+#   endif // (__cplusplus >= 201703) && (__cpp_lib_is_invocable >= 201703)
 #  endif // defined(BOOST_ASIO_MSVC)
 # endif // !defined(BOOST_ASIO_DISABLE_STD_INVOKE_RESULT)
 #endif // !defined(BOOST_ASIO_HAS_STD_INVOKE_RESULT)
@@ -590,7 +605,9 @@
 // Standard library support for std::source_location.
 #if !defined(BOOST_ASIO_HAS_STD_SOURCE_LOCATION)
 # if !defined(BOOST_ASIO_DISABLE_STD_SOURCE_LOCATION)
-// ...
+#  if (__cpp_lib_source_location >= 201907)
+#   define BOOST_ASIO_HAS_STD_SOURCE_LOCATION 1
+#  endif // (__cpp_lib_source_location >= 201907)
 # endif // !defined(BOOST_ASIO_DISABLE_STD_SOURCE_LOCATION)
 #endif // !defined(BOOST_ASIO_HAS_STD_SOURCE_LOCATION)
 
@@ -815,11 +832,13 @@
 #  endif // !defined(BOOST_ASIO_DISABLE_EVENTFD)
 # endif // !defined(BOOST_ASIO_HAS_EVENTFD)
 # if !defined(BOOST_ASIO_HAS_TIMERFD)
-#  if defined(BOOST_ASIO_HAS_EPOLL)
-#   if (__GLIBC__ > 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 8)
-#    define BOOST_ASIO_HAS_TIMERFD 1
-#   endif // (__GLIBC__ > 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 8)
-#  endif // defined(BOOST_ASIO_HAS_EPOLL)
+#  if !defined(BOOST_ASIO_DISABLE_TIMERFD)
+#   if defined(BOOST_ASIO_HAS_EPOLL)
+#    if (__GLIBC__ > 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 8)
+#     define BOOST_ASIO_HAS_TIMERFD 1
+#    endif // (__GLIBC__ > 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 8)
+#   endif // defined(BOOST_ASIO_HAS_EPOLL)
+#  endif // !defined(BOOST_ASIO_DISABLE_TIMERFD)
 # endif // !defined(BOOST_ASIO_HAS_TIMERFD)
 # if defined(BOOST_ASIO_HAS_IO_URING)
 #  if LINUX_VERSION_CODE < KERNEL_VERSION(5,10,0)
@@ -1275,7 +1294,10 @@
 // Support the co_await keyword on compilers known to allow it.
 #if !defined(BOOST_ASIO_HAS_CO_AWAIT)
 # if !defined(BOOST_ASIO_DISABLE_CO_AWAIT)
-#  if defined(BOOST_ASIO_MSVC)
+#  if (__cplusplus >= 202002) \
+     && (__cpp_impl_coroutine >= 201902) && (__cpp_lib_coroutine >= 201902)
+#   define BOOST_ASIO_HAS_CO_AWAIT 1
+#  elif defined(BOOST_ASIO_MSVC)
 #   if (_MSC_VER >= 1928) && (_MSVC_LANG >= 201705) && !defined(__clang__)
 #    define BOOST_ASIO_HAS_CO_AWAIT 1
 #   elif (_MSC_FULL_VER >= 190023506)
@@ -1350,6 +1372,24 @@
 # define BOOST_ASIO_NODISCARD
 #endif // !defined(BOOST_ASIO_NODISCARD)
 
+// Compiler support for the the [[deprecated(msg)]] attribute.
+#if !defined(BOOST_ASIO_DEPRECATED_MSG)
+# if !defined(BOOST_ASIO_DISABLE_DEPRECATED_MSG)
+#  if defined(BOOST_ASIO_MSVC) && (BOOST_ASIO_MSVC >= 1400)
+#   define BOOST_ASIO_DEPRECATED_MSG(msg) __declspec(deprecated(msg))
+#  elif (__cplusplus >= 201402)
+#   if defined(__has_cpp_attribute)
+#    if __has_cpp_attribute(deprecated)
+#     define BOOST_ASIO_DEPRECATED_MSG(msg) [[deprecated(msg)]]
+#    endif // __has_cpp_attribute(deprecated)
+#   endif // defined(__has_cpp_attribute)
+#  endif // __cplusplus >= 201402
+# endif // !defined(BOOST_ASIO_DISABLE_DEPRECATED_MSG)
+#endif // !defined(BOOST_ASIO_DEPRECATED_MSG)
+#if !defined(BOOST_ASIO_DEPRECATED_MSG)
+# define BOOST_ASIO_DEPRECATED_MSG(msg)
+#endif // !defined(BOOST_ASIO_DEPRECATED_MSG)
+
 // Kernel support for MSG_NOSIGNAL.
 #if !defined(BOOST_ASIO_HAS_MSG_NOSIGNAL)
 # if defined(__linux__)
@@ -1386,11 +1426,9 @@
 // Standard library support for snprintf.
 #if !defined(BOOST_ASIO_HAS_SNPRINTF)
 # if !defined(BOOST_ASIO_DISABLE_SNPRINTF)
-#  if defined(__apple_build_version__)
-#    if (__clang_major__ >= 14)
-#     define BOOST_ASIO_HAS_SNPRINTF 1
-#    endif // (__clang_major__ >= 14)
-#  endif // defined(__apple_build_version__)
+#  if defined(__APPLE__)
+#   define BOOST_ASIO_HAS_SNPRINTF 1
+#  endif // defined(__APPLE__)
 # endif // !defined(BOOST_ASIO_DISABLE_SNPRINTF)
 #endif // !defined(BOOST_ASIO_HAS_SNPRINTF)
 

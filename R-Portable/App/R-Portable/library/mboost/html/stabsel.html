@@ -1,0 +1,242 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Stability Selection</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for stabsel {mboost}"><tr><td>stabsel {mboost}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Stability Selection
+</h2>
+
+<h3>Description</h3>
+
+<p>Selection of influential variables or model components with error control.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## a method to compute stability selection paths for fitted mboost models
+## S3 method for class 'mboost'
+stabsel(x, cutoff, q, PFER, grid = 0:mstop(x),
+        folds = subsample(model.weights(x), B = B),
+        B = ifelse(sampling.type == "MB", 100, 50),
+        assumption = c("unimodal", "r-concave", "none"),
+        sampling.type = c("SS", "MB"),
+        papply = mclapply, verbose = TRUE, FWER, eval = TRUE, ...)
+
+## just a wrapper to stabsel(p, ..., eval = FALSE)
+## S3 method for class 'mboost'
+stabsel_parameters(p, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x, p</code></td>
+<td>
+<p>an fitted model of class <code>"mboost"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>cutoff</code></td>
+<td>
+<p>cutoff between 0.5 and 1. Preferably a value between 0.6
+and 0.9 should be used.</p>
+</td></tr>
+<tr valign="top"><td><code>q</code></td>
+<td>
+<p>number of (unique) selected variables (or groups of variables
+depending on the model) that are selected on each subsample.</p>
+</td></tr>
+<tr valign="top"><td><code>PFER</code></td>
+<td>
+<p>upper bound for the per-family error rate. This
+specifies the amount of falsely selected base-learners, which is
+tolerated. See details.</p>
+</td></tr>
+<tr valign="top"><td><code>grid</code></td>
+<td>
+<p> a numeric vector of the form <code>0:m</code>. See also <code><a href="../../mboost/help/cvrisk.html">cvrisk</a></code>. </p>
+</td></tr>   
+<tr valign="top"><td><code>folds</code></td>
+<td>
+<p> a weight matrix with number of rows equal to the number
+of observations, see <code><a href="../../mboost/help/cvrisk.html">cvrisk</a></code> and
+<code><a href="../../stabs/help/subsample.html">subsample</a></code>. Usually one should not
+change the default here as subsampling with a fraction of <i>1/2</i>
+is needed for the error bounds to hold. One usage scenario where
+specifying the folds by hand might be the case when one has
+dependent data (e.g. clusters) and thus wants to draw clusters
+(i.e., multiple rows together) not individuals.</p>
+</td></tr>
+<tr valign="top"><td><code>assumption</code></td>
+<td>
+<p> Defines the type of assumptions on the
+distributions of the selection probabilities and simultaneous
+selection probabilities. Only applicable for
+<code>sampling.type = "SS"</code>. For <code>sampling.type = "MB"</code> we
+always use <code>"none"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>sampling.type</code></td>
+<td>
+<p> use sampling scheme of of Shah &amp; Samworth
+(2013), i.e., with complementarty pairs (<code>sampling.type = "SS"</code>),
+or the original sampling scheme of Meinshausen &amp; Buehlmann (2010).</p>
+</td></tr>
+<tr valign="top"><td><code>B</code></td>
+<td>
+<p> number of subsampling replicates. Per default, we use 50
+complementary pairs for the error bounds of Shah &amp; Samworth (2013)
+and 100 for the error bound derived in  Meinshausen &amp; Buehlmann
+(2010). As we use <i>B</i> complementray pairs in the former case
+this leads to <i>2B</i> subsamples.</p>
+</td></tr>
+<tr valign="top"><td><code>papply</code></td>
+<td>
+<p> (parallel) apply function, defaults to
+<code><a href="../../parallel/help/mclapply.html">mclapply</a></code>. Alternatively, <code>parLapply</code>
+can be used. In the latter case, usually more setup is needed (see
+example of <code><a href="../../mboost/help/cvrisk.html">cvrisk</a></code> for some details).</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p> logical (default: <code>TRUE</code>) that determines wether
+<code>warnings</code> should be issued. </p>
+</td></tr>
+<tr valign="top"><td><code>FWER</code></td>
+<td>
+<p> deprecated. Only for compatibility with older versions,
+use PFER instead.</p>
+</td></tr>
+<tr valign="top"><td><code>eval</code></td>
+<td>
+<p> logical. Determines whether stability selection is
+evaluated (<code>eval = TRUE</code>; default) or if only the parameter
+combination is returned.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p> additional arguments to parallel apply methods such as
+<code><a href="../../parallel/html/mcdummies.html">mclapply</a></code> and to <code><a href="../../mboost/help/cvrisk.html">cvrisk</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>For details see <code><a href="../../stabs/help/stabsel.html">stabsel</a></code> in package <span class="pkg">stabs</span>
+and Hofner et al. (2015).
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>stabsel</code> with a special <code>print</code> method.
+The object has the following elements:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>phat</code></td>
+<td>
+<p>selection probabilities.</p>
+</td></tr>
+<tr valign="top"><td><code>selected</code></td>
+<td>
+<p>elements with maximal selection probability greater
+<code>cutoff</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>max</code></td>
+<td>
+<p>maximum of selection probabilities.</p>
+</td></tr>
+<tr valign="top"><td><code>cutoff</code></td>
+<td>
+<p>cutoff used.</p>
+</td></tr>
+<tr valign="top"><td><code>q</code></td>
+<td>
+<p>average number of selected variables used.</p>
+</td></tr>
+<tr valign="top"><td><code>PFER</code></td>
+<td>
+<p>per-family error rate.</p>
+</td></tr>
+<tr valign="top"><td><code>sampling.type</code></td>
+<td>
+<p>the sampling type used for stability selection.</p>
+</td></tr>
+<tr valign="top"><td><code>assumption</code></td>
+<td>
+<p>the assumptions made on the selection
+probabilities.</p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>the call.</p>
+</td></tr>
+</table>
+
+
+<h3>References</h3>
+
+<p>B. Hofner, L. Boccuto and M. Goeker (2015),
+Controlling false discoveries in high-dimensional situations: Boosting
+with stability selection. <em>BMC Bioinformatics</em>, <b>16:144</b>.
+</p>
+<p>N. Meinshausen and P. Buehlmann (2010), Stability selection.
+<em>Journal of the Royal Statistical Society, Series B</em>,
+<b>72</b>, 417&ndash;473.
+</p>
+<p>R.D. Shah and R.J. Samworth (2013), Variable selection with error
+control: another look at stability selection. <em>Journal of the Royal
+Statistical Society, Series B</em>, <b>75</b>, 55&ndash;80.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../stabs/help/stabsel.html">stabsel</a></code> and
+<code><a href="../../stabs/help/stabsel_parameters.html">stabsel_parameters</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+  ## make data set available
+  data("bodyfat", package = "TH.data")
+  ## set seed
+  set.seed(1234)
+
+  ### low-dimensional example
+  mod &lt;- glmboost(DEXfat ~ ., data = bodyfat)
+
+  ## compute cutoff ahead of running stabsel to see if it is a sensible
+  ## parameter choice.
+  ##   p = ncol(bodyfat) - 1 (= Outcome) + 1 ( = Intercept)
+  stabsel_parameters(q = 3, PFER = 1, p = ncol(bodyfat) - 1 + 1,
+                     sampling.type = "MB")
+  ## the same:
+  stabsel(mod, q = 3, PFER = 1, sampling.type = "MB", eval = FALSE)
+
+## Not run: ############################################################
+## Do not run and check these examples automatically as
+## they take some time (~ 10 seconds depending on the system)
+
+  ## now run stability selection
+  (sbody &lt;- stabsel(mod, q = 3, PFER = 1, sampling.type = "MB"))
+  opar &lt;- par(mai = par("mai") * c(1, 1, 1, 2.7))
+  plot(sbody)
+  par(opar)
+
+  plot(sbody, type = "maxsel", ymargin = 6)
+
+## End(Not run and test)
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mboost</em> version 2.9-11 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

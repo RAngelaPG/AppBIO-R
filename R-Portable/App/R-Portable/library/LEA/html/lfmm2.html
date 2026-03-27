@@ -1,0 +1,141 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Fitting Latent Factor Mixed Models (Least squares algorithm)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for lfmm2 {LEA}"><tr><td>lfmm2 {LEA}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Fitting Latent Factor Mixed Models (Least squares algorithm)</h2>
+
+<h3>Description</h3>
+
+<p>Latent Factor Mixed Models (LFMMs) are factor regression models in which the response variable is a genotypic matrix, and the explanatory variables are environmental measures of ecological interest or trait values. The <code><a href="../../LEA/help/lfmm2.html">lfmm2</a></code> function estimates latent factors based on an exact least-squares approach. The resulting object can be used by the function <code><a href="../../LEA/help/lfmm2.test.html">lfmm2.test</a></code> to identify genetic polymorphisms exhibiting association with ecological gradients or phenotypes, while correcting for unobserved confounders. An MCMC estimation algorithm is implemented in the function <code><a href="../../LEA/help/lfmm.html">lfmm</a></code>, but this version should be prefered.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+lfmm2 (input, env, K, lambda, effect.sizes)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>input</code></td>
+<td>
+<p>A genotypic matrix or a character string containing a path to the input file. The genotypic  matrix must be in the <code><a href="../../LEA/help/lfmm.html">lfmm</a>{lfmm_format}</code> format without missing values (9 or <code>NA</code>). See <code><a href="../../LEA/help/impute.html">impute</a></code> for completion based on nonnegative matrix factorization and consider R packages for reading large matrices.
+</p>
+</td></tr>
+<tr valign="top"><td><code>env</code></td>
+<td>
+<p>A matrix of environmental covariates or a character string containing a path to the environmental file. The environment matrix must be in the <code><a href="../../LEA/help/env.html">env</a></code> format without missing values. Response variables must be encoded as <code>numeric</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>K</code></td>
+<td>
+
+<p>An integer corresponding to the number of latent factors.  The number of latent factors  could be estimated from the elbow point in the PCA screeplot for the genotype matrix.
+</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+
+<p>A positive numeric value for a ridge regularization parameter. The default value is set to 1e-5.
+</p>
+</td></tr>
+<tr valign="top"><td><code>effect.sizes</code></td>
+<td>
+ 
+<p>A logical value that indicates whether the matrix of effect sizes should be returned or not. The default value is set to <code>FALSE</code> for saving memory space. 
+</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p><code>lfmm2</code> returns an object of class <code>lfmm2Class</code> that contains $K$ estimated latent factors <code>@U</code> and their loadings  <code>@V</code>.
+</p>
+<p>The following method can be applied to an object of class <code>lfmm2Class</code>:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code><code><a href="../../LEA/help/lfmm2.test.html">lfmm2.test</a></code></code></td>
+<td>
+
+<p>P-values adjusted for the $K$ latent factors computed by lfmm2.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Olivier Francois
+</p>
+
+
+<h3>References</h3>
+
+<p>Caye K, Jumentier B, Lepeule J, Francois O. (2019). LFMM 2: fast and accurate inference of gene-environment associations in genome-wide studies. Molecular biology and evolution, 36(4), 852-860.
+</p>
+<p>Gain C, Francois O. (2021). LEA 3: Factor models in population genetics and ecological genomics with R. Molecular Ecology Resources. doi: 10.1111/1755-0998.13366
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../LEA/help/lfmm.data.html">lfmm.data</a></code>
+<code><a href="../../LEA/help/impute.html">impute</a></code>
+<code><a href="../../LEA/help/lfmm2.test.html">lfmm2.test</a></code>
+<code><a href="../../LEA/help/pca.html">pca</a></code>
+<code><a href="../../LEA/help/lfmm.html">lfmm</a></code>
+<a href="../../LEA/help/tutorial.html">tutorial</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+### Example of analysis using lfmm2 ###
+
+
+# Simulation with 10 target loci, with effect sizes ranging between -10 an 10 
+# n = 100 individuals and L = 1000 loci
+
+X &lt;- as.matrix(rnorm(100)) # causal environmental variable
+B &lt;- rep(0, 1000) 
+target &lt;- sample(1:1000, 10) # target loci
+B[target] &lt;- runif(10, -10, +10) # effect sizes
+
+# Creating hidden factors and loadings
+
+U &lt;- t(tcrossprod(as.matrix(c(-1,0.5,1.5)), X))+ matrix(rnorm(300), ncol = 3)
+V &lt;- matrix(rnorm(3000), ncol = 3)
+
+# Simulating a binarized matrix containing haploid genotypes 
+# Simulation performed with the generative LFMM
+
+Y &lt;- tcrossprod(as.matrix(X), B) + tcrossprod(U, V) + matrix(rnorm(100000, sd = .5), nrow = 100)
+Y &lt;- matrix(as.numeric(Y &gt; 0), ncol = 1000)
+
+######################################
+# Fitting an LFMM with K = 3 factors #
+######################################
+
+mod2 &lt;- lfmm2(input = Y, env = X, K = 3)
+
+# Computing P-values and plotting their minus log10 values 
+# Target loci are highlighted
+
+pv &lt;- lfmm2.test(object = mod2, input = Y, env = X, linear = TRUE)
+plot(-log10(pv$pvalues), col = "grey", cex = .4, pch = 19)
+points(target, -log10(pv$pvalues[target]), col = "red")
+
+#rm(list = ls())
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>LEA</em> version 3.19.8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Produce boilerplate constructors</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for make_constructor {ggplot2}"><tr><td>make_constructor {ggplot2}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Produce boilerplate constructors</h2>
+
+<h3>Description</h3>
+
+<p>The <code>make_constructor()</code> functions sets up a user-facing constructor for
+ggproto classes. Currently, <code>make_constructor()</code> is implemented for
+<code>Geom</code> classes.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+make_constructor(x, ...)
+
+## S3 method for class 'Geom'
+make_constructor(
+  x,
+  ...,
+  checks = exprs(),
+  omit = character(),
+  env = caller_env()
+)
+
+## S3 method for class 'Stat'
+make_constructor(
+  x,
+  ...,
+  checks = exprs(),
+  omit = character(),
+  env = caller_env()
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>An object to setup a constructor for.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Name-value pairs to use as additional arguments in the
+constructor. For layers, these are passed on to <code><a href="../../ggplot2/help/layer.html">layer(params)</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>checks</code></td>
+<td>
+<p>A list of calls to be evaluated before construction of the
+object, such as one constructed with <code><a href="../../rlang/help/defusing-advanced.html">exprs()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>omit</code></td>
+<td>
+<p>A character vector of automatically retrieved argument names
+that should not be converted to user-facing arguments. Useful for
+internally computed variables.</p>
+</td></tr>
+<tr valign="top"><td><code>env</code></td>
+<td>
+<p>An environment to search for the object.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A function
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# For testing purposes, a geom that returns grobs
+GeomTest &lt;- ggproto(
+  "GeomTest", Geom,
+  draw_group = function(..., grob = grid::pointsGrob()) {
+    return(grob)
+  }
+)
+# Creating a constructor
+geom_test &lt;- make_constructor(GeomTest)
+
+# Note that `grob` is automatically an argument to the function
+names(formals(geom_test))
+
+# Use in a plot
+set.seed(1234)
+p &lt;- ggplot(mtcars, aes(disp, mpg))
+p + geom_test()
+p + geom_test(grob = grid::circleGrob())
+
+# The `checks` argument can be used to evaluate arbitrary expressions in
+# the constructor before building the layer.
+geom_path2 &lt;- make_constructor(
+  GeomPath, checks = rlang::exprs(
+    match.arg(lineend, c("butt", "round", "square")),
+    match.arg(linejoin, c("round", "mitre", "bevel"))
+  )
+)
+
+# Note the inclusion of the expressions
+print(geom_path2)
+
+# Argument mismatch is detected
+try(geom_path2(linejoin = "foo"))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ggplot2</em> version 4.0.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

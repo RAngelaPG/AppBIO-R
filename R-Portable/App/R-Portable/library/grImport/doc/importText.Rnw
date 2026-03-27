@@ -1,0 +1,343 @@
+\documentclass{article}
+
+\usepackage{Sweave}
+%% \VignetteIndexEntry{Importing text}
+
+\author{Paul Murrell\\The University of Auckland}
+\title{Importing text}
+
+\usepackage{boxedminipage}
+\newcommand{\rgml}{RGML}
+\newcommand{\ps}{PostScript}
+\newcommand{\xml}{XML}
+\newcommand{\dfn}[1]{\emph{#1}}
+
+\newcommand{\pkg}[1]{{\bfseries #1}}
+\newcommand{\code}[1]{{\ttfamily #1}}
+\newcommand{\R}{{\sffamily R}}
+\newcommand{\todo}[1]{{\itshape #1}}
+
+\SweaveOpts{keep.source = true, eps = false}
+
+<<echo=FALSE, results=hide>>=
+options(prompt="R> ")
+options(continue = "+  ")
+options(width = 60)
+options(useFancyQuotes = FALSE)
+strOptions(strict.width = TRUE)
+library(grid)
+library(lattice)
+
+@ 
+
+%% end of declarations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\maketitle 
+
+This vignette concentrates on the issue of importing \emph{text}
+from an external graphics image (which has much more sophisticated
+support in the \pkg{grImport} package as of version 0.6).  
+
+Figure \ref{figure:simpletext} shows a very simple image
+ that contains text.  This is a \ps{} file called \code{hello.ps},
+which just displays the word ``hello''.  
+
+\begin{figure}[h!]
+\begin{center}
+\includegraphics[width=2in]{hello}
+\end{center}
+\caption{\label{figure:simpletext}A simple image that contains text.}
+\end{figure}
+
+<<echo=FALSE>>=
+addBBox <- function(existingPic) {
+    PostScriptTrace("helloBBox.ps", "helloBBox.xml")
+    helloBBox <- readPicture("helloBBox.xml")
+    grid.picture(helloBBox[seq(1, 9, 2)], gp=gpar(lex=.1),
+                 xscale=existingPic@summary@xscale,
+                 yscale=existingPic@summary@yscale)
+}
+
+@ 
+\section*{Importing text as paths}
+
+The default approach for importing text is to convert all characters 
+into paths and fill the paths.  
+The following \R{} code traces the simple text image shown in 
+Figure \ref{figure:simpletext}, reads the
+resulting \rgml{} file into \R{}, and draws it.  The image drawn
+by \R{} is shown in Figure \ref{figure:importsimple}.
+
+<<>>=
+library(grImport)
+<<simpleimport, fig=true, height=2, include=false>>=
+PostScriptTrace("hello.ps", "hello.xml")
+hello <- readPicture("hello.xml")
+grid.picture(hello)
+@ 
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=2in]{importText-simpleimport}
+\end{center}
+\caption{\label{figure:importsimple}The simple image from Figure 
+\ref{figure:simpletext} after default tracing, importing, and rendering
+by \pkg{grImport}.}
+\end{figure}
+
+It is possible to improve the smoothness of the character
+outlines via the \code{setflat} argument when tracing the original 
+image.  The following code provides an example, 
+with the result shown in Figure 
+\ref{figure:importsimplesmooth}.
+
+<<simpleimportsmooth, fig=true, height=2, include=false>>=
+PostScriptTrace("hello.ps", "hello-smooth.xml", setflat=0.5)
+helloSmooth <- readPicture("hello-smooth.xml")
+grid.picture(helloSmooth)
+@ 
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=2in]{importText-simpleimportsmooth}
+\end{center}
+\caption{\label{figure:importsimplesmooth}The simple image from Figure 
+\ref{figure:simpletext} after smoother tracing.  
+Compare the smoothness of the `o' in this
+image with the rougher `o' in Figure \ref{figure:importsimple}.}
+\end{figure}
+
+
+It is important to note that filling the paths of characters
+is not the same thing as drawing text using fonts (e.g., fonts
+contain ``hinting'' information for drawing at small sizes), so
+for an image that contains lots of small text, this approach is
+probably not the best idea.  If case space is an issue,
+tracing text as character paths
+will also produce a large \rgml{} file.
+There may also be copyright issues if a font does not permit
+copying or modifying the font outlines.
+
+\section*{Importing text as text}
+
+The alternative to converting text to a set of character paths
+is to simply record the text as a character value, plus its location
+and size.  This is achieved via the \code{charpath} argument to
+\code{PostScriptTrace} and the result is rendered as text by
+\pkg{grImport}.  The following code does this for the simple text image
+and the result is shown in Figure \ref{figure:importsimpletext}.
+
+<<simpleimporttextsrc>>=
+PostScriptTrace("hello.ps", "helloText.xml", charpath=FALSE)
+helloText <- readPicture("helloText.xml")
+grid.picture(helloText)
+<<simpleimporttext, echo=false, fig=true, height=2, include=false>>=
+<<simpleimporttextsrc>>
+addBBox(helloText)
+
+@ 
+\begin{figure}
+\begin{center}
+\includegraphics[width=2in]{importText-simpleimporttext}
+\end{center}
+\caption{\label{figure:importsimpletext}The simple image from Figure 
+\ref{figure:simpletext} after tracing \emph{as text} and normal importing and 
+rendering.
+The dotted boxes indicate
+the bounding boxes for the characters in the original text.}
+\end{figure}
+
+This result is not as nice as the result from tracing the text as
+paths.  However, it does have the benefit that it is drawing the
+text using fonts.  This means that, although it does not look exactly
+like the original text, it will look cleaner and 
+clearer than the filling-paths
+approach from the previous section, especially at small sizes.  The
+rendering will also probably be faster if that is an issue.
+
+The major difference between Figure \ref{figure:importsimpletext} and
+the original image is the font.  The default text font in 
+\R{} graphics is a sans-serif font 
+({\sffamily Helvetica} in this document), 
+while the font in the original image is (serif) Times Roman.
+One thing that we can do is at least make the font a lot closer
+to the original by selecting a serif font for drawing text.
+This is what the following code does and the result should match
+up much better (it matches up \emph{very} well in this PDF document because
+the default serif font for the PDF device is Times Roman;
+see Figure \ref{figure:importsimpletextfont}).
+
+<<simpleimporttextfontsrc>>=
+grid.picture(helloText, gp=gpar(fontfamily="serif"))
+<<simpleimporttextfont, echo=false, fig=true, height=2, include=false>>=
+<<simpleimporttextfontsrc>>
+addBBox(helloText)
+
+@ 
+\begin{figure}
+\begin{center}
+\includegraphics[width=2in]{importText-simpleimporttextfont}
+\end{center}
+\caption{\label{figure:importsimpletextfont}The simple image from Figure 
+\ref{figure:simpletext} after tracing \emph{as text}, normal importing,
+ and rendering with a Times Roman font.
+The dotted boxes indicate
+the bounding boxes for the characters in the original text.}
+\end{figure}
+
+Note that, although Figure \ref{figure:importsimpletextfont} looks 
+very much like Figure \ref{figure:importsimplesmooth}, they are
+actually quite different;  the former is drawing the text ``hello''
+using a Times Roman font, while the latter is drawing a set of 
+character paths.
+
+Drawing with the same font as the original text is not always
+going to be possible.  It may be difficult to determine what
+the original font is (though see later) and the original font 
+may not be available (it may not be installed on the computer
+where \R{} is doing the drawing).  In such cases, we have to make
+do with the fonts at our disposal and the main problem that we
+face is determining the font size to use for drawing text.
+
+Going back to Figure \ref{figure:importsimpletext} (i.e., the original
+text drawn with the wrong font), this shows the default
+behaviour for drawing text with \pkg{grImport},
+which is to choose a font size so that the text will end up the same
+\emph{width} as the original text.
+
+An alternative is to choose a font size based on the font size
+used in the original text.  This is done via the \code{sizeByWidth}
+argument, as shown in the following code and Figure 
+\ref{figure:importsimpletextheight}.
+
+<<simpleimporttextheightsrc>>=
+grid.picture(helloText, sizeByWidth=FALSE)
+<<simpleimporttextheight, echo=false, fig=true, height=2, include=false>>=
+<<simpleimporttextheightsrc>>
+addBBox(helloText)
+
+@ 
+\begin{figure}
+\begin{center}
+\includegraphics[width=2in]{importText-simpleimporttextheight}
+\end{center}
+\caption{\label{figure:importsimpletextheight}The simple image from Figure 
+\ref{figure:simpletext} after tracing \emph{as text}, normal importing,
+ and rendering using the original text height to choose the font size.
+The dotted boxes indicate
+the bounding boxes for the characters in the original text.}
+\end{figure}
+
+It is important to note that font size (usually expressed as a number
+of ``points'', e.g., 10pt) is actually only an indication of 
+the size of the characters in a font.  As Figure
+\ref{figure:importsimpletextheight} shows, the characters 
+from a 10pt Helvetica font are actually larger than
+the same characters 
+from a 10pt Times Roman font 
+(the font that was used in the original text).
+
+In this particular example, the result of choosing font size based
+on the font size of the original text is worse than 
+choosing font size based on the width of the original text.
+However, when an image contains several pieces of text at the
+same font size, this approach will at least reproduce those
+text elements at the same size as each other 
+(even if neither their heights nor 
+their widths are 
+completely faithful to the original image).
+
+A further piece of fine tuning can be applied when tracing the
+original image.  The \code{charpos} argument to 
+\code{PostScriptTrace()} can be used to specify that text
+is recorded as individual characters, each with its own
+location.  When combined with choosing font size based on the
+original font size, this may produce a better result than 
+drawing the entire piece of text.  The following code
+shows how to perform this sort of tracing and Figure
+\ref{figure:importsimpletextcharpos} shows the result.
+The overall width of the result is much closer to the original 
+text width, at the cost of some unusual spacing between 
+characters.
+
+<<simpleimporttextcharpossrc>>=
+PostScriptTrace("hello.ps", "helloChar.xml", 
+                charpath=FALSE, charpos=TRUE)
+helloChar <- readPicture("helloChar.xml")
+grid.picture(helloChar, sizeByWidth=FALSE)
+<<simpleimporttextcharpos, echo=false, fig=true, height=2, include=false>>=
+<<simpleimporttextcharpossrc>>
+addBBox(helloText)
+
+@ 
+\begin{figure}
+\begin{center}
+\includegraphics[width=2in]{importText-simpleimporttextcharpos}
+\end{center}
+\caption{\label{figure:importsimpletextcharpos}The simple image from Figure 
+\ref{figure:simpletext} after tracing \emph{as text}, normal importing,
+ and rendering by positioning each character based on the individual 
+character locations in the original text 
+(and using the original text height to choose the font size).
+The dotted boxes indicate
+the bounding boxes for the characters in the original text.}
+\end{figure}
+
+It is also possible to trace the original text as
+ individual characters, each with their own locations, 
+but to size
+by the \emph{width} of the original characters.
+However, this is unlikely to produce a very useful result
+because the font size will probably vary for individual characters
+within a single piece of text. 
+For completeness, the following code and Figure
+\ref{figure:importsimpletextcharposwidth} demonstrate this approach.
+
+<<simpleimporttextcharposwidthsrc>>=
+grid.picture(helloChar)
+<<simpleimporttextcharposwidth, echo=false, fig=true, height=2, include=false>>=
+<<simpleimporttextcharposwidthsrc>>
+addBBox(helloText)
+
+@ 
+\begin{figure}
+\begin{center}
+\includegraphics[width=2in]{importText-simpleimporttextcharposwidth}
+\end{center}
+\caption{\label{figure:importsimpletextcharposwidth}The simple image 
+from Figure 
+\ref{figure:simpletext} after tracing \emph{as text}, normal importing,
+ and rendering by positioning each character based on the individual 
+character locations in the original text 
+(and using the width of the original characters to choose the font size).
+The dotted boxes indicate
+the bounding boxes for the characters in the original text.}
+\end{figure}
+
+\section*{Implementation Details}
+
+The following information is recorded for each piece of text:
+\begin{description}
+\item[string:] the text itself (even if the text is being traced as
+character paths);
+\item[x, y:]  (bottom-left) location of the text;
+\item[width and height:]  width and height of the text, though the latter is
+based on the font size (in points) not the phyical height of the 
+text;
+\item[angle:] angle of rotation 
+(degrees anti-clockwise from the positive x-axis);
+\item[bbox:] tight bounding box for the text, 
+which will depend on the characters
+in the text, not just on the font;
+\item[fontName:] the name of the font (and depending on the font 
+there may also be one or both of {\bf fontFamilyName} 
+and {\bf fontFullName}).
+\end{description}
+
+The font name information is not read into \R{}, but it is recorded in the
+\rgml{} file, so could be parsed to attempt to extract. for example,
+the font face (italic or bold) for text elements of an image.
+
+\end{document}

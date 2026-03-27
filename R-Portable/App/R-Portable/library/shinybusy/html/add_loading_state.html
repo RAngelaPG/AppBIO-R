@@ -1,0 +1,173 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Loading state for Shiny Outputs</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for add_loading_state {shinybusy}"><tr><td>add_loading_state {shinybusy}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Loading state for Shiny Outputs</h2>
+
+<h3>Description</h3>
+
+<p>Call this function once in your UI to automatically
+add loading indicators to several outputs when they are being regenerated.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+add_loading_state(
+  selector,
+  spinner = c("standard", "hourglass", "circle", "arrows", "dots", "pulse"),
+  text = NULL,
+  timeout = 600,
+  svgColor = "#383838",
+  svgSize = "45px",
+  messageColor = "#383838",
+  messageFontSize = "14px",
+  backgroundColor = "rgba(255,255,255,0.9)",
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>selector</code></td>
+<td>
+<p>CSS selector to match outputs, for example use <code>".shiny-plot-output"</code>
+to select all <code><a href="../../shiny/help/plotOutput.html">shiny::plotOutput()</a></code> in your application, or <code>"#my_chart"</code> to select
+a specific output. You can use a vector to select multiple outputs.</p>
+</td></tr>
+<tr valign="top"><td><code>spinner</code></td>
+<td>
+<p>Name of the spinner to use.</p>
+</td></tr>
+<tr valign="top"><td><code>text</code></td>
+<td>
+<p>An optional text to be displayed under the spinner.</p>
+</td></tr>
+<tr valign="top"><td><code>timeout</code></td>
+<td>
+<p>In milliseconds, time after the output has been regenerated for removing the loading state.</p>
+</td></tr>
+<tr valign="top"><td><code>svgColor</code></td>
+<td>
+<p>Changes the SVG Icons color. You can use HEX, RGB or RGBA.</p>
+</td></tr>
+<tr valign="top"><td><code>svgSize</code></td>
+<td>
+<p>Changes the SVG Icons width and height.</p>
+</td></tr>
+<tr valign="top"><td><code>messageColor</code></td>
+<td>
+<p>Changes the color of the message text.</p>
+</td></tr>
+<tr valign="top"><td><code>messageFontSize</code></td>
+<td>
+<p>Changes the font-size of the message text.</p>
+</td></tr>
+<tr valign="top"><td><code>backgroundColor</code></td>
+<td>
+<p>Changes the background color. You can use HEX, RGB or RGBA.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Other options passed to the JavaScript method, see <a href="https://notiflix.github.io/documentation">this link</a>
+for all available options.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>An HTML tag that you can use in Shiny UI.
+</p>
+
+
+<h3>Note</h3>
+
+<p>This function is experimental, if you encounter bugs or bad behavior,
+please report <a href="https://github.com/dreamRs/shinybusy/issues">issue here</a>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(shinybusy)
+library(shiny)
+
+ui &lt;- fluidPage(
+
+  # Use once in UI
+  add_loading_state(
+    ".shiny-plot-output",
+    text = "Please wait...",
+    svgColor = "steelblue"
+  ),
+
+  tags$h3("Loading state"),
+  actionButton("refresh", "Refresh charts"),
+  actionButton("modal", "Open modal window"),
+
+  fluidRow(
+    column(
+      width = 6,
+      plotOutput(outputId = "plot1")
+    ),
+    column(
+      width = 6,
+      plotOutput(outputId = "plot2")
+    )
+  )
+
+)
+
+server &lt;- function(input, output, session) {
+
+  output$plot1 &lt;- renderPlot({
+    input$refresh
+    if (input$refresh &gt; 0) {
+      Sys.sleep(2)
+    }
+    barplot(table(floor(runif(100) * 6)))
+  })
+
+  output$plot2 &lt;- renderPlot({
+    input$refresh
+    if (input$refresh &gt; 0) {
+      Sys.sleep(2)
+    }
+    plot(rnorm(50), rnorm(50))
+  })
+
+
+  observeEvent(input$modal, {
+    showModal(modalDialog(
+      title = "Works in modal too",
+      actionButton("refresh2", "Refresh chart"),
+      plotOutput(outputId = "plot3")
+    ))
+  })
+
+  output$plot3 &lt;- renderPlot({
+    input$refresh2
+    if (input$refresh2 &gt; 0) {
+      Sys.sleep(2)
+    }
+    hist(rnorm(500))
+  })
+
+}
+
+if (interactive())
+  shinyApp(ui, server)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>shinybusy</em> version 0.3.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

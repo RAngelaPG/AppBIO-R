@@ -1,0 +1,174 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Automatic vehicle recognition data</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for bus {rrcov}"><tr><td>bus {rrcov}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Automatic vehicle recognition data</h2>
+
+<h3>Description</h3>
+
+<p>The data set bus (Hettich and Bay, 1999) corresponds to a study in 
+automatic vehicle recognition (see Maronna et al. 2006, page 213, Example 6.3)). 
+This data set from the 
+Turing Institute, Glasgow, Scotland, contains measures of shape 
+features extracted from vehicle silhouettes. The images were acquired 
+by a camera looking downward at the model vehicle from a fixed angle 
+of elevation. Each of the 218 rows corresponds to a view of a bus 
+silhouette, and contains 18 attributes of the image. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>data(bus)</pre>
+
+
+<h3>Format</h3>
+
+<p>A data frame with 218 observations on the following 18 variables: 
+</p>
+
+<dl>
+<dt><code>V1</code></dt><dd><p>compactness</p>
+</dd>
+<dt><code>V2</code></dt><dd><p>circularity</p>
+</dd>
+<dt><code>V3</code></dt><dd><p>distance circularity</p>
+</dd>
+<dt><code>V4</code></dt><dd><p>radius ratio</p>
+</dd>
+<dt><code>V5</code></dt><dd><p>principal axis aspect ratio</p>
+</dd>
+<dt><code>V6</code></dt><dd><p>maximum length aspect ratio</p>
+</dd>
+<dt><code>V7</code></dt><dd><p>scatter ratio</p>
+</dd>
+<dt><code>V8</code></dt><dd><p>elongatedness</p>
+</dd>
+<dt><code>V9</code></dt><dd><p>principal axis rectangularity</p>
+</dd>
+<dt><code>V10</code></dt><dd><p>maximum length rectangularity</p>
+</dd>
+<dt><code>V11</code></dt><dd><p>scaled variance along major axis</p>
+</dd>
+<dt><code>V12</code></dt><dd><p>scaled variance along minor axis</p>
+</dd>
+<dt><code>V13</code></dt><dd><p>scaled radius of gyration</p>
+</dd>
+<dt><code>V14</code></dt><dd><p>skewness about major axis</p>
+</dd>
+<dt><code>V15</code></dt><dd><p>skewness about minor axis</p>
+</dd>
+<dt><code>V16</code></dt><dd><p>kurtosis about minor axis</p>
+</dd>
+<dt><code>V17</code></dt><dd><p>kurtosis about major axis</p>
+</dd>
+<dt><code>V18</code></dt><dd><p>hollows ratio</p>
+</dd>
+</dl>
+
+
+
+<h3>Source</h3>
+
+<p>Hettich, S. and Bay, S.D. (1999), The UCI KDD Archive,
+Irvine, CA:University of California, Department of Information and Computer Science,
+
+'http://kdd.ics.uci.edu'
+</p>
+
+
+<h3>References</h3>
+
+<p>Maronna, R., Martin, D. and Yohai, V., (2006). Robust Statistics: Theory and Methods. Wiley, New York.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+    ## Reproduce Table 6.3 from Maronna et al. (2006), page 213
+    data(bus)
+    bus &lt;- as.matrix(bus)
+    
+    ## calculate MADN for each variable
+    xmad &lt;- apply(bus, 2, mad)      
+    cat("\nMin, Max of MADN: ", min(xmad), max(xmad), "\n")
+
+
+    ## MADN vary between 0 (for variable 9) and 34. Therefore exclude 
+    ##  variable 9 and divide the remaining variables by their MADNs.
+    bus1 &lt;- bus[, -9]
+    madbus &lt;- apply(bus1, 2, mad)
+    bus2 &lt;- sweep(bus1, 2, madbus, "/", check.margin = FALSE)
+
+    ## Compute classical and robust PCA (Spherical/Locantore, Hubert, MCD and OGK)    
+    pca  &lt;- PcaClassic(bus2)
+    rpca &lt;- PcaLocantore(bus2)
+    pcaHubert &lt;- PcaHubert(bus2, k=17, kmax=17, mcd=FALSE)
+    pcamcd &lt;- PcaCov(bus2, cov.control=CovControlMcd())
+    pcaogk &lt;- PcaCov(bus2, cov.control=CovControlOgk())
+
+    ev    &lt;- getEigenvalues(pca)
+    evrob &lt;- getEigenvalues(rpca)
+    evhub &lt;- getEigenvalues(pcaHubert)
+    evmcd &lt;- getEigenvalues(pcamcd)
+    evogk &lt;- getEigenvalues(pcaogk)
+
+    uvar    &lt;- matrix(nrow=6, ncol=6)
+    svar    &lt;- sum(ev)
+    svarrob &lt;- sum(evrob)
+    svarhub &lt;- sum(evhub)
+    svarmcd &lt;- sum(evmcd)
+    svarogk &lt;- sum(evogk)
+    for(i in 1:6){
+        uvar[i,1] &lt;- i
+        uvar[i,2] &lt;- round((svar - sum(ev[1:i]))/svar, 3)
+        uvar[i,3] &lt;- round((svarrob - sum(evrob[1:i]))/svarrob, 3)
+        uvar[i,4] &lt;- round((svarhub - sum(evhub[1:i]))/svarhub, 3)
+        uvar[i,5] &lt;- round((svarmcd - sum(evmcd[1:i]))/svarmcd, 3)
+        uvar[i,6] &lt;- round((svarogk - sum(evogk[1:i]))/svarogk, 3)
+    }
+    uvar &lt;- as.data.frame(uvar)
+    names(uvar) &lt;- c("q", "Classical","Spherical", "Hubert", "MCD", "OGK")
+    cat("\nBus data: proportion of unexplained variability for q components\n")
+    print(uvar)
+ 
+    ## Reproduce Table 6.4 from Maronna et al. (2006), page 214
+    ##
+    ## Compute classical and robust PCA extracting only the first 3 components
+    ## and take the squared orthogonal distances to the 3-dimensional hyperplane
+    ##
+    pca3 &lt;- PcaClassic(bus2, k=3)               # classical
+    rpca3 &lt;- PcaLocantore(bus2, k=3)            # spherical (Locantore, 1999)
+    hpca3 &lt;- PcaHubert(bus2, k=3)               # Hubert
+    dist &lt;- pca3@od^2
+    rdist &lt;- rpca3@od^2
+    hdist &lt;- hpca3@od^2
+
+    ## calculate the quantiles of the distances to the 3-dimensional hyperplane
+    qclass  &lt;- round(quantile(dist, probs = seq(0, 1, 0.1)[-c(1,11)]), 1)
+    qspc &lt;- round(quantile(rdist, probs = seq(0, 1, 0.1)[-c(1,11)]), 1)
+    qhubert &lt;- round(quantile(hdist, probs = seq(0, 1, 0.1)[-c(1,11)]), 1)
+    qq &lt;- cbind(rbind(qclass, qspc, qhubert), round(c(max(dist), max(rdist), max(hdist)), 0))
+    colnames(qq)[10] &lt;- "Max"
+    rownames(qq) &lt;- c("Classical", "Spherical", "Hubert")
+    cat("\nBus data: quantiles of distances to hiperplane\n")
+    print(qq)
+
+    ## 
+    ## Reproduce Fig 6.1 from Maronna et al. (2006), page 214
+    ## 
+    cat("\nBus data: Q-Q plot of logs of distances to hyperplane (k=3) 
+    \nfrom classical and robust estimates. The line is the identity diagonal\n")
+    plot(sort(log(dist)), sort(log(rdist)), xlab="classical", ylab="robust")
+    lines(sort(log(dist)), sort(log(dist)))
+   
+    
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rrcov</em> version 1.7-7 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

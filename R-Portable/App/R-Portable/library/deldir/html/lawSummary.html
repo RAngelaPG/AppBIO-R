@@ -1,0 +1,199 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Produce a Lewis-Aboav-Weaire summary of a tessellation.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for lawSummary {deldir}"><tr><td>lawSummary {deldir}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Produce a Lewis-Aboav-Weaire summary of a tessellation.
+</h2>
+
+<h3>Description</h3>
+
+<p>Produce a summary of a Dirichlet (Voronoi) tessellation in terms
+of parameters relevant to Lewis's law and Aboav-Weaire's law.
+Note that &ldquo;law&rdquo; in the function name corresponds to
+&ldquo;Lewis-Aboav-Weaire&rdquo;.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+lawSummary(object)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+
+<p>An object of class <code>"deldir"</code> as returned by the function
+<code>deldir()</code>.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Tiles are stripped away from the tessellation in &ldquo;layers&rdquo;.
+Layer 1 consists of &ldquo;boundary&rdquo; tiles, i.e. tiles having
+at least one vertex on the enclosing rectangle (determined by the
+<code>rw</code> argument of <code><a href="../../deldir/help/deldir.html">deldir</a>()</code>).  Layer 2 consists
+of tiles which are neighbours of tiles in layer 1 (i.e. tiles
+determined by points that are Delaunay neighbours of points
+determining the tiles in layer 1).  Layer 3 consists of tiles
+which are neighbours of tiles in layer 2.
+</p>
+<p>The parameters of interest in respect of the Lewis-Aboav-Weaire summary are
+then calculated in terms of the tiles that remain after the three layers
+have been stripped away, which will be referred to as &ldquo;interior&rdquo;
+tiles.  These parameters are:
+</p>
+
+<ul>
+<li><p> the areas of each of the interior tiles
+</p>
+</li>
+<li><p> the number of edges of each of the interior tiles
+</p>
+</li>
+<li><p> the number of edges of all neighbouring tiles of each of
+the interior tiles.
+</p>
+</li></ul>
+
+<p>Note that the neighbouring tiles of the interior tiles may include
+tiles which are <em>not themselves</em> interior tiles (i.e. tiles
+which are in layer 3).
+</p>
+<p>This function was created at the request of Kai Xu
+(Fisheries College, Jimei University, Xiamen, Fujian, China 361021).
+</p>
+
+
+<h3>Value</h3>
+
+<p>If no tiles remain after the three layers have been stripped
+away, then the returned value is <code>NULL</code>.  Otherwise the
+returned value is a list with components calculated in terms of
+the remaining (&ldquo;interior&rdquo;) tiles.  These components are:
+</p>
+
+<ul>
+<li> <p><code>tile.vertices</code> A list whose entries are data frames
+giving the coordinates of the vertices of the interior tiles.
+</p>
+</li>
+<li> <p><code>tile.areas</code> A vector of the areas of the interior tiles
+in the tessellation in question.
+</p>
+</li>
+<li><p>tile.tags A vector or factor whose values are the &ldquo;tags&rdquo;
+of the interior tiles.  The &ldquo;original&rdquo; of this object (the
+&ldquo;tags&rdquo; associated with all of the tiles) is provided
+as the <code>z</code> argument to <code>deldir()</code>.  The <code>tile.tags</code>
+component of the value returned by <code>lawSummary()</code> is present
+only if <code>deldir()</code> was called with a (non-<code>NULL</code>) value
+of the <code>z</code> argument.
+</p>
+</li>
+<li> <p><code>num.edges</code> A vector of the number of edges of each
+such tile.
+</p>
+</li>
+<li> <p><code>num.nbr.edges</code> A list with a component for each
+point, in the set being tessellated, whose corresponding tile
+is an interior tile.  Each component of this
+list is the vector of the number of edges of the interior tiles
+determined by points which are Delaunay neighbours of
+the point corresponding to the list component in question.
+</p>
+</li>
+<li> <p><code>totnum.nbr.edges</code> A vector whose entries consist
+of the sums of the vectors in the foregoing list.
+</p>
+</li></ul>
+
+<p>The returned list also has attributes as follows:
+</p>
+
+<ul>
+<li> <p><code>i1</code> An integer vector whose entries are in the indices
+of the tiles in layer 1.
+</p>
+</li>
+<li> <p><code>i2</code> An integer vector whose entries are in the indices
+of the tiles in layer 2.
+</p>
+</li>
+<li> <p><code>i3</code> An integer vector whose entries are in the indices
+of the tiles in layer 3.
+</p>
+</li>
+<li> <p><code>i.kept</code> An integer vector whose entries are in the indices
+of the tiles that are kept, i.e. those that remain after the three layers
+have been stripped away.
+</p>
+</li></ul>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Rolf Turner <a href="mailto:rolfurner@posteo.net">rolfurner@posteo.net</a></p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../deldir/help/tile.list.html">tile.list</a>()</code> <code><a href="../../deldir/help/tile.centroids.html">tile.centroids</a>()</code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# A random pattern:
+set.seed(42)
+xy1   &lt;- data.frame(x=runif(400,0,20),y=runif(400,0,20))
+dxy1  &lt;- deldir(xy1)
+ldxy1 &lt;- lawSummary(dxy1)
+tl1   &lt;- tile.list(dxy1)
+plot(0,0,type="n",xlim=c(-2,35),ylim=c(0,20),asp=1,xlab="x",ylab="y",bty="l")
+plot(tl1,showpoints=FALSE,add=TRUE)
+points(xy1[attr(ldxy1,"i1"),],pch=20,col="yellow")
+points(xy1[attr(ldxy1,"i2"),],pch=20,col="blue")
+points(xy1[attr(ldxy1,"i3"),],pch=20,col="green")
+points(xy1[attr(ldxy1,"i.kept"),],pch=20,col="red")
+legend("right",pch=20,col=c("yellow","blue","green","red"),
+       legend=c("layer 1","layer 2","layer 3","interior"))
+
+# A highly structured pattern (example due to Kai Xu):
+set.seed(115)
+x  &lt;- c(rep(1:20,10),rep((1:20)+0.5,10))
+y  &lt;- c(rep(1:10,each=20),rep((1:10)+0.5,each=20))*sqrt(3)
+a  &lt;- runif(400,0,2*pi)
+b  &lt;- runif(400,-1,1)
+x  &lt;- x+0.1*cos(a)*b
+y  &lt;- y+0.1*sin(a)*b
+xy2 &lt;- data.frame(x,y)
+dxy2  &lt;- deldir(xy2)
+ldxy2 &lt;- lawSummary(dxy2)
+tl2   &lt;- tile.list(dxy2)
+plot(0,0,type="n",xlim=c(-2,35),ylim=c(0,20),asp=1,xlab="x",ylab="y",bty="l")
+plot(tl2,showpoints=FALSE,add=TRUE)
+points(xy2[attr(ldxy2,"i1"),],pch=20,col="yellow")
+points(xy2[attr(ldxy2,"i2"),],pch=20,col="blue")
+points(xy2[attr(ldxy2,"i3"),],pch=20,col="green")
+points(xy2[attr(ldxy2,"i.kept"),],pch=20,col="red")
+legend("right",pch=20,col=c("yellow","blue","green","red"),
+       legend=c("layer 1","layer 2","layer 3","interior"))
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>deldir</em> version 2.0-4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

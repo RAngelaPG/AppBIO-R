@@ -1,0 +1,220 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Monitoring of Empirical Fluctuation Processes</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mefp {strucchange}"><tr><td>mefp {strucchange}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Monitoring of Empirical Fluctuation Processes</h2>
+
+<h3>Description</h3>
+
+<p>Online monitoring of structural breaks in a linear regression model. A
+sequential fluctuation test based on parameter estimates or OLS residuals
+signals structural breaks.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+mefp(obj, ...)
+
+## S3 method for class 'formula'
+mefp(formula, type = c("OLS-CUSUM", "OLS-MOSUM", "RE", "ME",
+    "fluctuation"), data, h = 1, alpha = 0.05,
+    functional = c("max", "range"), period = 10,
+    tolerance = .Machine$double.eps^0.5, CritvalTable = NULL,
+    rescale = NULL, border = NULL, ...)
+
+## S3 method for class 'efp'
+mefp(obj, alpha=0.05, functional = c("max", "range"),
+    period = 10, tolerance = .Machine$double.eps^0.5,
+    CritvalTable = NULL, rescale = NULL, border = NULL, ...)
+
+monitor(obj, data = NULL, verbose = TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>a symbolic description for the model to be tested.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>an optional data frame containing the variables in the model. By
+default the variables are taken from the environment which <code>efp</code> is
+called from.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>specifies which type of fluctuation process will be
+computed.</p>
+</td></tr>
+<tr valign="top"><td><code>h</code></td>
+<td>
+<p>(only used for MOSUM/ME processes). A numeric scalar from interval
+(0,1) specifying the size of the data window relative to the sample
+size.</p>
+</td></tr>
+<tr valign="top"><td><code>obj</code></td>
+<td>
+<p>Object of class <code>"efp"</code> (for <code>mefp</code>) or
+<code>"mefp"</code> (for <code>monitor</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>alpha</code></td>
+<td>
+<p>Significance level of the test, i.e., probability of
+type I error.</p>
+</td></tr>
+<tr valign="top"><td><code>functional</code></td>
+<td>
+<p>Determines if maximum or range of parameter
+differences is used as statistic.</p>
+</td></tr>
+<tr valign="top"><td><code>period</code></td>
+<td>
+<p>(only used for MOSUM/ME processes). Maximum time (relative
+to the history period) that will be monitored. Default is 10 times
+the history period.</p>
+</td></tr>
+<tr valign="top"><td><code>tolerance</code></td>
+<td>
+<p>Tolerance for numeric <code>==</code> comparisons.</p>
+</td></tr>
+<tr valign="top"><td><code>CritvalTable</code></td>
+<td>
+<p>Table of critical values, this table is
+interpolated to get critical values
+for arbitrary <code>alpha</code>s. The default depends on the <code>type</code>
+of fluctuation process (pre-computed tables are available for all
+types). <em>This argument is under development.</em></p>
+</td></tr>
+<tr valign="top"><td><code>rescale</code></td>
+<td>
+<p>If <code>TRUE</code> the estimates will be standardized by
+the regressor matrix of the corresponding subsample similar to
+Kuan &amp; Chen (1994); if <code>FALSE</code> the historic regressor matrix will
+be used. The default is to rescale the monitoring processes of type
+<code>"ME"</code> but not of <code>"RE"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>border</code></td>
+<td>
+<p>An optional user-specified border function for the
+empirical process. <em>This argument is under development.</em></p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>If <code>TRUE</code>, signal breaks by text output.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Currently not used.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code><a href="../../strucchange/help/mefp.html">mefp</a></code> creates an object of class <code>"mefp"</code> either
+from a model formula or from an object of class <code>"efp"</code>. In
+addition to the arguments of <code><a href="../../strucchange/help/efp.html">efp</a></code>, the type of statistic
+and a significance level for the monitoring must be specified. The
+monitoring itself is performed by <code>monitor</code>, which can be
+called arbitrarily often on objects of class <code>"mefp"</code>. If new
+data have arrived, then the empirical fluctuation process is computed
+for the new data. If the process crosses the boundaries corresponding
+to the significance level <code>alpha</code>, a structural break is detected
+(and signaled).
+</p>
+<p>The typical usage is to initialize the monitoring by creation of an
+object of class <code>"mefp"</code> either using a formula or an
+<code>"efp"</code> object. Data available at this stage are considered the
+<em>history sample</em>, which is kept fixed during the complete
+monitoring process, and may not contain any structural changes.
+</p>
+<p>Subsequent calls to <code>monitor</code> perform a sequential test of the
+null hypothesis of no structural change in new data against the
+general alternative of changes in one or more of the coefficients of
+the regression model.
+</p>
+<p>The recursive
+estimates test is also called fluctuation test, therefore setting <code>type</code>
+to <code>"fluctuation"</code> was used to specify it in earlier versions of
+strucchange. It still can be used now, but will be forced to <code>"RE"</code>
+</p>
+
+
+<h3>References</h3>
+
+<p>Leisch F., Hornik K., Kuan C.-M. (2000), Monitoring
+Structural Changes with the Generalized Fluctuation Test,
+<em>Econometric Theory</em>, <b>16</b>, 835&ndash;854.
+</p>
+<p>Zeileis A., Leisch F., Kleiber C., Hornik K. (2005), Monitoring
+Structural Change in Dynamic Econometric Models,
+<em>Journal of Applied Econometrics</em>, <b>20</b>, 99&ndash;121.
+doi:10.1002/jae.776.
+</p>
+<p>Zeileis A. (2005), A Unified Approach to Structural Change Tests Based on
+ML Scores, F Statistics, and OLS Residuals. <em>Econometric Reviews</em>, <b>24</b>,
+445&ndash;466. doi:10.1080/07474930500406053.
+</p>
+<p>Zeileis A., Shah A., Patnaik I. (2010), Testing, Monitoring, and Dating Structural
+Changes in Exchange Rate Regimes, <em>Computational Statistics and Data Analysis</em>,
+<b>54</b>(6), 1696&ndash;1706. doi:10.1016/j.csda.2009.12.005.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../strucchange/help/plot.mefp.html">plot.mefp</a></code>, <code><a href="../../strucchange/help/boundary.mefp.html">boundary.mefp</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+df1 &lt;- data.frame(y=rnorm(300))
+df1[150:300,"y"] &lt;- df1[150:300,"y"]+1
+
+## use the first 50 observations as history period
+e1 &lt;- efp(y~1, data=df1[1:50,,drop=FALSE], type="ME", h=1)
+me1 &lt;- mefp(e1, alpha=0.05)
+
+## the same in one function call
+me1 &lt;- mefp(y~1, data=df1[1:50,,drop=FALSE], type="ME", h=1,
+              alpha=0.05)
+
+## monitor the 50 next observations
+me2 &lt;- monitor(me1, data=df1[1:100,,drop=FALSE])
+plot(me2)
+
+# and now monitor on all data
+me3 &lt;- monitor(me2, data=df1)
+plot(me3)
+
+
+## Load dataset "USIncExp" with income and expenditure in the US
+## and choose a suitable subset for the history period
+data("USIncExp")
+USIncExp3 &lt;- window(USIncExp, start=c(1969,1), end=c(1971,12))
+## initialize the monitoring with the formula interface
+me.mefp &lt;- mefp(expenditure~income, type="ME", rescale=TRUE,
+                   data=USIncExp3, alpha=0.05)
+
+## monitor the new observations for the year 1972
+USIncExp3 &lt;- window(USIncExp, start=c(1969,1), end=c(1972,12))
+me.mefp &lt;- monitor(me.mefp)
+
+## monitor the new data for the years 1973-1976
+USIncExp3 &lt;- window(USIncExp, start=c(1969,1), end=c(1976,12))
+me.mefp &lt;- monitor(me.mefp)
+plot(me.mefp, functional = NULL)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>strucchange</em> version 1.5-4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

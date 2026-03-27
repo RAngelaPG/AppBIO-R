@@ -1,0 +1,161 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: check if a url is okay</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for ok {crul}"><tr><td>ok {crul}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>check if a url is okay</h2>
+
+<h3>Description</h3>
+
+<p>check if a url is okay
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+ok(x, status = 200L, info = TRUE, verb = "head", ua_random = FALSE, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>either a URL as a character string, or an object of
+class <a href="../../crul/help/HttpClient.html">HttpClient</a></p>
+</td></tr>
+<tr valign="top"><td><code>status</code></td>
+<td>
+<p>(integer) one or more HTTP status codes, must be integers.
+default: <code>200L</code>, since this is the most common signal
+that a URL is okay, but there may be cases in which your URL
+is okay if it's a <code>201L</code>, or some other status code.</p>
+</td></tr>
+<tr valign="top"><td><code>info</code></td>
+<td>
+<p>(logical) in the case of an error, do you want a
+<code>message()</code> about it? Default: <code>TRUE</code></p>
+</td></tr>
+<tr valign="top"><td><code>verb</code></td>
+<td>
+<p>(character) use &quot;head&quot; (default) or &quot;get&quot; HTTP verb
+for the request. note that &quot;get&quot; will take longer as it returns a
+body. however, &quot;verb=get&quot; may be your only option if a url
+blocks head requests</p>
+</td></tr>
+<tr valign="top"><td><code>ua_random</code></td>
+<td>
+<p>(logical) use a random user agent string?
+default: <code>TRUE</code>. if you set <code>useragent</code> curl option it will override
+this setting. The random user agent string is pulled from a vector of
+50 user agent strings generated from <code>charlatan::UserAgentProvider</code>
+(by executing <code>replicate(30, UserAgentProvider$new()$user_agent())</code>)</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>args passed on to <a href="../../crul/help/HttpClient.html">HttpClient</a></p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>We internally verify that status is an integer and
+in the known set of HTTP status codes, and that info is a boolean
+</p>
+<p>You may have to fiddle with the parameters to <code>ok()</code> as well as
+curl options to get the &quot;right answer&quot;. If you think you are
+incorrectly getting <code>FALSE</code>, the first thing to do is to pass in
+<code>verbose=TRUE</code> to <code>ok()</code>. That will give you verbose curl output and will
+help determine what the issue may be. Here's some different scenarios:
+</p>
+
+<ul>
+<li><p> the site blocks head requests: some sites do this, try <code>verb="get"</code>
+</p>
+</li>
+<li><p> it will be hard to determine a site that requires this, but it's
+worth trying a random useragent string, e.g., <code>ok(useragent = "foobar")</code>
+</p>
+</li>
+<li><p> some sites are up and reachable but you could get a 403 Unauthorized
+error, there's nothing you can do in this case other than having access
+</p>
+</li>
+<li><p> its possible to get a weird HTTP status code, e.g., LinkedIn gives
+a 999 code, they're trying to prevent any programmatic access
+</p>
+</li></ul>
+
+<p>A <code>FALSE</code> result may be incorrect depending on the use case. For example,
+if you want to know if curl based scraping will work without fiddling with
+curl options, then the <code>FALSE</code> is probably correct, but if you want to
+fiddle with curl options, then first step would be to send <code>verbose=TRUE</code>
+to see whats going on with any redirects and headers. You can set headers,
+user agent strings, etc. to get closer to the request you want to know
+about. Note that a user agent string is always passed by default, but it
+may not be the one you want.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a single boolean, if <code>TRUE</code> the URL is up and okay,
+if <code>FALSE</code> it is down; but, see Details
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+# 200
+ok("https://www.google.com")
+# 200
+ok("https://hb.opencpu.org/status/200")
+# more than one status
+ok("https://www.google.com", status = c(200L, 202L))
+# 404
+ok("https://hb.opencpu.org/status/404")
+# doesn't exist
+ok("https://stuff.bar")
+# doesn't exist
+ok("stuff")
+
+# use get verb instead of head
+ok("http://animalnexus.ca")
+ok("http://animalnexus.ca", verb = "get")
+
+# some urls will require a different useragent string
+# they probably regex the useragent string
+ok("https://doi.org/10.1093/chemse/bjq042")
+ok("https://doi.org/10.1093/chemse/bjq042", verb = "get", useragent = "foobar")
+
+# with random user agent's
+## here, use a request hook to print out just the user agent string so
+## we can see what user agent string is being sent off
+fun_ua &lt;- function(request) {
+  message(paste0("User-agent: ", request$options$useragent), sep = "\n")
+}
+z &lt;- crul::HttpClient$new("https://doi.org/10.1093/chemse/bjq042",
+ hooks = list(request = fun_ua))
+z
+replicate(5, ok(z, ua_random=TRUE), simplify=FALSE)
+## if you set useragent option it will override ua_random=TRUE
+ok("https://doi.org/10.1093/chemse/bjq042", useragent="foobar", ua_random=TRUE)
+
+# with HttpClient
+z &lt;- crul::HttpClient$new("https://hb.opencpu.org/status/404",
+ opts = list(verbose = TRUE))
+ok(z)
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>crul</em> version 1.6.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

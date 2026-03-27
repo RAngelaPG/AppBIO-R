@@ -1,0 +1,106 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Expected length of stay</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for ELOS {mstate}"><tr><td>ELOS {mstate}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Expected length of stay</h2>
+
+<h3>Description</h3>
+
+<p>Given a <code>"probtrans"</code> object, ELOS calculates the (restricted) expected
+length of stay in each of the states of the multi-state model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+ELOS(pt, tau)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>pt</code></td>
+<td>
+<p>An object of class <code>"probtrans"</code></p>
+</td></tr>
+<tr valign="top"><td><code>tau</code></td>
+<td>
+<p>The horizon until which ELOS is calculated; if missing, the
+maximum of the observed transition times is taken</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The object <code>pt</code> needs to be a <code>"probtrans"</code> object, obtained with
+forward prediction (the default, <code>direction</code>=<code>"forward"</code>, in the
+call to <code><a href="../../mstate/help/probtrans.html">probtrans</a></code>). The restriction to <code>tau</code> is there
+because, as in ordinary survival analysis, the probability of being in a
+state can be positive until infinity, resulting in infinite values. The
+(restricted, until tau) expected length of stay in state h, given in state g
+at time s, is given by the integral from s to tau of P_gh(s,t), see for
+instance Beyersmann and Putter (2014).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A K x K matrix (with K number of states), with the (g,h)'th element
+containing E_gh(s,tau). The starting time point s is inferred from <code>pt</code>
+(the smallest time point, should be equal to the <code>predt</code> value in the
+call to <code><a href="../../mstate/help/probtrans.html">probtrans</a></code>. The row- and column names of the matrix
+have been named &quot;from1&quot; until &quot;fromK&quot; and &quot;in1&quot; until &quot;inK&quot;, respectively.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Hein Putter <a href="mailto:H.Putter@lumc.nl">H.Putter@lumc.nl</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# transition matrix for illness-death model
+tmat &lt;- trans.illdeath()
+# data in wide format, for transition 1 this is dataset E1 of
+# Therneau &amp; Grambsch (2000)
+tg &lt;- data.frame(illt=c(1,1,6,6,8,9),ills=c(1,0,1,1,0,1),
+        dt=c(5,1,9,7,8,12),ds=c(1,1,1,1,1,1),
+        x1=c(1,1,1,0,0,0),x2=c(6:1))
+# data in long format using msprep
+tglong &lt;- msprep(time=c(NA,"illt","dt"),status=c(NA,"ills","ds"),
+		data=tg,keep=c("x1","x2"),trans=tmat)
+# events
+events(tglong)
+table(tglong$status,tglong$to,tglong$from)
+# expanded covariates
+tglong &lt;- expand.covs(tglong,c("x1","x2"))
+# Cox model with different covariate
+cx &lt;- coxph(Surv(Tstart,Tstop,status)~x1.1+x2.2+strata(trans),
+        data=tglong,method="breslow")
+summary(cx)
+# new data, to check whether results are the same for transition 1 as
+# those in appendix E.1 of Therneau &amp; Grambsch (2000)
+newdata &lt;- data.frame(trans=1:3,x1.1=c(0,0,0),x2.2=c(0,1,0),strata=1:3)
+HvH &lt;- msfit(cx,newdata,trans=tmat)
+# probtrans
+pt &lt;- probtrans(HvH,predt=0)
+# ELOS until last observed time point
+ELOS(pt)
+# Restricted ELOS until tau=10
+ELOS(pt, tau=10)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mstate</em> version 0.3.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

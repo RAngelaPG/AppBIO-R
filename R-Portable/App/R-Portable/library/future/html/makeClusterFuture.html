@@ -1,0 +1,160 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Create a Future Cluster of Stateless Workers for Parallel...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for makeClusterFuture {future}"><tr><td>makeClusterFuture {future}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Create a Future Cluster of Stateless Workers for Parallel Processing</h2>
+
+<h3>Description</h3>
+
+<p><em>WARNING: Please note that this sets up a stateless set of cluster nodes,
+which means that <code>clusterEvalQ(cl, { a &lt;- 3.14 })</code> will not work.
+Consider this a first beta version and use it with great care,
+particularly because of the stateless nature of the cluster.
+For now, I recommend to manually validate that you can get identical
+results using this cluster type with what you get from using the
+classical <code>parallel::makeCluster()</code> cluster type.</em>
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+makeClusterFuture(specs = nbrOfWorkers(), ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>specs</code></td>
+<td>
+<p>Ignored.
+If specified, the value should equal <code>nbrOfWorkers()</code> (default).
+A missing value corresponds to specifying <code>nbrOfWorkers()</code>.
+This argument exists only to support
+<code>parallel::makeCluster(NA, type = future::FUTURE)</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Named arguments passed to <code><a href="../../future/help/future.html">future()</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>Returns a <span class="pkg">parallel</span> <code>cluster</code> object of class <code>FutureCluster</code>.
+</p>
+
+
+<h3>Future Clusters are Stateless</h3>
+
+<p>Traditionally, a cluster nodes has a one-to-one mapping to a cluster
+worker process. For example, <code>cl &lt;- makeCluster(2, type = "PSOCK")</code>
+launches two parallel worker processes in the background, where
+cluster node <code>cl[[1]]</code> maps to worker #1 and node <code>cl[[2]]</code> to
+worker #2, and that never changes through the lifespan of these
+workers. This one-to-one mapping allows for deterministic
+configuration of workers. For examples, some code may assign globals
+with values specific to each worker, e.g.
+<code>clusterEvalQ(cl[1], { a &lt;- 3.14 })</code> and
+<code>clusterEvalQ(cl[2], { a &lt;- 2.71 })</code>.
+</p>
+<p>In contrast, there is no one-to-one mapping between cluster nodes
+and the parallel workers when using a future cluster. This is because
+we cannot make assumptions on where are parallel task will be
+processed. Where a parallel task is processes is up to the future
+backend to decide - some backends do this deterministically, whereas
+others other resolves task at the first available worker. Also, the
+worker processes might be <em>transient</em> for some future backends, i.e.
+the only exist for the life-span of the parallel task and then
+terminates.
+</p>
+<p>Because of this, one must not rely in node-specific behaviors,
+because that concept does not make sense with a future cluster.
+To protect against this, any attempt to address a subset of future
+cluster nodes, results in an error, e.g. <code>clusterEvalQ(cl[1], ...)</code>,
+<code>clusterEvalQ(cl[1:2], ...)</code>, and <code>clusterEvalQ(cl[2:1], ...)</code> in
+the above example will all give an error.
+</p>
+<p>Exceptions to the latter limitation are <code>clusterSetRNGStream()</code>
+and <code>clusterExport()</code>, which can be safely used with future clusters.
+See below for more details.
+</p>
+
+
+<h3>clusterSetRNGStream</h3>
+
+<p><code><a href="../../parallel/help/clusterSetRNGStream.html">parallel::clusterSetRNGStream()</a></code>
+distributes &quot;L'Ecuyer-CMRG&quot; RNG
+streams to the cluster nodes, which record them such that the next
+round of futures will use them. When used, the RNG state after the
+futures are resolved are recorded accordingly, such that the next
+round again of future will use those, and so on. This strategy
+makes sure <code>clusterSetRNGStream()</code> has the expected effect although
+futures are stateless.
+</p>
+
+
+<h3>clusterExport</h3>
+
+<p><code><a href="../../parallel/help/clusterApply.html">parallel::clusterExport()</a></code> assign values to the cluster nodes.
+Specifically, these values are recorded and are used as globals
+for all futures created there on.
+</p>
+
+
+<h3>clusterEvalQ</h3>
+
+<p>If <code>clusterEvalQ()</code> is called, the call is ignored, and an error
+is produced. The error can be de-escalated to a warning by setting
+R option <code>future.ClusterFuture.clusterEvalQ</code> to <code>"warning"</code>.
+</p>
+
+
+<h3>Benefits of using makeClusterFuture()</h3>
+
+<p>Many packages rely on traditional <strong>parallel</strong> functions such as
+<code>parallel::parLapply()</code> and <code>parallel::clusterApply()</code>. Some of them
+expose arguments (e.g. <code>cl</code> or <code>cluster</code>), or supports
+<code>parallel::getDefaultCluster()</code>, for using a custom <strong>parallel</strong>
+<code>cluster</code> object. The <code>makeClusterFuture()</code> function brings the all
+benefits of the future ecosystem to those packages and functions.
+</p>
+<p>One benefit is that you can use <em>any</em> future parallel backend,
+e.g. <code>plan(multisession)</code>, <code>plan(future.mirai::mirai_multisession)</code>,
+<code>plan(future.batchtools::batchtools_slurm)</code>.
+</p>
+<p>Another benefit is that output, messages, warnings, and other types of
+conditions produced on parallel workers are automatically relayed in
+the main R session. This can be very helpful for progress reporting
+and troubleshooting. Among all parallel frameworks in R, only the
+future ecosystem does this.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+plan(multisession)
+cl &lt;- makeClusterFuture()
+
+parallel::clusterSetRNGStream(cl)
+
+y &lt;- parallel::parLapply(cl, 11:13, function(x) {
+  message("Process ID: ", Sys.getpid())
+  mean(rnorm(n = x))
+})
+str(y)
+
+plan(sequential)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>future</em> version 1.70.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

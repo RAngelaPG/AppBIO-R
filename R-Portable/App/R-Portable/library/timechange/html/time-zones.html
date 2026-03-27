@@ -1,0 +1,134 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Time-zone manipulation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for time-zones {timechange}"><tr><td>time-zones {timechange}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Time-zone manipulation</h2>
+
+<h3>Description</h3>
+
+<p><code>time_at_tz</code> returns a date-time as it would appear in a
+different time zone. The actual moment of time measured does not change,
+just the time zone it is measured in. <code>time_at_tz</code> defaults to the
+Universal Coordinated time zone (UTC) when an unrecognized time zone is
+supplied.
+</p>
+<p><code>time_force_tz</code> returns the date-time that has the same clock
+time as input time, but in the new time zone. Although the new date-time
+has the same clock time (e.g. the same values in the seconds, minutes,
+hours, etc.) it is a different moment of time than the input
+date-time. Computation is vectorized over both <code>time</code> and <code>tz</code> arguments.
+</p>
+<p><code>time_clock_at_tz</code> retrieves day clock time in specified time
+zones. Computation is vectorized over both <code>dt</code> and <code>tz</code> arguments, <code>tz</code>
+defaults to the timezone of <code>time</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+time_at_tz(time, tz = "UTC")
+
+time_force_tz(
+  time,
+  tz = "UTC",
+  tzout = tz[[1]],
+  roll_dst = c("boundary", "post")
+)
+
+time_clock_at_tz(time, tz = NULL, units = "secs")
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>time</code></td>
+<td>
+<p>a date-time object (POSIXct, POSIXlt, Date) or a list of
+date-time objects. When a list, all contained elements are updated the new
+list is returned.</p>
+</td></tr>
+<tr valign="top"><td><code>tz</code></td>
+<td>
+<p>a character string containing the time zone to convert to. R must
+recognize the name contained in the string as a time zone on your
+system. For <code>time_force_tz</code> and <code>time_clock_at_tzs</code>, <code>tz</code> can be a vector
+of heterogeneous time-zones, in which case <code>time</code> and <code>tz</code> arguments are
+paired. If <code>time</code> and <code>tz</code> lengths differ, the smaller one is recycled
+according with usual R conventions.</p>
+</td></tr>
+<tr valign="top"><td><code>tzout</code></td>
+<td>
+<p>timezone of the output date-time vector. Meaningful only when
+<code>tz</code> argument is a vector of heterogenuous time-zones. This argument is
+necessary because R date-time vectors cannot hold elements with different
+time-zones.</p>
+</td></tr>
+<tr valign="top"><td><code>roll_dst</code></td>
+<td>
+<p>same as in <code>time_add</code> which see.</p>
+</td></tr>
+<tr valign="top"><td><code>units</code></td>
+<td>
+<p>passed directly to <code><a href="../../base/html/difftime.html">as.difftime()</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>a POSIXct object with the updated time zone
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+x &lt;- as.POSIXct("2009-08-07 00:00:00", tz = "America/New_York")
+time_at_tz(x, "UTC")
+time_force_tz(x, "UTC")
+time_force_tz(x, "Europe/Amsterdam")
+
+
+## DST skip:
+
+y &lt;- as.POSIXct("2010-03-14 02:05:05", tz = "UTC")
+time_force_tz(y, "America/New_York", roll = "boundary")
+time_force_tz(y, "America/New_York", roll = "post")
+time_force_tz(y, "America/New_York", roll = "pre")
+time_force_tz(y, "America/New_York", roll = "NA")
+
+
+## DST skipped and repeated
+
+y &lt;- as.POSIXct(c("2010-03-14 02:05:05 UTC", "2014-11-02 01:35:00"), tz = "UTC")
+time_force_tz(y, "America/New_York", roll_dst = c("NA", "pre"))
+time_force_tz(y, "America/New_York", roll_dst = c("boundary", "post"))
+
+## Heterogeneous time-zones:
+
+x &lt;- as.POSIXct(c("2009-08-07 00:00:01", "2009-08-07 01:02:03"), tz = "UTC")
+time_force_tz(x, tz = c("America/New_York", "Europe/Amsterdam"))
+time_force_tz(x, tz = c("America/New_York", "Europe/Amsterdam"), tzout = "America/New_York")
+
+x &lt;- as.POSIXct("2009-08-07 00:00:01", tz = "UTC")
+time_force_tz(x, tz = c("America/New_York", "Europe/Amsterdam"))
+
+## Local clock:
+x &lt;- as.POSIXct(c("2009-08-07 01:02:03", "2009-08-07 10:20:30"), tz = "UTC")
+time_clock_at_tz(x, units = "secs")
+time_clock_at_tz(x, units = "hours")
+time_clock_at_tz(x, "Europe/Amsterdam")
+
+x &lt;- as.POSIXct("2009-08-07 01:02:03", tz = "UTC")
+time_clock_at_tz(x, tz = c("America/New_York", "Europe/Amsterdam", "Asia/Shanghai"), unit = "hours")
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>timechange</em> version 0.4.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,223 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Two Scatter Matrices ICS Transformation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for ics {ICS}"><tr><td>ics {ICS}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Two Scatter Matrices ICS Transformation </h2>
+
+<h3>Description</h3>
+
+<p>Implements the two scatter matrices transformation to obtain an invariant coordinate sytem or independent
+components, depending on the underlying assumptions.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+ics(X, S1 = cov, S2 = cov4, S1args = list(), S2args = list(),
+    stdB = "Z", stdKurt = TRUE, na.action = na.fail)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>X</code></td>
+<td>
+<p> numeric data matrix or dataframe.</p>
+</td></tr>
+<tr valign="top"><td><code>S1</code></td>
+<td>
+<p> name of the first scatter matrix function or a scatter matrix. Default is the regular covariance matrix.</p>
+</td></tr>
+<tr valign="top"><td><code>S2</code></td>
+<td>
+<p> name of the second scatter matrix or a scatter matrix. Default is the covariance matrix based on forth order moments.
+Note that the type of S2 must be the same as S1.</p>
+</td></tr>
+<tr valign="top"><td><code>S1args</code></td>
+<td>
+<p> list with optional additional arguments for S1. Only considered if S1 is a function.</p>
+</td></tr>
+<tr valign="top"><td><code>S2args</code></td>
+<td>
+<p> list with optional additional arguments for S2. Only considered if S2 is a function.</p>
+</td></tr>
+<tr valign="top"><td><code>stdB</code></td>
+<td>
+<p> either &quot;B&quot; or &quot;Z&quot;. Defines the way to standardize the matrix B. Default is &quot;Z&quot;. Details are given below.</p>
+</td></tr>
+<tr valign="top"><td><code>stdKurt</code></td>
+<td>
+<p> Logical, either &quot;TRUE&quot; or &quot;FALSE&quot;. Specifies weather the product of the kurtosis values is 1 or not.</p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+<p> a function which indicates what should happen when the data
+contain 'NA's.  Default is to fail.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Seeing this function as a tool for data transformation the result is an invariant coordinate selection which can be used for test and estimation. And
+if needed the results can be easily retransformed to the original scale. It is possible to use it also for dimension reduction, in order to find outliers or clusters in the data.
+The function can, also be used in a modelling framework. In this case it is assumed that the data were created by mixing independent components which
+have different kurtosis values. If the two scatter matrices used have the so-called independence property the function can recover the independent components
+by estimating the unmixing matrix.
+</p>
+<p>By default S1 is the regular covariance matrix <code><a href="../../stats/html/cor.html">cov</a></code> and S2 the matrix of fourth moments <code><a href="../../ICS/help/cov4.html">cov4</a></code>. However those can be replaced with any other
+scatter matrix the user prefers. The package <span class="pkg">ICS</span> offers for example also <code><a href="../../ICS/help/cov4.wt.html">cov4.wt</a></code>, <code><a href="../../ICS/help/covAxis.html">covAxis</a></code>, <code><a href="../../ICS/help/covOrigin.html">covOrigin</a></code>, <code><a href="../../ICS/help/covW.html">covW</a></code> or <code><a href="../../ICS/help/tM.html">tM</a></code> and the <span class="pkg">ICSNP</span> offers further scatters as <code><a href="../../ICSNP/help/duembgen.shape.html">duembgen.shape</a></code>, <code><a href="../../ICSNP/help/tyler.shape.html">tyler.shape</a></code>, <code><a href="../../ICSNP/help/HR.Mest.html">HR.Mest</a></code> or <code><a href="../../ICSNP/help/HP1.shape.html">HP1.shape</a></code>.
+But of course also scatters from any other package can be used.
+</p>
+<p>Note that when function names are submitted, the function should return only a scatter matrix. If the function returns more, the scatter should be computed in advance or
+a wrapper written that yields the required output. For example <code><a href="../../ICS/help/tM.html">tM</a></code> returns a list with four elements where the scatter estimate is called V. A simple wrapper would then be
+<code>my.tm &lt;- function(x, ...) tM(x, ...)$V</code>.
+</p>
+<p>For a given choice of S1 and S2, the general idea of the <code>ics</code> function is to find the unmixing matrix B and the invariant coordinates (independent coordinates)
+Z in such a way, that:
+</p>
+
+<dl>
+<dt>(i)</dt><dd><p>The elements of Z are standardized with respect to S1 (S1(Z)=I).</p>
+</dd>
+<dt>(ii)</dt><dd><p>The elements of Z are uncorrelated with respect to S2. (S2(Z)=D, where D is a diagonal matrix).</p>
+</dd>
+<dt>(iii)</dt><dd><p>The elements of Z are ordered according to their generalized kurtosis.</p>
+</dd>
+</dl>
+
+<p>Given those criteria, B is unique up to sign changes of its rows. The function provides two options to decide the exact form of B.
+</p>
+
+<dl>
+<dt>(i)</dt><dd><p>Method 'Z' standardizes B such, that all components are right skewed. The criterion used is the sign of each componentwise difference of mean vector and
+transformation retransformation median. This standardization is prefered in an invariant coordinate framework.</p>
+</dd>
+<dt>(ii)</dt><dd><p>Method 'B' standardizes B independent of Z such that the maximum element per row is positive and each row has norm 1. Usual way in an independent
+component analysis framework.</p>
+</dd>
+</dl>
+
+<p>In principal, if S1 and S2 are true scatter matrices the order does not matter. It will just reverse and invert the kurtosis value vector.
+This is however not true when one or both are shape matrices (and not both of them are scatter matrices). In this case the order of the kurtosis values is also reversed,
+the ratio however then is not 1 but only constant. This is due to the fact that when shape matrices are used, the kurtosis values are only relative ones.
+Therefore by the default the kurtosis values are standardized such that their product is 1. If no standardization is wanted, the 'stdKurt' argument should be used.
+</p>
+
+
+<h3>Value</h3>
+
+<p>an object of class <code>ics</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Function <code>ics()</code> reached the end of its lifecycle, please use <code><a href="../../ICS/help/ICS-S3.html">ICS</a>()</code> instead. In future versions, <code>ics()</code> will be deprecated and eventually removed.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Klaus Nordhausen</p>
+
+
+<h3>References</h3>
+
+<p><cite>Tyler, D.E., Critchley, F., D?mbgen, L. and Oja, H. (2009), Invariant co-ordinate selecetion, <em>Journal of the Royal Statistical Society</em>,Series B, <b>71</b>,  549&ndash;592. &lt;doi:10.1111/j.1467-9868.2009.00706.x&gt;.</cite>
+</p>
+<p><cite>Oja, H., Sirki?, S. and Eriksson, J. (2006), Scatter matrices and independent component analysis, <em>Austrian Journal of Statistics</em>, <b>35</b>,  175&ndash;189.</cite>
+</p>
+<p><cite>Nordhausen, K., Oja, H. and Tyler, D.E. (2008), Tools for exploring multivariate data: The package ICS, <em>Journal of Statistical Software</em>, <b>28</b>, 1&ndash;31. &lt;doi:10.18637/jss.v028.i06&gt;.</cite>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../ICS/help/ICS-package.html">ICS-package</a></code>, <code><a href="../../ICS/help/ICS-S3.html">ICS</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+    # example using two functions
+    set.seed(123456)
+    X1 &lt;- rmvnorm(250, rep(0,8), diag(c(rep(1,6),0.04,0.04)))
+    X2 &lt;- rmvnorm(50, c(rep(0,6),2,0), diag(c(rep(1,6),0.04,0.04)))
+    X3 &lt;- rmvnorm(200, c(rep(0,7),2), diag(c(rep(1,6),0.04,0.04)))
+
+    X.comps &lt;- rbind(X1,X2,X3)
+    A &lt;- matrix(rnorm(64),nrow=8)
+    X &lt;- X.comps %*% t(A)
+
+    ics.X.1 &lt;- ics(X)
+    summary(ics.X.1)
+    plot(ics.X.1)
+
+    # compare to
+    pairs(X)
+    pairs(princomp(X,cor=TRUE)$scores)
+
+    # slow:
+
+    # library(ICSNP)
+    # ics.X.2 &lt;- ics(X, tyler.shape, duembgen.shape, S1args=list(location=0))
+    # summary(ics.X.2)
+    # plot(ics.X.2)
+
+    rm(.Random.seed)
+
+    # example using two computed scatter matrices for outlier detection
+
+    library(robustbase)
+    ics.wood&lt;-ics(wood,tM(wood)$V,tM(wood,2)$V)
+    plot(ics.wood)
+
+    # example using three pictures
+    library(pixmap)
+
+    fig1 &lt;- read.pnm(system.file("pictures/cat.pgm", package = "ICS")[1])
+    fig2 &lt;- read.pnm(system.file("pictures/road.pgm", package = "ICS")[1])
+    fig3 &lt;- read.pnm(system.file("pictures/sheep.pgm", package = "ICS")[1])
+
+    p &lt;- dim(fig1@grey)[2]
+
+    fig1.v &lt;- as.vector(fig1@grey)
+    fig2.v &lt;- as.vector(fig2@grey)
+    fig3.v &lt;- as.vector(fig3@grey)
+    X &lt;- cbind(fig1.v,fig2.v,fig3.v)
+
+    set.seed(4321)
+    A &lt;- matrix(rnorm(9), ncol = 3)
+    X.mixed &lt;- X %*% t(A)
+
+    ICA.fig &lt;- ics(X.mixed)
+
+    par.old &lt;- par()
+    par(mfrow=c(3,3), omi = c(0.1,0.1,0.1,0.1), mai = c(0.1,0.1,0.1,0.1))
+
+    plot(fig1)
+    plot(fig2)
+    plot(fig3)
+
+    plot(pixmapGrey(X.mixed[,1],ncol=p))
+    plot(pixmapGrey(X.mixed[,2],ncol=p))
+    plot(pixmapGrey(X.mixed[,3],ncol=p))
+
+    plot(pixmapGrey(ics.components(ICA.fig)[,1],ncol=p))
+    plot(pixmapGrey(ics.components(ICA.fig)[,2],ncol=p))
+    plot(pixmapGrey(ics.components(ICA.fig)[,3],ncol=p))
+
+    par(par.old)
+    rm(.Random.seed)
+    </pre>
+
+<hr /><div style="text-align: center;">[Package <em>ICS</em> version 1.4-2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

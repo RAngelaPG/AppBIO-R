@@ -1,3 +1,28 @@
+## ----echo=FALSE, file='_translation_links.R'------------------------------------------------------
+# build a link list of alternative languages (may be character(0))
+# idea is to look like 'Other languages: en | fr | de'
+.write.translation.links <- function(fmt) {
+    url = "https://rdatatable.gitlab.io/data.table/articles"
+    path = dirname(knitr::current_input(TRUE))
+    if (basename(path) == "vignettes") {
+      lang = "en"
+    } else {
+      lang = basename(path)
+      path = dirname(path)
+    }
+    translation = dir(path,
+      recursive = TRUE,
+      pattern = glob2rx(knitr::current_input(FALSE))
+    )
+    transl_lang = ifelse(dirname(translation) == ".", "en", dirname(translation))
+    block = if (!all(transl_lang == lang)) {
+      linked_transl = sprintf("[%s](%s)", transl_lang, file.path(url, sub("(?i)\\.Rmd$", ".html", translation)))
+      linked_transl[transl_lang == lang] = lang
+      sprintf(fmt, paste(linked_transl, collapse = " | "))
+    } else ""
+    knitr::asis_output(block)
+}
+
 ## ----init, include = FALSE------------------------------------------------------------------------
 require(data.table)
 knitr::opts_chunk$set(
@@ -22,15 +47,9 @@ registerS3method("print", "data.frame", function(x, ...) {
 ## ----subset---------------------------------------------------------------------------------------
 subset(iris, Species == "setosa")
 
-## ----subset_error, error=TRUE---------------------------------------------------------------------
-my_subset = function(data, col, val) {
-  subset(data, col == val)
-}
-my_subset(iris, Species, "setosa")
-
 ## ----subset_nolazy--------------------------------------------------------------------------------
 my_subset = function(data, col, val) {
-  data[data[[col]] == val, ]
+  data[data[[col]] == val & !is.na(data[[col]]), ]
 }
 my_subset(iris, col = "Species", val = "setosa")
 
@@ -105,6 +124,23 @@ DT[filter_col %in% filter_val,
      by_col =  "Species"
   )]
 
+## ----substitute_fun1, result='hide'---------------------------------------------------------------
+DT[, outer(Sepal.Length), env = list(outer="sqrt"), verbose=TRUE]
+#Argument 'j' after substitute: sqrt(Sepal.Length)
+## DT[, sqrt(Sepal.Length)]
+
+DT[, outer(Sepal.Length), env = list(outer=sqrt), verbose=TRUE]
+#Argument 'j' after substitute: .Primitive("sqrt")(Sepal.Length)
+## DT[, .Primitive("sqrt")(Sepal.Length)]
+
+## ----substitute_fun2, result='hide'---------------------------------------------------------------
+DT[, sqrt(Sepal.Length)]
+
+## ----substitute_fun3, result='hide', eval=FALSE---------------------------------------------------
+# DT[, ns::fun(Sepal.Length), env = list(ns="base", fun="sqrt"), verbose=TRUE]
+# #Argument 'j' after substitute: base::sqrt(Sepal.Length)
+# ## DT[, base::sqrt(Sepal.Length)]
+
 ## ----rank-----------------------------------------------------------------------------------------
 substitute(    # base R behaviour
   rank(input, ties.method = ties),
@@ -159,15 +195,6 @@ DT[, j,  # turning the above 'j' list into a list call
 
 DT[, j,  # the same as above but accepts character vector
    env = list(j = as.call(c(quote(list), lapply(cols, as.name)))),
-   verbose = TRUE]
-
-## ----splice_not, error=TRUE-----------------------------------------------------------------------
-DT[, j,  # list of symbols
-   env = I(list(j = lapply(cols, as.name))),
-   verbose = TRUE]
-
-DT[, j,  # again the proper way, enlist list to list call automatically
-   env = list(j = as.list(cols)),
    verbose = TRUE]
 
 ## ----splice_substitute2_not-----------------------------------------------------------------------
@@ -228,6 +255,25 @@ j = as.call(c(
 ))
 print(j)
 DT[, j, env = list(j = j)]
+
+## ----obj_vs_objname-------------------------------------------------------------------------------
+DT[, fun(Petal.Width), env = list(fun = mean), verbose=TRUE]
+DT[, fun(Petal.Width), env = list(fun = "mean"), verbose=TRUE]
+
+## ----env_se---------------------------------------------------------------------------------------
+fun = function(x, col.mean) {
+  stopifnot(is.character(col.mean), is.data.table(x))
+  x[, .(col_avg = mean(.col)), env = list(.col = col.mean)]
+}
+fun(DT, col.mean="Petal.Length")
+
+## ----env_nse--------------------------------------------------------------------------------------
+fun = function(x, col.mean) {
+  col.mean = substitute(col.mean)
+  stopifnot(is.name(col.mean), is.data.table(x))
+  x[, .(col_avg = mean(.col)), env = list(.col = col.mean)]
+}
+fun(DT, col.mean=Petal.Length)
 
 ## ----old_get--------------------------------------------------------------------------------------
 v1 = "Petal.Width"

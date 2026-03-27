@@ -1,0 +1,341 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Marginal survival and hazards of fitted flexsurvreg models</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for standsurv {flexsurv}"><tr><td>standsurv {flexsurv}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Marginal survival and hazards of fitted flexsurvreg models</h2>
+
+<h3>Description</h3>
+
+<p>Returns a tidy data.frame of marginal survival probabilities, or hazards, 
+restricted mean survival, or quantiles of the marginal survival function
+at user-defined time points and covariate patterns.
+Standardization is performed over any undefined covariates in the model. 
+The user provides the data to standardize over. Contrasts can be calculated 
+resulting in estimates of the average treatment effect or the average 
+treatment effect in the treated if a treated subset of the data are supplied.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+standsurv(
+  object,
+  newdata = NULL,
+  at = list(list()),
+  atreference = 1,
+  type = "survival",
+  t = NULL,
+  ci = FALSE,
+  se = FALSE,
+  boot = FALSE,
+  B = NULL,
+  cl = 0.95,
+  trans = "log",
+  contrast = NULL,
+  trans.contrast = NULL,
+  seed = NULL,
+  rmap,
+  ratetable,
+  scale.ratetable = 365.25,
+  n.gauss.quad = 100,
+  quantiles = 0.5,
+  interval = c(1e-08, 500)
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>Output from <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code> or
+<code><a href="../../flexsurv/help/flexsurvspline.html">flexsurvspline</a></code>, representing a fitted survival model object.</p>
+</td></tr>
+<tr valign="top"><td><code>newdata</code></td>
+<td>
+<p>Data frame containing covariate values to produce marginal
+values for. If not specified then the fitted model data.frame is used.
+There must be a column for every covariate in the model formula
+for which the user wishes to standardize over.  These are in the same format
+as the original data, with factors as a single variable, not 0/1 contrasts.
+Any covariates that are to be fixed should be specified in <code>at</code>. 
+There should be one row for every combination of covariates in which to 
+standardize over. If newdata contains a variable named '(weights)' then a 
+weighted mean will be used to create the standardized estimates. This is the
+default behaviour if the fitted model contains case weights, which are stored 
+in the fitted model data.frame.</p>
+</td></tr>
+<tr valign="top"><td><code>at</code></td>
+<td>
+<p>A list of scenarios in which specific covariates are fixed to 
+certain values. Each element of <code>at</code> must itself be a list. For example,
+for a covariate <code>group</code> with levels &quot;Good&quot;, &quot;Medium&quot; and &quot;Poor&quot;, the 
+standardized survival plots for each group averaging over all other 
+covariates is specified using 
+<code>at=list(list(group="Good"), list(group="Medium"), list(group="Poor"))</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>atreference</code></td>
+<td>
+<p>The reference scenario for making contrasts. Default is 1
+(i.e. the first element of <code>at</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p><code>"survival"</code> for marginal survival probabilities. In a 
+relative survival framework this returns the marginal all-cause survival 
+(see details).
+</p>
+<p><code>"hazard"</code> for the hazard of the marginal survival probability. In a 
+relative survival framework this returns the marginal all-cause hazard 
+(see details).
+</p>
+<p><code>"rmst"</code> for standardized restricted mean survival.
+</p>
+<p><code>"relsurvival"</code> for marginal relative survival (can only be specified
+if a relative survival model has been fitted in flexsurv).
+</p>
+<p><code>"excesshazard"</code> for marginal excess hazards (can only be specified
+if a relative survival model has been fitted in flexsurv).
+</p>
+<p><code>"quantile"</code> for quantiles of the marginal all-cause survival 
+distribution. The <code>quantiles</code> option also needs to be provided.</p>
+</td></tr>
+<tr valign="top"><td><code>t</code></td>
+<td>
+<p>Times to calculate marginal values at.</p>
+</td></tr>
+<tr valign="top"><td><code>ci</code></td>
+<td>
+<p>Should confidence intervals be calculated? 
+Defaults to FALSE</p>
+</td></tr>
+<tr valign="top"><td><code>se</code></td>
+<td>
+<p>Should standard errors be calculated? 
+Defaults to FALSE</p>
+</td></tr>
+<tr valign="top"><td><code>boot</code></td>
+<td>
+<p>Should bootstrapping be used to calculate standard error and 
+confidence intervals? Defaults to FALSE, in which case the delta method is 
+used</p>
+</td></tr>
+<tr valign="top"><td><code>B</code></td>
+<td>
+<p>Number of bootstrap simulations from the normal asymptotic 
+distribution of the estimates used to calculate confidence intervals or 
+standard errors. Decrease for greater speed at the expense of accuracy. Only 
+specify if <code>boot = TRUE</code></p>
+</td></tr>
+<tr valign="top"><td><code>cl</code></td>
+<td>
+<p>Width of symmetric confidence intervals, relative to 1.</p>
+</td></tr>
+<tr valign="top"><td><code>trans</code></td>
+<td>
+<p>Transformation to apply when calculating standard errors via the
+delta method to obtain confidence intervals. The default transformation is 
+&quot;log&quot;. Other possible names are &quot;none&quot;, &quot;loglog&quot;, &quot;logit&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>contrast</code></td>
+<td>
+<p>Contrasts between standardized measures defined by <code>at</code>
+scenarios. Options are <code>"difference"</code> and <code>"ratio"</code>. There will be
+n-1 new columns created where n is the number of <code>at</code> scenarios. Default
+is NULL (i.e. no contrasts are calculated).</p>
+</td></tr>
+<tr valign="top"><td><code>trans.contrast</code></td>
+<td>
+<p>Transformation to apply when calculating standard errors
+for contrasts via the delta method to obtain confidence intervals. The default
+transformation is &quot;none&quot; for differences in survival, hazard, quantiles, or RMST, 
+and &quot;log&quot; for ratios of survival, hazard, quantiles or RMST.</p>
+</td></tr>
+<tr valign="top"><td><code>seed</code></td>
+<td>
+<p>The random seed to use (for bootstrapping confidence intervals)</p>
+</td></tr>
+<tr valign="top"><td><code>rmap</code></td>
+<td>
+<p>An list that maps data set names to expected ratetable names. 
+This must be specified if all-cause survival and hazards are required after
+fitting a relative survival model. This can also be specified if expected
+rates are required for plotting purposes. See the details section below.</p>
+</td></tr>
+<tr valign="top"><td><code>ratetable</code></td>
+<td>
+<p>A table of expected event rates 
+(see <code><a href="../../survival/help/ratetable.html">ratetable</a></code>)</p>
+</td></tr>
+<tr valign="top"><td><code>scale.ratetable</code></td>
+<td>
+<p>Transformation from the time scale of the fitted 
+flexsurv model to the time scale in <code>ratetable</code>. For example, if the 
+analysis time of the fitted model is in years and the ratetable is in 
+units/day then we should use <code>scale.ratetable = 365.25</code>. This is the 
+default as often the ratetable will be in units/day (see example).</p>
+</td></tr>
+<tr valign="top"><td><code>n.gauss.quad</code></td>
+<td>
+<p>Number of Gaussian quadrature points used for integrating 
+the all-cause survival function when calculating RMST in a relative survival 
+framework (default = 100)</p>
+</td></tr>
+<tr valign="top"><td><code>quantiles</code></td>
+<td>
+<p>If <code>type="quantile"</code>, this specifies the quantiles of 
+the survival time distribution to return estimates for.</p>
+</td></tr>
+<tr valign="top"><td><code>interval</code></td>
+<td>
+<p>Interval of survival times for quantile root finding. 
+Default is c(1e-08, 500).</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The syntax of <code>standsurv</code> follows closely that of Stata's 
+<code>standsurv</code> command written by Paul Lambert and Michael Crowther. The 
+function calculates standardized (marginal) measures including standardized
+survival functions, standardized restricted mean survival times, quantiles
+and the hazard of standardized survival. The standardized survival is defined as
+</p>
+<p style="text-align: center;"><i>S(t|X=x) = E[S(t|X=x,Z)] = 1/N * sum(S(t|X=x,Z=z_i))</i></p>
+
+<p>The hazard of the standardized survival is a weighted average of 
+individual hazard functions at time t, weighted by the survival
+function at this time:
+</p>
+<p style="text-align: center;"><i>h(t|X=x) = sum(S(t|X=x,Z=z_i) * h(t|X=x,Z=z_i)) / sum(S(t|X=x,Z=z_i))</i></p>
+
+<p>Marginal expected survival and hazards can be calculated by providing a 
+population-based lifetable of class ratetable in <code>ratetable</code> and a 
+mapping between stratification factors in the lifetable and the user dataset
+using <code>rmap</code>. If these stratification factors are not in the fitted
+survival model then the user must specify them in <code>newdata</code> along with
+the covariates of the model. The marginal expected survival is calculated 
+using the &quot;Ederer&quot; method that assumes no censoring as this is most relevant 
+approach for forecasting (see 
+<code><a href="../../survival/help/survexp.html">survexp</a></code>). A worked example is given below.
+</p>
+<p>Marginal all-cause survival and hazards can be calculated after fitting a
+relative survival model, which utilise the expected survival from a population
+ratetable. See Rutherford et al. (Chapter 6) for further details.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>tibble</code> containing one row for each 
+time-point. The column naming convention is <code>at{i}</code> for the ith scenario
+with corresponding confidence intervals (if specified) named <code>at{i}_lci</code>
+and <code>at{i}_uci</code>. Contrasts are named <code>contrast{k}_{j}</code> for the 
+comparison of the kth versus the jth <code>at</code> scenario.
+</p>
+<p>In addition tidy long-format data.frames are returned in the attributes
+<code>standsurv_at</code> and <code>standsurv_contrast</code>. These can be passed to 
+<code>ggplot</code> for plotting purposes (see <code><a href="../../flexsurv/help/plot.standsurv.html">plot.standsurv</a></code>).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Michael Sweeting &lt;mikesweeting79@gmail.com&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Paul Lambert, 2021. &quot;STANDSURV: Stata module to compute 
+standardized (marginal) survival and related functions,&quot; 
+Statistical Software Components S458991, Boston College Department of 
+Economics. https://ideas.repec.org/c/boc/bocode/s458991.html
+</p>
+<p>Rutherford, MJ, Lambert PC, Sweeting MJ, Pennington B, Crowther MJ, Abrams KR,
+Latimer NR. 2020. &quot;NICE DSU Technical Support Document 21: Flexible Methods 
+for Survival Analysis&quot; 
+https://nicedsu.sites.sheffield.ac.uk/tsds/flexible-methods-for-survival-analysis-tsd
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## mean age is higher in those with smaller observed survival times 
+newbc &lt;- bc
+set.seed(1)
+newbc$age &lt;- rnorm(dim(bc)[1], mean = 65-scale(newbc$recyrs, scale=FALSE),
+ sd = 5)
+
+## Fit a Weibull flexsurv model with group and age as covariates
+weib_age &lt;- flexsurvreg(Surv(recyrs, censrec) ~ group+age, data=newbc, 
+                       dist="weibull")
+                       
+## Calculate standardized survival and the difference in standardized survival
+## for the three levels of group across a grid of survival times                        
+standsurv_weib_age &lt;- standsurv(weib_age, 
+                                           at = list(list(group="Good"), 
+                                                     list(group="Medium"), 
+                                                     list(group="Poor")), 
+                                           t=seq(0,7, length.out=100),
+                                           contrast = "difference", ci=FALSE)
+standsurv_weib_age
+
+## Calculate hazard of standardized survival and the marginal hazard ratio
+## for the three levels of group across a grid of survival times
+## 10 bootstraps for confidence intervals (this should be larger)
+## Not run:           
+haz_standsurv_weib_age &lt;- standsurv(weib_age, 
+                                           at = list(list(group="Good"), 
+                                                     list(group="Medium"), 
+                                                     list(group="Poor")), 
+                                           t=seq(0,7, length.out=100),
+                                           type="hazard",
+                                           contrast = "ratio", boot = TRUE,
+                                           B=10, ci=TRUE)
+haz_standsurv_weib_age                                            
+plot(haz_standsurv_weib_age, ci=TRUE)
+## Hazard ratio plot shows a decreasing marginal HR 
+## Whereas the conditional HR is constant (model is a PH model)
+plot(haz_standsurv_weib_age, contrast=TRUE, ci=TRUE)
+
+## Calculate standardized survival from a Weibull model together with expected
+## survival matching to US lifetables
+
+# age at diagnosis in days. This is required to match to US ratetable, whose
+# timescale is measured in days
+newbc$agedays &lt;- floor(newbc$age * 365.25)  
+## Create some random diagnosis dates centred on 01/01/2010 with SD=1 year
+## These will be used to match to expected rates in the lifetable
+newbc$diag &lt;- as.Date(floor(rnorm(dim(newbc)[1], 
+                     mean = as.Date("01/01/2010", "%d/%m/%Y"), sd=365)), 
+                     origin="1970-01-01")
+## Create sex (assume all are female)
+newbc$sex &lt;- factor("female")
+standsurv_weib_expected &lt;- standsurv(weib_age, 
+                                           at = list(list(group="Good"), 
+                                                     list(group="Medium"), 
+                                                     list(group="Poor")), 
+                                           t=seq(0,7, length.out=100),
+                                           rmap=list(sex = sex,
+                                                     year = diag,
+                                                     age = agedays),
+                                           ratetable = survival::survexp.us,
+                                           scale.ratetable = 365.25,
+                                           newdata = newbc)
+## Plot marginal survival with expected survival superimposed                                            
+plot(standsurv_weib_expected, expected=TRUE)
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>flexsurv</em> version 2.3.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

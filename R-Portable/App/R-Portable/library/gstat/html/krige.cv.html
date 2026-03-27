@@ -1,0 +1,211 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: (co)kriging cross validation, n-fold or leave-one-out</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for krige.cv {gstat}"><tr><td>krige.cv {gstat}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> (co)kriging cross validation, n-fold or leave-one-out </h2>
+
+<h3>Description</h3>
+
+<p> Cross validation functions for simple, ordinary or universal
+point (co)kriging, kriging in a local neighbourhood.  </p>
+
+
+<h3>Usage</h3>
+
+<pre>
+gstat.cv(object, nfold, remove.all = FALSE, verbose = interactive(), 
+	all.residuals = FALSE, ...)
+krige.cv(formula, locations, ...)
+krige.cv.locations(formula, locations, data, model = NULL, ..., beta = NULL, 
+	nmax = Inf, nmin = 0, maxdist = Inf, nfold = nrow(data), 
+	verbose = interactive(), debug.level = 0)
+krige.cv.spatial(formula, locations, model = NULL, ..., beta = NULL, 
+	nmax = Inf, nmin = 0, maxdist = Inf, nfold = nrow(locations), 
+	verbose = interactive(), debug.level = 0)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p> object of class gstat; see function <a href="../../gstat/help/gstat.html">gstat</a></p>
+</td></tr>
+<tr valign="top"><td><code>nfold</code></td>
+<td>
+<p> integer; if larger than 1, then apply n-fold cross validation; 
+if <code>nfold</code> equals <code>nrow(data)</code> (the default), apply leave-one-out cross 
+validation; if set to e.g. 5, five-fold cross validation is done. To specify the
+folds, pass an integer vector of length <code>nrow(data)</code> with fold indexes. </p>
+</td></tr>
+<tr valign="top"><td><code>remove.all</code></td>
+<td>
+<p> logical; if TRUE, remove observations at cross validation
+locations not only for the first, but for all subsequent variables as well </p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p> logical; if FALSE, progress bar is suppressed </p>
+</td></tr>
+<tr valign="top"><td><code>all.residuals</code></td>
+<td>
+<p> logical; if TRUE, residuals for all variables are
+returned instead of for the first variable only</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p> other arguments that will be passed to <a href="../help/predict.html">predict</a>
+in case of <code>gstat.cv</code>, or to <a href="../../gstat/help/gstat.html">gstat</a> in case of <code>krige.cv</code></p>
+</td></tr>
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p> formula that defines the dependent variable as a linear
+model of independent variables; suppose the dependent variable has name
+<code>z</code>, for ordinary and simple kriging use the formula <code>z~1</code>;
+for simple kriging also define <code>beta</code> (see below); for universal
+kriging, suppose <code>z</code> is linearly dependent on <code>x</code> and <code>y</code>,
+use the formula <code>z~x+y</code></p>
+</td></tr>
+<tr valign="top"><td><code>locations</code></td>
+<td>
+<p> data object deriving from class <code>Spatial</code> or <code>sf</code> </p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p> data frame (deprecated); should contain the dependent variable, independent
+variables, and coordinates; only to be provided if <code>locations</code> is a formula</p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p> variogram model of dependent variable (or its residuals), 
+defined by a call to <a href="../../gstat/help/vgm.html">vgm</a> or <a href="../../gstat/help/fit.variogram.html">fit.variogram</a></p>
+</td></tr>
+<tr valign="top"><td><code>beta</code></td>
+<td>
+<p> only for simple kriging (and simulation based on simple
+kriging); vector with the trend coefficients (including intercept);
+if no independent variables are defined the model only contains an
+intercept and this should be the simple kriging mean </p>
+</td></tr>
+<tr valign="top"><td><code>nmax</code></td>
+<td>
+<p> for local kriging: the number of nearest observations that
+should be used for a kriging prediction or simulation, where nearest
+is defined in terms of the space of the spatial locations. By default,
+all observations are used </p>
+</td></tr>
+<tr valign="top"><td><code>nmin</code></td>
+<td>
+<p> for local kriging: if the number of nearest observations
+within distance <code>maxdist</code> is less than <code>nmin</code>, a missing 
+value will be generated; see maxdist </p>
+</td></tr>
+<tr valign="top"><td><code>maxdist</code></td>
+<td>
+<p> for local kriging: only observations within a distance
+of <code>maxdist</code> from the prediction location are used for prediction
+or simulation; if combined with <code>nmax</code>, both criteria apply </p>
+</td></tr>
+<tr valign="top"><td><code>debug.level</code></td>
+<td>
+<p> print debugging information; 0 suppresses
+debug information </p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p> Leave-one-out cross validation (LOOCV) visits a data point, and
+predicts the value at that location by leaving out the observed value,
+and proceeds with the next data point. (The observed value is left
+out because kriging would otherwise predict the value itself.) N-fold
+cross validation makes a partitions the data set in N parts. For all
+observation in a part, predictions are made based on the remaining N-1
+parts; this is repeated for each of the N parts. N-fold cross validation
+may be faster than LOOCV. </p>
+
+
+<h3>Value</h3>
+
+<p> data frame containing the coordinates of <code>data</code> or those
+of the first variable in <code>object</code>, and columns of prediction and
+prediction variance of cross validated data points, observed values,
+residuals, zscore (residual divided by kriging standard error), and fold.
+</p>
+<p>If <code>all.residuals</code> is true, a data frame with residuals for all
+variables is returned, without coordinates. </p>
+
+
+<h3>Methods</h3>
+
+
+<dl>
+<dt>formula = &quot;formula&quot;, locations = &quot;formula&quot;</dt><dd> 
+<p>locations specifies which coordinates in <code>data</code> refer to spatial coordinates
+</p>
+</dd>
+<dt>formula = &quot;formula&quot;, locations = &quot;Spatial&quot;</dt><dd> 
+<p>Object locations knows about its own spatial locations
+</p>
+</dd>
+</dl>
+
+
+<h3>Note</h3>
+
+<p> Leave-one-out cross validation seems to be much faster in plain
+(stand-alone) gstat, apparently quite a bit of the effort is spent moving 
+data around from R to gstat. </p>
+
+
+<h3>Author(s)</h3>
+
+<p> Edzer Pebesma </p>
+
+
+<h3>See Also</h3>
+
+ <p><a href="../../gstat/help/krige.html">krige</a>, <a href="../../gstat/help/gstat.html">gstat</a>, <a href="../help/predict.html">predict</a> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(sp)
+data(meuse)
+coordinates(meuse) &lt;- ~x+y
+m &lt;- vgm(.59, "Sph", 874, .04)
+# five-fold cross validation:
+x &lt;- krige.cv(log(zinc)~1, meuse, m, nmax = 40, nfold=5)
+bubble(x, "residual", main = "log(zinc): 5-fold CV residuals")
+
+# multivariable; thanks to M. Rufino:
+meuse.g &lt;- gstat(id = "zn", formula = log(zinc) ~ 1, data = meuse)
+meuse.g &lt;- gstat(meuse.g, "cu", log(copper) ~ 1, meuse)
+meuse.g &lt;- gstat(meuse.g, model = vgm(1, "Sph", 900, 1), fill.all = TRUE)
+x &lt;- variogram(meuse.g, cutoff = 1000)
+meuse.fit = fit.lmc(x, meuse.g)
+out = gstat.cv(meuse.fit, nmax = 40, nfold = 5) 
+summary(out)
+out = gstat.cv(meuse.fit, nmax = 40, nfold = c(rep(1,100), rep(2,55))) 
+summary(out)
+# mean error, ideally 0:
+mean(out$residual)
+# MSPE, ideally small
+mean(out$residual^2)
+# Mean square normalized error, ideally close to 1
+mean(out$zscore^2)
+# correlation observed and predicted, ideally 1
+cor(out$observed, out$observed - out$residual)
+# correlation predicted and residual, ideally 0
+cor(out$observed - out$residual, out$residual)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>gstat</em> version 2.1-5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

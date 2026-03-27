@@ -1,0 +1,265 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Evaluates a Two-Dimensional Monte Carlo Model in a Loop.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mccut {mc2d}"><tr><td>mccut {mc2d}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Evaluates a Two-Dimensional Monte Carlo Model in a Loop.
+</h2>
+
+<h3>Description</h3>
+
+<p><span class="samp">evalmccut</span> evaluates a Two-Dimensional Monte Carlo model using
+a loop on the uncertainty dimension. Within each loop, it calculates
+statistics in the variability dimension and stores them for further
+analysis. It allows to evaluate very high dimension models using
+(unlimited?) time instead of (limited) memory.
+</p>
+<p><span class="samp">mcmodelcut</span> builds a <span class="samp">mcmodelcut</span> object that can be sent
+to <span class="samp">evalmccut</span>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+evalmccut(model, nsv=ndvar(), nsu=ndunc(), seed=NULL, ind="index")
+## S3 method for class 'mccut'
+print(x, lim=c(0.025, 0.975), digits=3, ...)
+mcmodelcut(x, is.expr=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>a <span class="samp">mcmodelcut</span> object obtained using
+<span class="samp">mcmodelcut</span> function or (directly) a valid call including three
+blocks. See Details and Examples for the structure of the call.</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>a call or an expression (if <span class="samp">is.expr=TRUE</span>) including
+three blocks. See Details and Examples for the structure of the
+call.</p>
+</td></tr>
+<tr valign="top"><td><code>nsv</code></td>
+<td>
+<p>The number of simulations for variability used in the
+evaluation.</p>
+</td></tr>
+<tr valign="top"><td><code>nsu</code></td>
+<td>
+<p>The number of simulations for uncertainty used in the
+evaluation.</p>
+</td></tr>
+<tr valign="top"><td><code>seed</code></td>
+<td>
+<p>The random seed used for the evaluation. If <span class="samp">NULL</span>
+the <span class="samp">seed</span> is unchanged.</p>
+</td></tr>
+<tr valign="top"><td><code>ind</code></td>
+<td>
+<p>The variable name used in <span class="samp">model</span> to refers to the
+uncertainty. see Details and Example.</p>
+</td></tr>
+<tr valign="top"><td><code>is.expr</code></td>
+<td>
+ <p><span class="samp">FALSE</span> to send a call, <span class="samp">TRUE</span> to send an
+expression (see <code><a href="../../mc2d/help/mcmodel.html">mcmodel</a></code> examples)</p>
+</td></tr>
+<tr valign="top"><td><code>lim</code></td>
+<td>
+<p>A vector of values used for the quantile function
+(uncertainty dimension).</p>
+</td></tr>
+<tr valign="top"><td><code>digits</code></td>
+<td>
+<p>Number of digits in the print.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Additional arguments to be passed in the final print
+function.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This function should be used for high dimension Two-Dimensional
+Monte-Carlo simulations, when the memory limits of <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> are attained.
+The use of a loop will take (lots of) time, but less memory.
+</p>
+<p><span class="samp">x</span> (or <span class="samp">model</span> if a call is used directly in
+<span class="samp">evalmccut</span>) should be built as three blocks, separated by
+<span class="samp">{</span>. 
+</p>
+
+<ol>
+<li><p> The first block is evaluated once (and only once) before the
+first loop (step 1).
+</p>
+</li>
+<li><p> The second block, which should lead to an <span class="samp">mc</span> object, is
+evaluated using <span class="samp">nsu = 1</span> (step 2).
+</p>
+</li>
+<li><p> The third block is evaluated on the <span class="samp">mc</span> object. All
+resulting statistics are stored (step 3).
+</p>
+</li>
+<li><p> The steps 2 and 3 are repeated <span class="samp">nsu</span> times. At each
+iteration, the values of the loop index (from 1 to <span class="samp">nsu</span>) is
+given to the variable specified in <span class="samp">ind</span>.
+</p>
+</li>
+<li><p> Finally, the <span class="samp">nsu</span> statistics are returned in an invisible
+object of class <span class="samp">mccut</span>.</p>
+</li></ol>
+
+<p>Understanding this, the call should be built like this:
+<span class="samp">{{block 1}{block 2}{block 3}}</span> 
+</p>
+
+<ol>
+<li><p> The first block (maybe empty) is an expression that will be
+evaluated only once. This block should evaluate all <span class="samp">"V" mcnode</span>
+and <span class="samp">"0" mcnode</span>s. It may evaluate and <span class="samp">"U" mcnode</span> that
+will be sent in the second and third block by column, and,
+optionaly, some other codes (even <span class="samp">"VU" mcnode</span>, sent by
+columns) that can not be evaluated if <span class="samp">ndunc=1</span> (e.g. sampling
+without replacement in the uncertainty dimension).
+</p>
+</li>
+<li><p> The second block is an expression that leads to the <span class="samp">mc</span>
+object. It must end with an expression as <span class="samp">mymc &lt;- mc(...)</span>. The
+variable specified as <span class="samp">ind</span> may be helpful to refer to the
+uncertainty dimension in this step 
+</p>
+</li>
+<li><p> The last block should build a list of statistics refering to
+the <span class="samp">mc</span> object. The function <span class="samp">summary</span> should be used if a
+summary, a tornado on uncertainty (<code><a href="../../mc2d/help/tornadounc.mccut.html">tornadounc.mccut</a></code>) or
+a convergence diagnostic <code><a href="../../mc2d/help/converg.html">converg</a></code> is needed, the
+function <code><a href="../../mc2d/help/plot.mc.html">plot.mc</a></code> should be used if a plot is needed,
+the function <code><a href="../../mc2d/help/tornado.html">tornado</a></code> should be used if a tornado is
+needed. Moreover, any other function that leads to a vector, a
+matrix, or a list of vector/matrix of statistics evaluated from the
+<span class="samp">mc</span> object may be used. list are time consuming.</p>
+</li></ol>
+
+<p>IMPORTANT WARNING: do not forget to affect the results, since the
+print method provide only a summary of the results while all data may
+be stored in an <span class="samp">mccut</span> object.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <span class="samp">mccut</span>. This is a list including statistics
+evaluated within the third block. Each list consists of all the
+<span class="samp">nsu</span> values obtained. The <span class="samp">print.mccut</span> method print the
+median, the mean, the <span class="samp">lim</span> quantiles estimated on each
+statistics on the uncertainty dimension.
+</p>
+
+
+<h3>Note</h3>
+
+<p>The methods and functions available on the <span class="samp">mccut</span> object is
+function of the statistics evaluated within the third block: 
+</p>
+
+<ul>
+<li><p> a <code><a href="../../mc2d/help/print.mccut.html">print.mccut</a></code> is available as soon as one
+statistic is evaluated within the third block;
+</p>
+</li>
+<li><p> a <code><a href="../../mc2d/help/summary.mccut.html">summary.mccut</a></code> and a
+<code><a href="../../mc2d/help/tornadounc.mccut.html">tornadounc.mccut</a></code> are available if a
+<code><a href="../../mc2d/help/summary.mc.html">summary.mc</a></code> is evaluated within the third block;
+</p>
+</li>
+<li> <p><code><a href="../../mc2d/help/converg.html">converg</a></code> may be used if a <code><a href="../../mc2d/help/summary.mc.html">summary.mc</a></code>
+is evaluated within the third block;
+</p>
+</li>
+<li><p> a <code><a href="../../mc2d/help/plot.mccut.html">plot.mccut</a></code> is available if a
+<code><a href="../../mc2d/help/plot.mc.html">plot.mc</a></code> is evaluated within the third block. (Do not
+forget to use the argument <span class="samp">draw = FALSE</span> in the third block);
+</p>
+</li>
+<li><p> a <code><a href="../../mc2d/help/tornado.html">tornado</a></code> is available if a <code><a href="../../mc2d/help/tornado.html">tornado</a></code>
+is evaluated within the third block.</p>
+</li></ul>
+
+<p>The seed is set at the beginning of the evaluation. Thus, the
+complete similarity of two evaluations is not certain, depending of
+the structure of your model. Moreover, with a similar seed, the
+simulation will not be equal to the one obtained with
+<code><a href="../../mc2d/help/evalmcmod.html">evalmcmod</a></code> since the random samples will not be obtained
+in the same order.
+</p>
+<p>In order to avoid conflicts between the <span class="samp">model</span> evaluation and
+the function, the function uses upper case variables. Do not use
+upper case variables in your model.
+</p>
+<p>The function should be re-adapted if a new function to be applied on
+<span class="samp">mc</span> objects is written.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../mc2d/help/evalmcmod.html">evalmcmod</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+modEC3 &lt;- mcmodelcut({
+
+## First block:
+## Evaluates all the 0, V and U nodes.
+ { cook &lt;- mcstoc(rempiricalD, type = "V", values = c(0, 1/5, 
+ 1/50), prob = c(0.027, 0.373, 0.6))
+ serving &lt;- mcstoc(rgamma, type = "V", shape = 3.93, rate = 0.0806)
+ conc &lt;- mcstoc(rnorm, type = "U", mean = 10, sd = 2)
+ r &lt;- mcstoc(runif, type = "U", min = 5e-04, max = 0.0015)
+ }
+## Second block:
+## Evaluates all the VU nodes
+## Leads to the mc object. 
+ {
+ expo &lt;- conc * cook * serving
+ dose &lt;- mcstoc(rpois, type = "VU", lambda = expo)
+ risk &lt;- 1 - (1 - r)^dose
+ res &lt;- mc(conc, cook, serving, expo, dose, r, risk)
+ }
+## Third block:
+## Leads to a list of statistics: summary, plot, tornado
+## or any function leading to a vector (et), a list (minmax), 
+## a matrix or a data.frame (summary)
+ {
+ list(
+ sum = summary(res), 
+ plot = plot(res, draw=FALSE), 
+ minmax = lapply(res, range)
+ )
+ }
+})
+
+x &lt;- evalmccut(modEC3, nsv = 101, nsu = 101, seed = 666)
+summary(x)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mc2d</em> version 0.2.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

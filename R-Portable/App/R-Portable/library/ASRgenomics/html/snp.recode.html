@@ -1,0 +1,163 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Recodes the molecular matrix M for downstream analyses</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for snp.recode {ASRgenomics}"><tr><td>snp.recode {ASRgenomics}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Recodes the molecular matrix M for downstream analyses</h2>
+
+<h3>Description</h3>
+
+<p>Reads molecular data in format of bi-allelic nucleotide bases (AA,
+AG, GG, CC, etc.) and recodes them as 0, 1, 2 and <code>NA</code> to be used in other
+downstream analyses.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+snp.recode(
+  M = NULL,
+  map = NULL,
+  marker = NULL,
+  ref = NULL,
+  alt = NULL,
+  recoding = c("ATGCto012"),
+  na.string = NA,
+  rename.markers = TRUE,
+  message = TRUE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>M</code></td>
+<td>
+<p>A character matrix with SNP data of full form (<i>n \times p</i>),
+with <i>n</i> individuals and <i>p</i> markers
+Individual and marker names are assigned to <code>rownames</code> and <code>colnames</code>, respectively.
+Data in matrix is coded as AA, AG, GG, CC, etc (default = <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>map</code></td>
+<td>
+<p>(Optional) A data frame with the map information with <i>p</i> rows.
+If <code>NULL</code> a dummy map is generated considering a single chromosome and sequential
+positions for markers and includes reference allele and alternative allele (default = <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>marker</code></td>
+<td>
+<p>A character indicating the name of the column in data frame <code>map</code> with the identification
+of markers. This is mandatory if <code>map</code> is provided (default = <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>ref</code></td>
+<td>
+<p>A character indicating the name of the column in the map containing the reference allele for
+recoding. If absent, then conversion will be based on the major allele (most frequent).
+The marker information of a given individual with two of the specified major alleles
+in <code>ref</code> will be coded as 2. This is mandatory if <code>map</code> is provided (default = <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>alt</code></td>
+<td>
+<p>A character indicating the name of the column in the map containing the alternative allele for
+recoding. If absent, then it will be inferred from the data. The marker information of a given individual
+with two of the specified alleles in <code>alt</code> will be coded as 0 (default = <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>recoding</code></td>
+<td>
+<p>A character indicating the recoding option to be performed.
+Currently, only the nucleotide bases (AA, AG, ...) to allele count is available (<code>"ATGCto012"</code>)
+(default = <code>"ATGCto012"</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>na.string</code></td>
+<td>
+<p>A character that is interpreted as missing values (default = <code>"NA"</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>rename.markers</code></td>
+<td>
+<p>If <code>TRUE</code> marker names (as provided in <strong>M</strong>) will be expanded
+to store the reference and alternative alleles. For example, from AX-88234566 to AX-88234566_C_A.
+In the event of unidentified alleles, 0 will be used (default = <code>TRUE</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>message</code></td>
+<td>
+<p>If <code>TRUE</code> diagnostic messages are printed on screen (default = <code>TRUE</code>).</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A list with the following two elements:
+</p>
+
+<ul>
+<li><p><code>Mrecode</code>: the molecular matrix <i>\boldsymbol{M}</i> recoded to 0, 1, 2 and <code>NA</code>.
+</p>
+</li>
+<li><p><code>mapr</code>: the data frame with the map information including reference allele and alternative allele.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+# Create bi-allelic base data set.
+Mnb &lt;- matrix(c(
+  "A-",  NA, "GG",   "CC",   "AT",   "CC",   "AA",   "AA",
+  "AAA", NA, "GG",   "AC",   "AT",   "CG",   "AA",   "AT",
+  "AA",  NA, "GG",   "CC",   "AA",   "CG",   "AA",   "AA",
+  "AA",  NA, "GG",   "AA",   "AA",    NA,    "AA",   "AA",
+  "AT",  NA, "GG",   "AA",   "TT",   "CC",   "AT",   "TT",
+  "AA",  NA,   NA,   "CC",    NA,    "GG",   "AA",   "AA",
+  "AA",  NA,   NA,   "CC",   "TT",   "CC",   "AA",   "AT",
+  "TT",  NA, "GG",   "AA",   "AA",   "CC",   "AA",   "AA"),
+  ncol = 8, byrow = TRUE, dimnames = list(paste0("ind", 1:8),
+                                       paste0("m", 1:8)))
+Mnb
+
+# Recode without map (but map is created).
+Mr &lt;- snp.recode(M = Mnb, na.string = NA)
+Mr$Mrecode
+Mr$map
+
+# Create map.
+mapnb &lt;- data.frame(
+ marker = paste0("m", 1:8),
+ reference = c("A", "T", "G", "C", "T", "C", "A", "T"),
+ alternative = c("T", "G", "T", "A", "A", "G", "T", "A")
+ )
+ mapnb
+
+# Recode with map without alternative allele.
+Mr &lt;- snp.recode(M = Mnb, map = mapnb, marker = "marker", ref = "reference",
+           na.string = NA, rename.markers = TRUE)
+Mr$Mrecode
+Mr$map
+
+# Notice that the alternative allele is in the map as a regular variable,
+# but in the names it is inferred from data (which might be 0 (missing)).
+
+# Recode with map with alternative allele.
+Mr &lt;- snp.recode(M = Mnb, map = mapnb, marker = "marker",
+ ref = "reference", alt = "alternative",
+ na.string = NA, rename.markers = TRUE)
+Mr$Mrecode
+Mr$map # Now the alternative is also on the names.
+
+# We can also recode without renaming the markers.
+Mr &lt;- snp.recode(M = Mnb, map = mapnb, marker = "marker", ref = "reference",
+           na.string = NA, rename.markers = FALSE)
+Mr$Mrecode
+Mr$map # Now the alternative is also on the names.
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ASRgenomics</em> version 1.1.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

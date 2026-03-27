@@ -1,9 +1,9 @@
-## ---- echo = FALSE------------------------------------------------------------
+## ----echo = FALSE-------------------------------------------------------------
 library(httr)
 knitr::opts_chunk$set(comment = "#>", collapse = TRUE)
 
-## ---- eval = FALSE------------------------------------------------------------
-#  Sys.chmod("secret.file", mode = "0400")
+## ----eval = FALSE-------------------------------------------------------------
+# Sys.chmod("secret.file", mode = "0400")
 
 ## -----------------------------------------------------------------------------
 my_secrets <- function() {
@@ -15,58 +15,58 @@ my_secrets <- function() {
   jsonlite::read_json(path)
 }
 
-## ---- eval = FALSE------------------------------------------------------------
-#  password <- rstudioapi::askForPassword()
+## ----eval = FALSE-------------------------------------------------------------
+# password <- rstudioapi::askForPassword()
 
-## ---- eval = FALSE------------------------------------------------------------
-#  file.edit("~/.Renviron")
+## ----eval = FALSE-------------------------------------------------------------
+# file.edit("~/.Renviron")
 
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 Sys.setenv("VAR1" = "value1")
 
 ## -----------------------------------------------------------------------------
 Sys.getenv("VAR1")
 
-## ---- eval = FALSE------------------------------------------------------------
-#  keyring::key_set("MY_SECRET")
-#  keyring::key_get("MY_SECRET")
+## ----eval = FALSE-------------------------------------------------------------
+# keyring::key_set("MY_SECRET")
+# keyring::key_get("MY_SECRET")
 
-## ---- eval = FALSE------------------------------------------------------------
-#  keyring::keyring_create("httr")
-#  keyring::key_set("MY_SECRET", keyring = "httr")
+## ----eval = FALSE-------------------------------------------------------------
+# keyring::keyring_create("httr")
+# keyring::key_set("MY_SECRET", keyring = "httr")
 
-## ---- eval = FALSE------------------------------------------------------------
-#  keyring::keyring_lock("httr")
+## ----eval = FALSE-------------------------------------------------------------
+# keyring::keyring_lock("httr")
 
-## ---- eval = FALSE------------------------------------------------------------
-#  library(openssl)
-#  library(jsonlite)
-#  library(curl)
-#  
-#  encrypt <- function(secret, username) {
-#    url <- paste("https://api.github.com/users", username, "keys", sep = "/")
-#  
-#    resp <- httr::GET(url)
-#    httr::stop_for_status(resp)
-#    pubkey <- httr::content(resp)[[1]]$key
-#  
-#    opubkey <- openssl::read_pubkey(pubkey)
-#    cipher <- openssl::rsa_encrypt(charToRaw(secret), opubkey)
-#    jsonlite::base64_enc(cipher)
-#  }
-#  
-#  cipher <- encrypt("<username>\n<password>", "hadley")
-#  cat(cipher)
+## ----eval = FALSE-------------------------------------------------------------
+# library(openssl)
+# library(jsonlite)
+# library(curl)
+# 
+# encrypt <- function(secret, username) {
+#   url <- paste("https://api.github.com/users", username, "keys", sep = "/")
+# 
+#   resp <- httr::GET(url)
+#   httr::stop_for_status(resp)
+#   pubkey <- httr::content(resp)[[1]]$key
+# 
+#   opubkey <- openssl::read_pubkey(pubkey)
+#   cipher <- openssl::rsa_encrypt(charToRaw(secret), opubkey)
+#   jsonlite::base64_enc(cipher)
+# }
+# 
+# cipher <- encrypt("<username>\n<password>", "hadley")
+# cat(cipher)
 
-## ---- eval = FALSE------------------------------------------------------------
-#  decrypt <- function(cipher, key = openssl::my_key()) {
-#    cipherraw <- jsonlite::base64_dec(cipher)
-#    rawToChar(openssl::rsa_decrypt(cipherraw, key = key))
-#  }
-#  
-#  decrypt(cipher)
-#  #> username
-#  #> password
+## ----eval = FALSE-------------------------------------------------------------
+# decrypt <- function(cipher, key = openssl::my_key()) {
+#   cipherraw <- jsonlite::base64_dec(cipher)
+#   rawToChar(openssl::rsa_decrypt(cipherraw, key = key))
+# }
+# 
+# decrypt(cipher)
+# #> username
+# #> password
 
 ## -----------------------------------------------------------------------------
 my_secret <- function() {

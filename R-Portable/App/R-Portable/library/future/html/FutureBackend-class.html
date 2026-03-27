@@ -1,0 +1,203 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Configure a backend that controls how and where futures are...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for FutureBackend-class {future}"><tr><td>FutureBackend-class {future}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Configure a backend that controls how and where futures are evaluated</h2>
+
+<h3>Description</h3>
+
+<p><em>This functionality is only for developers who wish to implement their
+own future backend.  End-users and package developers use futureverse,
+does not need to know about these functions.</em>
+</p>
+<p>If you are looking for available future backends to choose from, please
+see the 'A Future for R: Available Future Backends' vignette and
+<a href="https://www.futureverse.org/backends.html">https://www.futureverse.org/backends.html</a>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+FutureBackend(
+  ...,
+  earlySignal = FALSE,
+  gc = FALSE,
+  maxSizeOfObjects = getOption("future.globals.maxSize", +Inf),
+  interrupts = TRUE,
+  hooks = FALSE
+)
+
+launchFuture(backend, future, ...)
+
+listFutures(backend, ...)
+
+interruptFuture(backend, future, ...)
+
+validateFutureGlobals(backend, future, ...)
+
+stopWorkers(backend, ...)
+
+MultiprocessFutureBackend(
+  ...,
+  wait.timeout = getOption("future.wait.timeout", 24 * 60 * 60),
+  wait.interval = getOption("future.wait.interval", 0.01),
+  wait.alpha = getOption("future.wait.alpha", 1.01)
+)
+
+ClusterFutureBackend(
+  workers = availableWorkers(constraints = "connections"),
+  gc = TRUE,
+  earlySignal = FALSE,
+  interrupts = FALSE,
+  persistent = FALSE,
+  ...
+)
+
+MulticoreFutureBackend(
+  workers = availableCores(constraints = "multicore"),
+  maxSizeOfObjects = +Inf,
+  ...
+)
+
+SequentialFutureBackend(..., maxSizeOfObjects = +Inf)
+
+MultisessionFutureBackend(
+  workers = availableCores(constraints = "connections-16"),
+  rscript_libs = .libPaths(),
+  interrupts = TRUE,
+  gc = FALSE,
+  earlySignal = FALSE,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>earlySignal</code></td>
+<td>
+<p>Overrides the default behavior on whether futures
+should resignal (&quot;relay&quot;) conditions captured as soon as possible, or
+delayed, for instance, until <code><a href="../../future/help/value.html">value()</a></code> is called on the future.
+(Default: <code>FALSE</code>)</p>
+</td></tr>
+<tr valign="top"><td><code>gc</code></td>
+<td>
+<p>Overrides the default behavior of whether futures should trigger
+garbage collection via <code><a href="../../base/html/gc.html">gc()</a></code> on the parallel worker after the value has
+been collected from the worker.
+This can help to release memory sooner than letting R itself on the parallel
+worker decided when it is needed. Releasing memory sooner can help to fit
+more parallel workers on a machine with limited amount of total memory.
+(Default: <code>FALSE</code>)</p>
+</td></tr>
+<tr valign="top"><td><code>maxSizeOfObjects</code></td>
+<td>
+<p>The maximum allowed total size, in bytes, of all
+objects to and from the parallel worker allows.
+This can help to protect against unexpectedly large data transfers between
+the parent process and the parallel workers - data that is often transferred
+over the network, which sometimes also includes the internet. For instance,
+if you sit at home and have set up a future backend with workers running
+remotely at your university or company, then you might want to use this
+protection to avoid transferring giga- or terabytes of data without noticing.
+(Default: <i>500 \cdot 1024^2</i> bytes = 500 MiB, unless overridden by a
+FutureBackend subclass, or by R option <a href="../../future/help/future.globals.maxSize.html">future.globals.maxSize</a> (sic!))</p>
+</td></tr>
+<tr valign="top"><td><code>interrupts</code></td>
+<td>
+<p>If FALSE, attempts to interrupt futures will not take
+place on this backend, even if the backend supports it. This is useful
+when, for instance, it takes a long time to interrupt a future.</p>
+</td></tr>
+<tr valign="top"><td><code>backend</code></td>
+<td>
+<p>a <a href="../../future/help/FutureBackend.html">FutureBackend</a>.</p>
+</td></tr>
+<tr valign="top"><td><code>future</code></td>
+<td>
+<p>a <a href="../../future/help/Future.html">Future</a> to be started.</p>
+</td></tr>
+<tr valign="top"><td><code>wait.timeout</code></td>
+<td>
+<p>Number of seconds before timing out.</p>
+</td></tr>
+<tr valign="top"><td><code>wait.interval</code></td>
+<td>
+<p>Baseline number of seconds between retries.</p>
+</td></tr>
+<tr valign="top"><td><code>wait.alpha</code></td>
+<td>
+<p>Scale factor increasing waiting interval after each
+attempt.</p>
+</td></tr>
+<tr valign="top"><td><code>workers</code></td>
+<td>
+<p>...</p>
+</td></tr>
+<tr valign="top"><td><code>persistent</code></td>
+<td>
+<p>(deprecated) ...</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>(optional) not used.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The <code>ClusterFutureBackend</code> is selected by
+<code>plan(cluster, workers = workers)</code>.
+</p>
+<p>The <code>MulticoreFutureBackend</code> backend is selected by
+<code>plan(multicore, workers = workers)</code>.
+</p>
+<p>The <code>SequentialFutureBackend</code> is selected by <code>plan(sequential)</code>.
+</p>
+<p>The <code>MultisessionFutureBackend</code> backend is selected by
+<code>plan(multisession, workers = workers)</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>FutureBackend()</code> returns a FutureBackend object, which inherits an
+environment. Specific future backends are defined by subclasses
+implementing the FutureBackend API.
+</p>
+<p><code>launchFuture()</code> returns the launched <code>Future</code> object.
+</p>
+<p><code>interruptFuture()</code> returns the interrupted <code>Future</code> object,
+if supported, other the unmodified future.
+</p>
+<p><code>stopWorkers()</code> returns TRUE if the workers were shut down,
+otherwise FALSE.
+</p>
+
+
+<h3>The FutureBackend API</h3>
+
+<p>The <code>FutureBackend</code> class specifies FutureBackend API,
+that all backends must implement and comply to. Specifically,
+</p>
+
+
+<h3>See Also</h3>
+
+<p>For alternative future backends, see the 'A Future for R: Available Future
+Backends' vignette and <a href="https://www.futureverse.org/backends.html">https://www.futureverse.org/backends.html</a>.
+</p>
+<p>For alternative future backends, see the 'A Future for R: Available Future
+Backends' vignette and <a href="https://www.futureverse.org/backends.html">https://www.futureverse.org/backends.html</a>.
+</p>
+
+<hr /><div style="text-align: center;">[Package <em>future</em> version 1.70.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Draw Multivariate Normals</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for rmvnorm {spam}"><tr><td>rmvnorm {spam}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Draw Multivariate Normals</h2>
+
+<h3>Description</h3>
+
+<p>Fast ways to draw multivariate normals when the variance or precision matrix
+is sparse.</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+rmvnorm(n, mu=rep.int(0, dim(Sigma)[1]), Sigma, ..., mean, sigma)
+rmvnorm.spam(n, mu=rep.int(0, dim(Sigma)[1]), Sigma, Rstruct=NULL, ..., mean, sigma)
+rmvnorm.prec(n, mu=rep.int(0, dim(Q)[1]), Q, Rstruct=NULL, ...)
+rmvnorm.canonical(n, b, Q, Rstruct=NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>n</code></td>
+<td>
+<p>number of observations.</p>
+</td></tr>
+<tr valign="top"><td><code>mu</code></td>
+<td>
+<p>mean vector.</p>
+</td></tr>
+<tr valign="top"><td><code>Sigma</code></td>
+<td>
+<p>covariance matrix (of class <code>spam</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>Q</code></td>
+<td>
+<p>precision matrix.</p>
+</td></tr>
+<tr valign="top"><td><code>b</code></td>
+<td>
+<p>vector determining the mean.</p>
+</td></tr>
+<tr valign="top"><td><code>Rstruct</code></td>
+<td>
+<p>the Cholesky structure of <code>Sigma</code> or <code>Q</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>arguments passed to <code>chol</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>mean,sigma</code></td>
+<td>
+<p>similar to <code>mu</code> and  <code>Sigma</code>. Here for portability with <code>mvtnorm::rmvnorm()</code></p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>All functions rely on a Cholesky factorization of the
+covariance or precision matrix.
+<br />
+The functions <code>rmvnorm.prec</code> and <code>rmvnorm.canonical</code>
+do not require sparse precision matrices
+Depending on the the covariance matrix <code>Sigma</code>,  <code>rmvnorm</code>
+or <code>rmvnorm.spam</code> is used. If wrongly specified, dispatching to
+the other function is done.
+<br />
+Default mean is zero. Side note: mean is added via <code>sweep()</code> and
+no gain is accieved by distinguishing this case.
+<br />
+Often (e.g., in a Gibbs sampler setting), the sparsity structure of
+the covariance/precision does not change. In such setting, the
+Cholesky factor can be passed via <code>Rstruct</code> in which only updates
+are performed (i.e., <code>update.spam.chol.NgPeyton</code> instead of a
+full <code>chol</code>).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Reinhard Furrer</p>
+
+
+<h3>References</h3>
+
+<p>See references in <code><a href="../../spam/help/chol.html">chol</a></code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../spam/help/rgrf.html">rgrf</a></code>, <code><a href="../../spam/help/chol.html">chol</a></code> and <code><a href="../../spam/help/ordering.html">ordering</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Generate multivariate from a covariance inverse:
+# (usefull for GRMF)
+set.seed(13)
+n &lt;- 25    # dimension
+N &lt;- 1000  # sample size
+Sigmainv &lt;- .25^abs(outer(1:n,1:n,"-"))
+Sigmainv &lt;- as.spam( Sigmainv, eps=1e-4)
+
+
+Sigma &lt;- solve( Sigmainv)  # for verification
+iidsample &lt;- array(rnorm(N*n),c(n,N))
+
+mvsample &lt;- backsolve( chol(Sigmainv), iidsample)
+norm( var(t(mvsample)) - Sigma, type="m")
+
+# compare with:
+mvsample &lt;- backsolve( chol(as.matrix( Sigmainv)), iidsample, n)
+   #### ,n as patch
+norm( var(t(mvsample)) - Sigma, type="m")
+
+
+# 'solve' step by step:
+b &lt;- rnorm( n)
+R &lt;- chol(Sigmainv)
+norm( backsolve( R, forwardsolve( R, b))-
+      solve( Sigmainv, b) )
+norm( backsolve( R, forwardsolve( R, diag(n)))- Sigma )
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>spam</em> version 2.11-3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -30,8 +30,7 @@ promise(action)
 <table summary="R argblock">
 <tr valign="top"><td><code>action</code></td>
 <td>
-<p>A function with signature <code style="white-space: pre;">function(resolve, reject)</code>, or a
-one-sided formula. See Details.</p>
+<p>A function with signature <code style="white-space: pre;">function(resolve, reject)</code>.</p>
 </td></tr>
 </table>
 
@@ -61,26 +60,40 @@ equivalent of a function call that never returns, i.e. hangs).
 </p>
 
 
+<h3><code style="white-space: pre;">action=</code> formulas</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#superseded"><img src="../help/figures/lifecycle-superseded.svg" alt='[Superseded]' /></a>
+</p>
+<p>With <code>{promises}</code> depending on R &gt;= 4.1, the shorthand of a formula, <code>~ fn(.)</code> for <code>action</code> is no longer recommended by the <code>{promises}</code> package or
+tidyverse (for example,
+<a href="https://github.com/tidyverse/purrr/commit/670c3ed9920f15da0d4175068ecddc41f0f1f335#diff-c4dcc43795da5c7f6bf5a94d957b5507ce795fedd6d3eb092ccad03678c4f76dR15"><code>{purrr}</code></a>)
+as we now have access to the function shorthand, <code style="white-space: pre;">\(x) fn(x)</code>. Please update
+your <code>action</code> code to use the new function shorthand syntax <code style="white-space: pre;">\(resolve, reject) resolve(arg1, arg2)</code> instead of <code>~ { resolve(arg1, arg2) }</code>. The
+magically created <code>resolve</code>/<code>reject</code> functions can be confusing when chained
+with other methods.
+</p>
+
+
 <h3>Examples</h3>
 
 <pre>
 # Create a promise that resolves to a random value after 2 secs
-p1 &lt;- promise(function(resolve, reject) {
-  later::later(~resolve(runif(1)), delay = 2)
+p1 &lt;- promise(\(resolve, reject) {
+  later::later(\() resolve(runif(1)), delay = 2)
 })
 
-p1 %...&gt;% print()
+p1 |&gt; then(print)
 
 # Create a promise that errors immediately
-p2 &lt;- promise(~{
+p2 &lt;- promise(\(resolve, reject) {
   reject("An error has occurred")
 })
 then(p2,
-  onFulfilled = ~message("Success"),
-  onRejected = ~message("Failure")
+  onFulfilled = \(value) message("Success"),
+  onRejected = \(err) message("Failure")
 )
 
 </pre>
 
-<hr /><div style="text-align: center;">[Package <em>promises</em> version 1.3.0 <a href="00Index.html">Index</a>]</div>
+<hr /><div style="text-align: center;">[Package <em>promises</em> version 1.5.0 <a href="00Index.html">Index</a>]</div>
 </div></body></html>

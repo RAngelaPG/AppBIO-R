@@ -1,0 +1,132 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Projection of additional items in a PCO analysis</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for supdist {ade4}"><tr><td>supdist {ade4}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Projection of additional items in a PCO analysis
+</h2>
+
+<h3>Description</h3>
+
+<p>This function takes the grand distance matrix between all items (Active + 
+Supplementary). It computes the PCO of the distance matrix between Active items, 
+and projects the distance matrix of Supplementary items in this PCO.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>supdist(d, fsup, tol = 1e-07)</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>d</code></td>
+<td>
+<p>Grand distance matrix between all (Active + Supplementary) items</p>
+</td></tr>
+<tr valign="top"><td><code>fsup</code></td>
+<td>
+<p>A factor with two levels giving the Active (level &lsquo;A&rsquo;) or 
+Supplementary (level &lsquo;S&rsquo;) status for each item in the distance matrix.</p>
+</td></tr>
+<tr valign="top"><td><code>tol</code></td>
+<td>
+<p>Numeric tolerance used to evaluate zero eigenvalues</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<table summary="R valueblock">
+<tr valign="top"><td><code>coordSup</code></td>
+<td>
+<p>Coordinates of Supplementary items projected in the PCO of Active items</p>
+</td></tr>
+<tr valign="top"><td><code>coordAct</code></td>
+<td>
+<p>Coordinates of Active item</p>
+</td></tr>
+<tr valign="top"><td><code>coordTot</code></td>
+<td>
+<p>Coordinates of Active plus Supplementary items</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Jean Thioulouse</p>
+
+
+<h3>References</h3>
+
+<p>Computations based on the Methods section of the following paper:
+Pele J, Abdi H, Moreau M, Thybert D, Chabbert M (2011) Multidimensional Scaling 
+Reveals the Main Evolutionary Pathways of Class A G-Protein-Coupled Receptors. 
+PLoS ONE 6(4): e19094. doi: <a href="https://doi.org/10.1371/journal.pone.0019094">10.1371/journal.pone.0019094</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../ade4/help/dudi.pco.html">dudi.pco</a></code>, <code><a href="../../ade4/help/suprow.html">suprow</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(meau)
+## Case 1: Supplementary items = subset of Active items
+## Supplementary coordinates should be equal to Active coordinates
+## PCO of active items (meau dataset has 6 sites and 10 variables)
+envpca1 &lt;- dudi.pca(meau$env, scannf = FALSE)
+dAct &lt;- dist(envpca1$tab)
+pco1 &lt;- dudi.pco(dAct, scannf = FALSE)
+## Projection of rows 19:24 (winter season for the 6 sites)
+## Supplementary items must be normalized
+f1 &lt;- function(w) (w - envpca1$cent) / envpca1$norm
+envSup &lt;- t(apply(meau$env[19:24, ], 1, f1))
+envTot &lt;- rbind.data.frame(envpca1$tab, envSup)
+dTot &lt;- dist(envTot)
+fSA1 &lt;- as.factor(rep(c("A", "S"), c(24, 6)))
+cSup1 &lt;- supdist(dTot, fSA1)
+## Comparison (coordinates should be equal)
+cSup1$coordSup[, 1:2]
+pco1$li[19:24, ]
+
+data(meaudret)
+## Case 2: Supplementary items = new items
+## PCO of active items (meaudret dataset has only 5 sites and 9 variables)
+envpca2 &lt;- dudi.pca(meaudret$env, scannf = FALSE)
+dAct &lt;- dist(envpca2$tab)
+pco2 &lt;- dudi.pco(dAct, scannf = FALSE)
+## Projection of site 6 (four seasons, without Oxyg variable)
+## Supplementary items must be normalized
+f1 &lt;- function(w) (w - envpca2$cent) / envpca2$norm
+envSup &lt;- t(apply(meau$env[seq(6, 24, 6), -5], 1, f1))
+envTot &lt;- rbind.data.frame(envpca2$tab, envSup)
+dTot &lt;- dist(envTot)
+fSA2 &lt;- as.factor(rep(c("A", "S"), c(20, 4)))
+cSup2 &lt;- supdist(dTot, fSA2)
+## Supplementary items vs. real items (both in red)
+if(!adegraphicsLoaded()) {
+ par(mfrow = c(2, 2))
+ s.label(pco1$li, boxes = FALSE)
+ s.label(rbind.data.frame(pco2$li, cSup2$coordSup[, 1:2]), boxes = FALSE)
+} else {
+ gl1 &lt;- s.label(pco1$li, plabels.optim = TRUE, plabels.col=rep(c(rep("black", 5),"red"), 4))
+ gl2 &lt;- s.label(rbind.data.frame(pco2$li, cSup2$coordSup[, 1:2]),
+  plabels.optim = TRUE, plabels.col=rep(c("black","red"),c(20, 4)))
+ ADEgS(list(gl1, gl2))
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ade4</em> version 1.7-23 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

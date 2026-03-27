@@ -1,0 +1,308 @@
+---
+title: "Unpacking Assignment"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Unpacking Assignment}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{R, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+
+library(zeallot)
+```
+
+## Getting Started
+The *zeallot* package defines an operator for *unpacking assignment*, sometimes
+called *parallel assignment* or *destructuring assignment* in other programming
+languages. The operator is written as `%<-%` and used like this.
+
+```{r}
+c(lat, lng) %<-% list(38.061944, -122.643889)
+```
+
+The result is that the list is unpacked into its elements,
+and the elements are assigned to `lat` and `lng`.
+
+```{r}
+lat
+lng
+```
+
+You can also unpack the elements of a vector.
+
+```{r}
+c(lat, lng) %<-% c(38.061944, -122.643889)
+lat
+lng
+```
+
+You can unpack much longer structures, too, of course, such as the 6-part
+summary of a vector.
+
+```{r}
+c(min_wt, q1_wt, med_wt, mean_wt, q3_wt, max_wt) %<-% summary(mtcars$wt)
+min_wt
+q1_wt
+med_wt
+mean_wt
+q3_wt
+max_wt
+```
+
+If the left-hand side and right-hand sides do not match, an error is raised.
+This guards against missing or unexpected values.
+
+```{r, error=TRUE}
+c(stg1, stg2, stg3) %<-% list("Moe", "Donald")
+```
+
+```{r, error=TRUE}
+c(stg1, stg2, stg3) %<-% list("Moe", "Larry", "Curley", "Donald")
+```
+
+### Unpacking a returned value
+A common use-case is when a function returns a list of values
+and you want to extract the individual values.
+In this example, the list of values returned by `coords_list()` is unpacked
+into the variables `lat` and `lng`.
+
+```{r}
+#
+# A function which returns a list of 2 numeric values.
+# 
+coords_list <- function() {
+  list(38.061944, -122.643889)
+}
+
+c(lat, lng) %<-% coords_list()
+lat
+lng
+```
+
+In this next example, we call a function that returns a vector.
+
+```{r}
+#
+# Convert cartesian coordinates to polar
+#
+to_polar = function(x, y) {
+  c(sqrt(x^2 + y^2), atan(y / x))
+}
+
+c(radius, angle) %<-% to_polar(12, 5)
+radius
+angle
+```
+
+### Example: Intercept and slope of regression
+You can directly unpack the coefficients of a simple linear regression
+into the intercept and slope.
+
+```{r}
+c(inter, slope) %<-% coef(lm(mpg ~ cyl, data = mtcars))
+inter
+slope
+```
+
+### Example: Unpacking the result of `safely`
+The *purrr* package includes the `safely` function.
+It wraps a given function to create a new, "safe" version of the original function.
+
+```{R, eval = require("purrr")}
+safe_log <- purrr::safely(log)
+```
+
+The safe version returns a list of two items. The first item is the result of 
+calling the original function, assuming no error occurred; or `NULL` if an error
+did occur. The second item is the error, if an error occurred; or `NULL` if no 
+error occurred. Whether or not the original function would have thrown an error,
+the safe version will never throw an error.
+
+```{r, eval = require("purrr")}
+pair <- safe_log(10)
+pair$result
+pair$error
+```
+
+```{r, eval = require("purrr")}
+pair <- safe_log("donald")
+pair$result
+pair$error
+```
+
+You can tighten and clarify calls to the safe function by using `%<-%`.
+
+```{r, eval = require("purrr")}
+c(res, err) %<-% safe_log(10)
+res
+err
+```
+
+## Unpacking a data frame
+A data frame is simply a list of columns, so the *zeallot* assignment does
+what you expect. It unpacks the data frame into individual columns.
+
+```{r}
+c(mpg=, cyl=, dist=, hp=) %<-% mtcars
+
+cyl
+```
+
+### Example: List of data frames
+Bear in mind, a list of data frames is still just a list. The assignment
+will extract the list elements (which are data frames) but not unpack the data
+frames themselves.
+
+```{R}
+c(gear3, gear4, gear5) %<-% split(mtcars, ~ gear)
+
+head(gear3)
+
+head(gear4)
+
+gear5
+```
+
+The `%<-%` operator assigned four data frames to four variables, leaving the
+data frames intact.
+
+## Custom classes
+*zeallot* includes implementations of `destructure` for data frames and linear
+model summaries. However, because `destructure` is a generic function, you can
+define new implementations for custom classes. When defining a new
+implementation keep in mind the return value must be a list so the values are
+properly unpacked.
+
+## Trailing values: the "everything else" clause
+In some cases, you want the first few elements of a list or vector but do not
+care about the trailing elements. The `summary.lm` function, for example, 
+returns a list of 11 values, and you may want only the first few. Fortunately,
+there is a way to capture those first few and say "don't worry about everything
+else".
+
+```{r}
+lm_mpg_cyl <- lm(mpg ~ cyl, data = mtcars)
+
+c(lmc_call, lmc_terms, lmc_residuals, ..rest) %<-% summary(lm_mpg_cyl)
+
+lmc_call
+
+lmc_terms
+
+head(lmc_residuals)
+```
+
+The collector variable `rest` captures everything else.
+
+```{r}
+str(rest)
+```
+
+Because `..rest` is prefixed with `..` a variable called `rest` is created
+for the trailing values of the list.
+
+## Leading values and middle values 
+
+In addition to collecting trailing values, you can also collect initial values
+and assign specific remaining values.
+
+```{r}
+c(..skip, e, f) %<-% list(1, 2, 3, 4, 5)
+skip
+e
+f
+```
+
+Or you can assign the first value, skip values, and then assign the last value.
+
+```{r}
+c(begin, ..middle, end) %<-% list(1, 2, 3, 4, 5)
+begin
+middle
+end
+```
+
+## Skipped values: anonymous elements
+
+You can skip one or more values using a period (`.`) instead of a variable name.
+
+```{r}
+c(x, ., z) %<-% list(1, 2, 3)
+x
+z
+```
+
+You can skip many values with the anonymous collector (`..`).
+
+```{r}
+c(begin, .., end) %<-% list("hello", "blah", list("blah"), "blah", "world!")
+begin
+end
+```
+
+You can mix skips and collectors together to selectively keep and discard
+elements.
+
+```{r}
+c(begin, ., ..middle, end) %<-% list(1, 2, 3, 4, 5)
+begin
+middle
+end
+```
+
+## Default values: handle missing values
+You can specify a default value for a left-hand side variable using `=`, similar
+to specifying the default value of a function argument. This comes in handy when
+the number of elements returned by a function cannot be guaranteed. `tail()` for
+example may return fewer elements than asked for.
+
+```{r}
+nums <- c(1, 2)
+c(x, y) %<-% tail(nums, 2)
+x
+y
+```
+
+However, if we tried to get the last 3 elements an error would be raised because
+`tail(nums, 3)` still returns only 2 values.
+
+```{r, error = TRUE}
+c(x, y, z) %<-% tail(nums, 3)
+```
+
+We can fix the problem by specifying a default value for `z`.
+
+```{r}
+c(x, y, z = NULL) %<-% tail(nums, 3)
+x
+y
+z
+```
+
+## Swapping values
+A handy trick is swapping values without the use of a temporary variable.
+
+```{r}
+c(first, last) %<-% c("Ai", "Genly")
+first
+last
+
+c(first, last) %<-% c(last, first)
+first
+last
+```
+
+or
+
+```{r}
+cat <- "meow"
+dog <- "bark"
+
+c(cat, dog, fish) %<-% c(dog, cat, dog)
+cat
+dog
+fish
+```

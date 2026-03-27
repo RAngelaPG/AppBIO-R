@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Get and set finalizer (name)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for finalizer {ff}"><tr><td>finalizer {ff}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Get and set finalizer (name)
+</h2>
+
+<h3>Description</h3>
+
+<p>The generic <code>finalizer</code> allows to get the current finalizer. The generic <code>finalizer&lt;-</code> allows to set the current finalizer or to change an existing finalizer (but not to remove a finalizer).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+finalizer(x, ...)
+finalizer(x, ...) &lt;- value
+## S3 method for class 'ff'
+finalizer(x, ...)
+## S3 replacement method for class 'ff'
+finalizer(x, ...) &lt;- value
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>an <code><a href="../../ff/help/ff.html">ff</a></code> object</p>
+</td></tr>
+<tr valign="top"><td><code>value</code></td>
+<td>
+<p>the name of the new finalizer</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>ignored</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>If an <code><a href="../../ff/help/ff.html">ff</a></code>  object is created a finalizer is assigned, it has the task to free ressources no longer needed, for example remove the ff file or free the C++ RAM associated with an open ff file.
+The assigned finalizer depends on the location of the ff file:
+if the file is created in <code>getOption(fftempdir)</code> it is considered considered temporary and has default finalizer <code><a href="../../ff/help/delete.ff.html">delete</a></code>,
+files created in other locations have default finalizer <code><a href="../../ff/help/close.ff.html">close</a></code>.
+The user can override this either by setting <code>options("fffinalizer")</code> or by using argument <code>finalizer</code> when creating single <code>ff</code> objects.
+Available finalizer generics are &quot;close&quot;, &quot;delete&quot; and &quot;deleteIfOpen&quot;, available methods are <code><a href="../../ff/help/close.ff.html">close.ff</a></code>, <code><a href="../../ff/help/delete.ff.html">delete.ff</a></code> and <code><a href="../../ff/help/deleteIfOpen.ff.html">deleteIfOpen.ff</a></code>.
+<br />
+In order to be able to change the finalizer before finalization, the finalizer is NOT directly passed to R's finalization mechanism <code><a href="../../base/html/reg.finalizer.html">reg.finalizer</a></code> (an active finalizer can never be changed other than be executed).
+Instead the NAME of the desired finalizer is stored in the ff object and <code><a href="../../ff/help/finalize.ff_pointer.html">finalize.ff_pointer</a></code> is passed to <code>reg.finalizer</code>.
+<code>finalize.ff_pointer</code> will at finalization-time determine the desired finalizer and call it.
+<br />
+There are two possible triggers for execution <code>finalize.ff_pointer</code>:
+</p>
+
+<ol>
+<li><p> the garbage collection <code><a href="../../base/html/gc.html">gc</a></code> following removal <code><a href="../../base/html/rm.html">rm</a></code> of the ff object
+</p>
+</li>
+<li><p> closing R if <code>finonexit</code> was <code>TRUE</code> at ff creation-time, determined by <code>options("fffinonexit")</code> and ff argument <code>finonexit</code>
+</p>
+</li></ol>
+
+<p>Furthermore there are two possible triggers for calling the finalizer
+</p>
+
+<ol>
+<li><p> an explicit call to <code><a href="../../ff/help/finalize.html">finalize</a></code>
+</p>
+</li>
+<li><p> an explicit call to one of the finalizers <code><a href="../../ff/help/close.ff.html">close</a></code>, <code><a href="../../ff/help/delete.html">delete</a></code> and <code><a href="../../ff/help/deleteIfOpen.html">deleteIfOpen</a></code>
+</p>
+</li></ol>
+
+<p>The user can define custom finalizers by creating a generic function like <code><a href="../../ff/help/delete.html">delete</a></code>, a ff_pointer method like <code><a href="../../ff/help/delete.ff_pointer.html">delete.ff_pointer</a></code> and a ff method for manual calls like <code><a href="../../ff/help/delete.ff.html">delete.ff</a></code>. The user then is responsible to take care of two things
+</p>
+
+<ol>
+<li><p> adequate freeing of ressources
+</p>
+</li>
+<li><p> proper maintenance of the finalizer name in the ff object via <code><a href="../../ff/help/Extract.ff.html">physical</a>$finalizer</code>
+</p>
+</li></ol>
+
+<p><code>is.null(finalizer(ff))</code> indicates NO active finalizer, i.e. no pending execution of <code>finalize.ff_pointer</code> lurking around after call of <code>reg.finalizer</code>.
+This requires that
+</p>
+
+<ol>
+<li><p> the <code>ff_pointer</code> method sets the finalizer name to <code>NULL</code>
+</p>
+</li>
+<li><p> the <code>ff</code> may change a non-NULL finalizer name to a different name but not change it to NULL
+</p>
+</li></ol>
+
+
+
+<h3>Value</h3>
+
+<p><code>finalizer</code> returns the name of the active finalizer or <code>NULL</code> if no finalizer is active. <br />
+<code>finalizer&lt;-</code> returns the changed ff object (reassignment of this return value not needed to keep the change).
+If there was no pending call to <code><a href="../../ff/help/finalize.ff_pointer.html">finalize.ff_pointer</a></code> (<code>is.null(finalizer(ff))</code>), <code>finalizer&lt;-</code> will create one by calling <code>reg.finalizer</code> with the current setting of <code><a href="../../ff/help/Extract.ff.html">physical</a>$finonexit</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>You can not assign NULL to an active finalizer using <code>finalizer&lt;-</code> because this would not stop R's finalization mechanism and would carry the risk of assiging MULTIPLE finalization tasks.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Jens Oehlschlägel
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../ff/help/ff.html">ff</a></code>, <code><a href="../../ff/help/finalize.html">finalize</a></code>, <code><a href="../../base/html/reg.finalizer.html">reg.finalizer</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+  x &lt;- ff(1:12, pattern="./finalizerdemo")
+  fnam &lt;- filename(x)
+  finalizer(x)
+  finalizer(x) &lt;- "delete"
+  finalizer(x)
+  rm(x)
+  file.exists(fnam)
+  gc()
+  file.exists(fnam)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ff</em> version 4.5.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,602 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Async client for different request types</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for AsyncVaried {crul}"><tr><td>AsyncVaried {crul}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Async client for different request types</h2>
+
+<h3>Description</h3>
+
+<p>An async client to do many requests, each with different URLs, curl options,
+etc.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>AsyncVaried</code> with variables and methods.
+<a href="../../crul/help/HttpResponse.html">HttpResponse</a> objects are returned in the order they are passed in.
+We print the first 10.
+</p>
+
+
+<h3>Failure behavior</h3>
+
+<p>HTTP requests mostly fail in ways that you are probably familiar with,
+including when there's a 400 response (the URL not found), and when the
+server made a mistake (a 500 series HTTP status code).
+</p>
+<p>But requests can fail sometimes where there is no HTTP status code, and
+no agreed upon way to handle it other than to just fail immediately.
+</p>
+<p>When a request fails when using synchronous requests (see <a href="../../crul/help/HttpClient.html">HttpClient</a>)
+you get an error message that stops your code progression
+immediately saying for example:
+</p>
+
+<ul>
+<li><p> &quot;Could not resolve host: https://foo.com&quot;
+</p>
+</li>
+<li><p> &quot;Failed to connect to foo.com&quot;
+</p>
+</li>
+<li><p> &quot;Resolving timed out after 10 milliseconds&quot;
+</p>
+</li></ul>
+
+<p>However, for async requests we don't want to fail immediately because
+that would stop the subsequent requests from occurring. Thus, when
+we find that a request fails for one of the reasons above we
+give back a <a href="../../crul/help/HttpResponse.html">HttpResponse</a> object just like any other response, and:
+</p>
+
+<ul>
+<li><p> capture the error message and put it in the <code>content</code> slot of the
+response object (thus calls to <code>content</code> and <code>parse()</code> work correctly)
+</p>
+</li>
+<li><p> give back a <code>0</code> HTTP status code. we handle this specially when testing
+whether the request was successful or not with e.g., the <code>success()</code>
+method
+</p>
+</li></ul>
+
+
+
+<h3>R6 classes</h3>
+
+<p>This is an R6 class from the package <span class="pkg">R6</span>. Find out more
+about R6 at <a href="https://r6.r-lib.org/">https://r6.r-lib.org/</a>. After creating an instance of an R6
+class (e.g., <code>x &lt;- HttpClient$new(url = "https://hb.opencpu.org")</code>) you can
+access values and methods on the object <code>x</code>.
+</p>
+
+
+<h3>Public fields</h3>
+
+<div class="r6-fields">
+
+<dl>
+<dt><code>mock</code></dt><dd><p>a mocking function. could be <code>NULL</code> too</p>
+</dd>
+</dl>
+
+</div>
+
+
+<h3>Methods</h3>
+
+
+
+<h4>Public methods</h4>
+
+
+<ul>
+<li> <p><a href="#method-AsyncVaried-print"><code>AsyncVaried$print()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-AsyncVaried-new"><code>AsyncVaried$new()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-AsyncVaried-request"><code>AsyncVaried$request()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-AsyncVaried-responses"><code>AsyncVaried$responses()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-AsyncVaried-requests"><code>AsyncVaried$requests()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-AsyncVaried-parse"><code>AsyncVaried$parse()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-AsyncVaried-status_code"><code>AsyncVaried$status_code()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-AsyncVaried-status"><code>AsyncVaried$status()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-AsyncVaried-content"><code>AsyncVaried$content()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-AsyncVaried-times"><code>AsyncVaried$times()</code></a>
+</p>
+</li>
+<li> <p><a href="#method-AsyncVaried-clone"><code>AsyncVaried$clone()</code></a>
+</p>
+</li></ul>
+
+
+<hr>
+<a id="method-AsyncVaried-print"></a>
+
+
+
+<h4>Method <code>print()</code></h4>
+
+<p>print method for AsyncVaried objects
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>AsyncVaried$print(x, ...)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>x</code></dt><dd><p>self</p>
+</dd>
+<dt><code>...</code></dt><dd><p>ignored</p>
+</dd>
+</dl>
+
+</div>
+
+
+<hr>
+<a id="method-AsyncVaried-new"></a>
+
+
+
+<h4>Method <code>new()</code></h4>
+
+<p>Create a new AsyncVaried object
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>AsyncVaried$new(..., .list = list(), mock = getOption("crul_mock", NULL))</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>..., .list</code></dt><dd><p>Any number of objects of class <code><a href="../../crul/help/HttpRequest.html">HttpRequest()</a></code>,
+must supply inputs to one of these parameters, but not both</p>
+</dd>
+<dt><code>mock</code></dt><dd><p>A mocking function. If supplied, this function is called
+with the request. It should return either <code>NULL</code> (if it doesn't want to
+handle the request) or a <a href="../../crul/help/HttpResponse.html">HttpResponse</a> (if it does).</p>
+</dd>
+</dl>
+
+</div>
+
+
+
+<h5>Returns</h5>
+
+<p>A new <code>AsyncVaried</code> object
+</p>
+
+
+<hr>
+<a id="method-AsyncVaried-request"></a>
+
+
+
+<h4>Method <code>request()</code></h4>
+
+<p>Execute asynchronous requests
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>AsyncVaried$request()</pre></div>
+
+
+
+<h5>Returns</h5>
+
+<p>nothing, responses stored inside object, though will print
+messages if you choose verbose output
+</p>
+
+
+<hr>
+<a id="method-AsyncVaried-responses"></a>
+
+
+
+<h4>Method <code>responses()</code></h4>
+
+<p>List responses
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>AsyncVaried$responses()</pre></div>
+
+
+
+<h5>Details</h5>
+
+<p>An S3 print method is used to summarise results. <a href="../../base/html/class.html">unclass</a>
+the output to see the list, or index to results, e.g., <code style="white-space: pre;">[1]</code>, <code style="white-space: pre;">[1:3]</code>
+</p>
+
+
+
+<h5>Returns</h5>
+
+<p>a list of <code>HttpResponse</code> objects, empty list before
+requests made
+</p>
+
+
+<hr>
+<a id="method-AsyncVaried-requests"></a>
+
+
+
+<h4>Method <code>requests()</code></h4>
+
+<p>List requests
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>AsyncVaried$requests()</pre></div>
+
+
+
+<h5>Returns</h5>
+
+<p>a list of <code>HttpRequest</code> objects, empty list before
+requests made
+</p>
+
+
+<hr>
+<a id="method-AsyncVaried-parse"></a>
+
+
+
+<h4>Method <code>parse()</code></h4>
+
+<p>parse content
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>AsyncVaried$parse(encoding = "UTF-8")</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>encoding</code></dt><dd><p>(character) the encoding to use in parsing.
+default:&quot;UTF-8&quot;</p>
+</dd>
+</dl>
+
+</div>
+
+
+
+<h5>Returns</h5>
+
+<p>character vector, empty character vector before
+requests made
+</p>
+
+
+<hr>
+<a id="method-AsyncVaried-status_code"></a>
+
+
+
+<h4>Method <code>status_code()</code></h4>
+
+<p>Get HTTP status codes for each response
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>AsyncVaried$status_code()</pre></div>
+
+
+
+<h5>Returns</h5>
+
+<p>numeric vector, empty numeric vector before requests made
+</p>
+
+
+<hr>
+<a id="method-AsyncVaried-status"></a>
+
+
+
+<h4>Method <code>status()</code></h4>
+
+<p>List HTTP status objects
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>AsyncVaried$status()</pre></div>
+
+
+
+<h5>Returns</h5>
+
+<p>a list of <code>http_code</code> objects, empty list before requests made
+</p>
+
+
+<hr>
+<a id="method-AsyncVaried-content"></a>
+
+
+
+<h4>Method <code>content()</code></h4>
+
+<p>Get raw content for each response
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>AsyncVaried$content()</pre></div>
+
+
+
+<h5>Returns</h5>
+
+<p>raw list, empty list before requests made
+</p>
+
+
+<hr>
+<a id="method-AsyncVaried-times"></a>
+
+
+
+<h4>Method <code>times()</code></h4>
+
+<p>curl request times
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>AsyncVaried$times()</pre></div>
+
+
+
+<h5>Returns</h5>
+
+<p>list of named numeric vectors, empty list before requests made
+</p>
+
+
+<hr>
+<a id="method-AsyncVaried-clone"></a>
+
+
+
+<h4>Method <code>clone()</code></h4>
+
+<p>The objects of this class are cloneable with this method.
+</p>
+
+
+<h5>Usage</h5>
+
+<div class="r"><pre>AsyncVaried$clone(deep = FALSE)</pre></div>
+
+
+
+<h5>Arguments</h5>
+
+<div class="arguments">
+
+<dl>
+<dt><code>deep</code></dt><dd><p>Whether to make a deep clone.</p>
+</dd>
+</dl>
+
+</div>
+
+
+
+
+<h3>See Also</h3>
+
+<p>Other async: 
+<code><a href="../../crul/help/Async.html">Async</a></code>,
+<code><a href="../../crul/help/AsyncQueue.html">AsyncQueue</a></code>,
+<code><a href="../../crul/help/HttpRequest.html">HttpRequest</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# pass in requests via ...
+req1 &lt;- HttpRequest$new(
+  url = "https://hb.opencpu.org/get",
+  opts = list(verbose = TRUE),
+  headers = list(foo = "bar")
+)$get()
+req2 &lt;- HttpRequest$new(url = "https://hb.opencpu.org/post")$post()
+
+# Create an AsyncVaried object
+out &lt;- AsyncVaried$new(req1, req2)
+
+# before you make requests, the methods return empty objects
+out$status()
+out$status_code()
+out$content()
+out$times()
+out$parse()
+out$responses()
+
+# make requests
+out$request()
+
+# access various parts
+## http status objects
+out$status()
+## status codes
+out$status_code()
+## content (raw data)
+out$content()
+## times
+out$times()
+## parsed content
+out$parse()
+## response objects
+out$responses()
+
+# use $verb() method to select http verb
+method &lt;- "post"
+req1 &lt;- HttpRequest$new(
+  url = "https://hb.opencpu.org/post",
+  opts = list(verbose = TRUE),
+  headers = list(foo = "bar")
+)$verb(method)
+req2 &lt;- HttpRequest$new(url = "https://hb.opencpu.org/post")$verb(method)
+out &lt;- AsyncVaried$new(req1, req2)
+out
+out$request()
+out$responses()
+
+# pass in requests in a list via .list param
+reqlist &lt;- list(
+  HttpRequest$new(url = "https://hb.opencpu.org/get")$get(),
+  HttpRequest$new(url = "https://hb.opencpu.org/post")$post(),
+  HttpRequest$new(url = "https://hb.opencpu.org/put")$put(),
+  HttpRequest$new(url = "https://hb.opencpu.org/delete")$delete(),
+  HttpRequest$new(url = "https://hb.opencpu.org/get?g=5")$get(),
+  HttpRequest$new(
+    url = "https://hb.opencpu.org/post")$post(body = list(y = 9)),
+  HttpRequest$new(
+    url = "https://hb.opencpu.org/get")$get(query = list(hello = "world"))
+)
+
+out &lt;- AsyncVaried$new(.list = reqlist)
+out$request()
+out$status()
+out$status_code()
+out$content()
+out$times()
+out$parse()
+
+# using auth with async
+url &lt;- "https://hb.opencpu.org/basic-auth/user/passwd"
+auth &lt;- auth(user = "user", pwd = "passwd")
+reqlist &lt;- list(
+  HttpRequest$new(url = url, auth = auth)$get(),
+  HttpRequest$new(url = url, auth = auth)$get(query = list(a=5)),
+  HttpRequest$new(url = url, auth = auth)$get(query = list(b=3))
+)
+out &lt;- AsyncVaried$new(.list = reqlist)
+out$request()
+out$status()
+out$parse()
+
+# failure behavior
+## e.g. when a URL doesn't exist, a timeout, etc.
+reqlist &lt;- list(
+  HttpRequest$new(url = "http://stuffthings.gvb")$get(),
+  HttpRequest$new(url = "https://hb.opencpu.org")$head(),
+  HttpRequest$new(url = "https://hb.opencpu.org",
+   opts = list(timeout_ms = 10))$head()
+)
+(tmp &lt;- AsyncVaried$new(.list = reqlist))
+tmp$request()
+tmp$responses()
+tmp$parse("UTF-8")
+
+# access intemediate redirect headers
+dois &lt;- c("10.7202/1045307ar", "10.1242/jeb.088898", "10.1121/1.3383963")
+reqlist &lt;- list(
+  HttpRequest$new(url = paste0("https://doi.org/", dois[1]))$get(),
+  HttpRequest$new(url = paste0("https://doi.org/", dois[2]))$get(),
+  HttpRequest$new(url = paste0("https://doi.org/", dois[3]))$get()
+)
+tmp &lt;- AsyncVaried$new(.list = reqlist)
+tmp$request()
+tmp
+lapply(tmp$responses(), "[[", "response_headers_all")
+
+# retry
+reqlist &lt;- list(
+  HttpRequest$new(url = "https://hb.opencpu.org/get")$get(),
+  HttpRequest$new(url = "https://hb.opencpu.org/post")$post(),
+  HttpRequest$new(url = "https://hb.opencpu.org/status/404")$retry("get"),
+  HttpRequest$new(url = "https://hb.opencpu.org/status/429")$retry("get",
+   retry_only_on = c(403, 429), times = 2)
+)
+tmp &lt;- AsyncVaried$new(.list = reqlist)
+tmp
+tmp$request()
+tmp$responses()[[3]]
+
+# mock
+url &lt;- "https://hb.opencpu.org/get"
+mock_fun &lt;- function(status) {
+  function(req) {
+    HttpResponse$new(method = "GET", url = "http://google.com",
+      status_code = status)
+  }
+}
+reqlist &lt;- list(
+  HttpRequest$new(url = url)$get(mock = mock_fun(status=418L)),
+  HttpRequest$new(url = url)$get(mock = mock_fun(status=201)),
+  HttpRequest$new(url = url)$get(mock = mock_fun(status=501L))
+)
+tmp &lt;- AsyncVaried$new(.list = reqlist)
+tmp
+tmp$request()
+tmp$status()
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>crul</em> version 1.6.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

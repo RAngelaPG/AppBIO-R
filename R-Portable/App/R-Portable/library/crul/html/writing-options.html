@@ -1,0 +1,91 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Writing data options</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for writing-options {crul}"><tr><td>writing-options {crul}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Writing data options</h2>
+
+<h3>Description</h3>
+
+<p>Writing data options
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+# write to disk
+(x &lt;- HttpClient$new(url = "https://hb.opencpu.org"))
+f &lt;- tempfile()
+res &lt;- x$get("get", disk = f)
+res$content # when using write to disk, content is a path
+readLines(res$content)
+close(file(f))
+
+# streaming response
+(x &lt;- HttpClient$new(url = "https://hb.opencpu.org"))
+res &lt;- x$get('stream/50', stream = function(x) cat(rawToChar(x)))
+res$content # when streaming, content is NULL
+
+
+## Async
+(cc &lt;- Async$new(
+  urls = c(
+    'https://hb.opencpu.org/get?a=5',
+    'https://hb.opencpu.org/get?foo=bar',
+    'https://hb.opencpu.org/get?b=4',
+    'https://hb.opencpu.org/get?stuff=things',
+    'https://hb.opencpu.org/get?b=4&amp;g=7&amp;u=9&amp;z=1'
+  )
+))
+files &lt;- replicate(5, tempfile())
+(res &lt;- cc$get(disk = files, verbose = TRUE))
+lapply(files, readLines)
+
+## Async varied
+### disk
+f &lt;- tempfile()
+g &lt;- tempfile()
+req1 &lt;- HttpRequest$new(url = "https://hb.opencpu.org/get")$get(disk = f)
+req2 &lt;- HttpRequest$new(url = "https://hb.opencpu.org/post")$post(disk = g)
+req3 &lt;- HttpRequest$new(url = "https://hb.opencpu.org/get")$get()
+(out &lt;- AsyncVaried$new(req1, req2, req3))
+out$request()
+out$content()
+readLines(f)
+readLines(g)
+out$parse()
+close(file(f))
+close(file(g))
+
+### stream - to console
+fun &lt;- function(x) print(x)
+req1 &lt;- HttpRequest$new(url = "https://hb.opencpu.org/get"
+)$get(query = list(foo = "bar"), stream = fun)
+req2 &lt;- HttpRequest$new(url = "https://hb.opencpu.org/get"
+)$get(query = list(hello = "world"), stream = fun)
+(out &lt;- AsyncVaried$new(req1, req2))
+out$request()
+out$content()
+
+### stream - to an R object
+lst &lt;- list()
+fun &lt;- function(x) lst &lt;&lt;- append(lst, list(x))
+req1 &lt;- HttpRequest$new(url = "https://hb.opencpu.org/get"
+)$get(query = list(foo = "bar"), stream = fun)
+req2 &lt;- HttpRequest$new(url = "https://hb.opencpu.org/get"
+)$get(query = list(hello = "world"), stream = fun)
+(out &lt;- AsyncVaried$new(req1, req2))
+out$request()
+lst
+cat(vapply(lst, function(z) rawToChar(z$content), ""), sep = "\n")
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>crul</em> version 1.6.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

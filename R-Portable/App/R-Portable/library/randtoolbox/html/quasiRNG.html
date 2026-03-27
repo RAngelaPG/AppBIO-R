@@ -1,0 +1,337 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Toolbox for quasi random number generation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for quasiRNG {randtoolbox}"><tr><td>quasiRNG {randtoolbox}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Toolbox for quasi random number generation</h2>
+
+<h3>Description</h3>
+
+<p>the Torus algorithm, the Sobol and Halton sequences.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+torus(n, dim = 1, prime, init = TRUE, mixed = FALSE, usetime = FALSE, 
+                  normal = FALSE, mexp = 19937, start = 1)
+sobol(n, dim = 1, init = TRUE, scrambling = 0, seed = NULL, normal = FALSE,
+                   mixed = FALSE, method = "C", mexp = 19937, start = 1,
+                   maxit = 10)
+halton(n, dim = 1, init = TRUE, normal = FALSE, usetime = FALSE, 
+                    mixed = FALSE, method = "C", mexp = 19937, start = 1)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>n</code></td>
+<td>
+<p>number of observations. If length(n) &gt; 1, 
+the length is taken to be the required number.</p>
+</td></tr>
+<tr valign="top"><td><code>dim</code></td>
+<td>
+<p>dimension of observations default 1.</p>
+</td></tr>
+<tr valign="top"><td><code>init</code></td>
+<td>
+<p>a logical, if <code>TRUE</code> the sequence is initialized and 
+restarts to the <code>start</code> value, otherwise not. By default <code>TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>normal</code></td>
+<td>
+<p>a logical if normal deviates are needed, default <code>FALSE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>scrambling</code></td>
+<td>
+
+<p>an integer value, if 1, 2 or 3 the sequence is scrambled
+otherwise not. If <code>scrambling=1</code>, Owen type type of scrambling is 
+applied, if <code>scrambling=2</code>, Faure-Tezuka type of scrambling, is
+applied, and if <code>scrambling=3</code>, both Owen+Faure-Tezuka type of
+scrambling is applied. By default 0.</p>
+</td></tr>
+<tr valign="top"><td><code>seed</code></td>
+<td>
+
+<p>an integer value, the random seed for initialization
+of the scrambling process (only for <code>sobol</code>
+with <code>scrambling&gt;0</code>). 
+If <code>NULL</code>, set to <code>4711</code>. </p>
+</td></tr>
+<tr valign="top"><td><code>prime</code></td>
+<td>
+<p>a single prime number or a vector of prime numbers to be used
+in the Torus sequence. (optional argument).</p>
+</td></tr>
+<tr valign="top"><td><code>mixed</code></td>
+<td>
+<p>a logical to combine the QMC algorithm with the SFMT algorithm, default <code>FALSE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>usetime</code></td>
+<td>
+<p>a logical to use the machine time to start the Torus sequence, 
+default <code>FALSE</code>, i.e. when <code>usetime=FALSE</code> the Torus sequence start from the first term.
+<code>usetime</code> is only used when <code>mixed=FALSE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>a character string either <code>"C"</code>.
+Note that <code>mixed=TRUE</code> is only available when <code>method="C"</code>.</p>
+</td></tr>		 
+<tr valign="top"><td><code>mexp</code></td>
+<td>
+<p>an integer for the Mersenne exponent of SFMT algorithm,
+only used when <code>mixed=TRUE</code>.</p>
+</td></tr>    
+<tr valign="top"><td><code>start</code></td>
+<td>
+<p>an integer 0 or 1 to initiliaze the sequence, default to 1,
+only used when <code>init=TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>maxit</code></td>
+<td>
+<p>a positive integer used to control inner loops both
+for generating randomized seed and for controlling
+outputs (when needed).</p>
+</td></tr>    
+</table>
+
+
+<h3>Details</h3>
+
+<p>Scrambling is temporarily disabled and will be reintroduced in a future release.
+</p>
+<p>The currently available generator are given below.
+Whatever the sequence, when <code>normal=TRUE</code>, outputs are transformed with
+the quantile of the standard normal distribution <code><a href="../../stats/html/Normal.html">qnorm</a></code>.
+If <code>init=TRUE</code>, the default, unscrambled and unmixed-SFMT quasi-random 
+sequences start from <code>start</code>.
+If <code>start != 0</code> and <code>normal=FALSE</code>, 
+we suggest to use 0 as recommended by Owen (2020). 
+One must handle the starting value (0) correctly if a quantile
+function of a non-lower-bounded distribution is used.
+</p>
+
+<dl>
+<dt><b>Torus algorithm:</b></dt><dd>
+<p>The <i>k</i>th term of the Torus algorithm in d dimension is given by
+</p>
+<p style="text-align: center;"><i>
+			    u_k = (frac(k sqrt(p_1)), ..., frac(k sqrt(p_d)) )</i></p>
+
+<p>where <i>p_i</i> denotes the ith prime number, <i>frac</i> the fractional part
+(i.e. <i>frac(x) = x-floor(x)</i>). We use the 100 000 first prime numbers
+from <a href="https://t5k.org/">https://t5k.org/</a>, thus the dimension is limited to 100 000. 
+If the user supplys prime numbers through
+the argument <code>prime</code>, we do NOT check for primality and we cast numerics
+to integers, (i.e. <code>prime=7.1234</code> will be cast to <code>prime=7</code> before
+computing Torus sequence).
+The Torus sequence starts from <i>k=1</i> when initialized with 
+<code>init = TRUE</code> and so not depending on machine time 
+<code>usetime = FALSE</code>. This is the default. When <code>init = FALSE</code>, the sequence
+is not initialized (to 1) and starts from the last term. 
+We can also use the machine time to start the sequence with <code>usetime = TRUE</code>, 
+which overrides <code>init</code> or a randomized when <code>mixed = TRUE</code>.</p>
+</dd>
+<dt><b>(scrambled) Sobol sequences</b></dt><dd>
+<p>Computes uniform Sobol low discrepancy numbers. 
+The sequence starts from <i>k=1</i> when initialized with 
+<code>init = TRUE</code> (default).
+When <code>scrambling &gt; 0</code>, a scrambling is performed
+or when <code>mixed = TRUE</code>, a randomized seed is performed.
+If some number of Sobol sequences are generated outside [0,1) with scrambling,
+the seed is randomized until we obtain all numbers in [0,1).
+One version of Sobol sequences is available the current version in 
+Fortran (<code>method = "Fortran"</code>) since <code>method = "C"</code> is under development.
+</p>
+</dd>
+<dt><b>Halton sequences</b></dt><dd>
+<p>Calculates a matrix of uniform or normal deviated halton low 
+discrepancy numbers. Let us note that Halton sequence in dimension is the
+Van Der Corput sequence.
+The Halton sequence starts from <i>k=1</i> when initialized with 
+<code>init = TRUE</code> (default) and no not depending on machine time 
+<code>usetime = FALSE</code>. 
+When <code>init = FALSE</code>, the sequence
+is not initialized (to 1) and starts from the last term. We can also use the
+machine time to start the sequence with <code>usetime = TRUE</code>, which overrides
+<code>init</code>.
+Two versions of Halton sequences are available the historical version in 
+Fortran (<code>method = "Fortran"</code>) and the new version in C (<code>method = "C"</code>).
+If <code>method = "C"</code>, <code>mixed</code> argument can be used to randomized
+the Halton sequences.
+</p>
+</dd>	
+</dl>
+
+<p>See the pdf vignette for details.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>torus</code>, <code>halton</code> and <code>sobol</code> generates random variables in [0,1). 
+It returns a <i>n</i>x<i>dim</i> matrix, when <code>dim&gt;1</code> 
+otherwise a vector of length <code>n</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Christophe Dutang and Diethelm Wuertz
+</p>
+
+
+<h3>References</h3>
+
+<p>Bratley P., Fox B.L. (1988),
+<em>Algorithm 659: Implementing Sobol's Quasirandom Sequence Generator</em>,
+ACM Transactions on Mathematical Software 14, 88&ndash;100.
+doi: <a href="https://doi.org/10.1145/42288.214372">10.1145/42288.214372</a>
+</p>
+<p>Joe S., Kuo F.Y. (2003),
+<em>Remark on Algorithm 659: Implementing Sobol's Quaisrandom Seqence Generator</em>,
+ACM Transactions on Mathematical Software 29, 49&ndash;57.
+doi: <a href="https://doi.org/10.1145/641876.641879">10.1145/641876.641879</a>
+</p>
+<p>Joe S., Kuo F.Y. (2008),
+<em>Constructing Sobol sequences with better two-dimensional projections</em>,
+SIAM J. Sci. Comput. 30, 2635&ndash;2654,
+doi: <a href="https://doi.org/10.1137/070709359">10.1137/070709359</a>.    
+</p>
+<p>Owen A.B. (2020), <em>On dropping the first Sobol' point</em>,
+doi: <a href="https://doi.org/10.1007/978-3-030-98319-2_4">10.1007/978-3-030-98319-2_4</a>.
+</p>
+<p>Planchet F., Jacquemin J. (2003), 
+<em>L'utilisation de methodes de simulation en assurance</em>. 
+Bulletin Francais d'Actuariat, vol. 6, 11, 3-69. (available online)
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../randtoolbox/help/pseudoRNG.html">pseudoRNG</a></code> for pseudo random number generation, 
+<code><a href="../../base/html/Random.html">.Random.seed</a></code> for what is done in R about random number generation. 
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# (1) the Torus algorithm
+#
+torus(100)
+
+# example of setting the seed
+setSeed(1)
+torus(5)
+setSeed(6)
+torus(5)
+#the same
+setSeed(1)
+torus(10)
+
+#no use of the machine time
+torus(10, use=FALSE)
+
+#Kolmogorov Smirnov test
+#KS statistic should be around 0.0019
+ks.test(torus(1000), punif) 
+	
+#KS statistic should be around 0.0003
+ks.test(torus(10000), punif) 
+
+#the mixed Torus sequence
+torus(10, mixed=TRUE)
+## Not run: 
+  par(mfrow = c(1,2))
+  acf(torus(10^6))
+  acf(torus(10^6, mixed=TRUE))
+
+## End(Not run)
+
+#usage of the init argument
+torus(5)
+torus(5, init=FALSE)
+
+#should be equal to the combination of the two
+#previous call
+torus(10)
+
+# (2) Halton sequences
+#
+
+# uniform variate
+halton(n = 10, dim = 5)
+
+# normal variate
+halton(n = 10, dim = 5, normal = TRUE)
+
+#usage of the init argument
+halton(5)
+halton(5, init=FALSE)
+
+#should be equal to the combination of the two
+#previous call
+halton(10)
+
+# some plots
+par(mfrow = c(2, 2), cex = 0.75)
+hist(halton(n = 500, dim = 1), main = "Uniform Halton", 
+  xlab = "x", col = "steelblue3", border = "white")
+
+hist(halton(n = 500, dim = 1, norm = TRUE), main = "Normal Halton", 
+  xlab = "x", col = "steelblue3", border = "white")
+   
+# (3) Sobol sequences
+#
+
+# uniform variate
+sobol(n = 10, dim = 5)
+
+# normal variate
+sobol(n = 10, dim = 5, normal = TRUE)
+
+# some plots
+hist(sobol(500, 1), main = "Uniform Sobol", 
+  xlab = "x", col = "steelblue3", border = "white")
+
+hist(sobol(500, 1, normal = TRUE), main = "Normal Sobol", 
+  xlab = "x", col = "steelblue3", border = "white")
+
+#usage of the init argument
+sobol(5)
+sobol(5, init=FALSE)
+
+#should be equal to the combination of the two
+#previous call
+sobol(10)
+
+# (4) computation times on a 2022 macbook (2017 macbook / 2007 macbook), mean of 1000 runs
+#
+
+## Not run: 
+# algorithm			time in seconds for n=10^6
+# Torus algo					  0.00689 (0.012 / 0.058)
+# mixed Torus algo 	    0.009354 (0.018 / 0.087)
+# Halton sequence				0.023575 (0.180 / 0.878)
+# Sobol sequence				0.010444 (0.027 / 0.214)
+n &lt;- 1e+06
+mean( replicate( 1000, system.time( torus(n), gcFirst=TRUE)[3]) )
+mean( replicate( 1000, system.time( torus(n, mixed=TRUE), gcFirst=TRUE)[3]) )
+mean( replicate( 1000, system.time( halton(n), gcFirst=TRUE)[3]) )
+mean( replicate( 1000, system.time( sobol(n), gcFirst=TRUE)[3]) )
+	
+## End(Not run)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>randtoolbox</em> version 2.0.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

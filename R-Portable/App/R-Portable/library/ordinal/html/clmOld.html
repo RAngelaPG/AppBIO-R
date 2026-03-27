@@ -1,0 +1,525 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Cumulative link models</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for clm2 {ordinal}"><tr><td>clm2 {ordinal}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Cumulative link models</h2>
+
+<h3>Description</h3>
+
+<p>A new improved implementation of CLMs is available in <code><a href="../../ordinal/help/clm.html">clm</a></code>.
+</p>
+<p>Fits cumulative link models with an additive model for the location
+and a multiplicative model for the scale. The function allows for
+structured thresholds. A popular special case of a CLM is the
+proportional odds model. In addition to the standard link functions,
+two flexible link functions, &quot;Arandar-Ordaz&quot; and &quot;log-gamma&quot; are
+available, where an extra link function parameter provides additional
+flexibility. A subset of the predictors can be allowed to have nominal
+rather than ordinal effects. This has been termed &quot;partial
+proportional odds&quot; when the link is the logistic.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+clm2(location, scale, nominal, data, weights, start, subset,
+    na.action, contrasts, Hess = TRUE, model,
+    link = c("logistic", "probit", "cloglog", "loglog",
+    "cauchit", "Aranda-Ordaz", "log-gamma"), lambda,
+    doFit = TRUE, control,
+    threshold = c("flexible", "symmetric", "equidistant"), ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>location</code></td>
+<td>
+
+<p>a formula expression as for regression models, of the form
+<code>response ~ predictors</code>. The response should be a factor
+(preferably an ordered factor), which will be interpreted as an
+ordinal response with levels ordered as in the factor.
+The model must have an intercept: attempts to remove one will
+lead to a warning and will be ignored. An offset may be used.  See the
+documentation of <code><a href="../../stats/html/formula.html">formula</a></code> for other details.
+</p>
+</td></tr>
+<tr valign="top"><td><code>scale</code></td>
+<td>
+
+<p>a optional formula expression as for the location part, of the form
+<code> ~ predictors</code>, i.e. with an empty left hand side.
+An offset may be used. See the
+documentation of <code><a href="../../stats/html/formula.html">formula</a></code> for other details.
+</p>
+</td></tr>
+<tr valign="top"><td><code>nominal</code></td>
+<td>
+
+<p>an optional formula of the form <code> ~ predictors</code>, i.e. with an
+empty left hand side. The effects of the predictors in this formula are
+assumed to nominal.
+</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+
+<p>an optional data frame in which to interpret the variables occurring
+in the formulas.
+</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+
+<p>optional case weights in fitting. Defaults to 1.
+</p>
+</td></tr>
+<tr valign="top"><td><code>start</code></td>
+<td>
+
+<p>initial values for the parameters in the format
+<code>c(alpha, beta, log(zeta), lambda)</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>subset</code></td>
+<td>
+
+<p>expression saying which subset of the rows of the data should  be used
+in the fit. All observations are included by default.
+</p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+
+<p>a function to filter missing data. Applies to terms in all three formulae.
+</p>
+</td></tr>
+<tr valign="top"><td><code>contrasts</code></td>
+<td>
+
+<p>a list of contrasts to be used for some or all of
+the factors appearing as variables in the model formula.
+</p>
+</td></tr>
+<tr valign="top"><td><code>Hess</code></td>
+<td>
+
+<p>logical for whether the Hessian (the inverse of the observed
+information matrix)
+should be computed.
+Use <code>Hess = TRUE</code> if you intend to call <code>summary</code> or
+<code>vcov</code> on the fit and <code>Hess = FALSE</code> in all other instances
+to save computing time. The argument is ignored if
+<code>method = "Newton"</code> where the Hessian is always computed and
+returned. Defaults to <code>TRUE</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+
+<p>logical for whether the model frames should be part of the returned
+object.
+</p>
+</td></tr>
+<tr valign="top"><td><code>link</code></td>
+<td>
+<p>link function, i.e. the type of location-scale distribution
+assumed for the latent distribution. The <code>Aranda-Ordaz</code> and
+<code>log-gamma</code> links add additional flexibility with a link function
+parameter, <code>lambda</code>. The <code>Aranda-Ordaz</code> link
+(Aranda-Ordaz, 1983) equals the logistic
+link, when <code>lambda = 1</code> and approaches the <code>loglog</code> link when
+<code>lambda</code> approaches zero. The <code>log-gamma</code> link (Genter and
+Farewell, 1985) equals the
+<code>loglog</code> link when <code>lambda = 1</code>, the <code>probit</code> link when
+<code>lambda = 0</code> and the <code>cloglog</code> link when <code>lambda =
+    -1</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>numerical scalar: the link function parameter. Used in
+combination with link <code>Aranda-Ordaz</code> or <code>log-gamma</code> and
+otherwise ignored. If lambda is specified, the model is estimated with
+lambda fixed at this value and otherwise lambda is estimated by
+ML. For <code>Aranda-Ordaz</code> lambda has to be positive; <code>&gt; 1e-5</code>
+for numerical reasons.
+</p>
+</td></tr>
+<tr valign="top"><td><code>doFit</code></td>
+<td>
+<p>logical for whether the model should be fit or the model
+environment should be returned.
+</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+<p>a call to <code><a href="../../ordinal/help/clm2.control.html">clm2.control</a></code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>threshold</code></td>
+<td>
+<p>specifies a potential structure for the thresholds
+(cut-points). <code>"flexible"</code> provides the standard unstructured
+thresholds, <code>"symmetric"</code> restricts the distance between the
+thresholds to be symmetric around the central one or two thresholds
+for odd or equal numbers or thresholds respectively, and
+<code>"equidistant"</code> restricts the distance between consecutive
+thresholds to the same value.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>additional arguments are passed on to <code><a href="../../ordinal/help/clm2.control.html">clm2.control</a></code> and
+possibly further on to the optimizer, which can lead to surprising
+error or warning messages when mistyping arguments etc.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>There are methods for the standard model-fitting functions, including
+<code><a href="../../base/html/summary.html">summary</a></code>, <code><a href="../../stats/html/vcov.html">vcov</a></code>,
+<code><a href="../help/predict.html">predict</a></code>,
+<code><a href="../../ordinal/help/anova.clm2.html">anova</a></code>, <code><a href="../../stats/html/logLik.html">logLik</a></code>,
+<code><a href="../../ordinal/help/profile.clm2.html">profile</a></code>,
+<code><a href="../../ordinal/help/profile.clm2.html">plot.profile</a></code>,
+<code><a href="../../ordinal/help/confint.clm2.html">confint</a></code>,
+<code><a href="../../ordinal/help/update.clm2.html">update</a></code>,
+<code><a href="../../ordinal/help/addterm.clm2.html">dropterm</a></code>,
+<code><a href="../../ordinal/help/addterm.clm2.html">addterm</a></code>, and an <code>extractAIC</code> method.
+</p>
+<p>The design of the implementation is inspired by an idea proposed by
+Douglas Bates in the talk &quot;Exploiting sparsity in model matrices&quot;
+presented at the DSC conference in Copenhagen, July 14 2009.
+Basically an environment is set up with all the information needed to
+optimize the likelihood function. Extractor functions are then used to
+get the value of likelihood at current or given parameter values and
+to extract current values of the parameters. All computations are
+performed inside the environment and relevant variables are updated
+during the fitting process. After optimizer termination relevant
+variables are extracted from the environment and the remaining are
+discarded.
+</p>
+<p>Some aspects of <code>clm2</code>, for instance, how starting values are
+obtained, and of the associated methods are
+inspired by <code><a href="../../MASS/help/polr.html">polr</a></code> from package <code>MASS</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>If <code>doFit = FALSE</code> the result is an environment
+representing the model ready to be optimized.
+If <code>doFit = TRUE</code> the result is an
+object of class <code>"clm2"</code> with the following components:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>beta</code></td>
+<td>
+<p>the parameter estimates of the location part.
+</p>
+</td></tr>
+<tr valign="top"><td><code>zeta</code></td>
+<td>
+<p>the parameter estimates of the scale part on the log
+scale; the scale parameter estimates on the original scale are given
+by <code>exp(zeta)</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>Alpha</code></td>
+<td>
+<p>vector or matrix of the threshold parameters.
+</p>
+</td></tr>
+<tr valign="top"><td><code>Theta</code></td>
+<td>
+<p>vector or matrix of the thresholds.
+</p>
+</td></tr>
+<tr valign="top"><td><code>xi</code></td>
+<td>
+<p>vector of threshold parameters, which, given a
+threshold function (e.g. <code>"equidistant"</code>), and possible nominal
+effects define the class boundaries, <code>Theta</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>the value of lambda if lambda is supplied or estimated,
+otherwise missing.
+</p>
+</td></tr>
+<tr valign="top"><td><code>coefficients</code></td>
+<td>
+<p>the coefficients of the intercepts
+(<code>theta</code>), the location  (<code>beta</code>), the scale
+(<code>zeta</code>), and the link function parameter (<code>lambda</code>).
+</p>
+</td></tr>
+<tr valign="top"><td><code>df.residual</code></td>
+<td>
+<p>the number of residual degrees of freedoms,
+calculated using the weights.
+</p>
+</td></tr>
+<tr valign="top"><td><code>fitted.values</code></td>
+<td>
+<p>vector of fitted values for each
+observation. An observation here is each of the scalar elements of
+the multinomial table and not a multinomial vector.
+</p>
+</td></tr>
+<tr valign="top"><td><code>convergence</code></td>
+<td>
+<p><code>TRUE</code> if the gradient
+based convergence criterion is met and <code>FALSE</code> otherwise.
+</p>
+</td></tr>
+<tr valign="top"><td><code>gradient</code></td>
+<td>
+<p>vector of gradients for all the parameters
+at termination of the optimizer.
+</p>
+</td></tr>
+<tr valign="top"><td><code>optRes</code></td>
+<td>
+<p>list with results from the optimizer. The contents of the
+list depends on the choice of optimizer.
+</p>
+</td></tr>
+<tr valign="top"><td><code>logLik</code></td>
+<td>
+<p>the log likelihood of the model at
+optimizer termination.
+</p>
+</td></tr>
+<tr valign="top"><td><code>Hessian</code></td>
+<td>
+<p>if the model was fitted with <code>Hess = TRUE</code>, this
+is the Hessian matrix of the parameters at the optimum.
+</p>
+</td></tr>
+<tr valign="top"><td><code>scale</code></td>
+<td>
+<p><code>model.frame</code> for the scale model.
+</p>
+</td></tr>
+<tr valign="top"><td><code>location</code></td>
+<td>
+<p><code>model.frame</code> for the location model.
+</p>
+</td></tr>
+<tr valign="top"><td><code>nominal</code></td>
+<td>
+<p><code>model.frame</code> for the nominal model.
+</p>
+</td></tr>
+<tr valign="top"><td><code>edf</code></td>
+<td>
+<p>the (effective) number of degrees of freedom used by the
+model.
+</p>
+</td></tr>
+<tr valign="top"><td><code>start</code></td>
+<td>
+<p>the starting values.
+</p>
+</td></tr>
+<tr valign="top"><td><code>convTol</code></td>
+<td>
+<p>convergence tolerance for the maximum absolute
+gradient of the parameters at termination of the optimizer.
+</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>character, the optimizer.
+</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>the response variable.
+</p>
+</td></tr>
+<tr valign="top"><td><code>lev</code></td>
+<td>
+<p>the names of the levels of the response variable.
+</p>
+</td></tr>
+<tr valign="top"><td><code>nobs</code></td>
+<td>
+<p>the (effective) number of observations, calculated as the
+sum of the weights.
+</p>
+</td></tr>
+<tr valign="top"><td><code>threshold</code></td>
+<td>
+<p>character, the threshold function used in the model.
+</p>
+</td></tr>
+<tr valign="top"><td><code>estimLambda</code></td>
+<td>
+<p><code>1</code> if lambda is estimated in one of the
+flexible link functions and <code>0</code> otherwise.
+</p>
+</td></tr>
+<tr valign="top"><td><code>link</code></td>
+<td>
+<p>character, the link function used in the model.
+</p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>the matched call.
+</p>
+</td></tr>
+<tr valign="top"><td><code>contrasts</code></td>
+<td>
+<p>contrasts applied to terms in location and scale
+models.
+</p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+<p>the function used to filter missing data.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Rune Haubo B Christensen</p>
+
+
+<h3>References</h3>
+
+<p>Agresti, A. (2002) <em>Categorical Data Analysis.</em> Second edition.  Wiley.
+</p>
+<p>Aranda-Ordaz, F. J. (1983) An Extension of the Proportional-Hazards
+Model for Grouped Data. <em>Biometrics</em>, 39, 109-117.
+</p>
+<p>Genter, F. C. and Farewell, V. T. (1985) Goodness-of-link testing in
+ordinal regression models. <em>The Canadian Journal of Statistics</em>,
+13(1), 37-44.
+</p>
+<p>Christensen, R. H. B., Cleaver, G. and Brockhoff, P. B. (2011)
+Statistical and Thurstonian models for the A-not A protocol with and
+without sureness. <em>Food Quality and Preference, 22</em>,
+pp. 542-549.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+options(contrasts = c("contr.treatment", "contr.poly"))
+
+## A tabular data set:
+(tab26 &lt;- with(soup, table("Product" = PROD, "Response" = SURENESS)))
+dimnames(tab26)[[2]] &lt;- c("Sure", "Not Sure", "Guess", "Guess", "Not Sure", "Sure")
+dat26 &lt;- expand.grid(sureness = as.factor(1:6), prod = c("Ref", "Test"))
+dat26$wghts &lt;- c(t(tab26))
+
+m1 &lt;- clm2(sureness ~ prod, scale = ~prod, data = dat26,
+          weights = wghts, link = "logistic")
+
+## print, summary, vcov, logLik, AIC:
+m1
+summary(m1)
+vcov(m1)
+logLik(m1)
+AIC(m1)
+coef(m1)
+coef(summary(m1))
+
+## link functions:
+m2 &lt;- update(m1, link = "probit")
+m3 &lt;- update(m1, link = "cloglog")
+m4 &lt;- update(m1, link = "loglog")
+m5 &lt;- update(m1, link = "cauchit", start = coef(m1))
+m6 &lt;- update(m1, link = "Aranda-Ordaz", lambda = 1)
+m7 &lt;- update(m1, link = "Aranda-Ordaz")
+m8 &lt;- update(m1, link = "log-gamma", lambda = 1)
+m9 &lt;- update(m1, link = "log-gamma")
+
+## nominal effects:
+mN1 &lt;-  clm2(sureness ~ 1, nominal = ~ prod, data = dat26,
+            weights = wghts, link = "logistic")
+anova(m1, mN1)
+
+## optimizer / method:
+update(m1, scale = ~ 1, method = "Newton")
+update(m1, scale = ~ 1, method = "nlminb")
+update(m1, scale = ~ 1, method = "optim")
+
+
+## threshold functions
+mT1 &lt;- update(m1, threshold = "symmetric")
+mT2 &lt;- update(m1, threshold = "equidistant")
+anova(m1, mT1, mT2)
+
+## Extend example from polr in package MASS:
+## Fit model from polr example:
+if(require(MASS)) {
+    fm1 &lt;- clm2(Sat ~ Infl + Type + Cont, weights = Freq, data = housing)
+    fm1
+    summary(fm1)
+    ## With probit link:
+    summary(update(fm1, link = "probit"))
+    ## Allow scale to depend on Cont-variable
+    summary(fm2 &lt;- update(fm1, scale =~ Cont))
+    anova(fm1, fm2)
+    ## which seems to improve the fit
+}
+
+#################################
+## It is possible to fit multinomial models (i.e. with nominal
+## effects) as the following example shows:
+if(require(nnet)) {
+    (hous1.mu &lt;- multinom(Sat ~ 1, weights = Freq, data = housing))
+    (hous1.clm &lt;- clm2(Sat ~ 1, weights = Freq, data = housing))
+
+    ## It is the same likelihood:
+    all.equal(logLik(hous1.mu), logLik(hous1.clm))
+
+    ## and the same fitted values:
+    fitHous.mu &lt;-
+        t(fitted(hous1.mu))[t(col(fitted(hous1.mu)) == unclass(housing$Sat))]
+    all.equal(fitted(hous1.clm), fitHous.mu)
+
+    ## The coefficients of multinom can be retrieved from the clm2-object
+    ## by:
+    Pi &lt;- diff(c(0, plogis(hous1.clm$xi), 1))
+    log(Pi[2:3]/Pi[1])
+
+    ## A larger model with explanatory variables:
+    (hous.mu &lt;- multinom(Sat ~ Infl + Type + Cont, weights = Freq, data = housing))
+    (hous.clm &lt;- clm2(Sat ~ 1, nominal = ~ Infl + Type + Cont, weights = Freq,
+                      data = housing))
+
+    ## Almost the same likelihood:
+    all.equal(logLik(hous.mu), logLik(hous.clm))
+
+    ## And almost the same fitted values:
+    fitHous.mu &lt;-
+        t(fitted(hous.mu))[t(col(fitted(hous.mu)) == unclass(housing$Sat))]
+    all.equal(fitted(hous.clm), fitHous.mu)
+    all.equal(round(fitted(hous.clm), 5), round(fitHous.mu), 5)
+}
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ordinal</em> version 2025.12-29 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

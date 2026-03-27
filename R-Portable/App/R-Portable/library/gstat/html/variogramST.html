@@ -1,0 +1,151 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Calculate Spatio-Temporal Sample Variogram</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for variogramST {gstat}"><tr><td>variogramST {gstat}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Calculate Spatio-Temporal Sample Variogram</h2>
+
+<h3>Description</h3>
+
+<p>Calculates the sample variogram from spatio-temporal data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+variogramST(formula, locations, data, ..., tlags = 0:15,  cutoff,
+	width = cutoff/15, boundaries = seq(0, cutoff, width),
+	progress = interactive(), pseudo = TRUE, assumeRegular = FALSE, 
+	na.omit = FALSE, cores = 1)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>formula, specifying the dependent variable.</p>
+</td></tr>
+<tr valign="top"><td><code>locations</code></td>
+<td>
+<p>A STFDF or STSDF containing the variable; kept for 
+compatibility reasons with variogram, either <code>locations</code> or <code>data</code> 
+must be provided.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A <code><a href="../../spacetime/help/STFDF-class.html">STFDF</a></code>, <code><a href="../../spacetime/help/STSDF-class.html">STSDF</a></code> or <code><a href="../../spacetime/help/STIDF.html">STIDF</a></code> containing the variable.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>any other arguments that will be passed to the underlying 
+<code><a href="../../gstat/help/variogram.html">variogram</a></code> function. In case of using data of type <code><a href="../../spacetime/help/STIDF-class.html">STIDF</a></code>, the argument <code>tunit</code> is recommended (and only used in the case of STIDF) to set the temporal unit of the <code>tlags</code>. Additionally, <code>twindow</code> can be passed to control the temporal window used for temporal distance calculations. This builds on the property of xts being ordered and only the next <code>twindow</code> instances are considered. This avoids the need of huge temporal distance matrices. The default uses twice the number as the average difference goes into the temporal cutoff.</p>
+</td></tr>
+<tr valign="top"><td><code>tlags</code></td>
+<td>
+<p> integer; time lags to consider or in case <code>data</code> is of class <code><a href="../../spacetime/help/STIDF-class.html">STIDF</a></code> the actual temporal boundaries with time unit given by <code>tunit</code> otherwise the same unit as <code><a href="../../base/html/diff.html">diff</a></code> on the index of the time slot will generate is assumed.</p>
+</td></tr>
+<tr valign="top"><td><code>cutoff</code></td>
+<td>
+<p> spatial separation distance up to which point pairs
+are included in semivariance estimates; as a default, the
+length of the diagonal of the box spanning the data is divided by three. </p>
+</td></tr>
+<tr valign="top"><td><code>width</code></td>
+<td>
+<p> the width of subsequent distance intervals into which
+data point pairs are grouped for semivariance estimates, by default the 
+<code>cutoff</code> is divided into 15 equal lags.</p>
+</td></tr>
+<tr valign="top"><td><code>boundaries</code></td>
+<td>
+<p> numerical vector with distance interval upper boundaries; 
+values should be strictly increasing </p>
+</td></tr>
+<tr valign="top"><td><code>progress</code></td>
+<td>
+<p> logical; if TRUE, show text progress bar </p>
+</td></tr>
+<tr valign="top"><td><code>pseudo</code></td>
+<td>
+<p> integer; use pseudo cross variogram for computing
+time-lagged spatial variograms? -1: find out from coordinates &ndash; if they
+are equal then yes, else no; 0: no; 1: yes. </p>
+</td></tr>
+<tr valign="top"><td><code>assumeRegular</code></td>
+<td>
+<p>logical; whether the time series should be assumed regular. 
+The first time step is assumed to be representative for the whole series. Note,
+that temporal lags are considered by index, and no check is made whether pairs
+actually have the desired separating distance.</p>
+</td></tr>
+<tr valign="top"><td><code>na.omit</code></td>
+<td>
+<p>shall all <code>NA</code> values in the spatio-temporal variogram be dropped? In case where complete rows or columns in the variogram consists of <code>NA</code> only, <code>plot</code> might produce a distorted picture.</p>
+</td></tr>
+<tr valign="top"><td><code>cores</code></td>
+<td>
+<p>number of cores to use in parallel</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>The spatio-temporal sample variogram contains besides the fields 
+<code>np</code>, <code>dist</code> and <code>gamma</code> the spatio-temporal fields, 
+<code>timelag</code>, <code>spacelag</code> and <code>avgDist</code>, the first of which indicates the time lag 
+used, the second and third different spatial lags. <code>spacelag</code> is the midpoint in the spatial
+lag intervals as passed by the parameter <code>boundaries</code>, whereas <code>avgDist</code> is the average 
+distance between the point pairs found in a distance interval over all temporal lags (i.e. the 
+averages of the values <code>dist</code> per temporal lag.) To compute variograms for space lag <i>h</i> and
+time lag <i>t</i>, the pseudo cross variogram <i>(Z_i(s)-Z_{i+t}(s+h))^2</i> is averaged over all time 
+lagged observation sets <i>Z_i</i> and <i>Z_{i+t}</i> available (weighted by the number of pairs involved).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Edzer Pebesma, Benedikt Graeler </p>
+
+
+<h3>References</h3>
+
+ 
+<p>Cressie, N.A.C., 1993, Statistics for Spatial Data, Wiley.
+</p>
+<p>Cressie, N., C. Wikle, 2011, Statistics for Spatio-temporal Data, Wiley.
+</p>
+<p>Pebesma, E.J., 2004. Multivariable geostatistics in S: the gstat package.
+Computers and Geosciences, 30: 683-691.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../gstat/help/plot.StVariogram.html">plot.StVariogram</a></code>,
+for variogram models: <code><a href="../../gstat/help/vgmST.html">vgmST</a></code>,
+to fit a spatio-temporal variogram model to a spatio-temporal sample variogram: 
+<code><a href="../../gstat/help/fit.StVariogram.html">fit.StVariogram</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# The following spatio-temporal variogram has been calcualted through
+# vv = variogram(PM10~1, r5to10, width=20, cutoff = 200, tlags=0:5)
+# in the vignette "st".
+
+data(vv)
+str(vv)
+plot(vv)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>gstat</em> version 2.1-5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

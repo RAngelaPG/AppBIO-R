@@ -53,6 +53,28 @@ session to immediately unblock and carry on with other user interactions.
 </p>
 
 
+<h3>OpenTelemetry Integration</h3>
+
+<p>When an <code>ExtendedTask</code> is created, if OpenTelemetry tracing is enabled for
+<code>"reactivity"</code> (see <code><a href="../../shiny/help/withOtelCollect.html">withOtelCollect()</a></code>), the <code>ExtendedTask</code> will record
+spans for each invocation of the task. The tracing level at <code>invoke()</code> time
+does not affect whether spans are recorded; only the tracing level when
+calling <code>ExtendedTask$new()</code> matters.
+</p>
+<p>The OTel span will be named based on the label created from the variable the
+<code>ExtendedTask</code> is assigned to. If no label can be determined, the span will
+be named <code style="white-space: pre;">&lt;anonymous&gt;</code>. Similar to other Shiny OpenTelemetry spans, the span
+will also include source reference attributes and session ID attributes.
+</p>
+<div class="sourceCode r"><pre>withOtelCollect("all", {
+  my_task &lt;- ExtendedTask$new(function(...) { ... })
+})
+
+# Span recorded for this invocation: ExtendedTask my_task
+my_task$invoke(...)
+</pre></div>
+
+
 <h3>Methods</h3>
 
 
@@ -102,11 +124,12 @@ server function.
 <dt><code>func</code></dt><dd><p>The long-running operation to execute. This should be an
 asynchronous function, meaning, it should use the
 <a href="https://rstudio.github.io/promises/">{promises}</a> package, most
-likely in conjuction with the
+likely in conjunction with the
+<a href="https://mirai.r-lib.org">{mirai}</a> or
 <a href="https://rstudio.github.io/promises/articles/promises_04_futures.html">{future}</a>
 package. (In short, the return value of <code>func</code> should be a
-<code><a href="../../future/help/future.html">Future</a></code> object, or a <code>promise</code>, or something else
-that <code><a href="../../promises/help/is.promise.html">promises::as.promise()</a></code> understands.)
+<code><a href="../../mirai/help/mirai.html">mirai</a></code>, <code><a href="../../future/help/future.html">Future</a></code>, <code>promise</code>,
+or something else that <code><a href="../../promises/help/is.promise.html">promises::as.promise()</a></code> understands.)
 </p>
 <p>It's also important that this logic does not read from any
 reactive inputs/sources, as inputs may change after the function is
@@ -241,5 +264,61 @@ invalidation will be ignored.
 
 
 
-<hr /><div style="text-align: center;">[Package <em>shiny</em> version 1.8.1.1 <a href="00Index.html">Index</a>]</div>
+
+<h3>Examples</h3>
+
+<pre>
+
+library(shiny)
+library(bslib)
+library(mirai)
+
+# Set background processes for running tasks
+daemons(1)
+# Reset when the app is stopped
+onStop(function() daemons(0))
+
+ui &lt;- page_fluid(
+  titlePanel("Extended Task Demo"),
+  p(
+    'Click the button below to perform a "calculation"',
+    "that takes a while to perform."
+  ),
+  input_task_button("recalculate", "Recalculate"),
+  p(textOutput("result"))
+)
+
+server &lt;- function(input, output) {
+  rand_task &lt;- ExtendedTask$new(function() {
+    mirai(
+      {
+        # Slow operation goes here
+        Sys.sleep(2)
+        sample(1:100, 1)
+      }
+    )
+  })
+
+  # Make button state reflect task.
+  # If using R &gt;=4.1, you can do this instead:
+  # rand_task &lt;- ExtendedTask$new(...) |&gt; bind_task_button("recalculate")
+  bind_task_button(rand_task, "recalculate")
+
+  observeEvent(input$recalculate, {
+    # Invoke the extended in an observer
+    rand_task$invoke()
+  })
+
+  output$result &lt;- renderText({
+    # React to updated results when the task completes
+    number &lt;- rand_task$result()
+    paste0("Your number is ", number, ".")
+  })
+}
+
+shinyApp(ui, server)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>shiny</em> version 1.13.0 <a href="00Index.html">Index</a>]</div>
 </div></body></html>

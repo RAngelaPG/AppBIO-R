@@ -1,0 +1,208 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Tippett's Method</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for tippett {poolr}"><tr><td>tippett {poolr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Tippett's Method</h2>
+
+<h3>Description</h3>
+
+<p>Function to carry out Tippett's method.<script>MathJax = {output: {font: "mathjax-newcm", fontPath: "../../mathjaxr/doc/mathjax/font",}};</script><script defer src="../../mathjaxr/doc/mathjax/tex-chtml.js"></script></p>
+
+
+<h3>Usage</h3>
+
+<pre>
+tippett(p, adjust = "none", R, m,
+        size = 10000, threshold, side = 2, batchsize, nearpd = TRUE, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>p</code></td>
+<td>
+<p>vector of length \(k\) with the (one- or two-sided) p-values to be combined.</p>
+</td></tr>
+<tr valign="top"><td><code>adjust</code></td>
+<td>
+<p>character string to specify an adjustment method to account for dependence. The default is <code>"none"</code>, in which case no adjustment is applied. Methods <code>"nyholt"</code>, <code>"liji"</code>, <code>"gao"</code>, <code>"galwey"</code>, or <code>"chen"</code> are adjustments based on an estimate of the effective number of tests (see <code><a href="../../poolr/help/meff.html">meff</a></code>). Adjustment method <code>"empirical"</code> uses an empirically-derived null distribution using pseudo replicates. See &lsquo;Details&rsquo;.</p>
+</td></tr>
+<tr valign="top"><td><code>R</code></td>
+<td>
+<p>a \(k \times k\) symmetric matrix that reflects the dependence structure among the tests. Must be specified if <code>adjust</code> is set to something other than <code>"none"</code>. See &lsquo;Details&rsquo;.</p>
+</td></tr>
+<tr valign="top"><td><code>m</code></td>
+<td>
+<p>optional scalar (between 1 and \(k\)) to manually specify the effective number of tests (instead of estimating it via one of the methods described above).</p>
+</td></tr>
+<tr valign="top"><td><code>size</code></td>
+<td>
+<p>size of the empirically-derived null distribution. Can also be a numeric vector of sizes, in which case a stepwise algorithm is used. This (and the following arguments) are only relevant when <code>adjust = "empirical"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>threshold</code></td>
+<td>
+<p>numeric vector to specify the significance thresholds for the stepwise algorithm (only relevant when <code>size</code> is a vector).</p>
+</td></tr>
+<tr valign="top"><td><code>side</code></td>
+<td>
+<p>scalar to specify the sidedness of the \(p\)-values that are used to simulate the null distribution (2, by default, for two-sided tests; 1 for one-sided tests).</p>
+</td></tr>
+<tr valign="top"><td><code>batchsize</code></td>
+<td>
+<p>optional scalar to specify the batch size for generating the null distribution. When unspecified (the default), this is done in a single batch.</p>
+</td></tr>
+<tr valign="top"><td><code>nearpd</code></td>
+<td>
+<p>logical indicating if a negative definite <code>R</code> matrix should be turned into the nearest positive definite matrix (only relevant when <code>adjust = "empirical"</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>other arguments.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><b>Tippett's Method</b>
+</p>
+<p>By default (i.e., when <code>adjust = "none"</code>), the function applies the Tippett's method to the \(p\)-values (Tippett, 1931). Letting \(p_1, p_2, \ldots, p_k\) denote the individual (one- or two-sided) \(p\)-values of the \(k\) hypothesis tests to be combined, the combined \(p\)-value is then computed with \[p_c = 1 - (1 - \min(p_1, p_2, \ldots, p_k))^k.\]
+</p>
+<p>Tippett's method asumes that the \(p\)-values to be combined are independent. If this is not the case, the method can either be conservative (not reject often enough) or liberal (reject too often), depending on the dependence structure among the tests. In this case, one can adjust the method to account for such dependence (to bring the Type I error rate closer to some desired nominal significance level).
+</p>
+<p><b>Adjustment Based on the Effective Number of Tests</b>
+</p>
+<p>When <code>adjust</code> is set to <code>"nyholt"</code>, <code>"liji"</code>, <code>"gao"</code>, <code>"galwey"</code>, or <code>"chen"</code>, Tippett's method is adjusted based on an estimate of the effective number of tests (see <code><a href="../../poolr/help/meff.html">meff</a></code> for details on these methods for estimating the effective number of tests). In this case, argument <code>R</code> needs to be set to a matrix that reflects the dependence structure among the tests.
+</p>
+<p>There is no general solution for constructing such a matrix, as this depends on the type of test that generated the \(p\)-values and the sidedness of these tests. If the \(p\)-values are obtained from tests whose test statistics can be assumed to follow a multivariate normal distribution and a matrix is available that reflects the correlations among the test statistics, then the <code><a href="../../poolr/help/mvnconv.html">mvnconv</a></code> function can be used to convert this correlation matrix into the correlations among the (one- or two-sided) \(p\)-values, which can then be passed to the <code>R</code> argument. See &lsquo;Examples&rsquo;.
+</p>
+<p>Once the effective number of tests, \(m\), is estimated based on <code>R</code> using one of the methods described above, the combined \(p\)-value is then computed with \[p_c = 1 - (1 - \min(p_1, p_2, \ldots, p_k))^m.\]
+</p>
+<p>Alternatively, one can also directly specify the effective number of tests via the <code>m</code> argument (e.g., if some other method not implemented in the <span class="pkg">poolr</span> package is used to estimate the effective number of tests). Argument <code>R</code> is then irrelevant and doesn't need to be specified.
+</p>
+<p><b>Adjustment Based on an Empirically-Derived Null Distribution</b>
+</p>
+<p>When <code>adjust = "empirical"</code>, the combined \(p\)-value is computed based on an empirically-derived null distribution using pseudo replicates (using the <code><a href="../../poolr/help/empirical.html">empirical</a></code> function). This is appropriate if the test statistics that generated the \(p\)-values to be combined can be assumed to follow a multivariate normal distribution and a matrix is available that reflects the correlations among the test statistics (which is specified via the <code>R</code> argument). In this case, test statistics are repeatedly simulated from a multivariate normal distribution under the joint null hypothesis, converted into one- or two-sided \(p\)-values (depending on the <code>side</code> argument), and Tippett's method is applied. Repeating this process <code>size</code> times yields a null distribution based on which the combined \(p\)-value can be computed, or more precisely, estimated, since repeated applications of this method will yield (slightly) different results. To obtain a stable estimate of the combined \(p\)-value, <code>size</code> should be set to a large value (the default is <code>10000</code>, but this can be increased for a more precise estimate). If we consider the combined \(p\)-value an estimate of the &lsquo;true&rsquo; combined \(p\)-value that would be obtained for a null distribution of infinite size, we can also construct a 95% (pseudo) confidence interval based on a binomial distribution.
+</p>
+<p>If <code>batchsize</code> is unspecified, the null distribution is simulated in a single batch, which requires temporarily storing a matrix with dimensions <code>[size,k]</code>. When <code>size*k</code> is large, allocating the memory for this matrix might not be possible. Instead, one can specify a <code>batchsize</code> value, in which case a matrix with dimensions <code>[batchsize,k]</code> is repeatedly simulated until the desired size of the null distribution has been obtained.
+</p>
+<p>One can also specify a vector for the <code>size</code> argument, in which case one must also specify a corresponding vector for the <code>threshold</code> argument. In that case, a stepwise algorithm is used that proceeds as follows. For <code>j = 1, ..., length(size)</code>,
+</p>
+
+<ol>
+<li><p> estimate the combined \(p\)-value based on <code>size[j]</code>
+</p>
+</li>
+<li><p> if the combined \(p\)-value is \(\ge\) than <code>threshold[j]</code>, stop (and report the combined \(p\)-value), otherwise go back to 1.
+</p>
+</li></ol>
+
+<p>By setting <code>size</code> to increasing values (e.g., <code>size = c(1000, 10000, 100000)</code>) and <code>threshold</code> to decreasing values (e.g., <code>threshold = c(.10, .01, 0)</code>), one can quickly obtain a fairly accurate estimate of the combined \(p\)-value if it is far from significant (e.g., \(\ge\) .10), but hone in on a more accurate estimate for a combined \(p\)-value that is closer to 0. Note that the last value of <code>threshold</code> should be 0 (and is forced to be inside of the function), so that the algorithm is guaranteed to terminate (hence, one can also leave out the last value of <code>threshold</code>, so <code>threshold = c(.10, .01)</code> would also work in the example above). One can also specify a single <code>threshold</code> (which is replicated as often as necessary depending on the length of <code>size</code>).
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>"poolr"</code>. The object is a list containing the following components:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>p</code></td>
+<td>
+<p>combined \(p\)-value.</p>
+</td></tr>
+<tr valign="top"><td><code>ci</code></td>
+<td>
+<p>confidence interval for the combined \(p\)-value (only when <code>adjust = "empirical"</code>; otherwise <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>k</code></td>
+<td>
+<p>number of \(p\)-values that were combined.</p>
+</td></tr>
+<tr valign="top"><td><code>m</code></td>
+<td>
+<p>estimate of the effective number of tests (only when <code>adjust</code> is one of <code>"nyholt"</code>, <code>"liji"</code>, <code>"gao"</code>, <code>"galwey"</code>, or <code>"chen"</code>; otherwise <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>adjust</code></td>
+<td>
+<p>chosen adjustment method.</p>
+</td></tr>
+<tr valign="top"><td><code>statistic</code></td>
+<td>
+<p>value of the (adjusted) test statistic.</p>
+</td></tr>
+<tr valign="top"><td><code>fun</code></td>
+<td>
+<p>name of calling function.</p>
+</td></tr>
+</table>
+
+
+<h3>Note</h3>
+
+<p>The method underlying <code>adjust = "empirical"</code> assumes that the test statistics that generated the \(p\)-values to be combined follow a multivariate normal distribution. Hence, the matrix specified via <code>R</code> must be positive definite. If it is not and <code>nearpd = TRUE</code>, it will be turned into one (based on Higham, 2002, and a slightly simplified version of <code><a href="../../Matrix/help/nearPD.html">nearPD</a></code> from the <span class="pkg">Matrix</span> package).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Ozan Cinar <a href="mailto:ozancinar86@gmail.com">ozancinar86@gmail.com</a> <br />
+Wolfgang Viechtbauer <a href="mailto:wvb@wvbauer.com">wvb@wvbauer.com</a> <br />
+</p>
+
+
+<h3>References</h3>
+
+<p>Cinar, O. &amp; Viechtbauer, W. (2022). The poolr package for combining independent and dependent p values. <em>Journal of Statistical Software</em>, <b>101</b>(1), 1&ndash;42. <code style="white-space: pre;">https://doi.org/10.18637/jss.v101.i01</code>
+</p>
+<p>Higham, N. J. (2002). Computing the nearest correlation matrix: A problem from finance. <em>IMA Journal of Numerical Analysis, 22</em>(3), 329&ndash;343. <code style="white-space: pre;">https://doi.org/10.1093/imanum/22.3.329</code>
+</p>
+<p>Tippett, L. H. C. (1931). <em>Methods of Statistics</em>. London: Williams Norgate.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# copy p-values and LD correlation matrix into p and r
+# (see help(grid2ip) for details on these data)
+p &lt;- grid2ip.p
+r &lt;- grid2ip.ld
+
+# apply Tippett's method
+tippett(p)
+
+# use mvnconv() to convert the LD correlation matrix into a matrix with the
+# correlations among the (two-sided) p-values assuming that the test
+# statistics follow a multivariate normal distribution with correlation
+# matrix r (note: 'side = 2' by default in mvnconv())
+mvnconv(r, target = "p", cov2cor = TRUE)[1:5,1:5] # show only rows/columns 1-5
+
+# adjustment based on estimates of the effective number of tests
+tippett(p, adjust = "nyholt", R = mvnconv(r, target = "p", cov2cor = TRUE))
+tippett(p, adjust = "liji",   R = mvnconv(r, target = "p", cov2cor = TRUE))
+tippett(p, adjust = "gao",    R = mvnconv(r, target = "p", cov2cor = TRUE))
+tippett(p, adjust = "galwey", R = mvnconv(r, target = "p", cov2cor = TRUE))
+tippett(p, adjust = "chen",   R = mvnconv(r, target = "p", cov2cor = TRUE))
+
+# setting argument 'm' manually
+tippett(p, m = 12)
+
+# adjustment based on an empirically-derived null distribution (setting the
+# seed for reproducibility)
+set.seed(1234)
+tippett(p, adjust = "empirical", R = r)
+
+# generate the empirical distribution in batches of size 100
+tippett(p, adjust = "empirical", R = r, batchsize = 100)
+
+# using the stepwise algorithm
+tippett(p, adjust = "empirical", R = r, size = c(1000, 10000, 100000), threshold = c(.10, .01))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>poolr</em> version 1.2-0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Full square jacobian matrix for a system of ODEs (ordinary...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for jacobian.full {rootSolve}"><tr><td>jacobian.full {rootSolve}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Full square jacobian matrix for a system of ODEs (ordinary differential
+equations)
+</h2>
+
+<h3>Description</h3>
+
+<p>Given a vector of (state) variables, and a function that estimates one
+function value for each (state) variable (e.g. the rate of change),
+estimates the Jacobian matrix (<i>d(f(x))/d(x)</i>)
+</p>
+<p>Assumes a full and square Jacobian matrix
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+jacobian.full(y, func, dy = NULL, time = 0, parms = NULL, 
+              pert = 1e-8, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>y </code></td>
+<td>
+<p>(state) variables, a vector; if <code>y</code> has a name attribute,
+the names will be used to label the Jacobian matrix columns.
+</p>
+</td></tr>
+<tr valign="top"><td><code>func </code></td>
+<td>
+<p>function that calculates one function value for each element
+of <code>y</code>; if an ODE system, <code>func</code> calculates the rate of change
+(see details).
+</p>
+</td></tr>
+<tr valign="top"><td><code>dy </code></td>
+<td>
+<p>reference function value; if not specified, it will be estimated
+by calling <code>func</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>time </code></td>
+<td>
+<p>time, passed to function <code>func</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>parms </code></td>
+<td>
+<p>parameter values, passed to function <code>func</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>pert </code></td>
+<td>
+<p>numerical perturbation factor; increase depending on precision
+of model solution.
+</p>
+</td></tr>
+<tr valign="top"><td><code>... </code></td>
+<td>
+<p>other arguments passed to function <code>func</code>.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The function <code>func</code> that estimates the rate of change of the state
+variables has to be consistent with functions called from
+R-package <code>deSolve</code>, which contains integration routines.
+</p>
+<p>This function call is as: <b>function(time,y,parms,...)</b> where
+</p>
+
+<ul>
+<li> <p><code>y</code> : (state) variable values at which the Jacobian is estimated.
+</p>
+</li>
+<li> <p><code>parms</code>: parameter vector  - need not be used.
+</p>
+</li>
+<li> <p><code>time</code>: time at which the Jacobian is estimated - in general,
+<code>time</code> will not be used.
+</p>
+</li>
+<li> <p><code>...</code>: (optional) any other arguments.
+</p>
+</li></ul>
+
+<p>The Jacobian is estimated numerically, by perturbing the x-values.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The square jacobian matrix;  the elements on i-th row and j-th column are
+given by: <i>d(f(x)_i)/d(x_j)</i>
+</p>
+
+
+<h3>Note</h3>
+
+<p>This function is useful for stability analysis of ODEs, which start by
+estimating the Jacobian at equilibrium points.
+The type of equilibrium then depends on the eigenvalue of the Jacobian.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Karline Soetaert &lt;karline.soetaert@nioz.nl&gt;
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../rootSolve/help/jacobian.band.html">jacobian.band</a></code>, estimates the Jacobian matrix
+assuming a banded structure.
+</p>
+<p><code><a href="../../rootSolve/help/hessian.html">hessian</a></code>, estimates the Hessian matrix.
+</p>
+<p><code><a href="../../rootSolve/help/gradient.html">gradient</a></code>, for a full (not necessarily square) gradient matrix
+and where the function call is simpler.
+</p>
+<p><code><a href="../../rootSolve/help/uniroot.all.html">uniroot.all</a></code>, to solve for all roots of one (nonlinear) equation
+</p>
+<p><code><a href="../../rootSolve/help/multiroot.html">multiroot</a></code>, to solve n roots of n (nonlinear) equations
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## =======================================================================
+## 1. Structure of the Jacobian
+## =======================================================================
+mod &lt;- function (t = 0, y, parms = NULL,...)
+{
+ dy1&lt;-  y[1] + 2*y[2]
+ dy2&lt;-3*y[1] + 4*y[2] + 5*y[3]
+ dy3&lt;-         6*y[2] + 7*y[3] + 8*y[4]
+ dy4&lt;-                  9*y[3] +10*y[4]
+ return(as.list(c(dy1, dy2, dy3, dy4)))
+}
+
+jacobian.full(y = c(1, 2, 3, 4), func = mod)
+
+## =======================================================================
+## 2. Stability properties of a physical model
+## =======================================================================
+coriolis &lt;- function (t, velocity, pars, f)
+{
+  dvelx &lt;- f*velocity[2]
+  dvely &lt;- -f*velocity[1]
+  list(c(dvelx, dvely))
+}
+
+# neutral stability; f is coriolis parameter
+Jac &lt;- jacobian.full(y = c(velx = 0, vely = 0), func = coriolis,
+                     parms = NULL, f = 1e-4)
+print(Jac)
+eigen(Jac)$values
+
+## =======================================================================
+## 3. Type of equilibrium
+## =======================================================================
+## From Soetaert and Herman (2009). A practical guide to ecological 
+## modelling. Using R as a simulation platform. Springer
+
+eqn &lt;- function (t, state, pars)
+ {
+  with (as.list(c(state, pars)),  {
+  dx &lt;- a*x + cc*y
+  dy &lt;- b*y + dd*x
+  list(c(dx, dy))
+  })
+ }
+
+# stable equilibrium
+A &lt;- eigen(jacobian.full(y = c(x = 0, y = 0), func = eqn,
+              parms = c(a = -0.1, b = -0.3, cc = 0, dd = 0)))$values
+# unstable equilibrium
+B &lt;- eigen(jacobian.full(y = c(x = 0, y = 0), func = eqn,
+              parms = c(a = 0.2, b = 0.2, cc = 0.0, dd = 0.2)))$values
+# saddle point
+C &lt;- eigen(jacobian.full(y = c(x = 0, y = 0), func = eqn,
+              parms = c(a = -0.1, b = 0.1, cc = 0, dd = 0)))$values
+# neutral stability
+D &lt;- eigen(jacobian.full(y = c(x = 0, y = 0), func = eqn,
+              parms = c(a = 0, b = 0, cc = -0.1, dd = 0.1)))$values
+# stable focal point
+E &lt;- eigen(jacobian.full(y = c(x = 0, y = 0), func = eqn,
+              parms = c(a = 0, b = -0.1, cc = -0.1, dd = 0.1)))$values
+# unstable focal point
+F &lt;- eigen(jacobian.full(y = c(x = 0, y = 0), func=eqn,
+              parms = c(a = 0., b = 0.1, cc = 0.1, dd = -0.1)))$values
+
+data.frame(type = c("stable", "unstable", "saddle", "neutral",
+           "stable focus", "unstable focus"),
+           eigenvalue_1 = c(A[1], B[1], C[1], D[1], E[1], F[1]),
+           eigenvalue_2 = c(A[2], B[2], C[2], D[2], E[2], F[2]))
+
+## =======================================================================
+## 4. Limit cycles
+## =======================================================================
+## From Soetaert and Herman (2009). A practical guide to ecological 
+## modelling. Using R as a simulation platform. Springer
+
+eqn2 &lt;- function (t, state, pars)
+ {
+  with (as.list(c(state, pars)),
+  {
+  dx&lt;-  a*y   + e*x*(x^2+y^2-1)
+  dy&lt;-  b*x   + f*y*(x^2+y^2-1)
+  list(c(dx, dy))
+  })
+ }
+
+# stable limit cycle with unstable focus
+eigen(jacobian.full(c(x = 0, y = 0), eqn2,
+                    parms = c(a = -1, b = 1, e = -1, f = -1)))$values
+# unstable limit cycle with stable focus
+eigen(jacobian.full(c(x = 0, y = 0), eqn2,
+                    parms = c(a = -1, b = 1, e = 1, f = 1)))$values
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rootSolve</em> version 1.8.2.4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

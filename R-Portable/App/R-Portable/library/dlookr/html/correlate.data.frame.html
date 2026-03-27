@@ -1,0 +1,243 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Compute the correlation coefficient between two variable</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for correlate {dlookr}"><tr><td>correlate {dlookr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Compute the correlation coefficient between two variable</h2>
+
+<h3>Description</h3>
+
+<p>The correlate() compute the correlation coefficient for numerical or categorical data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+correlate(.data, ...)
+
+## S3 method for class 'data.frame'
+correlate(
+  .data,
+  ...,
+  method = c("pearson", "kendall", "spearman", "cramer", "theil")
+)
+
+## S3 method for class 'grouped_df'
+correlate(
+  .data,
+  ...,
+  method = c("pearson", "kendall", "spearman", "cramer", "theil")
+)
+
+## S3 method for class 'tbl_dbi'
+correlate(
+  .data,
+  ...,
+  method = c("pearson", "kendall", "spearman", "cramer", "theil"),
+  in_database = FALSE,
+  collect_size = Inf
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>.data</code></td>
+<td>
+<p>a data.frame or a <code><a href="../../dplyr/help/grouped_df.html">grouped_df</a></code> or a tbl_dbi.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>one or more unquoted expressions separated by commas.
+You can treat variable names like they are positions.
+Positive values select variables; negative values to drop variables.
+If the first expression is negative, correlate() will automatically start with all variables.
+These arguments are automatically quoted and evaluated in a context where column names
+represent column positions.
+They support unquoting and splicing.
+</p>
+<p>See vignette(&quot;EDA&quot;) for an introduction to these concepts.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>a character string indicating which correlation coefficient (or covariance) is 
+to be computed. One of &quot;pearson&quot; (default), &quot;kendall&quot;, or &quot;spearman&quot;: can be abbreviated.
+For numerical variables, one of &quot;pearson&quot; (default), &quot;kendall&quot;, or 
+&quot;spearman&quot;: can be used as an abbreviation.
+For categorical variables, &quot;cramer&quot; and &quot;theil&quot; can be used. &quot;cramer&quot; 
+computes Cramer's V statistic, &quot;theil&quot; computes Theil's U statistic.</p>
+</td></tr>
+<tr valign="top"><td><code>in_database</code></td>
+<td>
+<p>Specifies whether to perform in-database operations. 
+If TRUE, most operations are performed in the DBMS. if FALSE, 
+table data is taken in R and operated in-memory. Not yet supported in_database = TRUE.</p>
+</td></tr>
+<tr valign="top"><td><code>collect_size</code></td>
+<td>
+<p>a integer. The number of data samples from the DBMS to R. 
+Applies only if in_database = FALSE.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This function is useful when used with the group_by() function of the dplyr package.
+If you want to compute by level of the categorical data you are interested in,
+rather than the whole observation, you can use <code><a href="../../dplyr/help/grouped_df.html">grouped_df</a></code> as the group_by() function.
+This function is computed stats::cor() function by use = &quot;pairwise.complete.obs&quot; option for numerical variable.
+And support categorical variable with theil's U correlation coefficient and Cramer's V correlation coefficient.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of correlate class.
+</p>
+
+
+<h3>correlate class</h3>
+
+<p>The correlate class inherits the tibble class and has the following variables.:
+</p>
+
+<ul>
+<li><p> var1 : names of numerical variable
+</p>
+</li>
+<li><p> var2 : name of the corresponding numeric variable
+</p>
+</li>
+<li><p> coef_corr : Correlation coefficient
+</p>
+</li></ul>
+
+<p>When method = &quot;cramer&quot;, data.frame with the following variables is returned.
+</p>
+
+<ul>
+<li><p> var1 : names of numerical variable
+</p>
+</li>
+<li><p> var2 : name of the corresponding numeric variable
+</p>
+</li>
+<li><p> chisq : the value the chi-squared test statistic
+</p>
+</li>
+<li><p> df : the degrees of freedom of the approximate chi-squared distribution of the test statistic
+</p>
+</li>
+<li><p> pval : the p-value for the test
+</p>
+</li>
+<li><p> coef_corr : theil's U correlation coefficient (Uncertainty Coefficient).
+</p>
+</li></ul>
+
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../stats/html/cor.html">cor</a></code>, <code><a href="../../dlookr/help/summary.correlate.html">summary.correlate</a></code>, <code><a href="../../dlookr/help/plot.correlate.html">plot.correlate</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# Correlation coefficients of all numerical variables
+tab_corr &lt;- correlate(heartfailure)
+tab_corr
+
+# Select the variable to compute
+correlate(heartfailure, "creatinine", "sodium")
+
+# Non-parametric correlation coefficient by kendall method
+correlate(heartfailure, creatinine, method = "kendall")
+
+# theil's U correlation coefficient (Uncertainty Coefficient)
+tab_corr &lt;- correlate(heartfailure, anaemia, hblood_pressure, method = "theil")
+tab_corr
+   
+# Using dplyr::grouped_dt
+library(dplyr)
+
+gdata &lt;- group_by(heartfailure, smoking, death_event)
+correlate(gdata)
+
+# Using pipes ---------------------------------
+# Correlation coefficients of all numerical variables
+heartfailure %&gt;%
+  correlate()
+  
+# Non-parametric correlation coefficient by spearman method
+heartfailure %&gt;%
+  correlate(creatinine, sodium, method = "spearman")
+ 
+# ---------------------------------------------
+# Correlation coefficient
+# that eliminates redundant combination of variables
+heartfailure %&gt;%
+  correlate() %&gt;%
+  filter(as.integer(var1) &gt; as.integer(var2))
+
+# Using pipes &amp; dplyr -------------------------
+# Compute the correlation coefficient of 'creatinine' variable by 'smoking'
+# and 'death_event' variables. And extract only those with absolute
+# value of correlation coefficient is greater than 0.2
+heartfailure %&gt;%
+  group_by(smoking, death_event) %&gt;%
+  correlate(creatinine) %&gt;%
+  filter(abs(coef_corr) &gt;= 0.2)
+
+# extract only those with 'smoking' variable level is "Yes",
+# and compute the correlation coefficient of 'Sales' variable
+# by 'hblood_pressure' and 'death_event' variables.
+# And the correlation coefficient is negative and smaller than 0.5
+heartfailure %&gt;%
+  filter(smoking == "Yes") %&gt;%
+  group_by(hblood_pressure, death_event) %&gt;%
+  correlate(creatinine) %&gt;%
+  filter(coef_corr &lt; 0) %&gt;%
+  filter(abs(coef_corr) &gt; 0.5)
+
+
+# If you have the 'DBI' and 'RSQLite' packages installed, perform the code block:
+if (FALSE) {
+library(dplyr)
+# connect DBMS
+con_sqlite &lt;- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+
+# copy heartfailure to the DBMS with a table named TB_HEARTFAILURE
+copy_to(con_sqlite, heartfailure, name = "TB_HEARTFAILURE", overwrite = TRUE)
+
+# Using pipes ---------------------------------
+# Correlation coefficients of all numerical variables
+con_sqlite %&gt;% 
+  tbl("TB_HEARTFAILURE") %&gt;% 
+  correlate()
+
+# Using pipes &amp; dplyr -------------------------
+# Compute the correlation coefficient of creatinine variable by 'hblood_pressure'
+# and 'death_event' variables.
+con_sqlite %&gt;% 
+  tbl("TB_HEARTFAILURE") %&gt;% 
+  group_by(hblood_pressure, death_event) %&gt;%
+  correlate(creatinine) 
+
+# Disconnect DBMS   
+DBI::dbDisconnect(con_sqlite)
+}
+  
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>dlookr</em> version 0.6.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

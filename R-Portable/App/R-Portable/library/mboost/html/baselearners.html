@@ -1,0 +1,1002 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Base-learners for Gradient Boosting</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for baselearners {mboost}"><tr><td>baselearners {mboost}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Base-learners for Gradient Boosting </h2>
+
+<h3>Description</h3>
+
+<p>Base-learners for fitting base-models in the generic implementation of
+component-wise gradient boosting in function <code>mboost</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## linear base-learner
+bols(..., by = NULL, index = NULL, intercept = TRUE, df = NULL,
+     lambda = 0, contrasts.arg = "contr.treatment")
+
+## smooth P-spline base-learner
+bbs(..., by = NULL, index = NULL, knots = 20, boundary.knots = NULL,
+    degree = 3, differences = 2, df = 4, lambda = NULL, center = FALSE,
+    cyclic = FALSE, constraint = c("none", "increasing", "decreasing"),
+    deriv = 0)
+
+## bivariate P-spline base-learner
+bspatial(..., df = 6)
+
+## radial basis functions base-learner
+brad(..., by = NULL, index = NULL, knots = 100, df = 4, lambda = NULL,
+     covFun = fields::stationary.cov,
+     args = list(Covariance="Matern", smoothness = 1.5, theta=NULL))
+     
+## (genetic) pathway-based kernel base-learner
+bkernel(..., df = 4, lambda = NULL, kernel = c("lin", "sia", "net"),
+        pathway = NULL, knots = NULL, args = list())
+
+## random effects base-learner
+brandom(..., by = NULL, index = NULL, df = 4, lambda = NULL,
+        contrasts.arg = "contr.dummy")
+
+## tree based base-learner
+btree(..., by = NULL, nmax = Inf, tree_controls = partykit::ctree_control(
+    teststat = "quad", testtype = "Teststatistic", 
+    mincriterion = 0, minsplit = 10, minbucket = 4,
+    maxdepth = 1, saveinfo = FALSE))
+
+## constrained effects base-learner
+bmono(...,
+      constraint = c("increasing", "decreasing", "convex", "concave",
+                     "none", "positive", "negative"),
+      type = c("quad.prog", "iterative"),
+      by = NULL, index = NULL, knots = 20, boundary.knots = NULL,
+      degree = 3, differences = 2, df = 4, lambda = NULL,
+      lambda2 = 1e6, niter=10, intercept = TRUE,
+      contrasts.arg = "contr.treatment",
+      boundary.constraints = FALSE,
+      cons.arg = list(lambda = 1e+06, n = NULL, diff_order = NULL))
+
+## Markov random field base-learner
+bmrf(..., by = NULL, index = NULL, bnd = NULL, df = 4, lambda = NULL,
+    center = FALSE)
+
+## user-specified base-learner
+buser(X, K = NULL, by = NULL, index = NULL, df = 4, lambda = NULL)
+
+## combining single base-learners to form new,
+## more complex base-learners
+bl1 %+% bl2
+bl1 %X% bl2
+bl1 %O% bl2
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p> one or more predictor variables or one matrix or data
+frame of predictor variables. For smooth base-learners,
+the number of predictor variables and the number of
+columns in the data frame / matrix must be less than or
+equal to 2. If a matrix (with at least 2 columns) is
+given to <code>bols</code> or <code>brandom</code>, it is directly
+used as the design matrix. Especially, no intercept term
+is added regardless of argument <code>intercept</code>.
+If the argument has only one column, it is simplified
+to a vector and an intercept is added or not
+according to the argmuent <code>intercept</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>by</code></td>
+<td>
+<p> an optional variable defining varying coefficients,
+either a factor or numeric variable.
+If <code>by</code> is a factor, the coding is determined by
+the global <code>options("contrasts")</code> or as specified
+&quot;locally&quot; for the factor (see <code><a href="../../stats/html/contrasts.html">contrasts</a></code>). Per
+default treatment coding is used. Note that the main
+effect needs to be specified in a separate base-learner.
+<code>btree</code> currently only allows binary factors.</p>
+</td></tr>
+<tr valign="top"><td><code>index</code></td>
+<td>
+<p> a vector of integers for expanding the variables in
+<code>...</code>. For example, <code>bols(x, index = index)</code> is equal to
+<code>bols(x[index])</code>, where <code>index</code> is an integer of length
+greater or equal to <code>length(x)</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>df</code></td>
+<td>
+<p> trace of the hat matrix for the base-learner defining the
+base-learner complexity. Low values of <code>df</code> correspond to a
+large amount of smoothing and thus to &quot;weaker&quot; base-learners.
+Certain restrictions have to be kept for the specification of
+<code>df</code> since most of the base-learners rely on penalization
+approaches with a non-trivial null space. For example, for P-splines
+fitted with <code>bbs</code>, <code>df</code> has to be larger than the order of
+differences employed in the construction of the penalty term.
+However, when option <code>center != FALSE</code>, the effect is centered
+around its unpenalized part and therefore any positive number is
+admissible for <code>df</code>. For details on the computation of degrees
+of freedom see section &lsquo;Global Options&rsquo;.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p> smoothing penalty, computed from <code>df</code> when
+<code>df</code> is specified. For details on the computation of degrees
+of freedom see section &lsquo;Global Options&rsquo;.</p>
+</td></tr>
+<tr valign="top"><td><code>knots</code></td>
+<td>
+<p> either the number of knots or a vector of the positions
+of the interior knots (for more details see below). For multiple
+predictor variables, <code>knots</code> may be a named list where the
+names in the list are the variable names.</p>
+</td></tr>
+<tr valign="top"><td><code>boundary.knots</code></td>
+<td>
+<p> boundary points at which to anchor the B-spline basis
+(default the range of the data). A vector (of length 2)
+for the lower and the upper boundary knot can be specified.This is
+only advised for <code>bbs(..., cyclic = TRUE)</code>, where the boundary
+knots specify the points at which the cyclic function should be joined. In
+analogy to <code>knots</code> a names list can be specified. </p>
+</td></tr>
+<tr valign="top"><td><code>degree</code></td>
+<td>
+<p> degree of the regression spline.</p>
+</td></tr>
+<tr valign="top"><td><code>differences</code></td>
+<td>
+<p> a non-negative integer, typically 1, 2 or 3. If <code>differences</code> =
+<em>k</em>, <em>k</em>-th-order differences are used as
+a penalty (<em>0</em>-th order differences specify a
+ridge penalty).</p>
+</td></tr>
+<tr valign="top"><td><code>intercept</code></td>
+<td>
+<p> if <code>intercept = TRUE</code> an intercept is added to
+the design matrix of a linear base-learner. If
+<code>intercept = FALSE</code>, continuous covariates
+should be (mean-) centered.</p>
+</td></tr>
+<tr valign="top"><td><code>center</code></td>
+<td>
+<p> if <code>center != FALSE</code> the corresponding effect is
+re-parameterized such that the unpenalized part of the fit is subtracted and
+only the deviation effect is fitted. The unpenalized, parametric part has then
+to be included in separate base-learners using <code>bols</code> (see the examples below).
+There are two possible ways to re-parameterization;
+<code>center = "differenceMatrix"</code> is based on the difference matrix
+(the default for <code>bbs</code> with one covariate only)
+and <code>center = "spectralDecomp"</code> uses a spectral decomposition
+of the penalty matrix (see Fahrmeir et al., 2004, Section 2.3 for details).
+The latter option is the default (and currently only option) for <code>bbs</code>
+with multiple covariates or <code>bmrf</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>cyclic</code></td>
+<td>
+<p> if <code>cyclic = TRUE</code> the fitted values coincide at the boundaries
+(useful for cyclic covariates such as day time etc.). 
+For details see Hofner et al. (2016).</p>
+</td></tr>
+<tr valign="top"><td><code>covFun</code></td>
+<td>
+<p> the covariance function (i.e. radial basis)
+needed to compute the basis functions. Per
+default <code><a href="../../fields/help/stationary.cov.html">stationary.cov</a></code> function
+(from package <code>fields</code>) is used. </p>
+</td></tr>
+<tr valign="top"><td><code>args</code></td>
+<td>
+<p> a named list of arguments to be passed to
+<code>cov.function</code>. Thus strongly dependent on the
+specified <code>cov.function</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>kernel</code></td>
+<td>
+<p>one of <code>"lin"</code> (linear kernel), <code>"sia"</code> (size adjusted kernel), 
+or <code>"net"</code> (network kernel). For details see 
+<code><a href="../../kangar00/help/calc_kernel.html">calc_kernel</a></code></p>
+</td></tr>
+<tr valign="top"><td><code>pathway</code></td>
+<td>
+<p>name of pathway; Pathway needs to be contained in the GWAS data set.</p>
+</td></tr>
+<tr valign="top"><td><code>contrasts.arg</code></td>
+<td>
+<p> a named list of characters suitable for input to
+the <code><a href="../../stats/html/contrasts.html">contrasts</a></code> replacement function, or the contrast
+matrix itself, see <code><a href="../../stats/html/model.matrix.html">model.matrix</a></code>, or a single character
+string (or contrast matrix) which is then used as contrasts for all
+factors in this base-learner (with the exception of factors in
+<code>by</code>). See also example below for setting contrasts. Note that
+a special <code>contrasts.arg</code> exists in package <code>mboost</code>,
+namely &quot;contr.dummy&quot;. This contrast is used per default in
+<code>brandom</code> and can also be used in <code>bols</code>. It leads to a
+dummy coding as returned by <code>model.matrix(~ x - 1)</code> were the
+intercept is implicitly included but each factor level gets a
+seperate effect estimate (see example below).</p>
+</td></tr>
+<tr valign="top"><td><code>nmax</code></td>
+<td>
+<p>integer, maximal number of
+bins in the predictor variables. Use <code>Inf</code> to switch-off binning.</p>
+</td></tr>
+<tr valign="top"><td><code>tree_controls</code></td>
+<td>
+<p> an object of class <code>"TreeControl"</code>, which can be
+obtained using <code><a href="../../partykit/help/ctree_control.html">ctree_control</a></code>.
+Defines hyper-parameters for the trees which are used as base-learners,
+stumps are fitted by default. By default, stumps and thus
+additive models are fitted.</p>
+</td></tr>
+<tr valign="top"><td><code>constraint</code></td>
+<td>
+<p>type of constraint to be used. For <code>bmono</code>, 
+the constraint can be either monotonic <code>"increasing"</code> (default), 
+<code>"decreasing"</code>, or <code>"convex"</code> or <code>"concave"</code>. 
+Additionally, <code>"none"</code> can  be used to specify unconstrained P-splines. 
+This is especially of interest in conjunction with <code>boundary.constraints = TRUE</code>.
+For <code>bbs</code>, the constraint can be <code>"none"</code>, monotonic <code>"increasing"</code>, or
+<code>"decreasing"</code>. In general it is advisable to use <code>bmono</code> to fit 
+monotonic splines.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+
+<p>determines how the constrained least squares problem should be
+solved. If <code>type = "quad.prog"</code>, a numeric quadratic
+programming method (Goldfarb and Idnani, 1982, 1983) is used
+(see <code><a href="../../quadprog/help/solve.QP.html">solve.QP</a></code> in package <span class="pkg">quadprog</span>). If
+<code>type = "iterative"</code>, the iterative procedure described in
+Hofner et al. (2011b) is used. The quadratic programming approach is
+usually much faster than the iterative approach. For details see
+Hofner et al. (2016).
+</p>
+</td></tr>
+<tr valign="top"><td><code>lambda2</code></td>
+<td>
+<p> penalty parameter for the (monotonicity) constraint. </p>
+</td></tr>
+<tr valign="top"><td><code>niter</code></td>
+<td>
+<p> maximum number of iterations used to compute constraint
+estimates. Increase this number if a warning is displayed. </p>
+</td></tr>
+<tr valign="top"><td><code>boundary.constraints</code></td>
+<td>
+<p> a logical indicating whether additional
+constraints on the boundaries of the spline should be applied
+(default: FALSE). This is still experimental.</p>
+</td></tr>
+<tr valign="top"><td><code>cons.arg</code></td>
+<td>
+<p> a named list with additional arguments for boundary
+constraints. The element <code>lambda</code> specifies the
+penalty parameter that is used for the additional boundary
+constraint. The element <code>n</code> specifies the number of knots to be
+subject to the constraint and  can be either a scalar (use same
+number of constrained knots on each side) or a vector. Per default
+10% of the knots on each side are used. The element
+<code>diff_order</code> can be used to specify the order of the boundary
+penalty: 1 (constant; default for monotonically constrained effects)
+or 2 (linear; default for all other effects).</p>
+</td></tr>
+<tr valign="top"><td><code>bnd</code></td>
+<td>
+
+<p>Object of class <code>bnd</code>, in which the boundaries of a map are
+defined and from which neighborhood relations can be constructed. See
+<code><a href="../../BayesX/help/read.bnd.html">read.bnd</a></code>. If a boundary object is not
+available, the neighborhood matrix can also be given directly. </p>
+</td></tr>
+<tr valign="top"><td><code>X</code></td>
+<td>
+<p> design matrix as it should be used in the penalized least
+squares estimation. Effect modifiers do not need to be included here
+(<code>by</code> can be used for convenience). </p>
+</td></tr>
+<tr valign="top"><td><code>K</code></td>
+<td>
+<p> penalty matrix as it should be used in the penalized least
+squares estimation. If <code>NULL</code> (default), unpenalized estimation
+is used. </p>
+</td></tr>
+<tr valign="top"><td><code>deriv</code></td>
+<td>
+<p>an integer; the derivative of the spline of the given order
+at the data is computed, defaults to zero. Note that this
+argument is only used to set up the design matrix and
+cannot be used in the fitting process.</p>
+</td></tr>
+<tr valign="top"><td><code>bl1</code></td>
+<td>
+<p>a linear base-learner or a list of linear base-learners.</p>
+</td></tr>
+<tr valign="top"><td><code>bl2</code></td>
+<td>
+<p>a linear base-learner or a list of linear base-learners.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>bols</code> refers to linear base-learners (potentially estimated with
+a ridge penalty), while <code>bbs</code> provide penalized regression
+splines. <code>bspatial</code> fits bivariate surfaces and <code>brandom</code>
+defines random effects base-learners. In combination with option
+<code>by</code>, these base-learners can be turned into varying coefficient
+terms. The linear base-learners are fitted using Ridge Regression
+where the penalty parameter <code>lambda</code> is either computed from
+<code>df</code> (default for <code>bbs</code>, <code>bspatial</code>, and
+<code>brandom</code>) or specified directly (<code>lambda = 0</code> means no
+penalization as default for <code>bols</code>).
+</p>
+<p>In <code>bols(x)</code>, <code>x</code> may be a numeric vector or factor.
+Alternatively, <code>x</code> can be a data frame containing numeric or
+factor variables. In this case, or when multiple predictor variables
+are specified, e.g., using <code>bols(x1, x2)</code>, the model is
+equivalent to <code>lm(y ~ ., data = x)</code> or <code>lm(y ~ x1 + x2)</code>,
+respectively. By default, an intercept term is added to the
+corresponding design matrix (which can be omitted using
+<code>intercept = FALSE</code>). It is <em>strongly</em> advised to (mean-)
+center continuous covariates, if no intercept is used in <code>bols</code>
+(see Hofner et al., 2011a). If <code>x</code> is a matrix, it is directly used
+as the design matrix and no further preprocessing (such as addition of
+an intercept) is conducted. When <code>df</code> (or <code>lambda</code>) is
+given, a ridge estimator with <code>df</code> degrees of freedom (see
+section &lsquo;Global Options&rsquo;) is used as base-learner. Note that
+all variables are treated as a group, i.e., they enter the model
+together if the corresponding base-learner is selected. For ordinal
+variables, a ridge penalty for the differences of the adjacent
+categories (Gertheiss and Tutz 2009, Hofner et al. 2011a) is applied.
+</p>
+<p>With <code>bbs</code>, the P-spline approach of Eilers and Marx (1996) is
+used. P-splines use a squared <em>k</em>-th-order difference penalty
+which can be interpreted as an approximation of the integrated squared
+<em>k</em>-th derivative of the spline. In <code>bbs</code> the argument
+<code>knots</code> specifies either the number of (equidistant) <em>interior</em>
+knots to be used for the regression spline fit or a vector including
+the positions of the <em>interior</em> knots. Additionally,
+<code>boundary.knots</code> can be specified. However, this is only advised
+if one uses cyclic constraints, where the <code>boundary.knots</code>
+specify the points where the function is joined (e.g.,
+<code>boundary.knots = c(0, 2 * pi)</code> for angles as in a sine function
+or <code>boundary.knots = c(0, 24)</code> for hours during the day). For
+details on cylcic splines in the context of boosting see Hofner et
+al. (2016). 
+</p>
+<p><code>bspatial</code> implements bivariate tensor product P-splines for the
+estimation of either spatial effects or interaction surfaces. Note
+that <code>bspatial(x, y)</code> is equivalent to <code>bbs(x, y, df = 6)</code>.
+For possible arguments and defaults see there. The penalty term is
+constructed based on bivariate extensions of the univariate penalties
+in <code>x</code> and <code>y</code> directions, see Kneib, Hothorn and Tutz
+(2009) for details. Note that the dimensions of the penalty matrix
+increase (quickly) with the number of knots with strong impact on
+computational time. Thus, both should not be chosen to large.
+Different knots for <code>x</code> and <code>y</code> can be specified by a named
+list.
+</p>
+<p><code>brandom(x)</code> specifies a random effects base-learner based on a
+factor variable <code>x</code> that defines the grouping structure of the
+data set. For each level of <code>x</code>, a separate random intercept is
+fitted, where the random effects variance is governed by the
+specification of the degrees of freedom <code>df</code> or <code>lambda</code>
+(see section &lsquo;Global Options&rsquo;). Note that <code>brandom(...)</code>
+is essentially a wrapper to <code>bols(..., df = 4, contrasts.arg =
+  "contr.dummy")</code>, i.e., a wrapper that utilizes ridge-penalized
+categorical effects. For possible arguments and defaults see <code>bols</code>.
+</p>
+<p>For all linear base-learners the amount of smoothing is determined by
+the trace of the hat matrix, as indicated by <code>df</code>.
+</p>
+<p>If <code>by</code> is specified as an additional argument, a varying
+coefficients term is estimated, where <code>by</code> is the interaction
+variable and the effect modifier is given by either <code>x</code> or
+<code>x</code> and <code>y</code> (specified via <code>...</code>). If <code>bbs</code> is
+used, this corresponds to the classical situation of varying
+coefficients, where the effect of <code>by</code> varies over the co-domain
+of <code>x</code>. In case of <code>bspatial</code> as base-learner, the effect of
+<code>by</code> varies with respect to both <code>x</code> and <code>y</code>, i.e. an
+interaction surface between <code>x</code> and <code>y</code> is specified as
+effect modifier. For <code>brandom</code> specification of <code>by</code> leads
+to the estimation of random slopes for covariate <code>by</code> with
+grouping structure defined by factor <code>x</code> instead of a simple
+random intercept. In <code>bbs</code>, <code>bspatial</code> and <code>brandom</code>
+the computation of the smoothing parameter <code>lambda</code> for given
+<code>df</code>, or vice versa, might become (numerically) instable if the
+values of the interaction variable <code>by</code> become too large. In this
+case, we recommend to rescale the interaction covariate e.g. by
+dividing by <code>max(abs(by))</code>. If <code>bbs</code> or <code>bspatial</code> is
+specified with an factor variable <code>by</code> with more than two
+factors, the degrees of freedom are shared for the complete
+base-learner (i.e., spread over all factor levels). Note that the null
+space (see next paragraph) increases, as a separate null space for
+each factor level is present. Thus, the minimum degrees of freedom
+increase with increasing number of levels of <code>by</code> (if
+<code>center = FALSE</code>).
+</p>
+<p>For <code>bbs</code> and <code>bspatial</code>, option <code>center != FALSE</code> requests that
+the fitted effect is centered around its parametric, unpenalized part
+(the so called null space). For example, with second order difference
+penalty, a linear effect of <code>x</code> remains unpenalized by <code>bbs</code>
+and therefore the degrees of freedom for the base-learner have to be
+larger than two. To avoid this restriction, option <code>center =
+  TRUE</code> subtracts the unpenalized linear effect from the fit, allowing
+to specify any positive number as <code>df</code>. Note that in this case
+the linear effect <code>x</code> should generally be specified as an
+additional base-learner <code>bols(x)</code>. For <code>bspatial</code> and, for
+example, second order differences, a linear effect of <code>x</code>
+(<code>bols(x)</code>), a linear effect of <code>y</code> (<code>bols(y)</code>), and
+their interaction (<code>bols(x*y)</code>) are subtracted from the effect
+and have to be added separately to the model equation. More details on
+centering can be found in Kneib, Hothorn and Tutz (2009) and Fahrmeir,
+Kneib and Lang (2004). We strongly recommend to consult the latter reference
+before using this option.
+</p>
+<p><code>brad(x)</code> specifies penalized radial basis functions as used in
+Kriging. If <code>knots</code> is used to specify the number of knots, the
+function <code><a href="../../fields/help/cover.design.html">cover.design</a></code> is used to specify the
+location of the knots such that they minimize a geometric
+space-filling criterion. Furthermore, knots can be specified directly
+via a matrix. The <code>cov.function</code> allows to specify the
+radial basis functions. Per default, the flexible Matern correlation
+function is used. This is specified using <code>cov.function =
+  stationary.cov</code> with <code>Covariance = "Matern"</code> specified via
+<code>args</code>. If an effective range <code>theta</code> is applicable for the
+correlation function (e.g., the Matern family) the user can specify
+this value. Per default (if <code>theta = NULL</code>) the effective range is
+chosen as <i>&theta; =
+  max(||x_i - x_j||)/c</i> such that the correlation function
+</p>
+<p style="text-align: center;"><i>&rho;(c; theta = 1) = epsilon,</i></p>
+
+<p>where <i>epsilon = 0.001</i>.
+</p>
+<p><code>bmrf</code> builds a base of a Markov random field consisting of
+several regions with a neighborhood structure. The input variable is
+the observed region. The penalty matrix is either construed from a
+boundary object or must be given directly via the option <code>bnd</code>.
+In that case the <code>dimnames</code> of the matrix have to be the region
+names, on the diagonal the number of neighbors have to be given for
+each region, and for each neighborhood relation the value in the
+matrix has to be -1, else 0. With a boundary object at hand, the
+fitted or predicted values can be directly plotted into the map using
+<code><a href="../../BayesX/help/drawmap.html">drawmap</a></code>.
+</p>
+<p><code>bkernel</code> can be used to fit linear (<code>kernel = "lin"</code>), 
+size-adjusted (<code>kernel = "sia"</code>) or network (<code>kernel = "net"</code>)
+kernels based on genetic pathways for genome-wide assosiation studies. 
+For details see Friedrichs et al. (2017) and check the associated package
+<a href="https://CRAN.R-project.org/package=kangar00"><span class="pkg">kangar00</span></a>.
+</p>
+<p><code>buser(X, K)</code> specifies a base-learner with user-specified design
+matrix <code>X</code> and penalty matrix <code>K</code>, where <code>X</code> and
+<code>K</code> are used to minimize a (penalized) least squares
+criterion with quadratic penalty. This can be used to easily specify
+base-learners that are not implemented (yet). See examples
+below for details how <code>buser</code> can be used to mimic existing
+base-learners. Note that for predictions you need to set up the
+design matrix for the new data manually.
+</p>
+<p>For a categorical covariate with non-observed categories
+<code>bols(x)</code> and <code>brandom(x)</code> both assign a zero effect
+to these categories. However, the non-observed categories must be
+listed in <code>levels(x)</code>. Thus, predictions are possible
+for new observations if they correspond to this category.
+</p>
+<p>By default, all linear base-learners include an intercept term (which can
+be removed using <code>intercept = FALSE</code> for <code>bols</code>). In this case, 
+the respective covariate should be mean centered (if continuous) and an 
+explicit global intercept term should be added to <code>gamboost</code> 
+via <code>bols</code> (see example below). With <code>bols(x, intercept = FALSE)</code> 
+with categorical covariate <code>x</code> a separate effect for each group 
+(mean effect) is estimated (see examples for resulting design matrices).
+</p>
+<p>Smooth estimates with constraints can be computed using the
+base-learner <code>bmono()</code> which specifies P-spline base-learners
+with an additional asymmetric penalty enforcing monotonicity or
+convexity/concavity (see and Eilers, 2005). For more details in the
+boosting context and monotonic effects of ordinal factors see Hofner,
+Mueller and Hothorn (2011b). The quadratic-programming based algorithm
+is described in Hofner et al. (2016). Alternative monotonicity
+constraints are implemented via T-splines in <code>bbs()</code> (Beliakov,
+2000). In general it is advisable to use <code>bmono</code> to fit monotonic splines 
+as T-splines show undesirable behaviour if the observed data deviates 
+from monotonicty.
+</p>
+<p>Two or more linear base-learners can be joined using <code>%+%</code>. A
+tensor product of two or more linear base-learners is returned by
+<code>%X%</code>. When the design matrix can be written as the Kronecker
+product of two matrices <code>X = kronecker(X2, X1)</code>, then <code>bl1
+  %O% bl2</code> with design matrices X1 and X2, respectively, can be used
+to efficiently compute Ridge-estimates following Currie, Durban,
+Eilers (2006). In all cases the overall degrees of freedom of the
+combined base-learner increase (additive or multiplicative,
+respectively). These three features are experimental and for expert
+use only.
+</p>
+<p><code>btree</code> fits a stump to one or more variables. Note that
+<code><a href="../../mboost/help/blackboost.html">blackboost</a></code> is more efficient for boosting stumps. For
+further references see Hothorn, Hornik, Zeileis (2006) and Hothorn et
+al. (2010).
+</p>
+<p>Note that the base-learners <code>bns</code> and <code>bss</code> are deprecated
+(and no longer available). Please use <code>bbs</code> instead, which
+results in qualitatively the same models but is computationally much
+more attractive.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>blg</code> (base-learner generator) with a
+<code>dpp</code> function.
+</p>
+<p>The call of <code>dpp</code> returns an object of class
+<code>bl</code> (base-learner) with a <code>fit</code> function. The call to
+<code>fit</code> finally returns an object of class <code>bm</code> (base-model).
+</p>
+
+
+<h3>Global Options</h3>
+
+<p>Three global options affect the base-learners:
+</p>
+
+<dl>
+<dt><code>options("mboost_useMatrix")</code></dt><dd><p> defaulting to <code>TRUE</code>
+indicates that the base-learner may use sparse matrix techniques
+for its computations. This reduces the memory consumption but
+might (for smaller sample sizes) require more computing time.</p>
+</dd>
+<dt><code>options("mboost_indexmin")</code></dt><dd><p>is an integer that
+specifies the minimum sample size needed to optimize model fitting
+by automatically taking ties into account (default = 10000).</p>
+</dd>
+<dt><code>options("mboost_dftraceS")</code></dt><dd><p><code>FALSE</code> by default,
+indicating how the degrees of freedom should be computed. Per
+default </p>
+<p style="text-align: center;"><i>df(&lambda;) = trace(2S - S'S),</i></p>
+<p> with smoother matrix
+<i>S = X(X'X + &lambda;
+      K)^(-1) X</i> is used (see Hofner et al., 2011a). If <code>TRUE</code>, the
+trace of the smoother matrix <i>\mathrm{df}(&lambda;) =
+      \mathrm{trace}(S)</i> is used as degrees of freedom.
+</p>
+<p>Note that these formulae specify the relation of <code>df</code> and
+<code>lambda</code> as the smoother matrix <i>S</i> depends only on
+<i>&lambda;</i> (and the (fixed) design matrix <i>X</i>, the (fixed)
+penalty matrix <i>K</i>).</p>
+</dd>
+</dl>
+
+
+
+<h3>References</h3>
+
+<p>Iain D. Currie, Maria Durban, and Paul H. C. Eilers (2006),
+Generalized linear array models with applications to
+multidimensional smoothing. <em>Journal of the Royal
+Statistical Society, Series B&ndash;Statistical Methodology</em>,
+<b>68</b>(2), 259&ndash;280.
+</p>
+<p>Paul H. C. Eilers (2005), Unimodal smoothing. <em>Journal of
+Chemometrics</em>, <b>19</b>, 317&ndash;328.
+</p>
+<p>Paul H. C. Eilers and Brian D. Marx (1996), Flexible smoothing with B-splines
+and penalties. <em>Statistical Science</em>, <b>11</b>(2), 89-121.
+</p>
+<p>Ludwig Fahrmeir, Thomas Kneib and Stefan Lang (2004), Penalized structured
+additive regression for space-time data: a Bayesian perspective.
+<em>Statistica Sinica</em>, <b>14</b>, 731-761.
+</p>
+<p>Jan Gertheiss and Gerhard Tutz (2009), Penalized regression with ordinal
+predictors, <em>International Statistical Review</em>, <b>77</b>(3), 345&ndash;365.
+</p>
+<p>D. Goldfarb and A. Idnani (1982),  Dual and Primal-Dual Methods
+for Solving Strictly Convex Quadratic Programs.  In J. P. Hennart
+(ed.), Numerical Analysis, Springer-Verlag, Berlin, pp. 226-239.
+</p>
+<p>D. Goldfarb and A. Idnani (1983),  A numerically stable dual
+method for solving strictly convex quadratic programs.
+<em>Mathematical Programming</em>, <b>27</b>, 1&ndash;33.
+</p>
+<p>S. Friedrichs, J. Manitz, P. Burger, C.I. Amos, A. Risch, J.C. Chang-Claude, 
+H.E. Wichmann, T. Kneib, H. Bickeboeller, and B. Hofner (2017), 
+Pathway-Based Kernel Boosting for the Analysis of Genome-Wide Association Studies.
+<em>Computational and Mathematical Methods in Medicine</em>. 2017(6742763), 1-17. 
+doi: <a href="https://doi.org/10.1155/2017/6742763">10.1155/2017/6742763</a>.
+</p>
+<p>Benjamin Hofner, Torsten Hothorn, Thomas Kneib, and Matthias Schmid (2011a),
+A framework for unbiased model selection based on boosting.
+<em>Journal of Computational and Graphical Statistics</em>, <b>20</b>, 956&ndash;971.
+</p>
+<p>Benjamin Hofner, Joerg Mueller, and Torsten Hothorn (2011b),
+Monotonicity-Constrained Species Distribution Models.
+<em>Ecology</em>, <b>92</b>, 1895&ndash;1901.
+</p>
+<p>Benjamin Hofner, Thomas Kneib and Torsten Hothorn (2016), 
+A Unified Framework of Constrained Regression. 
+<em>Statistics &amp; Computing</em>, <b>26</b>, 1&ndash;14.
+</p>
+<p>Thomas Kneib, Torsten Hothorn and Gerhard Tutz (2009), Variable
+selection and model choice in geoadditive regression models,
+<em>Biometrics</em>, <b>65</b>(2), 626&ndash;634.
+</p>
+<p>Torsten Hothorn, Kurt Hornik, Achim Zeileis (2006), Unbiased recursive
+partitioning: A conditional inference framework. <em>Journal of
+Computational and Graphical Statistics</em>, <b>15</b>, 651&ndash;674.
+</p>
+<p>Torsten Hothorn, Peter Buehlmann, Thomas Kneib, Matthias Schmid and
+Benjamin Hofner (2010), Model-based Boosting 2.0, <em>Journal of
+Machine Learning Research</em>, <b>11</b>, 2109&ndash;2113.
+</p>
+<p>G. M. Beliakov (2000), Shape Preserving Approximation using Least Squares
+Splines, <em>Approximation Theory and its Applications</em>,
+<b>16</b>(4), 80&ndash;98.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../mboost/help/mboost.html">mboost</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+  set.seed(290875)
+
+  n &lt;- 100
+  x1 &lt;- rnorm(n)
+  x2 &lt;- rnorm(n) + 0.25 * x1
+  x3 &lt;- as.factor(sample(0:1, 100, replace = TRUE))
+  x4 &lt;- gl(4, 25)
+  y &lt;- 3 * sin(x1) + x2^2 + rnorm(n)
+  weights &lt;- drop(rmultinom(1, n, rep.int(1, n) / n))
+
+  ### set up base-learners
+  spline1 &lt;- bbs(x1, knots = 20, df = 4)
+  extract(spline1, "design")[1:10, 1:10]
+  extract(spline1, "penalty")
+  knots.x2 &lt;- quantile(x2, c(0.25, 0.5, 0.75))
+  spline2 &lt;- bbs(x2, knots = knots.x2, df = 5)
+  ols3 &lt;- bols(x3)
+  extract(ols3)
+  ols4 &lt;- bols(x4)
+
+  ### compute base-models
+  drop(ols3$dpp(weights)$fit(y)$model) ## same as:
+  coef(lm(y ~ x3, weights = weights))
+
+  drop(ols4$dpp(weights)$fit(y)$model) ## same as:
+  coef(lm(y ~ x4, weights = weights))
+
+  ### fit model, component-wise
+  mod1 &lt;- mboost_fit(list(spline1, spline2, ols3, ols4), y, weights)
+
+  ### more convenient formula interface
+  mod2 &lt;- mboost(y ~ bbs(x1, knots = 20, df = 4) +
+                     bbs(x2, knots = knots.x2, df = 5) +
+                     bols(x3) + bols(x4), weights = weights)
+  all.equal(coef(mod1), coef(mod2))
+
+
+  ### grouped linear effects
+  # center x1 and x2 first
+  x1 &lt;- scale(x1, center = TRUE, scale = FALSE)
+  x2 &lt;- scale(x2, center = TRUE, scale = FALSE)
+  model &lt;- gamboost(y ~ bols(x1, x2, intercept = FALSE) +
+                        bols(x1, intercept = FALSE) +
+                        bols(x2, intercept = FALSE),
+                        control = boost_control(mstop = 50))
+  coef(model, which = 1)   # one base-learner for x1 and x2
+  coef(model, which = 2:3) # two separate base-learners for x1 and x2
+                           # zero because they were (not yet) selected.
+
+  ### example for bspatial
+  x1 &lt;- runif(250,-pi,pi)
+  x2 &lt;- runif(250,-pi,pi)
+
+  y &lt;- sin(x1) * sin(x2) + rnorm(250, sd = 0.4)
+
+  spline3 &lt;- bspatial(x1, x2, knots = 12)
+  Xmat &lt;- extract(spline3, "design")
+  ## 12 inner knots + 4 boundary knots = 16 knots per direction
+  ## THUS: 16 * 16 = 256 columns
+  dim(Xmat)
+  extract(spline3, "penalty")[1:10, 1:10]
+
+  ## specify number of knots separately
+  form1 &lt;- y ~ bspatial(x1, x2, knots = list(x1 = 12, x2 = 14))
+
+  ## decompose spatial effect into parametric part and
+  ## deviation with one df
+  form2 &lt;- y ~ bols(x1) + bols(x2) + bols(x1, by = x2, intercept = FALSE) +
+               bspatial(x1, x2, knots = 12, center = TRUE, df = 1)
+
+  mod1 &lt;- gamboost(form1)
+  ## Not run: 
+  plot(mod1)
+  
+## End(Not run)
+
+  mod2 &lt;- gamboost(form2)
+  ## automated plot function:
+  ## Not run: 
+  plot(mod2)
+  
+## End(Not run)
+  ## plot sum of linear and smooth effects:
+  library("lattice")
+  df &lt;- expand.grid(x1 = unique(x1), x2 = unique(x2))
+  df$pred &lt;- predict(mod2, newdata = df)
+  ## Not run: 
+  levelplot(pred ~ x1 * x2, data = df)
+  
+## End(Not run)
+
+  ## specify radial basis function base-learner for spatial effect
+  ## and use data-adaptive effective range (theta = NULL, see 'args')
+  form3 &lt;- y ~ brad(x1, x2)
+  ## Now use different settings, e.g. 50 knots and theta fixed to 0.4
+  ## (not really a good setting)
+  form4 &lt;- y ~ brad(x1, x2, knots = 50, args = list(theta = 0.4))
+
+  mod3 &lt;- gamboost(form3)
+  ## Not run: 
+  plot(mod3)
+  
+## End(Not run)
+  dim(extract(mod3, what = "design", which = "brad")[[1]])
+  knots &lt;- attr(extract(mod3, what = "design", which = "brad")[[1]], "knots")
+
+  mod4 &lt;- gamboost(form4)
+  dim(extract(mod4, what = "design", which = "brad")[[1]])
+  ## Not run: 
+  plot(mod4)
+  
+## End(Not run)
+
+  ### random intercept
+  id &lt;- factor(rep(1:10, each = 5))
+  raneff &lt;- brandom(id)
+  extract(raneff, "design")
+  extract(raneff, "penalty")
+
+  ## random intercept with non-observed category
+  set.seed(1907)
+  y &lt;- rnorm(50, mean = rep(rnorm(10), each = 5), sd = 0.1)
+  plot(y ~ id)
+  # category 10 not observed
+  obs &lt;- c(rep(1, 45), rep(0, 5))
+  model &lt;- gamboost(y ~ brandom(id), weights = obs)
+  coef(model)
+  fitted(model)[46:50] # just the grand mean as usual for
+                       # random effects models
+
+
+  ### random slope
+  z &lt;- runif(50)
+  raneff &lt;- brandom(id, by = z)
+  extract(raneff, "design")
+  extract(raneff, "penalty")
+
+  ### specify simple interaction model (with main effect)
+  n &lt;- 210
+  x &lt;- rnorm(n)
+  X &lt;- model.matrix(~ x)
+  z &lt;- gl(3, n/3)
+  Z &lt;- model.matrix(~z)
+  beta &lt;- list(c(0,1), c(-3,4), c(2, -4))
+  y &lt;- rnorm(length(x), mean = (X * Z[,1]) %*% beta[[1]] +
+                               (X * Z[,2]) %*% beta[[2]] +
+                               (X * Z[,3]) %*% beta[[3]])
+  plot(y ~ x, col = z)
+  ## specify main effect and interaction
+  mod_glm &lt;- gamboost(y ~ bols(x) + bols(x, by = z),
+                  control = boost_control(mstop = 100))
+  nd &lt;- data.frame(x, z)
+  nd &lt;- nd[order(x),]
+  nd$pred_glm &lt;- predict(mod_glm, newdata = nd)
+  for (i in seq(along = levels(z)))
+      with(nd[nd$z == i,], lines(x, pred_glm, col = z))
+  mod_gam &lt;- gamboost(y ~ bbs(x) + bbs(x, by = z, df = 8),
+                      control = boost_control(mstop = 100))
+  nd$pred_gam &lt;- predict(mod_gam, newdata = nd)
+  for (i in seq(along = levels(z)))
+      with(nd[nd$z == i,], lines(x, pred_gam, col = z, lty = "dashed"))
+  ### convenience function for plotting
+  ## Not run: 
+  par(mfrow = c(1,3))
+  plot(mod_gam)
+  
+## End(Not run)
+
+
+  ### remove intercept from base-learner
+  ### and add explicit intercept to the model
+  tmpdata &lt;- data.frame(x = 1:100, y = rnorm(1:100), int = rep(1, 100))
+  mod &lt;- gamboost(y ~ bols(int, intercept = FALSE) +
+                      bols(x, intercept = FALSE),
+                  data = tmpdata,
+                  control = boost_control(mstop = 1000))
+  cf &lt;- unlist(coef(mod))
+  ## add offset
+  cf[1] &lt;- cf[1] + mod$offset
+  signif(cf, 3)
+  signif(coef(lm(y ~ x, data = tmpdata)), 3)
+
+  ### much quicker and better with (mean-) centering
+  tmpdata$x_center &lt;- tmpdata$x - mean(tmpdata$x)
+  mod_center &lt;- gamboost(y ~ bols(int, intercept = FALSE) +
+                             bols(x_center, intercept = FALSE),
+                         data = tmpdata,
+                         control = boost_control(mstop = 100))
+  cf_center &lt;- unlist(coef(mod_center, which=1:2))
+  ## due to the shift in x direction we need to subtract
+  ## beta_1 * mean(x) to get the correct intercept
+  cf_center[1] &lt;- cf_center[1] + mod_center$offset -
+                  cf_center[2] * mean(tmpdata$x)
+  signif(cf_center, 3)
+  signif(coef(lm(y ~ x, data = tmpdata)), 3)
+
+## Not run: ############################################################
+## Do not run and check these examples automatically as
+## they take some time
+
+  ### large data set with ties
+  nunique &lt;- 100
+  xindex &lt;- sample(1:nunique, 1000000, replace = TRUE)
+  x &lt;- runif(nunique)
+  y &lt;- rnorm(length(xindex))
+  w &lt;- rep.int(1, length(xindex))
+
+  ### brute force computations
+  op &lt;- options()
+  options(mboost_indexmin = Inf, mboost_useMatrix = FALSE)
+  ## data pre-processing
+  b1 &lt;- bbs(x[xindex])$dpp(w)
+  ## model fitting
+  c1 &lt;- b1$fit(y)$model
+  options(op)
+
+  ### automatic search for ties, faster
+  b2 &lt;- bbs(x[xindex])$dpp(w)
+  c2 &lt;- b2$fit(y)$model
+
+  ### manual specification of ties, even faster
+  b3 &lt;- bbs(x, index = xindex)$dpp(w)
+  c3 &lt;- b3$fit(y)$model
+
+  all.equal(c1, c2)
+  all.equal(c1, c3)
+
+## End(Not run and test)
+
+## End(Not run)
+
+  ### cyclic P-splines
+  set.seed(781)
+  x &lt;- runif(200, 0,(2*pi))
+  y &lt;- rnorm(200, mean=sin(x), sd=0.2)
+  newX &lt;- seq(0,2*pi, length=100)
+  ### model without cyclic constraints
+  mod &lt;- gamboost(y ~ bbs(x, knots = 20))
+  ### model with cyclic constraints
+  mod_cyclic &lt;- gamboost(y ~ bbs(x, cyclic=TRUE, knots = 20,
+                                 boundary.knots=c(0, 2*pi)))
+  par(mfrow = c(1,2))
+  plot(x,y, main="bbs (non-cyclic)", cex=0.5)
+  lines(newX, sin(newX), lty="dotted")
+  lines(newX + 2 * pi, sin(newX), lty="dashed")
+  lines(newX, predict(mod, data.frame(x = newX)),
+        col="red", lwd = 1.5)
+  lines(newX + 2 * pi, predict(mod, data.frame(x = newX)),
+        col="blue", lwd=1.5)
+  plot(x,y, main="bbs (cyclic)", cex=0.5)
+  lines(newX, sin(newX), lty="dotted")
+  lines(newX + 2 * pi, sin(newX), lty="dashed")
+  lines(newX, predict(mod_cyclic, data.frame(x = newX)),
+        col="red", lwd = 1.5)
+  lines(newX + 2 * pi, predict(mod_cyclic, data.frame(x = newX)),
+        col="blue", lwd = 1.5)
+
+  ### use buser() to mimic p-spline base-learner:
+  set.seed(1907)
+  x &lt;- rnorm(100)
+  y &lt;- rnorm(100, mean = x^2, sd = 0.1)
+  mod1 &lt;- gamboost(y ~ bbs(x))
+  ## now extract design and penalty matrix
+  X &lt;- extract(bbs(x), "design")
+  K &lt;- extract(bbs(x), "penalty")
+  ## use X and K in buser()
+  mod2 &lt;- gamboost(y ~ buser(X, K))
+  max(abs(predict(mod1) - predict(mod2)))  # same results
+
+  ### use buser() to mimic penalized ordinal base-learner:
+  z &lt;- as.ordered(sample(1:3, 100, replace=TRUE))
+  y &lt;- rnorm(100, mean = as.numeric(z), sd = 0.1)
+  X &lt;- extract(bols(z))
+  K &lt;- extract(bols(z), "penalty")
+  index &lt;- extract(bols(z), "index")
+  mod1 &lt;- gamboost(y ~  buser(X, K, df = 1, index = index))
+  mod2 &lt;- gamboost(y ~  bols(z, df = 1))
+  max(abs(predict(mod1) - predict(mod2)))  # same results
+
+  ### kronecker product for matrix-valued responses
+  data("volcano", package = "datasets")
+  layout(matrix(1:2, ncol = 2))
+
+  ## estimate mean of image treating image as matrix
+  image(volcano, main = "data")
+  x1 &lt;- 1:nrow(volcano)
+  x2 &lt;- 1:ncol(volcano)
+
+  vol &lt;- as.vector(volcano)
+  mod &lt;- mboost(vol ~ bbs(x1, df = 3, knots = 10)%O%
+                      bbs(x2, df = 3, knots = 10),
+                      control = boost_control(nu = 0.25))
+  mod[250]
+
+  volf &lt;- matrix(fitted(mod), nrow = nrow(volcano))
+  image(volf, main = "fitted")
+
+## Not run: ############################################################
+## Do not run and check these examples automatically as
+## they take some time
+
+  ## the old-fashioned way, a waste of space and time
+  x &lt;- expand.grid(x1, x2)
+  modx &lt;- mboost(vol ~ bbs(Var2, df = 3, knots = 10) %X%
+                       bbs(Var1, df = 3, knots = 10), data = x,
+                       control = boost_control(nu = 0.25))
+  modx[250]
+
+  max(abs(fitted(mod) - fitted(modx)))
+
+## End(Not run and test)
+
+## End(Not run)
+
+  ### setting contrasts via contrasts.arg
+  x &lt;- as.factor(sample(1:4, 100, replace = TRUE))
+
+  ## compute base-learners with different reference categories
+  BL1 &lt;- bols(x, contrasts.arg = contr.treatment(4, base = 1)) # default
+  BL2 &lt;- bols(x, contrasts.arg = contr.treatment(4, base = 2))
+  ## compute 'sum to zero contrasts' using character string
+  BL3 &lt;- bols(x, contrasts.arg = "contr.sum")
+
+  ## extract model matrices to check if it works
+  extract(BL1)
+  extract(BL2)
+  extract(BL3)
+
+  ### setting contrasts using named lists in contrasts.arg
+  x2 &lt;- as.factor(sample(1:4, 100, replace = TRUE))
+
+  BL4 &lt;- bols(x, x2,
+              contrasts.arg = list(x = contr.treatment(4, base = 2),
+                                   x2 = "contr.helmert"))
+  extract(BL4)
+
+  ### using special contrast: "contr.dummy":
+  BL5 &lt;- bols(x, contrasts.arg = "contr.dummy")
+  extract(BL5)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mboost</em> version 2.9-11 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

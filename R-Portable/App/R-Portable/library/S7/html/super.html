@@ -1,0 +1,147 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Force method dispatch to use a superclass</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for super {S7}"><tr><td>super {S7}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Force method dispatch to use a superclass</h2>
+
+<h3>Description</h3>
+
+<p><code>super(from, to)</code> causes the dispatch for the next generic to use the method
+for the superclass <code>to</code> instead of the actual class of <code>from</code>. It's needed
+when you want to implement a method in terms of the implementation of its
+superclass.
+</p>
+
+
+<h4>S3 &amp; S4</h4>
+
+<p><code>super()</code> performs a similar role to <code><a href="../../base/html/UseMethod.html">NextMethod()</a></code> in S3 or
+<code><a href="../../methods/help/NextMethod.html">methods::callNextMethod()</a></code> in S4, but is much more explicit:
+</p>
+
+<ul>
+<li><p> The super class that <code>super()</code> will use is known when write <code>super()</code>
+(i.e. statically) as opposed to when the generic is called
+(i.e. dynamically).
+</p>
+</li>
+<li><p> All arguments to the generic are explicit; they are not automatically
+passed along.
+</p>
+</li></ul>
+
+<p>This makes <code>super()</code> more verbose, but substantially easier to
+understand and reason about.
+</p>
+
+
+
+<h4><code>super()</code> in S3 generics</h4>
+
+<p>Note that you can't use <code>super()</code> in methods for an S3 generic.
+For example, imagine that you have made a subclass of &quot;integer&quot;:
+</p>
+<div class="sourceCode r"><pre>MyInt &lt;- new_class("MyInt", parent = class_integer, package = NULL)
+</pre></div>
+<p>Now you go to write a custom print method:
+</p>
+<div class="sourceCode r"><pre>method(print, MyInt) &lt;- function(x, ...) {
+   cat("&lt;MyInt&gt;")
+   print(super(x, to = class_integer))
+}
+
+MyInt(10L)
+#&gt; &lt;MyInt&gt;super(&lt;MyInt&gt;, &lt;integer&gt;)
+</pre></div>
+<p>This doesn't work because <code>print()</code> isn't an S7 generic so doesn't
+understand how to interpret the special object that <code>super()</code> produces.
+While you could resolve this problem with <code><a href="../../base/html/UseMethod.html">NextMethod()</a></code> (because S7 is
+implemented on top of S3), we instead recommend using <code><a href="../../S7/help/S7_data.html">S7_data()</a></code> to extract
+the underlying base object:
+</p>
+<div class="sourceCode r"><pre>method(print, MyInt) &lt;- function(x, ...) {
+   cat("&lt;MyInt&gt;")
+   print(S7_data(x))
+}
+
+MyInt(10L)
+#&gt; &lt;MyInt&gt;[1] 10
+</pre></div>
+
+
+
+<h3>Usage</h3>
+
+<pre>
+super(from, to)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>from</code></td>
+<td>
+<p>An S7 object to cast.</p>
+</td></tr>
+<tr valign="top"><td><code>to</code></td>
+<td>
+<p>An S7 class specification, passed to <code><a href="../../S7/help/as_class.html">as_class()</a></code>. Must be a
+superclass of <code>object</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>An <code>S7_super</code> object which should always be passed
+immediately to a generic. It has no other special behavior.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+Foo1 &lt;- new_class("Foo1", properties = list(x = class_numeric, y = class_numeric))
+Foo2 &lt;- new_class("Foo2", Foo1, properties = list(z = class_numeric))
+
+total &lt;- new_generic("total", "x")
+method(total, Foo1) &lt;- function(x) x@x + x@y
+
+# This won't work because it'll be stuck in an infinite loop:
+method(total, Foo2) &lt;- function(x) total(x) + x@z
+
+# We could write
+method(total, Foo2) &lt;- function(x) x@x + x@y + x@z
+# but then we'd need to remember to update it if the implementation
+# for total(&lt;Foo1&gt;) ever changed.
+
+# So instead we use `super()` to call the method for the parent class:
+method(total, Foo2) &lt;- function(x) total(super(x, to = Foo1)) + x@z
+total(Foo2(1, 2, 3))
+
+# To see the difference between convert() and super() we need a
+# method that calls another generic
+
+bar1 &lt;- new_generic("bar1", "x")
+method(bar1, Foo1) &lt;- function(x) 1
+method(bar1, Foo2) &lt;- function(x) 2
+
+bar2 &lt;- new_generic("bar2", "x")
+method(bar2, Foo1) &lt;- function(x) c(1, bar1(x))
+method(bar2, Foo2) &lt;- function(x) c(2, bar1(x))
+
+obj &lt;- Foo2(1, 2, 3)
+bar2(obj)
+# convert() affects every generic:
+bar2(convert(obj, to = Foo1))
+# super() only affects the _next_ call to a generic:
+bar2(super(obj, to = Foo1))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>S7</em> version 0.2.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

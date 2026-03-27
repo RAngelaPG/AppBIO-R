@@ -1,0 +1,314 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: 'emmeans' Support Functions for 'lavaan' Models</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for lavaan2emmeans {semTools}"><tr><td>lavaan2emmeans {semTools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2><code>emmeans</code> Support Functions for <code>lavaan</code> Models</h2>
+
+<h3>Description</h3>
+
+<p>Provide emmeans support for lavaan objects
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+recover_data.lavaan(object, lavaan.DV, data = NULL, ...)
+
+emm_basis.lavaan(object, trms, xlev, grid, lavaan.DV, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>An object of class <code><a href="../../lavaan/help/lavaan.html">lavaan::lavaan()</a></code>.
+See <strong>Details</strong>.</p>
+</td></tr>
+<tr valign="top"><td><code>lavaan.DV</code></td>
+<td>
+<p><code>character</code> string naming the variable(s) for which
+expected marginal means / trends should be produced.
+A vector of names indicates a multivariate outcome, treated by default
+as repeated measures.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>An optional <code>data.frame</code> without missing values, to be passed
+when <code>missing="FIML"</code> estimation was useed, thus avoiding a reference-grid
+with missing values.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Further arguments passed to <code>emmeans::recover_data.lm</code> or
+<code>emmeans::emm_basis.lm</code></p>
+</td></tr>
+<tr valign="top"><td><code>trms, xlev, grid</code></td>
+<td>
+<p>See <code>emmeans::emm_basis</code></p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+
+
+<h4>Supported DVs</h4>
+
+<p><code>lavaan.DV</code> must be an <em>endogenous variable</em>, by appearing on
+the left-hand side of either a regression operator (<code>"~"</code>)
+or an intercept operator (<code>"~1"</code>), or both.
+<br /><br />
+<code>lavaan.DV</code> can also be a vector of endogenous variable, in which
+case they will be treated by <code>emmeans</code> as a multivariate outcome
+(often, this indicates repeated measures) represented by an additional
+factor named <code>rep.meas</code> by default.  The <code style="white-space: pre;">mult.name=</code> argument
+can be used to overwrite this default name.
+</p>
+
+
+
+<h4>Unsupported Models</h4>
+
+<p>This functionality does not support the following models:
+</p>
+
+<ul>
+<li><p> Multi-level models are not supported.
+</p>
+</li>
+<li><p> Models not fit to a <code>data.frame</code> (i.e., models fit to a
+covariance matrix).
+</p>
+</li></ul>
+
+
+
+
+<h4>Dealing with Fixed Parameters</h4>
+
+<p>Fixed parameters (set with <code>lavaan</code>'s modifiers) are treated as-is:
+their values are set by the users, and they have a <em>SE</em> of 0 (as such,
+they do not co-vary with any other parameter).
+</p>
+
+
+
+<h4>Dealing with Multigroup Models</h4>
+
+<p>If a multigroup model is supplied, a factor is added to the reference grid,
+the name matching the <code>group</code> argument supplied when fitting the model.
+<em>Note that you must set</em> <code>nesting = NULL</code>.
+</p>
+
+
+
+<h4>Dealing with Missing Data</h4>
+
+<p>Limited testing suggests that these functions do work when the model was fit
+to incomplete data.
+</p>
+
+
+
+<h4>Dealing with Factors</h4>
+
+<p>By default <code>emmeans</code> recognizes binary variables (0,1) as a &quot;factor&quot;
+with two levels (and not a continuous variable). With some clever contrast
+defenitions it should be possible to get the desired emmeans / contasts.
+See example below.
+</p>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Mattan S. Ben-Shachar (Ben-Gurion University of the Negev;
+<a href="mailto:matanshm@post.bgu.ac.il">matanshm@post.bgu.ac.il</a>)
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+
+  library(lavaan)
+  library(emmeans)
+
+  #### Moderation Analysis ####
+
+  mean_sd &lt;- function(x) mean(x) + c(-sd(x), 0, sd(x))
+
+  model &lt;- '
+  # regressions
+  Sepal.Length ~ b1 * Sepal.Width + b2 * Petal.Length + b3 * Sepal.Width:Petal.Length
+
+
+  # define mean parameter label for centered math for use in simple slopes
+  Sepal.Width ~ Sepal.Width.mean * 1
+
+  # define variance parameter label for centered math for use in simple slopes
+  Sepal.Width ~~ Sepal.Width.var * Sepal.Width
+
+  # simple slopes for condition effect
+  SD.below := b2 + b3 * (Sepal.Width.mean - sqrt(Sepal.Width.var))
+  mean     := b2 + b3 * (Sepal.Width.mean)
+  SD.above := b2 + b3 * (Sepal.Width.mean + sqrt(Sepal.Width.var))
+  '
+
+  semFit &lt;- sem(model = model,
+                data = iris)
+
+  ## Compare simple slopes
+  # From `emtrends`
+  test(
+    emtrends(semFit, ~ Sepal.Width, "Petal.Length",
+             lavaan.DV = "Sepal.Length",
+             cov.red = mean_sd)
+  )
+
+  # From lavaan
+  parameterEstimates(semFit, output = "pretty")[13:15, ]
+  # Identical slopes.
+  # SEs differ due to lavaan estimating uncertainty of the mean / SD
+  # of Sepal.Width, whereas emmeans uses the mean+-SD as is (fixed).
+
+
+  #### Latent DV ####
+
+  model &lt;- '
+  LAT1 =~ Sepal.Length + Sepal.Width
+
+  LAT1 ~ b1 * Petal.Width + 1 * Petal.Length
+
+  Petal.Length ~ Petal.Length.mean * 1
+
+  V1 := 1 * Petal.Length.mean + 1 * b1
+  V2 := 1 * Petal.Length.mean + 2 * b1
+  '
+
+  semFit &lt;- sem(model = model,
+                data = iris, std.lv = TRUE)
+
+  ## Compare emmeans
+  # From emmeans
+  test(
+    emmeans(semFit, ~ Petal.Width,
+            lavaan.DV = "LAT1",
+            at = list(Petal.Width = 1:2))
+  )
+
+  # From lavaan
+  parameterEstimates(semFit, output = "pretty")[15:16, ]
+  # Identical means.
+  # SEs differ due to lavaan estimating uncertainty of the mean
+  # of Petal.Length, whereas emmeans uses the mean as is.
+
+  #### Multi-Variate DV ####
+
+  model &lt;- '
+  ind60 =~ x1 + x2 + x3
+
+  # metric invariance
+  dem60 =~ y1 + a*y2 + b*y3 + c*y4
+  dem65 =~ y5 + a*y6 + b*y7 + c*y8
+
+  # scalar invariance
+  y1 + y5 ~ d*1
+  y2 + y6 ~ e*1
+  y3 + y7 ~ f*1
+  y4 + y8 ~ g*1
+
+  # regressions (slopes differ: interaction with time)
+  dem60 ~ b1*ind60
+  dem65 ~ b2*ind60 + NA*1 + Mean.Diff*1
+
+  # residual correlations
+  y1 ~~ y5
+  y2 ~~ y4 + y6
+  y3 ~~ y7
+  y4 ~~ y8
+  y6 ~~ y8
+
+  # conditional mean differences (besides mean(ind60) == 0)
+   low := (-1*b2 + Mean.Diff) - (-1*b1) # 1 SD below M
+  high := (b2 + Mean.Diff) - b1         # 1 SD above M
+'
+
+  semFit &lt;- sem(model, data = PoliticalDemocracy)
+
+
+  ## Compare contrasts
+  # From emmeans
+  emmeans(semFit, pairwise ~ rep.meas|ind60,
+          lavaan.DV = c("dem60","dem65"),
+          at = list(ind60 = c(-1,1)))[[2]]
+
+  # From lavaan
+  parameterEstimates(semFit, output = "pretty")[49:50, ]
+
+
+  #### Multi Group ####
+
+  model &lt;- 'x1 ~ c(int1, int2)*1 + c(b1, b2)*ageyr
+  diff_11 := (int2 + b2*11) - (int1 + b1*11)
+  diff_13 := (int2 + b2*13) - (int1 + b1*13)
+  diff_15 := (int2 + b2*15) - (int1 + b1*15)
+'
+  semFit &lt;- sem(model, group = "school", data = HolzingerSwineford1939)
+
+
+  ## Compare contrasts
+  # From emmeans (note `nesting = NULL`)
+  emmeans(semFit, pairwise ~ school | ageyr, lavaan.DV = "x1",
+          at = list(ageyr = c(11, 13, 15)), nesting = NULL)[[2]]
+
+  # From lavaan
+  parameterEstimates(semFit, output = "pretty")
+
+  #### Dealing with factors ####
+
+  warpbreaks &lt;- cbind(warpbreaks,
+                      model.matrix(~ wool + tension, data = warpbreaks))
+
+  model &lt;- "
+  # Split for convenience
+  breaks ~ 1
+  breaks ~ woolB
+  breaks ~ tensionM + tensionH
+  breaks ~ woolB:tensionM + woolB:tensionH
+  "
+
+  semFit &lt;- sem(model, warpbreaks)
+
+  ## Compare contrasts
+  # From lm -&gt; emmeans
+  lmFit &lt;- lm(breaks ~ wool * tension, data = warpbreaks)
+  lmEM &lt;- emmeans(lmFit, ~ tension + wool)
+  contrast(lmEM, method = data.frame(L_all = c(-1, .05, 0.5),
+                                     M_H   = c(0, 1, -1)), by = "wool")
+
+  # From lavaan -&gt; emmeans
+  lavEM &lt;- emmeans(semFit, ~ tensionM + tensionH + woolB,
+                   lavaan.DV = "breaks")
+  contrast(lavEM,
+           method = list(
+             "L_all|A" = c(c(-1, .05, 0.5, 0), rep(0, 4)),
+             "M_H  |A" = c(c(0, 1, -1, 0),     rep(0, 4)),
+             "L_all|A" = c(rep(0, 4),          c(-1, .05, 0.5, 0)),
+             "M_H  |A" = c(rep(0, 4),          c(0, 1, -1, 0))
+           ))
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>semTools</em> version 0.5-8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

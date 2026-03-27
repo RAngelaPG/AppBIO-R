@@ -1,0 +1,385 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Bayesian Model Averaging for generalized linear models.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for bic.glm {BMA}"><tr><td>bic.glm {BMA}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Bayesian Model Averaging for generalized linear models.</h2>
+
+<h3>Description</h3>
+
+<p>Bayesian Model Averaging accounts for the model uncertainty inherent in the variable selection problem by averaging over the best models in the model class according to approximate posterior model probability.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+bic.glm(x, ...)
+
+## S3 method for class 'matrix'
+bic.glm(x, y, glm.family, wt = rep(1, nrow(x)),
+    strict = FALSE, prior.param = c(rep(0.5, ncol(x))), OR = 20, 
+    maxCol = 30, OR.fix = 2, nbest = 150, dispersion = NULL, 
+    factor.type = TRUE, factor.prior.adjust = FALSE, 
+    occam.window = TRUE, call = NULL, ...)
+
+## S3 method for class 'data.frame'
+bic.glm(x, y, glm.family, wt = rep(1, nrow(x)),
+    strict = FALSE, prior.param = c(rep(0.5, ncol(x))), OR = 20, 
+    maxCol = 30, OR.fix = 2, nbest = 150, dispersion = NULL, 
+    factor.type = TRUE, factor.prior.adjust = FALSE, 
+    occam.window = TRUE, call = NULL, ...)
+
+## S3 method for class 'formula'
+bic.glm(f, data, glm.family, wt = rep(1, nrow(data)),
+    strict = FALSE, prior.param = c(rep(0.5, ncol(x))), OR = 20, 
+    maxCol = 30, OR.fix = 2, nbest = 150, dispersion = NULL, 
+    factor.type = TRUE, factor.prior.adjust = FALSE, 
+    occam.window = TRUE, na.action = na.omit, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>a matrix or data.frame of independent variables.</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>a vector of values for the dependent variable.</p>
+</td></tr>
+<tr valign="top"><td><code>f</code></td>
+<td>
+<p>a formula</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>a data frame containing the variables in the model. </p>
+</td></tr>
+<tr valign="top"><td><code>glm.family</code></td>
+<td>
+<p>a description of the error distribution and link function to
+be used in the model.  This can be a character string naming a
+family function, a family function or the result of a call to
+a family function.  (See 'family' for details of family
+functions.)</p>
+</td></tr>
+<tr valign="top"><td><code>wt</code></td>
+<td>
+<p>an optional vector of weights to be used.</p>
+</td></tr>
+<tr valign="top"><td><code>strict</code></td>
+<td>
+<p>a logical indicating whether models with more likely submodels are 
+eliminated. <code>FALSE</code> returns all models whose posterior model probability is
+within a factor of <code>1/OR</code> of that of the best model.</p>
+</td></tr>
+<tr valign="top"><td><code>prior.param</code></td>
+<td>
+<p>a vector of values specifying the prior weights for each variable.</p>
+</td></tr>
+<tr valign="top"><td><code>OR</code></td>
+<td>
+<p> a number specifying the maximum ratio for excluding models in Occam's window </p>
+</td></tr>
+<tr valign="top"><td><code>maxCol</code></td>
+<td>
+<p>a number specifying the maximum number of columns in design matrix 
+(including intercept) to be kept.</p>
+</td></tr>
+<tr valign="top"><td><code>OR.fix</code></td>
+<td>
+<p>width of the window which keeps models after the leaps approximation
+is done.  
+Because the leaps and bounds gives only an approximation to BIC, 
+there is a need to increase the window at this first &quot;cut&quot; so as to 
+assure that no good models are deleted. 
+The level of this cut is at <code>1/(OR^OR.fix)</code>; the default value 
+for <code>OR.fix</code> is 2.</p>
+</td></tr>
+<tr valign="top"><td><code>nbest</code></td>
+<td>
+<p>a number specifying the number of models of each size returned to 
+<code>bic.glm</code> by the modified leaps algorithm.</p>
+</td></tr>
+<tr valign="top"><td><code>dispersion</code></td>
+<td>
+<p>a logical value specifying whether dispersion should be 
+estimated or not. Default is <code>TRUE</code> unless glm.family is poisson 
+or binomial</p>
+</td></tr>
+<tr valign="top"><td><code>factor.type</code></td>
+<td>
+<p>a logical value specifying how variables of class &quot;factor&quot; are 
+handled. 
+A factor variable with d levels is turned into (d-1) dummy variables using a
+treatment contrast.  
+If <code>factor.type = TRUE</code>, models will contain either all or none of 
+these dummy variables.  
+If <code>factor.type = FALSE</code>, models are free  to select the dummy 
+variables independently.  
+In this case, factor.prior.adjust determines the prior on these variables.</p>
+</td></tr>
+<tr valign="top"><td><code>factor.prior.adjust</code></td>
+<td>
+<p>a logical value specifying whether 
+the prior distribution on dummy variables for factors 
+should be adjusted when <code>factor.type=FALSE</code>.
+When <code>factor.prior.adjust=FALSE</code>, all dummy variables 
+for variable <code>i</code> have prior equal to <code>prior.param[i]</code>.
+Note that this makes the prior probability of the union of these variables 
+much higher than <code>prior.param[i]</code>.  
+Setting <code>factor.prior.adjust=T</code> corrects for this so that the union of 
+the dummies equals <code>prior.param[i]</code>
+(and hence the deletion of the factor has a prior of 
+<code>1-prior.param[i]</code>).  
+This adjustment changes the individual priors on each dummy variable to '
+<code>1-(1-pp[i])^(1/(k+1))</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>occam.window</code></td>
+<td>
+<p>a logical value specifying if Occam's window should be used. 
+If set to <code>FALSE</code> then all models selected by the modified leaps 
+algorithm are returned.</p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>used internally</p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+<p>a function which indicates what should happen when data contain <code>NA</code>s. Possible values are <code><a href="../../stats/html/na.fail.html">na.omit</a></code>, <code><a href="../../stats/html/na.fail.html">na.exclude</a></code>, <code><a href="../../stats/html/na.fail.html">na.fail</a></code>, <code><a href="../../stats/html/na.fail.html">na.pass</a></code> or <code>NULL</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>unused</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Bayesian Model Averaging accounts for the model uncertainty inherent in the variable selection problem by averaging over the best models in the model class according to approximate posterior model probability.  
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>bic.glm</code> returns an object of class <code>bic.glm</code>
+</p>
+<p>The function <code>summary</code> is used to print a summary of the results. 
+The function <code>plot</code> is used to plot posterior distributions for the coefficients. 
+The function <code>imageplot</code> generates an image of the models which were averaged over.
+</p>
+<p>An object of class <code>bic.glm</code> is a list containing at least the following components:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>postprob</code></td>
+<td>
+<p>the posterior probabilities of the models selected</p>
+</td></tr>
+<tr valign="top"><td><code>deviance</code></td>
+<td>
+<p>the estimated model deviances</p>
+</td></tr>
+<tr valign="top"><td><code>label</code></td>
+<td>
+<p>labels identifying the models selected</p>
+</td></tr>
+<tr valign="top"><td><code>bic</code></td>
+<td>
+<p>values of BIC for the models</p>
+</td></tr>
+<tr valign="top"><td><code>size</code></td>
+<td>
+<p>the number of independent variables in each of the models</p>
+</td></tr>
+<tr valign="top"><td><code>which</code></td>
+<td>
+<p>a logical matrix with one row per model and one column per variable indicating whether that variable is in the model</p>
+</td></tr>
+<tr valign="top"><td><code>probne0</code></td>
+<td>
+<p>the posterior probability that each variable is non-zero (in percent)</p>
+</td></tr>
+<tr valign="top"><td><code>postmean</code></td>
+<td>
+<p>the posterior mean of each coefficient (from model averaging)</p>
+</td></tr>
+<tr valign="top"><td><code>postsd</code></td>
+<td>
+<p>the posterior standard deviation of each coefficient (from model averaging) </p>
+</td></tr>
+<tr valign="top"><td><code>condpostmean</code></td>
+<td>
+<p>the posterior mean of each coefficient conditional on the variable being included in the model</p>
+</td></tr>
+<tr valign="top"><td><code>condpostsd</code></td>
+<td>
+<p>the posterior standard deviation of each coefficient conditional on the variable being included in the model</p>
+</td></tr>
+<tr valign="top"><td><code>mle</code></td>
+<td>
+<p>matrix with one row per model and one column per variable giving the maximum likelihood estimate of each coefficient for each model</p>
+</td></tr>
+<tr valign="top"><td><code>se</code></td>
+<td>
+<p>matrix with one row per model and one column per variable giving the standard error of each coefficient for each model</p>
+</td></tr>
+<tr valign="top"><td><code>reduced</code></td>
+<td>
+<p>a logical indicating whether any variables were dropped before model averaging</p>
+</td></tr>
+<tr valign="top"><td><code>dropped</code></td>
+<td>
+<p>a vector containing the names of those variables dropped before model averaging</p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>the matched call that created the bma.lm object</p>
+</td></tr>
+</table>
+
+
+<h3>Note</h3>
+
+<p>If more than <code>maxcol</code> variables are supplied, then bic.glm does stepwise 
+elimination of variables until <code>maxcol</code> variables are reached.
+<code>bic.glm</code> handles factor variables according to the <code>factor.type</code> 
+parameter. If this is true then factor variables are kept in the model or dropped in 
+entirety. If false, then each dummy variable can be kept or dropped independently. 
+If <code>bic.glm</code> is used with a formula that includes interactions between factor 
+variables, then <code>bic.glm</code> will create a new factor variable to represent that 
+interaction, and this factor variable will be kept or dropped in entirety if 
+<code>factor.type</code> is true. 
+This can create interpretation problems if any of the corresponding main effects are
+dropped.
+Many thanks to Sanford Weisberg for making source code for leaps available.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Chris Volinsky <a href="mailto:volinsky@research.att.com">volinsky@research.att.com</a>,
+Adrian Raftery <a href="mailto:raftery@stat.washington.edu">raftery@stat.washington.edu</a>, and
+Ian Painter <a href="mailto:ian.painter@gmail.com">ian.painter@gmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p> Raftery, Adrian E. (1995). Bayesian model selection in social research (with Discussion). Sociological Methodology 1995 (Peter V. Marsden, ed.), pp. 111-196, Cambridge, Mass.: Blackwells. 
+</p>
+<p>An earlier version, issued as Working Paper 94-12, Center for Studies in Demography 
+and  Ecology, University of Washington (1994) is available as a technical report
+from the Department of Statistics, University of Washington.</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../BMA/help/summary.bic.glm.html">summary.bic.glm</a></code>, 
+<code><a href="../../BMA/help/print.bic.glm.html">print.bic.glm</a></code>, 
+<code><a href="../../BMA/help/plot.bic.glm.html">plot.bic.glm</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## Not run: 
+### logistic regression
+library("MASS")
+data(birthwt)
+y&lt;- birthwt$lo
+x&lt;- data.frame(birthwt[,-1])
+x$race&lt;- as.factor(x$race)
+x$ht&lt;- (x$ht&gt;=1)+0
+x&lt;- x[,-9]
+x$smoke &lt;- as.factor(x$smoke)
+x$ptl&lt;- as.factor(x$ptl)
+x$ht &lt;- as.factor(x$ht)
+x$ui &lt;- as.factor(x$ui)
+
+glm.out.FT &lt;- bic.glm(x, y, strict = FALSE, OR = 20, 
+                      glm.family="binomial", factor.type=TRUE)
+summary(glm.out.FT)
+imageplot.bma(glm.out.FT)
+
+glm.out.FF &lt;- bic.glm(x, y, strict = FALSE, OR = 20, 
+                      glm.family="binomial", factor.type=FALSE)
+summary(glm.out.FF)
+imageplot.bma(glm.out.FF)
+
+glm.out.TT &lt;- bic.glm(x, y, strict = TRUE, OR = 20, 
+                      glm.family="binomial", factor.type=TRUE)
+summary(glm.out.TT)
+imageplot.bma(glm.out.TT)
+
+glm.out.TF &lt;- bic.glm(x, y, strict = TRUE, OR = 20, 
+                      glm.family="binomial", factor.type=FALSE)
+summary(glm.out.TF)
+imageplot.bma(glm.out.TF)
+
+## End(Not run)
+
+## Not run: 
+### Gamma family 
+library(survival)
+data(cancer)
+surv.t&lt;- veteran$time
+x&lt;- veteran[,-c(3,4)]
+x$celltype&lt;- factor(as.character(x$celltype))
+sel&lt;- veteran$status == 0
+x&lt;- x[!sel,]
+surv.t&lt;- surv.t[!sel]
+
+glm.out.va &lt;- bic.glm(x, y=surv.t, glm.family=Gamma(link="inverse"),
+    factor.type=FALSE)
+summary(glm.out.va)
+imageplot.bma(glm.out.va)
+plot(glm.out.va)
+
+## End(Not run)
+
+### Poisson family
+### Yates (teeth) data. 
+
+x&lt;- rbind(
+    c(0, 0, 0),
+    c(0, 1, 0),
+    c(1, 0, 0),
+    c(1, 1, 1))
+
+y&lt;-c(4, 16, 1, 21)
+n&lt;-c(1,1,1,1)
+
+models&lt;- rbind(
+    c(1, 1, 0),
+    c(1, 1, 1))
+
+glm.out.yates &lt;- bic.glm( x, y, n, glm.family = poisson(), 
+                         factor.type=FALSE) 
+summary(glm.out.yates)
+
+## Not run: 
+### Gaussian
+library(MASS)
+data(UScrime)
+f &lt;- formula(log(y) ~  log(M)+So+log(Ed)+log(Po1)+log(Po2)+log(LF)+
+                       log(M.F)+ log(Pop)+log(NW)+log(U1)+log(U2)+
+                       log(GDP)+log(Ineq)+log(Prob)+log(Time))
+glm.out.crime &lt;- bic.glm(f, data = UScrime, glm.family = gaussian()) 
+summary(glm.out.crime)
+# note the problems with the estimation of the posterior standard 
+# deviation (compare with bicreg example)
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>BMA</em> version 3.18.21 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

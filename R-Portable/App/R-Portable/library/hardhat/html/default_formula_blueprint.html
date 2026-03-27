@@ -1,0 +1,454 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Default formula blueprint</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for default_formula_blueprint {hardhat}"><tr><td>default_formula_blueprint {hardhat}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Default formula blueprint</h2>
+
+<h3>Description</h3>
+
+<p>This pages holds the details for the formula preprocessing blueprint. This
+is the blueprint used by default from <code>mold()</code> if <code>x</code> is a formula.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+default_formula_blueprint(
+  intercept = FALSE,
+  allow_novel_levels = FALSE,
+  indicators = "traditional",
+  composition = "tibble"
+)
+
+## S3 method for class 'formula'
+mold(formula, data, ..., blueprint = NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>intercept</code></td>
+<td>
+<p>A logical. Should an intercept be included in the
+processed data? This information is used by the <code>process</code> function
+in the <code>mold</code> and <code>forge</code> function list.</p>
+</td></tr>
+<tr valign="top"><td><code>allow_novel_levels</code></td>
+<td>
+<p>A logical. Should novel factor levels be allowed at
+prediction time? This information is used by the <code>clean</code> function in the
+<code>forge</code> function list, and is passed on to <code><a href="../../hardhat/help/scream.html">scream()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>indicators</code></td>
+<td>
+<p>A single character string. Control how factors are
+expanded into dummy variable indicator columns. One of:
+</p>
+
+<ul>
+<li> <p><code>"traditional"</code> - The default. Create dummy variables using the
+traditional <code><a href="../../stats/html/model.matrix.html">model.matrix()</a></code> infrastructure. Generally this creates
+<code>K - 1</code> indicator columns for each factor, where <code>K</code> is the number of
+levels in that factor.
+</p>
+</li>
+<li> <p><code>"none"</code> - Leave factor variables alone. No expansion is done.
+</p>
+</li>
+<li> <p><code>"one_hot"</code> - Create dummy variables using a one-hot encoding approach
+that expands unordered factors into all <code>K</code> indicator columns, rather than
+<code>K - 1</code>.
+</p>
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>composition</code></td>
+<td>
+<p>Either &quot;tibble&quot;, &quot;matrix&quot;, or &quot;dgCMatrix&quot; for the format
+of the processed predictors. If &quot;matrix&quot; or &quot;dgCMatrix&quot; are chosen, all of
+the predictors must be numeric after the preprocessing method has been
+applied; otherwise an error is thrown.</p>
+</td></tr>
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>A formula specifying the predictors and the outcomes.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A data frame or matrix containing the outcomes and predictors.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Not used.</p>
+</td></tr>
+<tr valign="top"><td><code>blueprint</code></td>
+<td>
+<p>A preprocessing <code>blueprint</code>. If left as <code>NULL</code>, then a
+<code><a href="../../hardhat/help/default_formula_blueprint.html">default_formula_blueprint()</a></code> is used.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>While not different from base R, the behavior of expanding factors into
+dummy variables when <code>indicators = "traditional"</code> and an intercept is <em>not</em>
+present is not always intuitive and should be documented.
+</p>
+
+<ul>
+<li><p> When an intercept is present, factors are expanded into <code>K-1</code> new columns,
+where <code>K</code> is the number of levels in the factor.
+</p>
+</li>
+<li><p> When an intercept is <em>not</em> present, the first factor is expanded into
+all <code>K</code> columns (one-hot encoding), and the remaining factors are expanded
+into <code>K-1</code> columns. This behavior ensures that meaningful predictions can
+be made for the reference level of the first factor, but is not the exact
+&quot;no intercept&quot; model that was requested. Without this behavior, predictions
+for the reference level of the first factor would always be forced to <code>0</code>
+when there is no intercept.
+</p>
+</li></ul>
+
+<p>Offsets can be included in the formula method through the use of the inline
+function <code><a href="../../stats/help/offset.html">stats::offset()</a></code>. These are returned as a tibble with 1 column
+named <code>".offset"</code> in the <code style="white-space: pre;">$extras$offset</code> slot of the return value.
+</p>
+
+
+<h3>Value</h3>
+
+<p>For <code>default_formula_blueprint()</code>, a formula blueprint.
+</p>
+
+
+<h3>Mold</h3>
+
+<p>When <code>mold()</code> is used with the default formula blueprint:
+</p>
+
+<ul>
+<li><p> Predictors
+</p>
+
+<ul>
+<li><p> The RHS of the <code>formula</code> is isolated, and converted to its own
+1 sided formula: <code>~ RHS</code>.
+</p>
+</li>
+<li><p> Runs <code><a href="../../stats/help/model.frame.html">stats::model.frame()</a></code> on the RHS formula and uses <code>data</code>.
+</p>
+</li>
+<li><p> If <code>indicators = "traditional"</code>, it then runs <code><a href="../../stats/help/model.matrix.html">stats::model.matrix()</a></code>
+on the result.
+</p>
+</li>
+<li><p> If <code>indicators = "none"</code>, factors are removed before <code>model.matrix()</code>
+is run, and then added back afterwards. No interactions or inline
+functions involving factors are allowed.
+</p>
+</li>
+<li><p> If <code>indicators = "one_hot"</code>, it then runs <code><a href="../../stats/help/model.matrix.html">stats::model.matrix()</a></code> on the
+result using a contrast function that creates indicator columns for all
+levels of all factors.
+</p>
+</li>
+<li><p> If any offsets are present from using <code>offset()</code>, then they are
+extracted with <code><a href="../../hardhat/help/model_offset.html">model_offset()</a></code>.
+</p>
+</li>
+<li><p> If <code>intercept = TRUE</code>, adds an intercept column.
+</p>
+</li>
+<li><p> Coerces the result of the above steps to a tibble.
+</p>
+</li></ul>
+
+</li>
+<li><p> Outcomes
+</p>
+
+<ul>
+<li><p> The LHS of the <code>formula</code> is isolated, and converted to its own
+1 sided formula: <code>~ LHS</code>.
+</p>
+</li>
+<li><p> Runs <code><a href="../../stats/help/model.frame.html">stats::model.frame()</a></code> on the LHS formula and uses <code>data</code>.
+</p>
+</li>
+<li><p> Coerces the result of the above steps to a tibble.
+</p>
+</li></ul>
+
+</li></ul>
+
+
+
+<h3>Forge</h3>
+
+<p>When <code>forge()</code> is used with the default formula blueprint:
+</p>
+
+<ul>
+<li><p> It calls <code><a href="../../hardhat/help/shrink.html">shrink()</a></code> to trim <code>new_data</code> to only the required columns and
+coerce <code>new_data</code> to a tibble.
+</p>
+</li>
+<li><p> It calls <code><a href="../../hardhat/help/scream.html">scream()</a></code> to perform validation on the structure of the columns
+of <code>new_data</code>.
+</p>
+</li>
+<li><p> Predictors
+</p>
+
+<ul>
+<li><p> It runs <code><a href="../../stats/help/model.frame.html">stats::model.frame()</a></code> on <code>new_data</code> using the stored terms
+object corresponding to the <em>predictors</em>.
+</p>
+</li>
+<li><p> If, in the original <code><a href="../../hardhat/help/mold.html">mold()</a></code> call, <code>indicators = "traditional"</code> was
+set, it then runs <code><a href="../../stats/help/model.matrix.html">stats::model.matrix()</a></code> on the result.
+</p>
+</li>
+<li><p> If, in the original <code><a href="../../hardhat/help/mold.html">mold()</a></code> call, <code>indicators = "none"</code> was set, it
+runs <code><a href="../../stats/help/model.matrix.html">stats::model.matrix()</a></code> on the result without the factor columns,
+and then adds them on afterwards.
+</p>
+</li>
+<li><p> If, in the original <code><a href="../../hardhat/help/mold.html">mold()</a></code> call, <code>indicators = "one_hot"</code> was set, it
+runs <code><a href="../../stats/help/model.matrix.html">stats::model.matrix()</a></code> on the result with a contrast function that
+includes indicators for all levels of all factor columns.
+</p>
+</li>
+<li><p> If any offsets are present from using <code>offset()</code> in the original call
+to <code><a href="../../hardhat/help/mold.html">mold()</a></code>, then they are extracted with <code><a href="../../hardhat/help/model_offset.html">model_offset()</a></code>.
+</p>
+</li>
+<li><p> If <code>intercept = TRUE</code> in the original call to <code><a href="../../hardhat/help/mold.html">mold()</a></code>, then an
+intercept column is added.
+</p>
+</li>
+<li><p> It coerces the result of the above steps to a tibble.
+</p>
+</li></ul>
+
+</li>
+<li><p> Outcomes
+</p>
+
+<ul>
+<li><p> It runs <code><a href="../../stats/help/model.frame.html">stats::model.frame()</a></code> on <code>new_data</code> using the
+stored terms object corresponding to the <em>outcomes</em>.
+</p>
+</li>
+<li><p> Coerces the result to a tibble.
+</p>
+</li></ul>
+
+</li></ul>
+
+
+
+<h3>Differences From Base R</h3>
+
+<p>There are a number of differences from base R regarding how formulas are
+processed by <code>mold()</code> that require some explanation.
+</p>
+<p>Multivariate outcomes can be specified on the LHS using syntax that is
+similar to the RHS (i.e. <code>outcome_1 + outcome_2 ~ predictors</code>).
+If any complex calculations are done on the LHS and they return matrices
+(like <code><a href="../../stats/help/poly.html">stats::poly()</a></code>), then those matrices are flattened into multiple
+columns of the tibble after the call to <code>model.frame()</code>. While this is
+possible, it is not recommended, and if a large amount of preprocessing is
+required on the outcomes, then you are better off
+using a <code><a href="../../recipes/help/recipe.html">recipes::recipe()</a></code>.
+</p>
+<p>Global variables are <em>not</em> allowed in the formula. An error will be thrown
+if they are included. All terms in the formula should come from <code>data</code>. If
+you need to use inline functions in the formula, the safest way to do so is
+to prefix them with their package name, like <code>pkg::fn()</code>. This ensures that
+the function will always be available at <code>mold()</code> (fit) and <code>forge()</code>
+(prediction) time. That said, if the package is <em>attached</em>
+(i.e. with <code>library()</code>), then you should be able to use the inline function
+without the prefix.
+</p>
+<p>By default, intercepts are <em>not</em> included in the predictor output from the
+formula. To include an intercept, set
+<code>blueprint = default_formula_blueprint(intercept = TRUE)</code>. The rationale
+for this is that many packages either always require or never allow an
+intercept (for example, the <code>earth</code> package), and they do a large amount of
+extra work to keep the user from supplying one or removing it. This
+interface standardizes all of that flexibility in one place.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# ---------------------------------------------------------------------------
+
+data("hardhat-example-data")
+
+# ---------------------------------------------------------------------------
+# Formula Example
+
+# Call mold() with the training data
+processed &lt;- mold(
+  log(num_1) ~ num_2 + fac_1,
+  example_train,
+  blueprint = default_formula_blueprint(intercept = TRUE)
+)
+
+# Then, call forge() with the blueprint and the test data
+# to have it preprocess the test data in the same way
+forge(example_test, processed$blueprint)
+
+# Use `outcomes = TRUE` to also extract the preprocessed outcome
+forge(example_test, processed$blueprint, outcomes = TRUE)
+
+# ---------------------------------------------------------------------------
+# Factors without an intercept
+
+# No intercept is added by default
+processed &lt;- mold(num_1 ~ fac_1 + fac_2, example_train)
+
+# So, for factor columns, the first factor is completely expanded into all
+# `K` columns (the number of levels), and the subsequent factors are expanded
+# into `K - 1` columns.
+processed$predictors
+
+# In the above example, `fac_1` is expanded into all three columns,
+# `fac_2` is not. This behavior comes from `model.matrix()`, and is somewhat
+# known in the R community, but can lead to a model that is difficult to
+# interpret since the corresponding p-values are testing wildly different
+# hypotheses.
+
+# To get all indicators for all columns (irrespective of the intercept),
+# use the `indicators = "one_hot"` option
+processed &lt;- mold(
+  num_1 ~ fac_1 + fac_2,
+  example_train,
+  blueprint = default_formula_blueprint(indicators = "one_hot")
+)
+
+processed$predictors
+
+# It is not possible to construct a no-intercept model that expands all
+# factors into `K - 1` columns using the formula method. If required, a
+# recipe could be used to construct this model.
+
+# ---------------------------------------------------------------------------
+# Global variables
+
+y &lt;- rep(1, times = nrow(example_train))
+
+# In base R, global variables are allowed in a model formula
+frame &lt;- model.frame(fac_1 ~ y + num_2, example_train)
+head(frame)
+
+# mold() does not allow them, and throws an error
+try(mold(fac_1 ~ y + num_2, example_train))
+
+# ---------------------------------------------------------------------------
+# Dummy variables and interactions
+
+# By default, factor columns are expanded
+# and interactions are created, both by
+# calling `model.matrix()`. Some models (like
+# tree based models) can take factors directly
+# but still might want to use the formula method.
+# In those cases, set `indicators = "none"` to not
+# run `model.matrix()` on factor columns. Interactions
+# are still allowed and are run on numeric columns.
+
+bp_no_indicators &lt;- default_formula_blueprint(indicators = "none")
+
+processed &lt;- mold(
+  ~ fac_1 + num_1:num_2,
+  example_train,
+  blueprint = bp_no_indicators
+)
+
+processed$predictors
+
+# An informative error is thrown when `indicators = "none"` and
+# factors are present in interaction terms or in inline functions
+try(mold(num_1 ~ num_2:fac_1, example_train, blueprint = bp_no_indicators))
+try(mold(num_1 ~ paste0(fac_1), example_train, blueprint = bp_no_indicators))
+
+# ---------------------------------------------------------------------------
+# Multivariate outcomes
+
+# Multivariate formulas can be specified easily
+processed &lt;- mold(num_1 + log(num_2) ~ fac_1, example_train)
+processed$outcomes
+
+# Inline functions on the LHS are run, but any matrix
+# output is flattened (like what happens in `model.matrix()`)
+# (essentially this means you don't wind up with columns
+# in the tibble that are matrices)
+processed &lt;- mold(poly(num_2, degree = 2) ~ fac_1, example_train)
+processed$outcomes
+
+# TRUE
+ncol(processed$outcomes) == 2
+
+# Multivariate formulas specified in mold()
+# carry over into forge()
+forge(example_test, processed$blueprint, outcomes = TRUE)
+
+# ---------------------------------------------------------------------------
+# Offsets
+
+# Offsets are handled specially in base R, so they deserve special
+# treatment here as well. You can add offsets using the inline function
+# `offset()`
+processed &lt;- mold(num_1 ~ offset(num_2) + fac_1, example_train)
+
+processed$extras$offset
+
+# Multiple offsets can be included, and they get added together
+processed &lt;- mold(
+  num_1 ~ offset(num_2) + offset(num_3),
+  example_train
+)
+
+identical(
+  processed$extras$offset$.offset,
+  example_train$num_2 + example_train$num_3
+)
+
+# Forging test data will also require
+# and include the offset
+forge(example_test, processed$blueprint)
+
+# ---------------------------------------------------------------------------
+# Intercept only
+
+# Because `1` and `0` are intercept modifying terms, they are
+# not allowed in the formula and are instead controlled by the
+# `intercept` argument of the blueprint. To use an intercept
+# only formula, you should supply `NULL` on the RHS of the formula.
+mold(
+  ~NULL,
+  example_train,
+  blueprint = default_formula_blueprint(intercept = TRUE)
+)
+
+# ---------------------------------------------------------------------------
+# Matrix output for predictors
+
+# You can change the `composition` of the predictor data set
+bp &lt;- default_formula_blueprint(composition = "dgCMatrix")
+processed &lt;- mold(log(num_1) ~ num_2 + fac_1, example_train, blueprint = bp)
+class(processed$predictors)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>hardhat</em> version 1.4.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

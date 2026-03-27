@@ -10,7 +10,9 @@
 
 <h3>Description</h3>
 
-<p><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental"><img src="../help/figures/lifecycle-experimental.svg" alt='[Experimental]' /></a>
+<p>When submitting <span class="pkg">future</span> work, <span class="pkg">future</span> (by design) will block the main R session until a worker becomes available.
+This occurs when there is more submitted <span class="pkg">future</span> work than there are available <span class="pkg">future</span> workers.
+To counter this situation, we can create a promise to execute work using future (using <code>future_promise()</code>) and only begin the work if a <span class="pkg">future</span> worker is available.
 </p>
 
 
@@ -22,10 +24,8 @@ future_promise_queue()
 future_promise(
   expr = NULL,
   envir = parent.frame(),
-  substitute = TRUE,
-  globals = TRUE,
-  packages = NULL,
   ...,
+  substitute = TRUE,
   queue = future_promise_queue()
 )
 </pre>
@@ -43,26 +43,14 @@ future_promise(
 <p>The <a href="../../base/html/environment.html">environment</a> from where global objects should be
 identified.</p>
 </td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>extra parameters provided to <code><a href="../../future/help/future.html">future::future()</a></code></p>
+</td></tr>
 <tr valign="top"><td><code>substitute</code></td>
 <td>
 <p>If TRUE, argument <code>expr</code> is
 <code><a href="../../base/help/substitute.html">substitute</a>()</code>:ed, otherwise not.</p>
-</td></tr>
-<tr valign="top"><td><code>globals</code></td>
-<td>
-<p>(optional) a logical, a character vector, or a named list
-to control how globals are handled.
-For details, see section 'Globals used by future expressions'
-in the help for <code><a href="../../future/help/future.html">future()</a></code>.</p>
-</td></tr>
-<tr valign="top"><td><code>packages</code></td>
-<td>
-<p>(optional) a character vector specifying packages
-to be attached in the <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> environment evaluating the future.</p>
-</td></tr>
-<tr valign="top"><td><code>...</code></td>
-<td>
-<p>extra parameters provided to <code><a href="../../future/help/future.html">future::future()</a></code></p>
 </td></tr>
 <tr valign="top"><td><code>queue</code></td>
 <td>
@@ -73,13 +61,9 @@ to be attached in the <span style="font-family: Courier New, Courier; color: #66
 
 <h3>Details</h3>
 
-<p>When submitting <span class="pkg">future</span> work, <span class="pkg">future</span> (by design) will block the main R session until a worker becomes available.
-This occurs when there is more submitted <span class="pkg">future</span> work than there are available <span class="pkg">future</span> workers.
-To counter this situation, we can create a promise to execute work using future (using <code>future_promise()</code>) and only begin the work if a <span class="pkg">future</span> worker is available.
-</p>
 <p>Using <code>future_promise()</code> is recommended whenever a continuous runtime is used, such as with <span class="pkg">plumber</span> or <span class="pkg">shiny</span>.
 </p>
-<p>For more details and examples, please see the <a href="https://rstudio.github.io/promises/articles/future_promise.html"><code>vignette("future_promise", "promises")</code></a> vignette.
+<p>For more details and examples, please see the <a href="https://rstudio.github.io/promises/articles/promises_05b_future_promise.html"><code>vignette("future_promise", "promises")</code></a> vignette.
 </p>
 
 
@@ -93,7 +77,7 @@ To counter this situation, we can create a promise to execute work using future 
 
 
 <ul>
-<li> <p><code>future_promise_queue()</code>: Default <code>future_promise()</code> work queue to use. This function returns a <a href="../../promises/help/WorkQueue.html">WorkQueue</a> that is cached per R session.
+<li> <p><code>future_promise_queue()</code>: Default <code>future_promise()</code> work queue to use. This function returns a <code><a href="../../promises/help/WorkQueue.html">WorkQueue</a></code> that is cached per R session.
 </p>
 </li>
 <li> <p><code>future_promise()</code>: Creates a <code><a href="../../promises/help/promise.html">promise()</a></code> that will execute the <code>expr</code> using <code><a href="../../future/help/future.html">future::future()</a></code>.
@@ -110,7 +94,7 @@ To counter this situation, we can create a promise to execute work using future 
 <h3>Examples</h3>
 
 <pre>
-# Relative start time
+## Not run: # Relative start time
 start &lt;- Sys.time()
 # Helper to force two `future` workers
 with_two_workers &lt;- function(expr) {
@@ -118,7 +102,7 @@ with_two_workers &lt;- function(expr) {
     message("`future` not installed")
     return()
   }
-  old_plan &lt;- future::plan(future::multisession(workers = 2))
+  old_plan &lt;- future::plan(future::multisession, workers = 2)
   on.exit({future::plan(old_plan)}, add = TRUE)
   start &lt;&lt;- Sys.time()
   force(expr)
@@ -137,8 +121,12 @@ print_msg &lt;- function(pid, msg) {
 # `"promise done"` will appear after four workers are done and the main R session is not blocked
 # The important thing to note is the first four times will be roughly the same
 with_two_workers({
-  promise_resolve(Sys.getpid()) %...&gt;% print_msg("promise done")
-  for (i in 1:6) future::future({Sys.sleep(1); Sys.getpid()}) %...&gt;% print_msg("future done")
+  promise_resolve(Sys.getpid()) |&gt;
+    then(\(x) {print_msg("promise done")})
+  for (i in 1:6) {
+    future::future({Sys.sleep(1); Sys.getpid()}) |&gt;
+      then(\(x) {print_msg("future done")})
+  }
 })
 {
 #&gt; PID: XXX; 2.5s promise done
@@ -153,8 +141,12 @@ with_two_workers({
 # `"promise done"` will almost immediately, before any workers have completed
 # The first two `"future done"` comments appear earlier the example above
 with_two_workers({
-  promise_resolve(Sys.getpid()) %...&gt;% print_msg("promise")
-  for (i in 1:6) future_promise({Sys.sleep(1); Sys.getpid()}) %...&gt;% print_msg("future done")
+  promise_resolve(Sys.getpid()) |&gt;
+    then(\(x) {print_msg("promise")})
+  for (i in 1:6) {
+    future_promise({Sys.sleep(1); Sys.getpid()}) |&gt;
+      then(\(x) {print_msg("future done")})
+  }
 })
 {
 #&gt; PID: XXX; 0.2s promise done
@@ -165,7 +157,8 @@ with_two_workers({
 #&gt; PID: YYY; 3.4s future done
 #&gt; PID: ZZZ; 3.6s future done
 }
+## End(Not run)
 </pre>
 
-<hr /><div style="text-align: center;">[Package <em>promises</em> version 1.3.0 <a href="00Index.html">Index</a>]</div>
+<hr /><div style="text-align: center;">[Package <em>promises</em> version 1.5.0 <a href="00Index.html">Index</a>]</div>
 </div></body></html>

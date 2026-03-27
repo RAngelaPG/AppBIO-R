@@ -1,0 +1,117 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Wrappers around matrix algebra functions that pre-_s_cale...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for ssolve {statnet.common}"><tr><td>ssolve {statnet.common}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Wrappers around matrix algebra functions that pre-<em>s</em>cale their
+arguments</h2>
+
+<h3>Description</h3>
+
+<p>Covariance matrices of variables with very different orders of
+magnitude can have very large ratios between their greatest and
+their least eigenvalues, causing them to appear to the algorithms
+to be near-singular when they are actually very much SPD. These
+functions first scale the matrix's rows and/or columns by its
+diagonal elements and then undo the scaling on the result.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+ssolve(a, b, ..., snnd = TRUE)
+
+sginv(X, ..., snnd = TRUE)
+
+ginv_eigen(X, tol = sqrt(.Machine$double.eps), ...)
+
+xTAx_seigen(x, A, tol = sqrt(.Machine$double.eps), ...)
+
+srcond(x, ..., snnd = TRUE)
+
+snearPD(x, ...)
+
+xTAx_ssolve(x, A, ...)
+
+xTAx_qrssolve(x, A, tol = 1e-07, ...)
+
+sandwich_ssolve(A, B, ...)
+
+qrssolve(a, b, tol = 1e-07, ..., snnd = TRUE)
+
+qrsolve(a, b, tol = 1e-07, ...)
+
+sandwich_qrssolve(A, B, ...)
+
+sandwich_qrsolve(A, B, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>snnd</code></td>
+<td>
+<p>assume that the matrix is symmetric non-negative
+definite (SNND). This typically entails scaling that converts
+covariance to correlation and use of eigendecomposition rather
+than singular-value decomposition. If it's &quot;obvious&quot; that the matrix is
+not SSND (e.g., negative diagonal elements), an error is raised.</p>
+</td></tr>
+<tr valign="top"><td><code>x, a, b, X, A, B, tol, ...</code></td>
+<td>
+<p>corresponding arguments of the wrapped functions.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>ginv_eigen()</code> reimplements <code><a href="../../MASS/help/ginv.html">MASS::ginv()</a></code> but using
+eigendecomposition rather than SVD; this means that it is only
+suitable for symmetric matrices, but that detection of negative
+eigenvalues is more robust.
+</p>
+<p><code>ssolve()</code>, <code>sginv()</code>, <code>sginv_eigen()</code>, and <code>snearPD()</code> wrap
+<code><a href="../../Matrix/html/solve-methods.html">solve()</a></code>, <code><a href="../../MASS/help/ginv.html">MASS::ginv()</a></code>, <code>ginv_eigen()</code>, and <code><a href="../../Matrix/help/nearPD.html">Matrix::nearPD()</a></code>,
+respectively. <code>srcond()</code> returns the reciprocal condition number of
+<code><a href="../../Matrix/html/rcond.html">rcond()</a></code> net of the above scaling. <code>xTAx_ssolve()</code>,
+<code>xTAx_qrssolve()</code>, <code>xTAx_seigen()</code>, and <code>sandwich_ssolve()</code> wrap
+the corresponding <span class="pkg">statnet.common</span> functions. <code>qrssolve()</code>
+solves the linear system via QR decomposition after scaling by
+diagonal.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+x &lt;- rnorm(2, sd=c(1,1e12))
+x &lt;- c(x, sum(x))
+A &lt;- matrix(c(1, 0, 1,
+              0, 1e24, 1e24,
+              1, 1e24, 1e24), 3, 3)
+stopifnot(isTRUE(all.equal(
+  xTAx_qrssolve(x,A),
+  structure(drop(x%*%sginv(A)%*%x), rank = 2L, nullity = 1L)
+)))
+
+stopifnot(isTRUE(all.equal(c(A %*% qrssolve(A, x)), x)))
+
+x &lt;- rnorm(2, sd=c(1,1e12))
+x &lt;- c(x, rnorm(1, sd=1e12))
+A &lt;- matrix(c(1, 0, 1,
+              0, 1e24, 1e24,
+              1, 1e24, 1e24), 3, 3)
+
+stopifnot(try(xTAx_qrssolve(x,A), silent=TRUE) ==
+  "Error in xTAx_qrssolve(x, A) : x is not in the span of A\n")
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>statnet.common</em> version 4.13.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

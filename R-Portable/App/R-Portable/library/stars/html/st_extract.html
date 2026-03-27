@@ -1,0 +1,142 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Extract cell values at point locations</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for st_extract {stars}"><tr><td>st_extract {stars}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Extract cell values at point locations</h2>
+
+<h3>Description</h3>
+
+<p>Extract cell values at point locations
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+st_extract(x, ...)
+
+## S3 method for class 'stars'
+st_extract(
+  x,
+  at,
+  ...,
+  bilinear = FALSE,
+  time_column = attr(at, "time_column") %||% attr(at, "time_col"),
+  interpolate_time = bilinear,
+  FUN = mean,
+  resampling = c("nearest", "bilinear", "cubic", "cubicspline"),
+  sfc_attribute = NULL
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>object of class <code>stars</code> or <code>stars_proxy</code></p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>passed on to <a href="../../stars/help/aggregate.stars.html">aggregate.stars</a> when geometries are not exclusively POINT geometries</p>
+</td></tr>
+<tr valign="top"><td><code>at</code></td>
+<td>
+<p>object of class <code>sf</code> or <code>sfc</code> with geometries, or two-column matrix with coordinate points in rows, indicating where to extract values of <code>x</code>, or a <code>stars</code> object with geometry and temporal dimensions (vector data cube)</p>
+</td></tr>
+<tr valign="top"><td><code>bilinear</code></td>
+<td>
+<p>logical; use bilinear interpolation rather than nearest neighbour?</p>
+</td></tr>
+<tr valign="top"><td><code>time_column</code></td>
+<td>
+<p>character or integer; name or index of a column with time or date values that will be matched to values of the first temporal dimension (matching classes <code>POSIXct</code>, <code>POSIXt</code>, <code>Date</code>, or <code>CFTime</code>), in <code>x</code>, after which this dimension is reduced. This is useful to extract data cube values along a trajectory; see https://github.com/r-spatial/stars/issues/352 .</p>
+</td></tr>
+<tr valign="top"><td><code>interpolate_time</code></td>
+<td>
+<p>logical; should time be interpolated? if FALSE, time instances are matched using the coinciding or the last preceding time in the data cube.</p>
+</td></tr>
+<tr valign="top"><td><code>FUN</code></td>
+<td>
+<p>function used to aggregate pixel values when geometries of <code>at</code> intersect with more than one pixel</p>
+</td></tr>
+<tr valign="top"><td><code>resampling</code></td>
+<td>
+<p>character; resampling method; for method cubic or cubicspline,
+'stars_proxy' objects should be used and GDAL should have version &gt;= 3.10.0</p>
+</td></tr>
+<tr valign="top"><td><code>sfc_attribute</code></td>
+<td>
+<p>character; if <code>at</code> is of class <code>stars</code> should the aggregation be performed
+for the attribute geometry rather than the dimension geometry? If <code>NULL</code> (default),
+the aggregation is performed at the dimension geometries, else the name of the attribute geometry to perform the aggregation on.
+If the given attribute geometry does not exist, the aggregation defaults to the dimension geometry.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>points outside the raster are returned as <code>NA</code> values. For
+large sets of points for which extraction is needed, passing a matrix as
+to <code>at</code> may be much faster than passing an <code>sf</code> or <code>sfc</code> object.
+</p>
+
+
+<h3>Value</h3>
+
+<p>if <code>at</code> is of class <code>matrix</code>, a matrix with extracted values is returned; 
+if <code>at</code> is of class <code>stars</code> and a temporal dimension was passed to <code>time_column</code>,
+a <code>stars</code> object with the original <code>at</code> dimensions
+and the extracted values as attributes.
+otherwise: if <code>x</code> has more dimensions than only x and y (raster), an 
+object of class <code>stars</code> with POINT geometries replacing x and y raster
+dimensions, if this is not the case, an object of <code>sf</code> with extracted values.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+tif = system.file("tif/L7_ETMs.tif", package = "stars")
+r = read_stars(tif)
+pnt = st_sample(st_as_sfc(st_bbox(r)), 10)
+st_extract(r, pnt)
+st_extract(r, pnt) %&gt;% st_as_sf()
+st_extract(r[,,,1], pnt)
+st_extract(r, st_coordinates(pnt)) # "at" is a matrix: return a matrix
+# Extraction on non-POINT geometries
+poly = st_buffer(pnt, 1000)
+st_extract(r, poly)
+
+# Extraction with time matching
+rdate = c(r, r*2, along = "date")
+dates = c(Sys.Date()-1, Sys.Date())
+rdate = st_set_dimensions(rdate, "date", values = c(dates))
+
+pntsf = st_sf(date = dates, geometry = pnt)
+st_extract(split(rdate, "band"), pntsf) # POINT geometries
+
+polysf = st_buffer(pntsf, 1000)
+st_extract(split(rdate, "band"), polysf, time_column = "date") # POLYGON geometries
+
+vdc = st_sf(rdm = rnorm(20), polygons = st_buffer(st_sample(st_bbox(pnt), 20), 500),
+			geometry = rep(pnt, 2), date = rep(dates, each = 10)) |&gt; 
+	st_as_stars(dims = c("geometry", "date"))
+
+(vdc_new = st_extract(split(rdate, "band"), vdc)) # stars vector data cube
+merge(vdc_new, name = "band")
+
+### Extraction applied to the geometries inside the vector data cube (cell values)
+(vdc_new2 = st_extract(split(rdate, "band"), vdc,
+					   sfc_attribute = "polygons")) # stars vector data cube
+merge(vdc_new2, name = "band")
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>stars</em> version 0.7-1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

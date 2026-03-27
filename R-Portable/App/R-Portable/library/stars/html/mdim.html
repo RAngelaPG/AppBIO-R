@@ -1,0 +1,156 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Read or write data using GDAL's multidimensional array API</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mdim {stars}"><tr><td>mdim {stars}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Read or write data using GDAL's multidimensional array API</h2>
+
+<h3>Description</h3>
+
+<p>Read or write data using GDAL's multidimensional array API
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+read_mdim(
+  filename,
+  variable = character(0),
+  ...,
+  options = character(0),
+  raster = NULL,
+  offset = integer(0),
+  count = integer(0),
+  step = integer(0),
+  proxy = FALSE,
+  debug = FALSE,
+  bounds = TRUE,
+  curvilinear = NA,
+  normalize_path = TRUE
+)
+
+write_mdim(
+  x,
+  filename,
+  driver = detect.driver(filename),
+  ...,
+  root_group_options = character(0),
+  options = character(0),
+  as_float = TRUE,
+  normalize_path = TRUE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>filename</code></td>
+<td>
+<p>name of the source or destination file or data source</p>
+</td></tr>
+<tr valign="top"><td><code>variable</code></td>
+<td>
+<p>name of the array to be read; if '&quot;?&quot;', a list of array names is returned, with group name as list element names.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>ignored</p>
+</td></tr>
+<tr valign="top"><td><code>options</code></td>
+<td>
+<p>character; driver specific options regarding the opening (read_mdim) or creation (write_mdim) of the dataset</p>
+</td></tr>
+<tr valign="top"><td><code>raster</code></td>
+<td>
+<p>names of the raster variables (default: first two dimensions)</p>
+</td></tr>
+<tr valign="top"><td><code>offset</code></td>
+<td>
+<p>integer; zero-based offset for each dimension (pixels) of sub-array to read, defaults to 0 for each dimension(requires sf &gt;= 1.0-9)</p>
+</td></tr>
+<tr valign="top"><td><code>count</code></td>
+<td>
+<p>integer; size for each dimension (pixels) of sub-array to read (default: read all); a value of NA will read the corresponding dimension entirely; counts are relative to the step size (requires sf &gt;= 1.0-9)</p>
+</td></tr>
+<tr valign="top"><td><code>step</code></td>
+<td>
+<p>integer; step size for each dimension (pixels) of sub-array to read; defaults to 1 for each dimension (requires sf &gt;= 1.0-9)</p>
+</td></tr>
+<tr valign="top"><td><code>proxy</code></td>
+<td>
+<p>logical; return proxy object?</p>
+</td></tr>
+<tr valign="top"><td><code>debug</code></td>
+<td>
+<p>logical; print debug info?</p>
+</td></tr>
+<tr valign="top"><td><code>bounds</code></td>
+<td>
+<p>logical or character: if <code>TRUE</code> tries to infer from &quot;bounds&quot; attribute; if character, 
+named vector of the form <code>c(longitude="lon_bnds", latitude="lat_bnds")</code> with names dimension names</p>
+</td></tr>
+<tr valign="top"><td><code>curvilinear</code></td>
+<td>
+<p>control reading curvilinear (geolocation) coordinate arrays; if <code>NA</code> try reading the x/y dimension names; if character, defines the arrays to read; if <code>FALSE</code> do not try; see also <a href="../../stars/help/read_stars.html">read_stars</a></p>
+</td></tr>
+<tr valign="top"><td><code>normalize_path</code></td>
+<td>
+<p>logical; if <code>FALSE</code>, suppress a call to <a href="../../base/html/normalizePath.html">normalizePath</a> on <code>filename</code></p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>stars object</p>
+</td></tr>
+<tr valign="top"><td><code>driver</code></td>
+<td>
+<p>character; driver name</p>
+</td></tr>
+<tr valign="top"><td><code>root_group_options</code></td>
+<td>
+<p>character; driver specific options regarding the creation of the root group</p>
+</td></tr>
+<tr valign="top"><td><code>as_float</code></td>
+<td>
+<p>logical; if <code>TRUE</code> write 4-byte floating point numbers, if <code>FALSE</code> write 8-byte doubles</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>it is assumed that the first two dimensions are easting and northing
+</p>
+
+
+<h3>See Also</h3>
+
+<p><a href="../../sf/help/gdal_utils.html">gdal_utils</a>, in particular util <code>mdiminfo</code> to query properties of a file or data source containing arrays
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+set.seed(135)
+m = matrix(runif(10), 2, 5)
+names(dim(m)) = c("stations", "time")
+times = as.Date("2022-05-01") + 1:5
+pts = st_as_sfc(c("POINT(0 1)", "POINT(3 5)"))
+s = st_as_stars(list(Precipitation = m)) |&gt;
+ st_set_dimensions(1, values = pts) |&gt;
+ st_set_dimensions(2, values = times)
+nc = tempfile(fileext=".nc")
+if (compareVersion(sf_extSoftVersion()["GDAL"], "3.4.0") &gt; -1) {
+  write_mdim(s, nc)
+  # try ncdump on the generated file
+  print(read_mdim(nc))
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>stars</em> version 0.7-1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

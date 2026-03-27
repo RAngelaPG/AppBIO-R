@@ -1,0 +1,183 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Add or replace data frame columns</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for add_columns {sjmisc}"><tr><td>add_columns {sjmisc}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Add or replace data frame columns</h2>
+
+<h3>Description</h3>
+
+<p><code>add_columns()</code> combines two or more data frames, but unlike
+<code><a href="../../base/html/cbind.html">cbind</a></code> or <code><a href="../../dplyr/help/bind.html">dplyr::bind_cols()</a></code>, this function
+binds <code>data</code> as last columns of a data frame (i.e., behind columns
+specified in <code>...</code>). This can be useful in a &quot;pipe&quot;-workflow, where
+a data frame returned by a previous function should be appended
+<em>at the end</em> of another data frame that is processed in
+<code>add_colums()</code>.
+<br /> <br />
+<code>replace_columns()</code> replaces all columns in <code>data</code> with
+identically named columns in <code>...</code>, and adds remaining (non-duplicated)
+columns from <code>...</code> to <code>data</code>.
+<br /> <br />
+<code>add_id()</code> simply adds an ID-column to the data frame, with values
+from 1 to <code>nrow(data)</code>, respectively for grouped data frames, values
+from 1 to group size. See 'Examples'.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+add_columns(data, ..., replace = TRUE)
+
+replace_columns(data, ..., add.unique = TRUE)
+
+add_id(data, var = "ID")
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A data frame. For <code>add_columns()</code>, will be bound after data
+frames specified in <code>...</code>. For <code>replace_columns()</code>, duplicated
+columns in <code>data</code> will be replaced by columns in <code>...</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>More data frames to combine, resp. more data frames with columns
+that should replace columns in <code>data</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>replace</code></td>
+<td>
+<p>Logical, if <code>TRUE</code> (default), columns in <code>...</code> with
+identical names in <code>data</code> will replace the columns in <code>data</code>.
+The order of columns after replacing is preserved.</p>
+</td></tr>
+<tr valign="top"><td><code>add.unique</code></td>
+<td>
+<p>Logical, if <code>TRUE</code> (default), remaining columns in
+<code>...</code> that did not replace any column in <code>data</code>, are appended
+as new columns to <code>data</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>var</code></td>
+<td>
+<p>Name of new the ID-variable.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>For <code>add_columns()</code>, a data frame, where columns of <code>data</code>
+are appended after columns of <code>...</code>.
+<br /> <br />
+For <code>replace_columns()</code>, a data frame where columns in <code>data</code>
+will be replaced by identically named columns in <code>...</code>, and remaining
+columns from <code>...</code> will be appended to <code>data</code> (if
+<code>add.unique = TRUE</code>).
+<br /> <br />
+For <code>add_id()</code>, a new column with ID numbers. This column is always
+the first column in the returned data frame.
+</p>
+
+
+<h3>Note</h3>
+
+<p>For <code>add_columns()</code>, by default, columns in <code>data</code> with
+identical names like columns in one of the data frames in <code>...</code>
+will be dropped (i.e. variables with identical names in <code>...</code> will
+replace existing variables in <code>data</code>). Use <code>replace = FALSE</code> to
+keep all columns. Identical column names will then be renamed, to ensure
+unique column names (which happens by default when using
+<code><a href="../../dplyr/help/bind.html">dplyr::bind_cols()</a></code>). When replacing columns, replaced columns
+are not added to the end of the data frame. Rather, the original order of
+columns will be preserved.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+data(efc)
+d1 &lt;- efc[, 1:3]
+d2 &lt;- efc[, 4:6]
+
+if (require("dplyr") &amp;&amp; require("sjlabelled")) {
+head(bind_cols(d1, d2))
+add_columns(d1, d2) %&gt;% head()
+
+d1 &lt;- efc[, 1:3]
+d2 &lt;- efc[, 2:6]
+
+add_columns(d1, d2, replace = TRUE) %&gt;% head()
+add_columns(d1, d2, replace = FALSE) %&gt;% head()
+
+# use case: we take the original data frame, select specific
+# variables and do some transformations or recodings
+# (standardization in this example) and add the new, transformed
+# variables *to the end* of the original data frame
+efc %&gt;%
+  select(e17age, c160age) %&gt;%
+  std() %&gt;%
+  add_columns(efc) %&gt;%
+  head()
+
+# new variables with same name will overwrite old variables
+# in "efc". order of columns is not changed.
+efc %&gt;%
+  select(e16sex, e42dep) %&gt;%
+  to_factor() %&gt;%
+  add_columns(efc) %&gt;%
+  head()
+
+# keep both old and new variables, automatically
+# rename variables with identical name
+efc %&gt;%
+  select(e16sex, e42dep) %&gt;%
+  to_factor() %&gt;%
+  add_columns(efc, replace = FALSE) %&gt;%
+  head()
+
+# create sample data frames
+d1 &lt;- efc[, 1:10]
+d2 &lt;- efc[, 2:3]
+d3 &lt;- efc[, 7:8]
+d4 &lt;- efc[, 10:12]
+
+# show original
+head(d1)
+
+library(sjlabelled)
+# slightly change variables, to see effect
+d2 &lt;- as_label(d2)
+d3 &lt;- as_label(d3)
+
+# replace duplicated columns, append remaining
+replace_columns(d1, d2, d3, d4) %&gt;% head()
+
+# replace duplicated columns, omit remaining
+replace_columns(d1, d2, d3, d4, add.unique = FALSE) %&gt;% head()
+
+# add ID to dataset
+library(dplyr)
+data(mtcars)
+add_id(mtcars)
+
+mtcars %&gt;%
+  group_by(gear) %&gt;%
+  add_id() %&gt;%
+  arrange(gear, ID) %&gt;%
+  print(n = 100)
+}
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sjmisc</em> version 2.8.11 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

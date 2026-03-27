@@ -1,0 +1,287 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Dim values of a dimension based on the distance to an...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for dim_values {rearrr}"><tr><td>dim_values {rearrr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Dim values of a dimension based on the distance to an n-dimensional origin</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental"><img src="../help/figures/lifecycle-experimental.svg" alt='[Experimental]' /></a>
+</p>
+<p>Dims the values in the dimming dimension (last by default)
+based on the data point's distance to the origin.
+</p>
+<p>Distance is calculated as:
+</p>
+<p style="text-align: center;"><i>d(P1, P2) = sqrt( (x2 - x1)^2 + (y2 - y1)^2 + (z2 - z1)^2 + ... )</i></p>
+
+<p>The default <code>`dimming_fn`</code> multiplies by the inverse-square of
+<i>1 + distance</i> and is calculated as:
+</p>
+<p style="text-align: center;"><i>dimming_fn(x, d) = x * (1 / (1 + d) ^ 2)</i></p>
+
+<p>Where <i>x</i> is the value in the dimming dimension. The <i>+1</i> is added
+to ensure that values are dimmed even when the distance is below <code>1</code>. The quickest
+way to change the exponent or the <i>+1</i> is with
+<code><a href="../help/create_dimming_fn.html">create_dimming_fn()</a></code>.
+</p>
+<p>The origin can be supplied as coordinates or as a function that returns coordinates. The
+latter can be useful when supplying a grouped <code>data.frame</code> and dimming around e.g. the centroid
+of each group.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+dim_values(
+  data,
+  cols,
+  dimming_fn = create_dimming_fn(numerator = 1, exponent = 2, add_to_distance = 1),
+  origin = NULL,
+  origin_fn = NULL,
+  dim_col = tail(cols, 1),
+  suffix = "_dimmed",
+  keep_original = TRUE,
+  origin_col_name = ".origin",
+  overwrite = FALSE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p><code>data.frame</code> or <code>vector</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>cols</code></td>
+<td>
+<p>Names of columns in <code>`data`</code> to calculate distances from.
+The dimming column (<code>`dim_col`</code>) is dimmed based on all the columns.
+Each column is considered a dimension.
+</p>
+<p><strong>N.B.</strong> when the dimming dimension is included in <code>`cols`</code>,
+it is used in the distance calculation as well.</p>
+</td></tr>
+<tr valign="top"><td><code>dimming_fn</code></td>
+<td>
+<p><code>Function</code> for calculating the dimmed values.
+</p>
+<p><strong>Input</strong>: Two (2) input arguments:
+</p>
+
+<ol>
+<li><p> A <code>numeric vector</code> with the values in the dimming dimension.
+</p>
+</li>
+<li><p> A <code>numeric vector</code> with corresponding distances to the origin.
+</p>
+</li></ol>
+
+<p><strong>Output</strong>: A <code>numeric vector</code> with the same length as the input vectors.
+</p>
+<p>E.g.:
+</p>
+<p><code>function(x, d){</code>
+</p>
+<p><code style="white-space: pre;">  </code><code>x * (1 / ((1 + d) ^ 2))</code>
+</p>
+<p><code>}</code>
+</p>
+<p>This kind of dimming function can be created with
+<code><a href="../help/create_dimming_fn.html">create_dimming_fn()</a></code>,
+which for instance makes it easy to change the exponent (the <code>2</code> above).</p>
+</td></tr>
+<tr valign="top"><td><code>origin</code></td>
+<td>
+<p>Coordinates of the origin to dim around.
+A scalar to use in all dimensions
+or a <code>vector</code> with one scalar per dimension.
+</p>
+<p><strong>N.B.</strong> Ignored when <code>`origin_fn`</code> is not <code>NULL</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>origin_fn</code></td>
+<td>
+<p>Function for finding the origin coordinates.
+</p>
+<p><strong>Input</strong>: Each column will be passed as a <code>vector</code> in the order of <code>`cols`</code>.
+</p>
+<p><strong>Output</strong>: A <code>vector</code> with one scalar per dimension.
+</p>
+<p>Can be created with <code><a href="../help/create_origin_fn.html">create_origin_fn()</a></code> if you want to apply
+the same function to each dimension.
+</p>
+<p>E.g. <code>`create_origin_fn(median)`</code> would find the median of each column.
+</p>
+<p><strong>Built-in functions</strong> are <code><a href="../help/centroid.html">centroid()</a></code>,
+<code><a href="../help/most_centered.html">most_centered()</a></code>,
+and <code><a href="../help/midrange.html">midrange()</a></code></p>
+</td></tr>
+<tr valign="top"><td><code>dim_col</code></td>
+<td>
+<p>Name of column to dim. Default is the last column in <code>`cols`</code>.
+</p>
+<p>When the <code>`dim_col`</code> is not present in <code>`cols`</code>, it is not used in the distance calculation.</p>
+</td></tr>
+<tr valign="top"><td><code>suffix</code></td>
+<td>
+<p>Suffix to add to the names of the generated columns.
+</p>
+<p>Use an empty string (i.e. <code>""</code>) to overwrite the original columns.</p>
+</td></tr>
+<tr valign="top"><td><code>keep_original</code></td>
+<td>
+<p>Whether to keep the original columns. (Logical)
+</p>
+<p>Some columns may have been overwritten, in which case only the newest versions are returned.</p>
+</td></tr>
+<tr valign="top"><td><code>origin_col_name</code></td>
+<td>
+<p>Name of new column with the origin coordinates. If <code>NULL</code>, no column is added.</p>
+</td></tr>
+<tr valign="top"><td><code>overwrite</code></td>
+<td>
+<p>Whether to allow overwriting of existing columns. (Logical)</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+
+<ul>
+<li><p> Calculates distances to origin with: </p>
+<p style="text-align: center;"><i>d(P1, P2) = sqrt( (x2 - x1)^2 + (y2 - y1)^2 + (z2 - z1)^2 + ... )</i></p>
+
+</li>
+<li><p> Applies the <code>`dimming_fn`</code> to the <code>`dim_col`</code> based on the distances.
+</p>
+</li></ul>
+
+
+
+<h3>Value</h3>
+
+<p><code>data.frame</code> (<code>tibble</code>) with the dimmed column,
+along with the origin coordinates.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Ludvig Renbo Olsen, <a href="mailto:r-pkgs@ludvigolsen.dk">r-pkgs@ludvigolsen.dk</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other mutate functions: 
+<code><a href="../../rearrr/help/apply_transformation_matrix.html">apply_transformation_matrix</a>()</code>,
+<code><a href="../../rearrr/help/cluster_groups.html">cluster_groups</a>()</code>,
+<code><a href="../../rearrr/help/expand_distances.html">expand_distances</a>()</code>,
+<code><a href="../../rearrr/help/expand_distances_each.html">expand_distances_each</a>()</code>,
+<code><a href="../../rearrr/help/flip_values.html">flip_values</a>()</code>,
+<code><a href="../../rearrr/help/roll_values.html">roll_values</a>()</code>,
+<code><a href="../../rearrr/help/rotate_2d.html">rotate_2d</a>()</code>,
+<code><a href="../../rearrr/help/rotate_3d.html">rotate_3d</a>()</code>,
+<code><a href="../../rearrr/help/shear_2d.html">shear_2d</a>()</code>,
+<code><a href="../../rearrr/help/shear_3d.html">shear_3d</a>()</code>,
+<code><a href="../../rearrr/help/swirl_2d.html">swirl_2d</a>()</code>,
+<code><a href="../../rearrr/help/swirl_3d.html">swirl_3d</a>()</code>
+</p>
+<p>Other distance functions: 
+<code><a href="../../rearrr/help/closest_to.html">closest_to</a>()</code>,
+<code><a href="../../rearrr/help/distance.html">distance</a>()</code>,
+<code><a href="../../rearrr/help/expand_distances.html">expand_distances</a>()</code>,
+<code><a href="../../rearrr/help/expand_distances_each.html">expand_distances_each</a>()</code>,
+<code><a href="../../rearrr/help/furthest_from.html">furthest_from</a>()</code>,
+<code><a href="../../rearrr/help/swirl_2d.html">swirl_2d</a>()</code>,
+<code><a href="../../rearrr/help/swirl_3d.html">swirl_3d</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Attach packages
+library(rearrr)
+library(dplyr)
+library(purrr)
+has_ggplot &lt;- require(ggplot2)  # Attach if installed
+
+# Set seed
+set.seed(7)
+
+# Create a data frame with clusters
+df &lt;- generate_clusters(
+  num_rows = 70,
+  num_cols = 3,
+  num_clusters = 5,
+  compactness = 1.6
+) %&gt;%
+  dplyr::rename(x = D1, y = D2, z = D3) %&gt;%
+  dplyr::mutate(o = 1)
+
+# Dim the values in the z column
+dim_values(
+  data = df,
+  cols = c("x", "y", "z"),
+  origin = c(0.5, 0.5, 0.5)
+)
+
+# Dim the values in the `o` column (all 1s)
+# around the centroid
+dim_values(
+  data = df,
+  cols = c("x", "y"),
+  dim_col = "o",
+  origin_fn = centroid
+)
+
+# Specify dimming_fn
+# around the centroid
+dim_values(
+  data = df,
+  cols = c("x", "y"),
+  dim_col = "o",
+  origin_fn = centroid,
+  dimming_fn = function(x, d) {
+    x * 1 / (2^(1 + d))
+  }
+)
+
+#
+# Dim cluster-wise
+#
+
+# Group-wise dimming
+df_dimmed &lt;- df %&gt;%
+  dplyr::group_by(.cluster) %&gt;%
+  dim_values(
+    cols = c("x", "y"),
+    dim_col = "o",
+    origin_fn = centroid
+  )
+
+# Plot the dimmed data such that the alpha (opacity) is
+# controlled by the dimming
+# (Note: This works because the `o` column is 1 for all values)
+if (has_ggplot){
+  ggplot(
+    data = df_dimmed,
+    aes(x = x, y = y, alpha = o_dimmed, color = .cluster)
+  ) +
+    geom_point() +
+    theme_minimal() +
+    labs(x = "x", y = "y", color = "Cluster", alpha = "o_dimmed")
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rearrr</em> version 0.3.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

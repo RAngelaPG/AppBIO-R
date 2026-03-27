@@ -1,0 +1,379 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Dating Breaks</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for breakpoints {strucchange}"><tr><td>breakpoints {strucchange}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Dating Breaks</h2>
+
+<h3>Description</h3>
+
+<p>Computation of breakpoints in regression relationships. Given a number
+of breaks the function computes the optimal breakpoints.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'formula'
+breakpoints(formula, h = 0.15, breaks = NULL,
+    data = list(), hpc = c("none", "foreach"), ...)
+## S3 method for class 'breakpointsfull'
+breakpoints(obj, breaks = NULL, ...)
+## S3 method for class 'breakpointsfull'
+summary(object, breaks = NULL, sort = NULL,
+    format.times = NULL, ...)
+## S3 method for class 'breakpoints'
+lines(x, breaks = NULL, lty = 2, ...)
+
+## S3 method for class 'breakpointsfull'
+coef(object, breaks = NULL, names = NULL, ...)
+## S3 method for class 'breakpointsfull'
+fitted(object, breaks = NULL, ...)
+## S3 method for class 'breakpointsfull'
+residuals(object, breaks = NULL, ...)
+## S3 method for class 'breakpointsfull'
+vcov(object, breaks = NULL, names = NULL,
+    het.reg = TRUE, het.err = TRUE, vcov. = NULL, sandwich = TRUE, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>a symbolic description for the model in which breakpoints
+will be estimated.</p>
+</td></tr>
+<tr valign="top"><td><code>h</code></td>
+<td>
+<p>minimal segment size either given as fraction relative to the
+sample size or as an integer giving the minimal number of observations
+in each segment.</p>
+</td></tr>
+<tr valign="top"><td><code>breaks</code></td>
+<td>
+<p>positive integer specifying the maximal number of breaks to be calculated.
+By default the maximal number allowed by <code>h</code> is used.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>an optional data frame containing the variables in the model. By
+default the variables are taken from the environment which <code>breakpoints</code> is
+called from.</p>
+</td></tr>
+<tr valign="top"><td><code>hpc</code></td>
+<td>
+<p>a character specifying the high performance computing support.
+Default is <code>"none"</code>, can be set to <code>"foreach"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>arguments passed to <code><a href="../../strucchange/help/recresid.html">recresid</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>obj, object</code></td>
+<td>
+<p>an object of class <code>"breakpointsfull"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>sort</code></td>
+<td>
+<p>logical. If set to <code>TRUE</code> <code>summary</code> tries to match
+the breakpoints from partitions with different numbers of breaks.
+The default tries to sort if a suitable matching can be found.</p>
+</td></tr>
+<tr valign="top"><td><code>format.times</code></td>
+<td>
+<p>logical. If set to <code>TRUE</code> a vector of
+strings with the formatted breakdates is printed. See <code><a href="../../strucchange/help/breakdates.html">breakdates</a></code>
+for more information.</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>an object of class <code>"breakpoints"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>lty</code></td>
+<td>
+<p>line type.</p>
+</td></tr>
+<tr valign="top"><td><code>names</code></td>
+<td>
+<p>a character vector giving the names of the segments. If of length
+1 it is taken to be a generic prefix, e.g. <code>"segment"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>het.reg</code></td>
+<td>
+<p>logical. Should heterogeneous regressors be assumed? If set
+to <code>FALSE</code> the distribution of the regressors is assumed to be
+homogeneous over the segments.</p>
+</td></tr>
+<tr valign="top"><td><code>het.err</code></td>
+<td>
+<p>logical. Should heterogeneous errors be assumed? If set
+to <code>FALSE</code> the distribution of the errors is assumed to be
+homogeneous over the segments.</p>
+</td></tr>
+<tr valign="top"><td><code>vcov.</code></td>
+<td>
+<p>a function to extract the covariance matrix
+for the coefficients of a fitted model of class <code>"lm"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>sandwich</code></td>
+<td>
+<p>logical. Is the function <code>vcov.</code> the sandwich
+estimator or only the middle part?</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>All procedures in this package are concerned with testing or assessing
+deviations from stability in the classical linear regression model
+</p>
+<p style="text-align: center;"><i>y_i = x_i' b + u_i</i></p>
+
+<p>In many applications it is reasonable to assume
+that there are <i>m</i> breakpoints, where the coefficients shift from
+one stable regression relationship to a different one. Thus,
+there are <i>m+1</i> segments in which the regression coefficients are
+constant, and the model can be rewritten as
+</p>
+<p style="text-align: center;"><i>y_i =
+    x_i' b_j + u_i   (i = i_{j-1} + 1, &hellip;, i_j,   j = 1, &hellip;, m+1)</i></p>
+
+<p>where <i>j</i> denotes the segment index. In practice the breakpoints <i>i_j</i>
+are rarely given exogenously, but have to be estimated.
+<code>breakpoints</code> estimates these breakpoints by minimizing the residual sum of
+squares (RSS) of the equation above.
+</p>
+<p>The foundation for estimating breaks in time series regression models
+was given by Bai (1994) and was extended to multiple breaks by Bai (1997ab)
+and Bai &amp; Perron (1998). <code>breakpoints</code> implements the algorithm
+described in Bai &amp; Perron (2003) for simultaneous estimation of
+multiple breakpoints. The distribution function used for the confidence
+intervals for the breakpoints is given in Bai (1997b). The ideas behind
+this implementation are described in Zeileis et al. (2003).
+</p>
+<p>The algorithm for computing the optimal breakpoints given the number
+of breaks is based on a dynamic programming approach. The underlying
+idea is that of the Bellman principle. The main computational effort
+is to compute a triangular RSS matrix, which gives the residual
+sum of squares for a segment starting at observation <i>i</i> and
+ending at <i>i'</i> with <i>i</i> &lt; <i>i'</i>.
+</p>
+<p>Given a <code>formula</code> as the first argument, <code>breakpoints</code> computes
+an object of class <code>"breakpointsfull"</code> which inherits from <code>"breakpoints"</code>.
+This contains in particular the triangular RSS
+matrix and functions to extract an optimal segmentation. A <code>summary</code>
+of this object will give the breakpoints (and associated) breakdates
+for all segmentations up to the maximal number of breaks together
+with the associated RSS and BIC. These will be plotted if <code>plot</code>
+is applied and thus visualize the minimum BIC estimator of the number
+of breakpoints. From an object of class <code>"breakpointsfull"</code> an
+arbitrary number of <code>breaks</code> (admissible by the minimum segment
+size <code>h</code>) can be extracted by another application of
+<code>breakpoints</code>, returning an object of class <code>"breakpoints"</code>.
+This contains only the breakpoints for the specified number of breaks
+and some model properties (number of observations, regressors, time
+series properties and the associated RSS) but not the triangular RSS
+matrix and related extractor functions. The set of breakpoints which
+is associated by default with a <code>"breakpointsfull"</code> object is
+the minimum BIC partition.
+</p>
+<p>Breakpoints are the number of observations that are the last in one
+segment, it is also possible to compute the corresponding <code>breakdates</code>
+which are the breakpoints on the underlying time scale. The breakdates
+can be formatted which enhances readability in particular for quarterly
+or monthly time series. For example the breakdate <code>2002.75</code> of a monthly
+time series will be formatted to <code>"2002(10)"</code>. See <code><a href="../../strucchange/help/breakdates.html">breakdates</a></code>
+for more details.
+</p>
+<p>From a <code>"breakpointsfull"</code> object confidence intervals for the breakpoints
+can be computed using the method of <code><a href="../../stats/html/confint.html">confint</a></code>.
+The breakdates corresponding to the breakpoints can again be computed
+by <code><a href="../../strucchange/help/breakdates.html">breakdates</a></code>. The breakpoints and their confidence
+intervals can be visualized by <code>lines</code>. Convenience functions are
+provided for extracting the coefficients and covariance matrix, fitted 
+values and residuals of segmented models.
+</p>
+<p>The log likelihood as well as some information criteria can be computed
+using the methods for the <code><a href="../../stats/html/logLik.html">logLik</a></code> and <code><a href="../../stats/html/AIC.html">AIC</a></code>. As
+for linear models the log likelihood is computed on a normal model and
+the degrees of freedom are the number of regression coefficients multiplied
+by the number of segments plus the number of estimated breakpoints plus
+1 for the error variance. More details can be found on the help page of
+the method <code><a href="../../strucchange/help/logLik.breakpoints.html">logLik.breakpoints</a></code>.
+</p>
+<p>As the maximum of a sequence of F statistics is equivalent to the minimum
+OLS estimator of the breakpoint in a 2-segment partition it can be
+extracted by <code>breakpoints</code> from an object of class <code>"Fstats"</code>
+as computed by <code><a href="../../strucchange/help/Fstats.html">Fstats</a></code>. However, this cannot be used to extract
+a larger number of breakpoints.
+</p>
+<p>For illustration see the commented examples below and Zeileis et al. (2003).
+</p>
+<p>Optional support for high performance computing is available, currently using
+<code><a href="../../foreach/help/foreach.html">foreach</a></code> for the dynamic programming algorithm.
+If <code>hpc = "foreach"</code> is to be used, a parallel backend should be registered
+before. See <code><a href="../../foreach/help/foreach.html">foreach</a></code> for more information.
+</p>
+
+
+<h3>value</h3>
+
+<p>An object of class <code>"breakpoints"</code> is a list with the following
+elements:
+</p>
+
+<dl>
+<dt>breakpoints</dt><dd><p>the breakpoints of the optimal partition with the
+number of breaks specified (set to <code>NA</code> if the optimal 1-segment
+solution is reported),</p>
+</dd>
+<dt>RSS</dt><dd><p>the associated RSS,</p>
+</dd>
+<dt>nobs</dt><dd><p>the number of observations,</p>
+</dd>
+<dt>nreg</dt><dd><p>the number of regressors,</p>
+</dd>
+<dt>call</dt><dd><p>the function call,</p>
+</dd>
+<dt>datatsp</dt><dd><p>the time series properties <code>tsp</code> of the data,
+if any, <code>c(1/nobs, 1, nobs)</code> otherwise.</p>
+</dd>
+</dl>
+
+<p>If applied to a <code>formula</code> as first argument, <code>breakpoints</code> returns an object of class
+<code>"breakpointsfull"</code> (which inherits from <code>"breakpoints"</code>), that
+contains some additional (or slightly different) elements such as:
+</p>
+
+<dl>
+<dt>breakpoints</dt><dd><p>the breakpoints of the minimum BIC partition,</p>
+</dd>
+<dt>RSS</dt><dd><p>a function which takes two arguments <code>i,j</code> and computes
+the residual sum of squares for a segment starting at observation <code>i</code> and
+ending at <code>j</code> by looking up the corresponding element in the triangular
+RSS matrix <code>RSS.triang</code>,</p>
+</dd>
+<dt>RSS.triang</dt><dd><p>a list encoding the triangular RSS matrix.</p>
+</dd>
+</dl>
+
+
+
+<h3>References</h3>
+
+<p>Bai J. (1994), Least Squares Estimation of a Shift in Linear Processes,
+<em>Journal of Time Series Analysis</em>, <b>15</b>, 453-472.
+</p>
+<p>Bai J. (1997a), Estimating Multiple Breaks One at a Time,
+<em>Econometric Theory</em>, <b>13</b>, 315-352.
+</p>
+<p>Bai J. (1997b), Estimation of a Change Point in Multiple Regression Models,
+<em>Review of Economics and Statistics</em>, <b>79</b>, 551-563.
+</p>
+<p>Bai J., Perron P. (1998), Estimating and Testing Linear Models With Multiple Structural
+Changes, <em>Econometrica</em>, <b>66</b>, 47-78.
+</p>
+<p>Bai J., Perron P. (2003), Computation and Analysis of Multiple Structural Change
+Models, <em>Journal of Applied Econometrics</em>, <b>18</b>, 1-22.
+</p>
+<p>Zeileis A., Kleiber C., Krämer W., Hornik K. (2003), Testing and Dating of
+Structural Changes in Practice, <em>Computational Statistics and Data Analysis</em>,
+<b>44</b>, 109-123. doi:10.1016/S0167-9473(03)00030-6.
+</p>
+<p>Zeileis A., Shah A., Patnaik I. (2010), Testing, Monitoring, and Dating Structural
+Changes in Exchange Rate Regimes, <em>Computational Statistics and Data Analysis</em>,
+<b>54</b>(6), 1696&ndash;1706. doi:10.1016/j.csda.2009.12.005.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Nile data with one breakpoint: the annual flows drop in 1898
+## because the first Ashwan dam was built
+data("Nile")
+plot(Nile)
+
+## F statistics indicate one breakpoint
+fs.nile &lt;- Fstats(Nile ~ 1)
+plot(fs.nile)
+breakpoints(fs.nile)
+lines(breakpoints(fs.nile))
+
+## or
+bp.nile &lt;- breakpoints(Nile ~ 1)
+summary(bp.nile)
+
+## the BIC also chooses one breakpoint
+plot(bp.nile)
+breakpoints(bp.nile)
+
+## fit null hypothesis model and model with 1 breakpoint
+fm0 &lt;- lm(Nile ~ 1)
+fm1 &lt;- lm(Nile ~ breakfactor(bp.nile, breaks = 1))
+plot(Nile)
+lines(ts(fitted(fm0), start = 1871), col = 3)
+lines(ts(fitted(fm1), start = 1871), col = 4)
+lines(bp.nile)
+
+## confidence interval
+ci.nile &lt;- confint(bp.nile)
+ci.nile
+lines(ci.nile)
+
+
+## UK Seatbelt data: a SARIMA(1,0,0)(1,0,0)_12 model
+## (fitted by OLS) is used and reveals (at least) two
+## breakpoints - one in 1973 associated with the oil crisis and
+## one in 1983 due to the introduction of compulsory
+## wearing of seatbelts in the UK.
+data("UKDriverDeaths")
+seatbelt &lt;- log10(UKDriverDeaths)
+seatbelt &lt;- cbind(seatbelt, lag(seatbelt, k = -1), lag(seatbelt, k = -12))
+colnames(seatbelt) &lt;- c("y", "ylag1", "ylag12")
+seatbelt &lt;- window(seatbelt, start = c(1970, 1), end = c(1984,12))
+plot(seatbelt[,"y"], ylab = expression(log[10](casualties)))
+
+## testing
+re.seat &lt;- efp(y ~ ylag1 + ylag12, data = seatbelt, type = "RE")
+plot(re.seat)
+
+## dating
+bp.seat &lt;- breakpoints(y ~ ylag1 + ylag12, data = seatbelt, h = 0.1)
+summary(bp.seat)
+lines(bp.seat, breaks = 2)
+
+## minimum BIC partition
+plot(bp.seat)
+breakpoints(bp.seat)
+## the BIC would choose 0 breakpoints although the RE and supF test
+## clearly reject the hypothesis of structural stability. Bai &amp;
+## Perron (2003) report that the BIC has problems in dynamic regressions.
+## due to the shape of the RE process of the F statistics choose two
+## breakpoints and fit corresponding models
+bp.seat2 &lt;- breakpoints(bp.seat, breaks = 2)
+fm0 &lt;- lm(y ~ ylag1 + ylag12, data = seatbelt)
+fm1 &lt;- lm(y ~ breakfactor(bp.seat2)/(ylag1 + ylag12) - 1, data = seatbelt)
+
+## plot
+plot(seatbelt[,"y"], ylab = expression(log[10](casualties)))
+time.seat &lt;- as.vector(time(seatbelt))
+lines(time.seat, fitted(fm0), col = 3)
+lines(time.seat, fitted(fm1), col = 4)
+lines(bp.seat2)
+
+## confidence intervals
+ci.seat2 &lt;- confint(bp.seat, breaks = 2)
+ci.seat2
+lines(ci.seat2)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>strucchange</em> version 1.5-4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

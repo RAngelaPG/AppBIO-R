@@ -1,0 +1,268 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: ROBPCA - ROBust method for Principal Components Analysis</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for PcaHubert {rrcov}"><tr><td>PcaHubert {rrcov}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> ROBPCA - ROBust method for Principal Components Analysis </h2>
+
+<h3>Description</h3>
+
+<p>The ROBPCA algorithm was proposed by Hubert et al (2005) and stays for
+'ROBust method for Principal Components Analysis'. It is resistant to 
+outliers in the data. The robust loadings are computed using 
+projection-pursuit techniques and the MCD method. Therefore ROBPCA 
+can be applied to both low and high-dimensional data sets. In low 
+dimensions, the MCD method is applied.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+PcaHubert(x, ...)
+## Default S3 method:
+PcaHubert(x, k = 0, kmax = 10, alpha = 0.75, mcd = TRUE, skew=FALSE,
+maxdir=250, scale = FALSE, signflip = TRUE, crit.pca.distances = 0.975, trace=FALSE, ...)
+## S3 method for class 'formula'
+PcaHubert(formula, data = NULL, subset, na.action, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>a formula with no response variable, referring only to
+numeric variables.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>an optional data frame (or similar: see
+<code><a href="../../stats/html/model.frame.html">model.frame</a></code>) containing the variables in the
+formula <code>formula</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>subset</code></td>
+<td>
+<p>an optional vector used to select rows (observations) of the
+data matrix <code>x</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+<p>a function which indicates what should happen
+when the data contain <code>NA</code>s.  The default is set by
+the <code>na.action</code> setting of <code><a href="../../base/html/options.html">options</a></code>, and is
+<code><a href="../../stats/html/na.fail.html">na.fail</a></code> if that is unset. The default is <code><a href="../../stats/html/na.fail.html">na.omit</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>arguments passed to or from other methods.</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>a numeric matrix (or data frame) which provides
+the data for the principal components analysis.</p>
+</td></tr>
+<tr valign="top"><td><code>k</code></td>
+<td>
+<p>number of principal components to compute. If <code>k</code> is missing, 
+or <code>k = 0</code>, the algorithm itself will determine the number of 
+components by finding such <code>k</code> that <i>l_k/l_1 &gt;= 10.E-3</i> and 
+<i>&Sigma;_{j=1}^k l_j/&Sigma;_{j=1}^r l_j &gt;= 0.8</i>. 
+It is preferable to investigate the scree plot in order to choose the number 
+of components and then run again. Default is <code>k=0</code>. </p>
+</td></tr>
+<tr valign="top"><td><code>kmax</code></td>
+<td>
+<p>maximal number of principal components to compute.
+Default is <code>kmax=10</code>. If <code>k</code> is provided, <code>kmax</code> 
+does not need to be specified, unless <code>k</code> is larger than 10.</p>
+</td></tr>
+<tr valign="top"><td><code>alpha</code></td>
+<td>
+<p>this parameter measures the fraction of outliers the algorithm should
+resist. In MCD alpha controls the size of the subsets over which the 
+determinant is minimized, i.e. alpha*n observations are used for 
+computing the determinant. Allowed values are between 0.5 and 1 
+and the default is 0.75. </p>
+</td></tr>
+<tr valign="top"><td><code>mcd</code></td>
+<td>
+<p>Logical - when the number of variables is sufficiently small,
+the loadings are computed as the eigenvectors of the MCD covariance matrix, 
+hence the function <code><a href="../../rrcov/help/CovMcd.html">CovMcd</a>()</code> is automatically called. The number of 
+principal components is then taken as k = rank(x). Default is <code>mcd=TRUE</code>.
+If <code>mcd=FALSE</code>, the ROBPCA algorithm is always applied.</p>
+</td></tr>
+<tr valign="top"><td><code>skew</code></td>
+<td>
+<p>Logical - whether the adjusted outlyingness algorithm for skewed 
+data (Hubert et al., 2009) will be used, default is <code>skew=FALSE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>maxdir</code></td>
+<td>
+<p>maximal number of random directions to use for computing the 
+outlyingness (or the adjusted outlyingness when <code>skew=TRUE</code>) of the data points, 
+see <code><a href="../../robustbase/help/adjOutlyingness.html">adjOutlyingness</a></code> for more details.. 
+Default is <code>maxdir=250</code>. If the number <code>n</code>
+of observations is small all possible <code>n*(n-1)/2</code> pairs of observations 
+are taken to generate the directions.</p>
+</td></tr>
+<tr valign="top"><td><code>scale</code></td>
+<td>
+<p>a value indicating whether and how the variables should be scaled. 
+If <code>scale=FALSE</code> (default) or <code>scale=NULL</code> no scaling is 
+performed (a vector of 1s is returned in the scale slot). If <code>scale=TRUE</code>
+the data are scaled to have unit variance. Alternatively it can be a function 
+like <code>sd</code> or <code>mad</code> or a vector of length equal the number of columns 
+of <code>x</code>. The value is passed to the underlying function and the result 
+returned is stored in the scale slot. Default is <code>scale=FALSE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>signflip</code></td>
+<td>
+<p>a logical value indicating wheather to try to solve the sign indeterminancy of the loadings -   
+ad hoc approach setting the maximum element in a singular vector to be positive. Default is <code>signflip = TRUE</code></p>
+</td></tr>
+<tr valign="top"><td><code>crit.pca.distances</code></td>
+<td>
+<p>criterion to use for computing the cutoff 
+values for the orthogonal and score distances. Default is 0.975.</p>
+</td></tr>
+<tr valign="top"><td><code>trace</code></td>
+<td>
+<p>whether to print intermediate results. Default is <code>trace = FALSE</code></p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>PcaHubert</code>, serving as a constructor for objects of class <code><a href="../../rrcov/help/PcaHubert-class.html">PcaHubert-class</a></code> 
+is a generic function with &quot;formula&quot; and &quot;default&quot; methods. 
+The calculation is done using the ROBPCA method of Hubert et al (2005) which can 
+be described briefly as follows. For details see the relevant references.
+</p>
+<p>Let <code>n</code> denote the number of observations, and <code>p</code> the
+number of original variables in the input data matrix <code>X</code>. The
+ROBPCA algorithm finds a robust center <code>M (p x 1)</code> of the data
+and a loading matrix <code>P</code> which is <code>(p x k)</code> dimensional.
+Its columns are orthogonal and define a new coordinate system. The
+scores T, an <code>(n x k)</code> matrix, are the coordinates of the
+centered observations with respect to the loadings:
+</p>
+<p style="text-align: center;"><i>T=(X-M)P</i></p>
+<p> The ROBPCA algorithm also yields a robust covariance
+matrix (often singular) which can be computed as
+</p>
+<p style="text-align: center;"><i>S=PLP^t</i></p>
+
+<p>where <i>L</i> is the diagonal matrix with the eigenvalues <i>l_1, &hellip;, l_k</i>.
+</p>
+<p>This is done in the following three main steps:
+</p>
+<p><b>Step 1:</b> The data are preprocessed by reducing their data space to
+the subspace spanned by the <code>n</code> observations. This is done by
+singular value decomposition of the input data matrix. As a result
+the data are represented using at most <code>n-1=rank(X)</code> without
+loss of information.
+</p>
+<p><b>Step 2:</b> In this step for each data point a measure of outlyingness
+is computed. For this purpose the high-dimensional data points are
+projected on many univariate directions, each time the univariate
+MCD estimator of location and scale is computed  and the
+standardized distance to the center is measured. The largest of
+these distances (over all considered directions) is the outlyingness
+measure of the data point. The <code>h</code> data points with smallest
+outlyingness measure are used to compute the covariance matrix
+<i>&Sigma;_h</i> and to select the number <code>k</code> of principal
+components to retain. This is done by finding such <code>k</code> that
+<i>l_k/l_1 &gt;= 10.E-3</i> and <i>&Sigma;_{j=1}^k l_j/&Sigma;_{j=1}^r l_j &gt;= 0.8</i>
+Alternatively the number of principal components <code>k</code> can be
+specified by the user after inspecting the scree plot.
+</p>
+<p><b>Step 3:</b> The data points are projected on the k-dimensional subspace
+spanned by the <code>k</code> eigenvectors corresponding to the largest
+<code>k</code> eigenvalues of the matrix <i>&Sigma;_h</i>. The location and
+scatter of the projected data are computed using the
+reweighted MCD estimator and the eigenvectors of this scatter matrix
+yield the robust principal components.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An S4 object of class <code><a href="../../rrcov/help/PcaHubert-class.html">PcaHubert-class</a></code> which is a subclass of the 
+virtual class <code><a href="../../rrcov/help/PcaRobust-class.html">PcaRobust-class</a></code>. 
+</p>
+
+
+<h3>Note</h3>
+
+<p>The ROBPCA algorithm is implemented on the bases of the Matlab implementation, 
+available as part of <em>LIBRA, a Matlab Library for Robust Analysis</em> to be found at  
+www.wis.kuleuven.ac.be/stat/robust.html
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Valentin Todorov <a href="mailto:valentin.todorov@chello.at">valentin.todorov@chello.at</a> 
+</p>
+
+
+<h3>References</h3>
+
+<p>M. Hubert, P. J. Rousseeuw, K. Vanden Branden (2005), ROBPCA: a new 
+approach to robust principal components analysis, <em>Technometrics</em>, <b>47</b>, 64&ndash;79.   
+</p>
+<p>M. Hubert, P. J. Rousseeuw and T. Verdonck (2009), Robust PCA for skewed data and 
+its outlier map, <em>Computational Statistics &amp; Data Analysis</em>, <b>53</b>, 2264&ndash;2274.
+</p>
+<p>Todorov V &amp; Filzmoser P (2009), An Object Oriented Framework for Robust Multivariate Analysis. 
+<em>Journal of Statistical Software</em>, <b>32</b>(3), 1&ndash;47.
+doi: <a href="https://doi.org/10.18637/jss.v032.i03">10.18637/jss.v032.i03</a>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## PCA of the Hawkins Bradu Kass's Artificial Data
+##  using all 4 variables
+    data(hbk)
+    pca &lt;- PcaHubert(hbk)
+    pca
+
+## Compare with the classical PCA
+    prcomp(hbk)
+
+## or  
+    PcaClassic(hbk)
+    
+## If you want to print the scores too, use
+    print(pca, print.x=TRUE)
+
+## Using the formula interface
+    PcaHubert(~., data=hbk)
+
+## To plot the results:
+
+    plot(pca)                    # distance plot
+    pca2 &lt;- PcaHubert(hbk, k=2)  
+    plot(pca2)                   # PCA diagnostic plot (or outlier map)
+    
+## Use the standard plots available for prcomp and princomp
+    screeplot(pca)    
+    biplot(pca)    
+    
+## Restore the covraiance matrix     
+    py &lt;- PcaHubert(hbk)
+    cov.1 &lt;- py@loadings %*% diag(py@eigenvalues) %*% t(py@loadings)
+    cov.1    
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rrcov</em> version 1.7-7 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

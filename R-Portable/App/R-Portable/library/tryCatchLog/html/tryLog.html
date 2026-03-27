@@ -1,0 +1,134 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Try an expression with condition logging and error recovery</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for tryLog {tryCatchLog}"><tr><td>tryLog {tryCatchLog}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Try an expression with condition logging and error recovery</h2>
+
+<h3>Description</h3>
+
+<p><code>tryLog</code> is implemented by calling <code><a href="../../tryCatchLog/help/tryCatchLog.html">tryCatchLog</a></code>
+and traps any errors that occur during the evaluation of an expression without stopping the execution
+of the script (similar to <code><a href="../../base/html/try.html">try</a></code>). Errors, warnings and messages are logged.
+In contrast to <code><a href="../../tryCatchLog/help/tryCatchLog.html">tryCatchLog</a></code> it returns but does not stop in case of an error and therefore does
+not have the <code>error</code> and <code>finally</code> parameters to pass in custom handler functions.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+tryLog(
+  expr,
+  write.error.dump.file = getOption("tryCatchLog.write.error.dump.file", FALSE),
+  write.error.dump.folder = getOption("tryCatchLog.write.error.dump.folder", "."),
+  silent.warnings = getOption("tryCatchLog.silent.warnings", FALSE),
+  silent.messages = getOption("tryCatchLog.silent.messages", FALSE),
+  include.full.call.stack = getOption("tryCatchLog.include.full.call.stack", TRUE),
+  include.compact.call.stack = getOption("tryCatchLog.include.compact.call.stack", TRUE),
+  logged.conditions = getOption("tryCatchLog.logged.conditions", NULL),
+  execution.context.msg = ""
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>expr</code></td>
+<td>
+<p>R expression to be evaluated</p>
+</td></tr>
+<tr valign="top"><td><code>write.error.dump.file</code></td>
+<td>
+<p><code>TRUE</code>: Saves a dump of the workspace and the call stack named
+<code>dump_&lt;YYYYMMDD&gt;_at_&lt;HHMMSS.sss&gt;_PID_&lt;process id&gt;.rda</code>.
+This dump file name pattern shall ensure unique file names in parallel processing scenarios.</p>
+</td></tr>
+<tr valign="top"><td><code>write.error.dump.folder</code></td>
+<td>
+<p><code>path</code>: Saves the dump of the workspace in a specific folder instead of the working directory</p>
+</td></tr>
+<tr valign="top"><td><code>silent.warnings</code></td>
+<td>
+<p><code>TRUE</code>: Warnings are logged only, but not propagated to the caller.<br />
+<code>FALSE</code>: Warnings are logged and treated according to the global
+setting in <code><a href="../../base/html/options.html">getOption</a>("warn")</code>. See also <code><a href="../../base/html/warning.html">warning</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>silent.messages</code></td>
+<td>
+<p><code>TRUE</code>: Messages are logged, but not propagated to the caller.<br />
+<code>FALSE</code>: Messages are logged and propagated to the caller.</p>
+</td></tr>
+<tr valign="top"><td><code>include.full.call.stack</code></td>
+<td>
+<p>Flag of type <code><a href="../../base/html/logical.html">logical</a></code>:
+Shall the full call stack be included in the log output? Since the full
+call stack may be very long and the compact call stack has enough details
+normally the full call stack can be omitted by passing <code>FALSE</code>.
+The default value can be changed globally by setting the option <code>tryCatchLog.include.full.call.stack</code>.
+The full call stack can always be found via <code><a href="../../tryCatchLog/help/last.tryCatchLog.result.html">last.tryCatchLog.result</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>include.compact.call.stack</code></td>
+<td>
+<p>Flag of type <code><a href="../../base/html/logical.html">logical</a></code>:
+Shall the compact call stack (including only calls with source code references)
+be included in the log output? Note: If you ommit both the full and compact
+call stacks the message text will be output without call stacks.
+The default value can be changed globally by setting the option <code>tryCatchLog.include.compact.call.stack</code>.
+The compact call stack can always be found via <code><a href="../../tryCatchLog/help/last.tryCatchLog.result.html">last.tryCatchLog.result</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>logged.conditions</code></td>
+<td>
+<p><code>NULL</code>: Conditions are not logged.<br />
+<code>vector of strings</code>: Only conditions whose class name is contained in this vector are logged.<br />
+<code>NA</code>: All conditions are logged.</p>
+</td></tr>
+<tr valign="top"><td><code>execution.context.msg</code></td>
+<td>
+<p>a text identifier (eg. the PID or a variable value) that will be added to msg.text
+for catched conditions. This makes it easier to identify the runtime state that caused
+a condition esp. in parallel execution scenarios.
+The value must be of length 1 and will be coerced to character.
+Expressions are not allowed.
+The added output has the form: <code>{execution.context.msg: your_value}</code></p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>tryLog</code> is implemented using <code><a href="../../tryCatchLog/help/tryCatchLog.html">tryCatchLog</a></code>. If you need need more flexibility for
+catching and handling errors use the latter.
+Error messages are never printed to the <code><a href="../../base/html/showConnections.html">stderr</a></code> connection but logged only.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The value of the expression (if <code>expr</code> is evaluated without an error.<br />
+In case of an error: An invisible object of the class <code>"try-error"</code> containing the error message
+and error condition as the <code>"condition"</code> attribute.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../tryCatchLog/help/tryCatchLog.html">tryCatchLog</a></code>,
+<code><a href="../../tryCatchLog/help/last.tryCatchLog.result.html">last.tryCatchLog.result</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+tryLog(log(-1))   # logs a warning (logarithm of a negative number is not possible)
+tryLog(log("a"))  # logs an error
+tryCatchLog(log(-1), execution.context.msg = Sys.getpid())
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>tryCatchLog</em> version 1.3.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

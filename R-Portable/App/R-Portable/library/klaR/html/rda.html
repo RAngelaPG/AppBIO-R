@@ -1,0 +1,339 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Regularized Discriminant Analysis (RDA)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for rda {klaR}"><tr><td>rda {klaR}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Regularized Discriminant Analysis (RDA)</h2>
+
+<h3>Description</h3>
+
+<p>Builds a classification rule using regularized group covariance 
+matrices that are supposed to be more robust against 
+multicollinearity in the data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+rda(x, ...)
+
+## Default S3 method:
+rda(x, grouping = NULL, prior = NULL, gamma = NA, 
+    lambda = NA, regularization = c(gamma = gamma, lambda = lambda), 
+    crossval = TRUE, fold = 10, train.fraction = 0.5, 
+    estimate.error = TRUE, output = FALSE, startsimplex = NULL, 
+    max.iter = 100, trafo = TRUE, simAnn = FALSE, schedule = 2, 
+    T.start = 0.1, halflife = 50, zero.temp = 0.01, alpha = 2, 
+    K = 100, ...)
+## S3 method for class 'formula'
+rda(formula, data, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>Matrix or data frame containing the explanatory variables 
+(required, if <code>formula</code> is not given).</p>
+</td></tr>
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>Formula of the form &lsquo;<code>groups ~ x1 + x2 + ...</code>&rsquo;.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A data frame (or matrix) containing the explanatory 
+variables.</p>
+</td></tr>
+<tr valign="top"><td><code>grouping</code></td>
+<td>
+<p>(Optional) a vector specifying the class for 
+each observation; if not specified, the first column of 
+&lsquo;<code>data</code>&rsquo; is taken.</p>
+</td></tr>
+<tr valign="top"><td><code>prior</code></td>
+<td>
+<p>(Optional) prior probabilities for the classes. 
+Default: proportional to training sample sizes. 
+&ldquo;<code>prior=1</code>&rdquo; indicates equally likely classes.</p>
+</td></tr>
+<tr valign="top"><td><code>gamma, lambda, regularization</code></td>
+<td>
+
+<p>One or both of the rda-parameters may be fixed manually. 
+Unspecified parameters are determined by minimizing the 
+estimated error rate (see below).</p>
+</td></tr>
+<tr valign="top"><td><code>crossval</code></td>
+<td>
+<p>Logical. If <code>TRUE</code>, in the optimization 
+step the error rate is estimated by Cross-Validation, 
+otherwise by drawing several training- and test-samples.</p>
+</td></tr>
+<tr valign="top"><td><code>fold</code></td>
+<td>
+<p>The number of Cross-Validation- or Bootstrap-samples
+to be drawn.</p>
+</td></tr>
+<tr valign="top"><td><code>train.fraction</code></td>
+<td>
+<p>In case of Bootstrapping: the fraction of 
+the data to be used for training in each Bootstrap-sample; 
+the remainder is used to estimate the misclassification rate.</p>
+</td></tr>
+<tr valign="top"><td><code>estimate.error</code></td>
+<td>
+<p>Logical. If <code>TRUE</code>, the apparent 
+error rate for the final parameter set is estimated.</p>
+</td></tr>
+<tr valign="top"><td><code>output</code></td>
+<td>
+<p>Logical flag to indicate whether text output 
+during computation is desired.</p>
+</td></tr>
+<tr valign="top"><td><code>startsimplex</code></td>
+<td>
+<p>(Optional) a starting simplex for the 
+Nelder-Mead-minimization.</p>
+</td></tr>
+<tr valign="top"><td><code>max.iter</code></td>
+<td>
+<p>Maximum number of iterations for Nelder-Mead.</p>
+</td></tr>
+<tr valign="top"><td><code>trafo</code></td>
+<td>
+<p>Logical; indicates whether minimization is carrried 
+out using transformed parameters.</p>
+</td></tr>
+<tr valign="top"><td><code>simAnn</code></td>
+<td>
+<p>Logical; indicates whether Simulated Annealing 
+shall be used.</p>
+</td></tr>
+<tr valign="top"><td><code>schedule</code></td>
+<td>
+<p>Annealing schedule 1 or 2 (exponential or polynomial).</p>
+</td></tr>
+<tr valign="top"><td><code>T.start</code></td>
+<td>
+<p>Starting temperature for Simulated Annealing.</p>
+</td></tr>
+<tr valign="top"><td><code>halflife</code></td>
+<td>
+<p>Number of iterations until temperature is reduced to a half  (schedule 1).</p>
+</td></tr>
+<tr valign="top"><td><code>zero.temp</code></td>
+<td>
+<p>Temperature at which it is set to zero  (schedule 1).</p>
+</td></tr> 
+<tr valign="top"><td><code>alpha</code></td>
+<td>
+<p>Power of temperature reduction (linear, quadratic, cubic,...)  (schedule 2).</p>
+</td></tr>
+<tr valign="top"><td><code>K</code></td>
+<td>
+<p>Number of iterations until temperature = 0  (schedule 2).</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>currently unused</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>J.H. Friedman (see references below) suggested a method to fix 
+almost singular covariance matrices in discriminant analysis. 
+Basically, individual covariances as in QDA are used, but 
+depending on two parameters (<i>gamma</i> and 
+<i>lambda</i>), these can be shifted towards a 
+diagonal matrix and/or the pooled covariance 
+matrix. For (<i>gamma=0</i>, <i>lambda=0</i>) it equals QDA, 
+for (<i>gamma=0</i>, <i>lambda=1</i>) it equals LDA.
+</p>
+<p>You may fix these parameters at certain values or leave it to 
+the function to try to find &ldquo;optimal&rdquo; values. If one 
+parameter is given, the other one is determined using the 
+R-function &lsquo;<code><a href="../../stats/html/optimize.html">optimize</a></code>&rsquo;. If no parameter is 
+given, both are determined numerically by a 
+Nelder-Mead-(Simplex-)algorithm with the option of using 
+Simulated Annealing.
+The goal function to be minimized is the (estimated) 
+misclassification rate; the misclassification rate is estimated 
+either by Cross-Validation or by repeatedly dividing the data 
+into training- and test-sets (Boostrapping).
+</p>
+<p><em>Warning</em>: If these sets are small, optimization is expected 
+to produce almost random results. We recommend to adjust the 
+parameters manually in such a case.
+In all other cases it is recommended to run the optimization 
+several times in order to see whether stable results are gained.
+</p>
+<p>Since the Nelder-Mead-algorithm is actually intended for 
+<em>continuous</em> functions while the observed error rate 
+by its nature is <em>discrete</em>, a greater number of 
+Boostrap-samples might improve the optimization by increasing 
+the smoothness of the response surface (and, of course, by 
+reducing variance and bias). 
+If a set of parameters leads to singular covariance 
+matrices, a penalty term is added to the misclassification rate 
+which will hopefully help to maneuver back out of singularity
+(so do not worry about error rates greater than one during 
+optimization).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of class <code>rda</code> containing the following 
+components:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>The (matched) function call.</p>
+</td></tr>
+<tr valign="top"><td><code>regularization</code></td>
+<td>
+<p>vector containing the two regularization 
+parameters (gamma, lambda)</p>
+</td></tr>
+<tr valign="top"><td><code>classes</code></td>
+<td>
+<p>the names of the classes</p>
+</td></tr>
+<tr valign="top"><td><code>prior</code></td>
+<td>
+<p>the prior probabilities for the classes</p>
+</td></tr>
+<tr valign="top"><td><code>error.rate</code></td>
+<td>
+<p>apparent error rate (if computation 
+was not suppressed), and, if any optimization took place, the
+final (cross-validated or bootstrapped) error rate estimate as 
+well.</p>
+</td></tr>
+<tr valign="top"><td><code>means</code></td>
+<td>
+<p>Group means.</p>
+</td></tr>
+<tr valign="top"><td><code>covariances</code></td>
+<td>
+<p>Array of group covariances.</p>
+</td></tr>
+<tr valign="top"><td><code>covpooled</code></td>
+<td>
+<p>Pooled covariance.</p>
+</td></tr>
+<tr valign="top"><td><code>converged</code></td>
+<td>
+<p>(Logical) indicator of convergence (only for 
+Nelder-Mead).</p>
+</td></tr>
+<tr valign="top"><td><code>iter</code></td>
+<td>
+<p>Number of iterations actually performed (only for 
+Nelder-Mead).</p>
+</td></tr>
+</table>
+
+
+<h3>More details</h3>
+
+<p>The explicit defintion of <i>gamma</i>,
+<i>lambda</i> and the resulting covariance estimates
+is as follows:
+</p>
+<p>The pooled covariance estimate <i>SigmaHat</i> is 
+given as well as the individual covariance estimates 
+<i>SigmaHat_k</i> for each group.
+</p>
+<p>First, using <i>lambda</i>, a convex combination of 
+these two is computed:
+</p>
+<p style="text-align: center;"><i>
+SigmaHat_k(lambda) := (1-lambda)*SigmaHat_k + lambda*SigmaHat.</i></p>
+
+<p>Then, another convex combination is constructed using the 
+above estimate and a (scaled) identity matrix:
+</p>
+<p style="text-align: center;"><i>
+SigmaHat_k(lambda,gamma) := (1-gamma) SigmaHat_k(lambda) 
++ gamma 1/d trace(SigmaHat_k(lambda)) I.</i></p>
+
+<p>The factor 
+<i>1/d trace(SigmaHat_k(lambda))</i>
+in front of the identity matrix I is the mean of the diagonal 
+elements of 
+<i>SigmaHat_k(lambda)</i>, so it is 
+the mean variance of all <i>d</i> variables assuming the group 
+covariance <i>SigmaHat_k(lambda)</i>.
+</p>
+<p>For the four extremes of (<i>gamma</i>,<i>lambda</i>) 
+the covariance structure reduces to special cases:
+</p>
+
+<ul>
+<li><p> (<i>gamma=0</i>, <i>lambda=0</i>): 
+QDA - individual covariance for each group.
+</p>
+</li>
+<li><p> (<i>gamma=0</i>, <i>lambda=1</i>): 
+LDA - a common covariance matrix.
+</p>
+</li>
+<li><p> (<i>gamma=1</i>, <i>lambda=0</i>): 
+Conditional independent variables - similar to Naive Bayes,
+but variable variances within group (main diagonal elements) 
+are equal.
+</p>
+</li>
+<li><p> (<i>gamma=1</i>, <i>lambda=1</i>):
+Classification using euclidean distance - as in previous case, 
+but variances are the same for all groups. Objects are assigned 
+to group with nearest mean.
+</p>
+</li></ul>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Christian Röver, <a href="mailto:roever@statistik.tu-dortmund.de">roever@statistik.tu-dortmund.de</a></p>
+
+
+<h3>References</h3>
+
+<p>Friedman, J.H. (1989): Regularized Discriminant Analysis.
+In: <em>Journal of the American Statistical Association</em> 84, 
+165-175.
+</p>
+<p>Press, W.H., Flannery, B.P., Teukolsky, S.A., Vetterling, W.T. (1992): 
+<em>Numerical Recipes in C</em>.  Cambridge: Cambridge University Press.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../klaR/help/predict.rda.html">predict.rda</a></code>,
+<code><a href="../../MASS/help/lda.html">lda</a></code>, <code><a href="../../MASS/help/qda.html">qda</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(iris)
+x &lt;- rda(Species ~ ., data = iris, gamma = 0.05, lambda = 0.2)
+predict(x, iris)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>klaR</em> version 1.7-4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

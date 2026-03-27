@@ -1,0 +1,545 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Steady-state solver for ordinary differential equations (ODE)...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for stodes {rootSolve}"><tr><td>stodes {rootSolve}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Steady-state solver for ordinary differential equations (ODE) with a sparse
+jacobian.
+</h2>
+
+<h3>Description</h3>
+
+<p>Estimates the steady-state condition for a system of
+ordinary differential equations (ODE) in the form:
+</p>
+<p style="text-align: center;"><i>dy/dt = f(t,y)</i></p>
+
+<p>and where the jacobian matrix df/dy has an arbitrary sparse structure.
+</p>
+<p>Uses a newton-raphson method, implemented in Fortran.
+</p>
+<p>The system of ODE's is written as an <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> function or defined in
+compiled code that has been dynamically loaded.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+stodes(y, time = 0, func, parms = NULL, rtol = 1e-6, atol = 1e-8,
+       ctol = 1e-8, sparsetype = "sparseint", verbose = FALSE,
+       nnz = NULL, inz = NULL, lrw = NULL, ngp = NULL, 
+       positive = FALSE, maxiter = 100, ynames = TRUE, 
+       dllname = NULL, initfunc = dllname, initpar = parms,
+       rpar = NULL, ipar = NULL, nout = 0, outnames = NULL, 
+       forcings = NULL, initforc = NULL, fcontrol = NULL,
+       spmethod = "yale", control = NULL, times = time, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>y </code></td>
+<td>
+<p>the initial guess of (state) values for the ode system, a vector.
+If <code>y</code> has a name attribute, the names will be used to label the
+output matrix.
+</p>
+</td></tr>
+<tr valign="top"><td><code>time, times </code></td>
+<td>
+<p>time for which steady-state is wanted; the default is
+<code>times</code>=0.
+(note- since version 1.7, 'times' has been added as an alias to 'time').
+</p>
+</td></tr>
+<tr valign="top"><td><code>func </code></td>
+<td>
+<p>either a user-supplied function that computes the values of the
+derivatives in the ode system (the <em>model definition</em>) at time
+<code>time</code>, or a character string giving the name of a
+compiled function in a dynamically loaded shared library.
+</p>
+<p>If <code>func</code>  is a user-supplied function, it must be called as:
+<code>yprime = func(t, y, parms)</code>.  <code>t</code> is the time point
+at which the steady-state is wanted, <code>y</code> is the current estimate of
+the variables in the ode system.  If the initial values <code>y</code> has a
+names attribute, the names will be available inside <code>func</code>.
+<code>parms</code> is a vector of parameters (which may have a names attribute).
+</p>
+<p>The return value of <code>func</code> should be a list, whose first element is a
+vector containing the derivatives of <code>y</code> with respect to
+<code>time</code>, and whose next elements (possibly with a
+<code><a href="../../base/html/names.html">names</a></code> attribute) are global values that are required as
+output.
+</p>
+<p>The derivatives
+should be specified in the same order as the state variables <code>y</code>.
+</p>
+<p>If <code>func</code> is a string, then <code>dllname</code> must give the name
+of the shared library (without extension) which must be loaded
+before <code>stodes()</code> is called.  see Details for more information.
+</p>
+</td></tr>
+<tr valign="top"><td><code>parms </code></td>
+<td>
+<p>other parameters passed to <code>func</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>rtol </code></td>
+<td>
+<p>relative error tolerance, either a scalar or a vector, one
+value for each y.
+</p>
+</td></tr>
+<tr valign="top"><td><code>atol </code></td>
+<td>
+<p>absolute error tolerance, either a scalar or a vector, one
+value for each y.
+</p>
+</td></tr>
+<tr valign="top"><td><code>ctol </code></td>
+<td>
+<p>if between two iterations, the maximal change in y is less
+than this amount, steady-state is assumed to be reached.
+</p>
+</td></tr>
+<tr valign="top"><td><code>sparsetype </code></td>
+<td>
+<p>the sparsity structure of the Jacobian, one of
+&quot;sparseint&quot;, &quot;sparseusr&quot;, &quot;sparsejan&quot;, &quot;sparsereturn&quot;, ..., 
+The sparsity can be estimated internally by stodes (first and last option)
+or given by the user (other two). See details.
+Note: setting <code>sparsetype</code> equal to &quot;sparsereturn&quot; will not solve for 
+steady-state but solely return the <code>ian</code> and <code>jan</code> vectors.
+</p>
+</td></tr>
+<tr valign="top"><td><code>verbose </code></td>
+<td>
+<p>if TRUE: full output to the screen, e.g. will output the
+steady-state settings.
+</p>
+</td></tr>
+<tr valign="top"><td><code>nnz </code></td>
+<td>
+<p>the number of nonzero elements in the sparse Jacobian (if
+this is unknown, use an estimate); If NULL, a guess will be made, and
+if not sufficient, <code>stodes</code> will return with a message indicating
+the size actually required.
+</p>
+<p>If a solution is found, the minimal value of <code>nnz</code> actually required
+is returned by the solver (1st element of attribute <code>dims</code>).
+</p>
+</td></tr>
+<tr valign="top"><td><code>inz </code></td>
+<td>
+<p>if <code>sparsetype</code> equal to &quot;sparseusr&quot;, a two-columned matrix
+with the (row, column) indices to the nonzero elements in the sparse
+Jacobian. If <code>sparsetype</code> = &quot;sparsejan&quot;, a vector with the elements 
+ian followed by the elements jan as used in the stodes code. See details.
+In all other cases, ignored. 
+If <code>inz</code> is NULL, the sparsity will be determined by <code>stodes</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>lrw </code></td>
+<td>
+<p>the length of the work array of the solver; due to the sparsicity,
+this cannot be readily predicted. If <code>NULL</code>, a guess will be made, and
+if not sufficient, <code>stodes</code> will return with a message indicating
+that lrw should be increased. Therefore, some experimentation may be
+necessary to estimate the value of <code>lrw</code>. 
+</p>
+<p>If a solution is found, the minimal value of <code>lrw</code> actually required
+is returned by the solver (3rd element of attribute <code>dims</code>).
+</p>
+<p>In case of an error induced by a too small value of <code>lrw</code>, its value
+can be assessed by the <code>attributes()$dims</code> value.
+</p>
+</td></tr>
+<tr valign="top"><td><code>ngp </code></td>
+<td>
+<p>number of groups of independent state variables. Due to the
+sparsicity, this cannot be readily predicted. If NULL, a guess will be
+made, and if not sufficient, <code>stodes</code> will return with a message
+indicating the size actually required. Therefore, some experimentation
+may be necessary to estimate the value of <code>ngp</code>
+</p>
+<p>If a solution is found, the minimal value of <code>ngp</code> actually required
+is returned by the solver (2nd element of attribute <code>dims</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>positive </code></td>
+<td>
+<p>either a logical or a vector with indices of the state
+variables that have to be non-negative; if TRUE, the state variables are
+forced to be non-negative numbers.
+</p>
+</td></tr>
+<tr valign="top"><td><code>maxiter </code></td>
+<td>
+<p>maximal number of iterations during one call to the solver.
+</p>
+</td></tr>
+<tr valign="top"><td><code>ynames </code></td>
+<td>
+<p>if FALSE: names of state variables are not passed to
+function <code>func</code> ; this may speed up the simulation especially
+for multi-D models.
+</p>
+</td></tr>
+<tr valign="top"><td><code>dllname </code></td>
+<td>
+<p>a string giving the name of the shared library (without
+extension) that contains all the compiled function or subroutine
+definitions referred to in <code>func</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>initfunc </code></td>
+<td>
+<p>if not NULL, the name of the initialisation function
+(which initialises values of parameters), as provided in &lsquo;<span class="file">dllname</span>&rsquo;.
+See details.
+</p>
+</td></tr>
+<tr valign="top"><td><code>initpar </code></td>
+<td>
+<p>only when &lsquo;<span class="file">dllname</span>&rsquo; is specified and an initialisation
+function <code>initfunc</code> is in the dll: the parameters passed to the
+initialiser, to initialise the common blocks (FORTRAN) or global variables
+(C, C++).
+</p>
+</td></tr>
+<tr valign="top"><td><code>rpar </code></td>
+<td>
+<p>only when &lsquo;<span class="file">dllname</span>&rsquo; is specified: a vector with double
+precision values passed to the dll-functions whose names are specified
+by <code>func</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>ipar </code></td>
+<td>
+<p>only when &lsquo;<span class="file">dllname</span>&rsquo; is specified: a vector with integer
+values passed to the dll-functions whose names are specified by <code>func</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>nout </code></td>
+<td>
+<p>only used if &lsquo;<span class="file">dllname</span>&rsquo; is specified: the number of output
+variables calculated in the compiled function <code>func</code>, present in the
+shared library.
+</p>
+</td></tr>
+<tr valign="top"><td><code>outnames </code></td>
+<td>
+<p>only used if &lsquo;<span class="file">dllname</span>&rsquo; is specified and
+<code>nout</code> &gt; 0: the names of output variables calculated in the
+compiled function <code>func</code>, present in the shared library.
+</p>
+</td></tr>
+<tr valign="top"><td><code>spmethod </code></td>
+<td>
+<p>the sparse method to be used, one of <code>"yale", "ilut",
+    "ilutp"</code>. The default uses the yale sparse matrix solver; the other 
+use preconditioned GMRES (generalised minimum residual method)
+solvers from FORTRAN package sparsekit. ilut stands for incomplete LU 
+factorisation with trheshold (or tolerances, droptol); the &quot;p&quot; iin ilutp stands for pivoting.
+</p>
+</td></tr>
+<tr valign="top"><td><code>control </code></td>
+<td>
+<p>only used if <code>spmethod</code> not equal to <code>"yale"</code>,
+a list with the control options of the preconditioned solvers. The 
+default is <code>list( droptol = 1e-3, permtol = 1e-3, fillin = 10, 
+    lenplufac = 2)</code>.  
+droptol is the tolerance in ilut, ilutp to decide when to drop a value.
+permtol is used in ilutp, to decide whether or not to permute variables.
+See Saad 1994, the manual of sparskit and Saad 2003, chapter 10 for details.
+</p>
+</td></tr>
+<tr valign="top"><td><code>forcings </code></td>
+<td>
+<p>only used if &lsquo;<span class="file">dllname</span>&rsquo; is specified: a vector with the 
+forcing function values, or a list with the forcing function data sets, 
+each present as a two-columned matrix, with (time,value); interpolation 
+outside the interval [min(<code>times</code>), max(<code>times</code>)] is done by 
+taking the value at the closest data extreme.
+</p>
+<p>This feature is here for compatibility with models defined in compiled code
+from package deSolve; see deSolve's package vignette <code>"compiledCode"</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>initforc </code></td>
+<td>
+<p>if not <code>NULL</code>, the name of the forcing function
+initialisation function, as provided in
+&lsquo;<span class="file">dllname</span>&rsquo;. It MUST be present if <code>forcings</code> has been given a
+value.
+See deSolve's package vignette <code>"compiledCode"</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>fcontrol </code></td>
+<td>
+<p>A list of control parameters for the forcing functions.
+See deSolve's package vignette <code>"compiledCode"</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>... </code></td>
+<td>
+<p>additional arguments passed to <code>func</code> allowing this to be
+a generic function.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The work is done by a Fortran 77 routine that implements the
+Newton-Raphson method.
+</p>
+<p><code>stodes</code> is to be used for problems, where the Jacobian has a sparse
+structure.
+</p>
+<p>There are several choices for the sparsity specification, selected by
+argument <code>sparsetype</code>.
+</p>
+
+<ul>
+<li> <p><code>sparsetype</code> = <code>"sparseint"</code>.  The sparsity is estimated
+by the solver, based on numerical differences.
+In this case, it is advisable to provide an estimate of the number
+of non-zero elements in the Jacobian (<code>nnz</code>).
+This value can be approximate; upon return the number of nonzero
+elements actually required will be known (1st element of attribute
+<code>dims</code>).
+In this case, <code>inz</code> need not be specified. 
+</p>
+</li>
+<li> <p><code>sparsetype</code> = <code>"sparseusr"</code>. The sparsity is determined by
+the user.
+In this case, <code>inz</code> should be a <code>matrix</code>, containing indices 
+(row, column) to the  nonzero elements in the Jacobian matrix.
+The number of nonzeros <code>nnz</code> will be set equal to the number of rows
+in <code>inz</code>.
+</p>
+</li>
+<li> <p><code>sparsetype</code> = <code>"sparsejan"</code>. The sparsity is also determined by
+the user.
+In this case, <code>inz</code> should be a <code>vector</code>, containting the <code>ian</code> and 
+<code>jan</code> elements of the sparse storage format, as used in the sparse solver.
+Elements of <code>ian</code> should be the first <code>n+1</code> elements of this vector, and 
+contain the starting locations in <code>jan</code> of columns 1.. n. 
+<code>jan</code> contains the row indices of the nonzero locations of           
+the jacobian, reading in columnwise order.
+The number of nonzeros <code>nnz</code> will be set equal to the length of <code>inz</code> - (n+1).
+</p>
+</li>
+<li> <p><code>sparsetype</code> = <code>"1D"</code>, <code>"2D"</code>, <code>"3D"</code>. 
+The sparsity is estimated by the solver, based on numerical differences.
+Assumes finite differences in a 1D, 2D or 3D regular grid - used by 
+functions <code>ode.1D</code>, <code>ode.2D</code>, <code>ode.3D</code>.
+Similar are <code>"2Dmap"</code>, and <code>"3Dmap"</code>, which also include a 
+mapping variable (passed in nnz). 
+</p>
+</li></ul>
+
+<p>The Jacobian itself is always generated by the solver (i.e.
+there is no provision to provide an analytic Jacobian).
+</p>
+<p>This is done by perturbing simulataneously a combination of state variables
+that do not affect each other.
+</p>
+<p>This significantly reduces computing time. The number of groups with
+independent state variables can be given by <code>ngp</code>.
+</p>
+<p>The input parameters <code>rtol</code>, <code>atol</code> and <code>ctol</code> determine
+the <b>error control</b> performed by the solver. See help for <code>stode</code>
+for details.
+</p>
+<p><b>Models</b> may be defined in compiled C or Fortran code, as well as in
+<span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>. See package vignette for details on how to write models in compiled code.
+</p>
+<p>When the <code>spmethod</code> equals <code>ilut</code> or <code>ilutp</code>, a number of parameters
+can be specified in argument <code>control</code>. They are:
+</p>
+<p>fillin, the fill-in parameter. Each row of L and each row
+of U will have a maximum of lfil elements (excluding the 
+diagonal element). lfil must be &gt;= 0.
+</p>
+<p>droptol, sets the threshold for dropping small terms in the
+factorization. 
+</p>
+<p>When <code>ilutp</code> is chosen the following arguments can also be specified:           
+</p>
+<p>permtol = tolerance ratio used to  determne whether or not to permute
+two columns.  At step i columns i and j are permuted when 
+abs(a(i,j))*permtol .gt. abs(a(i,i))
+[0 &ndash;&gt; never permute; good values 0.1 to 0.01]
+</p>
+<p>lenplufac   = sets the working array - increase its value if a warning.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list containing 
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>y </code></td>
+<td>
+<p>a vector with the state variable values from the last iteration
+during estimation of steady-state condition of the system of equations.
+If <code>y</code> has a names attribute, it will be used to label the output
+values.
+</p>
+</td></tr>
+<tr valign="top"><td><code>... </code></td>
+<td>
+<p> the number of &quot;global&quot; values returned.
+</p>
+</td></tr>
+</table>
+<p>The output will have the attribute <code>steady</code>, which returns <code>TRUE</code>,
+if steady-state has been reached and the attribute <code>precis</code> with an
+estimate of the precision attained during each iteration, the mean absolute
+rate of change (sum(abs(dy))/n).
+</p>
+<p>In case the argument <code>sparsetype</code> is set to &quot;sparsereturn&quot;, 
+then two extra attributes will be returned, i.e. <code>ian</code> and <code>jan</code>.
+These can then be used to speed up subsequent calculations - see last example.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Karline Soetaert &lt;karline.soetaert@nioz.nl&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>For a description of the Newton-Raphson method, e.g.
+</p>
+<p>Press, WH, Teukolsky, SA, Vetterling, WT, Flannery, BP, 1996.
+Numerical Recipes in FORTRAN. The Art of Scientific computing. 2nd edition.
+Cambridge University Press.
+</p>
+<p>When spmethod = &quot;yale&quot; then the algorithm uses linear algebra routines from 
+the Yale sparse matrix package:
+</p>
+<p>Eisenstat, S.C., Gursky, M.C., Schultz, M.H., Sherman, A.H., 1982.
+Yale Sparse Matrix Package.
+i. The symmetric codes. Int. J. Num. meth. Eng. 18, 1145-1151.
+</p>
+<p>else the functions ilut and ilutp from sparsekit package are used:
+</p>
+<p>Yousef Saad, 1994. SPARSKIT: a basic tool kit for
+sparse matrix computations. VERSION 2
+</p>
+<p>Yousef Saad, 2003. Iterative methods for Sparse Linear Systems. Society for
+Industrial and Applied Mathematics.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../rootSolve/help/steady.html">steady</a></code>, for a general interface to most of the steady-state
+solvers
+</p>
+<p><code><a href="../../rootSolve/help/steady.band.html">steady.band</a></code>, to find the steady-state of ODE models with a
+banded Jacobian
+</p>
+<p><code><a href="../../rootSolve/help/steady.1D.html">steady.1D</a></code>, <code><a href="../../rootSolve/help/steady.2D.html">steady.2D</a></code>,
+<code><a href="../../rootSolve/help/steady.3D.html">steady.3D</a></code>, steady-state solvers for 1-D, 2-D and 3-D
+partial differential equations.
+</p>
+<p><code><a href="../../rootSolve/help/stode.html">stode</a></code>, iterative steady-state solver for ODEs with full
+or banded Jacobian.
+</p>
+<p><code><a href="../../rootSolve/help/runsteady.html">runsteady</a></code>, steady-state solver by dynamically running to
+steady-state
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## =======================================================================
+## 1000 simultaneous equations
+## =======================================================================
+
+model &lt;- function (time, OC, parms, decay, ing)
+{
+ # model describing C in a sediment,
+ # Upper boundary = imposed flux, lower boundary = zero-gradient
+ Flux  &lt;- v * c(OC[1] ,OC) +              # advection
+          -Kz*diff(c(OC[1],OC,OC[N]))/dx  # diffusion;
+ Flux[1]&lt;- flux     # imposed flux
+
+ # Rate of change= Flux gradient and first-order consumption
+ dOC   &lt;- -diff(Flux)/dx - decay*OC
+
+ # Fraction of OC in first 5 layers is translocated to mean depth
+ # (layer N/2)
+ dOC[1:5]  &lt;- dOC[1:5] - ing*OC[1:5]
+ dOC[N/2]  &lt;- dOC[N/2] + ing*sum(OC[1:5])
+ list(dOC)
+}
+
+v    &lt;- 0.1    # cm/yr
+flux &lt;- 10
+dx   &lt;- 0.01
+N    &lt;- 1000
+dist &lt;- seq(dx/2, by = dx, len = N)
+Kz   &lt;- 1  #bioturbation (diffusion), cm2/yr
+print(system.time(
+  ss   &lt;- stodes(runif(N), func = model, parms = NULL,
+               positive = TRUE, decay = 5, ing = 20, verbose = TRUE)
+))
+plot(ss$y[1:N], dist, ylim = rev(range(dist)), type = "l", lwd = 2,
+     xlab = "Nonlocal exchange", ylab = "sediment depth",
+     main = "stodes, sparse jacobian")
+
+# the size of lrw is in the attributes()$dims vector.     
+attributes(ss)     
+
+## =======================================================================
+## deriving sparsity structure and speeding up calculations
+## =======================================================================
+
+sparse &lt;- stodes(runif(N), func = model, parms = NULL,
+                 sparsetype = "sparsereturn", decay = 5, ing = 20)
+
+ian &lt;- attributes(sparse)$ian
+jan &lt;- attributes(sparse)$jan
+nnz &lt;- length(jan)
+inz &lt;- c(ian, jan)
+
+print(system.time(
+s2   &lt;- stodes(runif(N), func = model, parms = NULL, positive = TRUE,
+               sparsetype = "sparsejan", inz = inz, decay = 5, ing = 20)
+))
+
+# Can also be used with steady.1D, by setting jactype = "sparsejan".
+# The advantage is this allows easy plotting...
+
+print(system.time(
+s2b   &lt;- steady.1D(runif(N), func = model, parms = NULL, method = "stodes", 
+                   nspec = 1, jactype = "sparsejan", inz = inz, 
+               decay = 5, ing = 20, verbose = FALSE)
+))
+
+plot(s2b, grid = dist, xyswap = TRUE, type = "l", lwd = 2,
+     xlab = "Nonlocal exchange", ylab = "sediment depth",
+     main = "steady 1-D, sparse jacobian imposed")
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rootSolve</em> version 1.8.2.4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

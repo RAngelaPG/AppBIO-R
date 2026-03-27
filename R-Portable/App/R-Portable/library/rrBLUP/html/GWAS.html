@@ -1,0 +1,147 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Genome-wide association analysis</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for GWAS {rrBLUP}"><tr><td>GWAS {rrBLUP}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Genome-wide association analysis
+</h2>
+
+<h3>Description</h3>
+
+<p>Performs genome-wide association analysis based on the mixed model (Yu et al. 2006):
+</p>
+<p style="text-align: center;"><i>y = X &beta; + Z g + S &tau; + \varepsilon</i></p>
+
+<p>where <i>&beta;</i> is a vector of fixed effects that can model both environmental factors and population structure.  
+The variable <i>g</i> models the genetic background of each line as a random effect with <i>Var[g] = K &sigma;^2</i>.  
+The variable <i>&tau;</i> models the additive SNP effect as a fixed effect.  The residual variance is <i>Var[\varepsilon] = I &sigma;_e^2</i>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+GWAS(pheno, geno, fixed=NULL, K=NULL, n.PC=0,
+     min.MAF=0.05, n.core=1, P3D=TRUE, plot=TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>pheno</code></td>
+<td>
+
+<p>Data frame where the first column is the line name (gid). The remaining columns can be either a phenotype or the levels of a fixed effect.  Any column not designated as a fixed effect is assumed to be a phenotype.
+</p>
+</td></tr>
+<tr valign="top"><td><code>geno</code></td>
+<td>
+
+<p>Data frame with the marker names in the first column.  The second and third columns contain the chromosome and map position (either bp or cM), respectively, which are used only when plot=TRUE to make Manhattan plots.  If the markers are unmapped, just use a placeholder for those two columns.  Columns 4 and higher contain the marker scores for each line, coded as {-1,0,1} = {aa,Aa,AA}.  Fractional (imputed) and missing (NA) values are allowed.  The column names must match the line names in the &quot;pheno&quot; data frame.
+</p>
+</td></tr>
+<tr valign="top"><td><code>fixed</code></td>
+<td>
+
+<p>An array of strings containing the names of the columns that should be included as (categorical) fixed effects in the mixed model.
+</p>
+</td></tr>
+<tr valign="top"><td><code>K</code></td>
+<td>
+
+<p>Kinship matrix for the covariance between lines due to a polygenic effect.  If not passed, it is calculated from the markers using <code><a href="../../rrBLUP/help/A.mat.html">A.mat</a></code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>n.PC</code></td>
+<td>
+
+<p>Number of principal components to include as fixed effects.  Default is 0 (equals K model).
+</p>
+</td></tr>
+<tr valign="top"><td><code>min.MAF</code></td>
+<td>
+
+<p>Specifies the minimum minor allele frequency (MAF).  If a marker has a MAF less than min.MAF, it is assigned a zero score.  
+</p>
+</td></tr>
+<tr valign="top"><td><code>n.core</code></td>
+<td>
+
+<p>Setting n.core &gt; 1 will enable parallel execution on a machine with multiple cores (use only at UNIX command line).  
+</p>
+</td></tr>
+<tr valign="top"><td><code>P3D</code></td>
+<td>
+
+<p>When P3D=TRUE, variance components are estimated by REML only once, without any markers in the model.  When P3D=FALSE, variance components are estimated by REML for each marker separately. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>plot</code></td>
+<td>
+
+<p>When plot=TRUE, qq and Manhattan plots are generated.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>For unbalanced designs where phenotypes come from different environments, the environment mean can be modeled using the fixed option (e.g., fixed=&quot;env&quot; if the column in the pheno data.frame is called &quot;env&quot;).  When principal components are included (P+K model), the loadings are determined from an eigenvalue decomposition of the K matrix.
+</p>
+<p>The terminology &quot;P3D&quot; (population parameters previously determined) was introduced by Zhang et al. (2010).  When P3D=FALSE, this function is equivalent to EMMA with REML (Kang et al. 2008).  When P3D=TRUE, it is equivalent to EMMAX (Kang et al. 2010).  The P3D=TRUE option is faster but can underestimate significance compared to P3D=FALSE.
+</p>
+<p>The dashed line in the Manhattan plots corresponds to an FDR rate of 0.05 and is calculated using the qvalue package (Storey and Tibshirani 2003).  The p-value corresponding to a q-value of 0.05 is determined by interpolation.  When there are no q-values less than 0.05, the dashed line is omitted.  
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns a data frame where the first three columns are the marker name, chromosome, and position, and subsequent columns are the marker scores <i>(-log_{10}p)</i> for the traits.
+</p>
+
+
+<h3>References</h3>
+
+<p>Kang et al. 2008. Efficient control of population structure in model organism association mapping. Genetics 178:1709-1723.
+</p>
+<p>Kang et al. 2010. Variance component model to account for sample structure in genome-wide association studies.
+Nat. Genet. 42:348-354.
+</p>
+<p>Storey and Tibshirani. 2003. Statistical significance for genome-wide studies. PNAS 100:9440-9445.
+</p>
+<p>Yu et al. 2006. A unified mixed-model method for association mapping that accounts for multiple levels of relatedness. Genetics 38:203-208. 
+</p>
+<p>Zhang et al. 2010. Mixed linear model approach adapted for genome-wide association studies. Nat. Genet. 42:355-360.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+#random population of 200 lines with 1000 markers
+M &lt;- matrix(rep(0,200*1000),1000,200)
+for (i in 1:200) {
+  M[,i] &lt;- ifelse(runif(1000)&lt;0.5,-1,1)
+}
+colnames(M) &lt;- 1:200
+geno &lt;- data.frame(marker=1:1000,chrom=rep(1,1000),pos=1:1000,M,check.names=FALSE)
+
+QTL &lt;- 100*(1:5) #pick 5 QTL
+u &lt;- rep(0,1000) #marker effects
+u[QTL] &lt;- 1
+g &lt;- as.vector(crossprod(M,u))
+h2 &lt;- 0.5
+y &lt;- g + rnorm(200,mean=0,sd=sqrt((1-h2)/h2*var(g)))
+
+pheno &lt;- data.frame(line=1:200,y=y)
+scores &lt;- GWAS(pheno,geno,plot=FALSE)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rrBLUP</em> version 4.6.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

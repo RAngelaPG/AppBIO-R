@@ -1,0 +1,219 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Compute and test arbitrary contrasts for regression objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for fit.contrast {gmodels}"><tr><td>fit.contrast {gmodels}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Compute and test arbitrary contrasts for regression objects</h2>
+
+<h3>Description</h3>
+
+<p>Compute and test arbitrary contrasts for regression objects.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+fit.contrast(model, varname, coeff, showall, conf.int, df, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>regression (lm,glm,aov,lme) object for which the contrast(s)
+will be computed.</p>
+</td></tr>
+<tr valign="top"><td><code>varname</code></td>
+<td>
+<p>variable name</p>
+</td></tr>
+<tr valign="top"><td><code>coeff</code></td>
+<td>
+<p>vector or matrix specifying contrasts (one per row).</p>
+</td></tr>
+<tr valign="top"><td><code>showall</code></td>
+<td>
+<p>return all regression coefficients. If <code>TRUE</code>, all model
+cofficients will be returned.  If <code>FALSE</code> (the default), only the
+coefficients corresponding to the specified contrast will be returned.</p>
+</td></tr>
+<tr valign="top"><td><code>conf.int</code></td>
+<td>
+<p>numeric value on (0,1) or NULL.  If a numeric value is
+specified, confidence intervals with nominal coverage probability
+<code>conf.int</code> will be computed.  If <code>NULL</code>, confidence intervals will
+not be computed.</p>
+</td></tr>
+<tr valign="top"><td><code>df</code></td>
+<td>
+<p>boolean indicating whether to return a column containing the
+degrees of freedom.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>optional arguments provided by methods.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Computes the specified contrast(s) by re-fitting the model with the
+appropriate arguments.  A contrast of the form <code>c(1,0,0,-1)</code> would
+compare the mean of the first group with the mean of the fourth group.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns a matrix containing estimated coefficients, standard errors,
+t values, two-sided p-values. If <code>df</code> is TRUE, an additional column
+containing the degrees of freedom is included.  If <code>conf.int</code> is
+specified lower and upper confidence limits are also returned.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Gregory R. Warnes <a href="mailto:greg@warnes.net">greg@warnes.net</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Venables &amp; Ripley, Section 6.2
+</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><code><a href="../../stats/help/lm.html">stats::lm()</a></code>, <code><a href="../../stats/help/contrasts.html">stats::contrasts()</a></code>, <code><a href="../../stats/help/contrast.html">stats::contr.treatment()</a></code>, <code><a href="../../stats/help/contrast.html">stats::contr.poly()</a></code>,
+</p>
+</li>
+<li><p> Computation and testing of General Linear Hypothesis: <code><a href="../../gmodels/help/glh.test.html">glh.test()</a></code>,
+</p>
+</li>
+<li><p> Computation and testing of estimable functions of model coefficients: <code><a href="../../gmodels/help/estimable.html">estimable()</a></code>, <code><a href="../../gmodels/help/make.contrasts.html">make.contrasts()</a></code>
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+
+set.seed(42)
+
+y &lt;- rnorm(100)
+x &lt;-  cut(rnorm(100, mean=y, sd=0.25),c(-4,-1.5,0,1.5,4))
+reg &lt;- lm(y ~ x)
+summary(reg)
+
+# look at the group means
+gm &lt;- sapply(split(y,x),mean)
+gm
+
+
+# mean of 1st group vs mean of 4th group
+fit.contrast(reg, x, c(    1,    0,    0,   -1) )
+# estimate should be equal to:
+gm[1] - gm[4]
+
+# mean of 1st and 2nd groups vs mean of 3rd and 4th groups
+fit.contrast(reg, x, c( -1/2, -1/2,  1/2,  1/2) )
+# estimate should be equal to:
+sum(-1/2*gm[1], -1/2*gm[2], 1/2*gm[3], 1/2*gm[4])
+
+# mean of 1st group vs mean of 2nd, 3rd and 4th groups
+fit.contrast(reg, x, c( -3/3,  1/3,  1/3,  1/3) )
+# estimate should be equal to:
+sum(-3/3*gm[1], 1/3*gm[2], 1/3*gm[3], 1/3*gm[4])
+
+# all at once
+cmat &lt;- rbind( "1 vs 4"    =c(-1, 0, 0, 1),
+               "1+2 vs 3+4"=c(-1/2,-1/2, 1/2, 1/2),
+               "1 vs 2+3+4"=c(-3/3, 1/3, 1/3, 1/3))
+fit.contrast(reg,x,cmat)
+
+#
+x2 &lt;- rnorm(100,mean=y,sd=0.5)
+reg2 &lt;- lm(y ~ x + x2 )
+fit.contrast(reg2,x,c(-1,0,0,1))
+
+#
+# Example for Analysis of Variance
+#
+
+set.seed(03215)
+Genotype &lt;- sample(c("WT","KO"), 1000, replace=TRUE)
+Time &lt;- factor(sample(1:3, 1000, replace=TRUE))
+y &lt;- rnorm(1000)
+data &lt;- data.frame(y, Genotype, Time)
+
+
+# Compute Contrasts &amp; obtain 95% confidence intervals
+
+model &lt;- aov( y ~ Genotype + Time + Genotype:Time, data=data )
+
+fit.contrast( model, "Genotype", rbind("KO vs WT"=c(-1,1) ), conf=0.95 )
+
+fit.contrast( model, "Time",
+            rbind("1 vs 2"=c(-1,1,0),
+                  "2 vs 3"=c(0,-1,1)
+                  ),
+            conf=0.95 )
+
+
+cm.G &lt;- rbind("KO vs WT"=c(-1,1) )
+cm.T &lt;- rbind("1 vs 2"=c(-1,1,0),
+              "2 vs 3"=c(0,-1,1) )
+
+# Compute contrasts and show SSQ decompositions
+
+model &lt;- aov( y ~ Genotype + Time + Genotype:Time, data=data,
+              contrasts=list(Genotype=make.contrasts(cm.G),
+                             Time=make.contrasts(cm.T) )
+            )
+
+summary(model, split=list( Genotype=list( "KO vs WT"=1 ),
+                           Time = list( "1 vs 2" = 1,
+                                        "2 vs 3" = 2 ) ) )
+
+
+# example for lme
+library(nlme)
+data(Orthodont)
+fm1 &lt;- lme(distance ~ Sex, data = Orthodont,random=~1|Subject)
+
+# Contrast for sex.  This example is equivalent to standard treatment
+# contrast.
+#
+fit.contrast(fm1, "Sex", c(-1,1), conf.int=0.95 )
+#
+# and identical results can be obtained using lme built-in 'intervals'
+#
+intervals(fm1)
+
+# Cut age into quantile groups &amp; compute some contrasts
+Orthodont$AgeGroup &lt;- gtools::quantcut(Orthodont$age)
+fm2 &lt;- lme(distance ~ Sex + AgeGroup, data = Orthodont,random=~1|Subject)
+#
+fit.contrast(fm2, "AgeGroup", rbind("Linear"=c(-2,-1,1,2),
+                                    "U-Shaped"=c(-1,1,1,-1),
+                                    "Change-Point at 11"=c(-1,-1,1,1)),
+                              conf.int=0.95)
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>gmodels</em> version 2.19.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

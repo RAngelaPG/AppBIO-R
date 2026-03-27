@@ -1,0 +1,278 @@
+---
+title: "Plotting with miamiplot"
+author: "Julie White"
+date: "Feb. 24, 2021"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{miamiplot}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+options(rmarkdown.html_vignette.check_title = FALSE)
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>", 
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+# Introduction
+This document acts as a tutorial for using the miamiplot package to create Miami
+plots for GWAS or EWAS results. Use `?FunctionName` in the R console to get the 
+complete documentation of a given function.  
+<br>
+Packages used in this vignette:
+```{r, message=FALSE}
+library(miamiplot)
+library(dplyr)
+library(ggplot2)
+requireNamespace("RColorBrewer", quietly = TRUE)
+```
+
+The `miamiplot` package includes a data.frame called `gwas_results` with 
+simulated results from GWAS of 30,000 SNPs each on 22 chromosomes.
+```{r}
+str(gwas_results)
+```
+
+# Plotting
+## Assigning values to to the upper and lower sections of the plot
+Say you wanted to plot the GWAS from study A and wanted to separate
+the plot by beta values, with the variants with positive beta values in the 
+upper plot. While we're at it, we can specify y-axis label names.
+```{r}
+ggmiami(data = gwas_results[which(gwas_results$study == "A"),], 
+        split_by = "beta", split_at = 0, p = "pval",
+        upper_ylab = "Positive beta values",
+        lower_ylab = "Negative beta values")
+```
+<br>
+It seems like most of the lower p-value SNPs in the peak on chromosome 15 have 
+positive beta values.  
+<br>
+<br>
+Say instead you wanted to plot the results from study "A" in the upper plot and
+study "B" in the lower plot.
+```{r}
+ggmiami(data = gwas_results, split_by = "study", split_at = "A", p = "pval", 
+        upper_ylab = "Study A", lower_ylab = "Study B")
+```
+
+## Changing the significance lines
+The suggestive and genome-wide significance lines can either be turned off or 
+given different p-values. In this example we'll turn off the suggestive line and
+plot the genome-wide line at a very small value: 5e-15.
+```{r}
+ggmiami(data = gwas_results, split_by = "study", split_at = "A", p = "pval", 
+        upper_ylab = "Study A",lower_ylab = "Study B", suggestive_line = NULL, 
+        genome_line = 5e-15)
+```
+
+## Changing colors
+The default chromosome colors are alternating black and grey. If you'd prefer to
+supply your own alternating colors, you can do so using color names, e.g. 
+`chr_colors = c("blue", "orange")`, hexidecimal names, e.g. 
+`chr_colors = c("#d8b365", "#5ab4ac")`, or a list of colors equal to the number 
+of chromosomes in your plot.  
+<br>
+Here, using 22 colors produced by extending the "Paired" RColorBrewer palette.
+```{r}
+mycolors <- grDevices::colorRampPalette(RColorBrewer::brewer.pal(12, 
+                                                                 "Paired"))(22)
+
+ggmiami(data = gwas_results, split_by = "study", split_at = "A", p = "pval", 
+        upper_ylab = "Study A", lower_ylab = "Study B", chr_colors = mycolors, 
+        genome_line_color = "black", suggestive_line_color = "#A9A9A9")
+```
+<br>
+<br>
+<br>
+You can also specify different colors for the top and bottom plot, provided
+that you make `chr_colors` NULL and you specify both `upper_chr_colors` and 
+`lower_chr_colors`. You can use color names or hexidecimal names, as above.
+```{r}
+my_upper_colors <- RColorBrewer::brewer.pal(4, "Paired")[1:2]
+my_lower_colors <- RColorBrewer::brewer.pal(4, "Paired")[3:4]
+
+ggmiami(data = gwas_results, split_by = "study", split_at = "A", p = "pval", 
+        upper_ylab = "Study A", lower_ylab = "Study B", chr_colors = NULL,
+        upper_chr_colors = my_upper_colors, lower_chr_colors = my_lower_colors,
+        genome_line_color = "black", suggestive_line_color = "#A9A9A9")
+```
+
+## Adding labels
+To simply label the top 5 hits on each plot, all you need to do is supply the 
+name of the column from which we should draw the lables. Here, we'll label the 
+top 5 from each plot section with the rsid.
+```{r}
+ggmiami(data = gwas_results, split_by = "study", split_at = "A", p = "pval", 
+        upper_ylab = "Study A", lower_ylab = "Study B", 
+        hits_label_col = "rsid")
+```
+<br>
+<br>
+<br>
+You can also label based on two columns, and change the number of labels, though
+this can get a bit messy:
+```{r}
+ggmiami(data = gwas_results, split_by = "study", split_at = "A", p = "pval", 
+        upper_ylab = "Study A", lower_ylab = "Study B", 
+        hits_label_col = c("rsid", "beta"), top_n_hits = 10)
+```
+<br>
+<br>
+<br>
+If you would instead like to supply a list of which items to label, you can 
+use `hits_label` to supply the list, and `hits_label_col` to
+specify where these values will be found.
+```{r}
+ggmiami(data = gwas_results, split_by = "study", split_at = "A", p = "pval", 
+        upper_ylab = "Study A", lower_ylab = "Study B", 
+        hits_label = c("rs19142", "rs27017", "rs19103", "rs26991", "rs29240"),
+        hits_label_col = "rsid")
+```
+
+### Custom labels
+Say you wanted to be more specific and provide your own dataframe containing the
+labelling information. This requires a little front-end work on your part, but 
+gives you more control in case the above two options aren't producing what you
+want.
+<br>
+<br>
+First, it's helpful to have access to the actual data being plotted, so that you
+don't have to go about calculating relative genomic position on your own. We can
+do this using the `prep_miami_data` function from this package.
+```{r}
+plot_data <- prep_miami_data(data = gwas_results, split_by = "study", 
+                             split_at = "A", p = "pval")
+```
+
+Next, say we wanted to identify top peak from each chromosome and plot the five
+with the lowest p-values, while labelling them with rsid and beta value.
+```{r}
+# Study A
+studyA_labels <- plot_data$upper %>%
+  group_by(chr) %>%
+  arrange(desc(logged_p)) %>%
+  slice(1) %>%
+  ungroup() %>%
+  mutate(label = paste0(rsid, "\n", beta)) %>%
+  select(rel_pos, logged_p, label) %>%
+  arrange(desc(logged_p)) %>%
+  slice(1:5)
+
+# Study B
+studyB_labels <- plot_data$lower %>%
+  group_by(chr) %>%
+  arrange(desc(logged_p)) %>%
+  slice(1) %>%
+  ungroup() %>%
+  mutate(label = paste0(rsid, "\n", beta)) %>%
+  select(rel_pos, logged_p, label) %>%
+  arrange(desc(logged_p)) %>%
+  slice(1:5)
+```
+
+Now for the plot.
+```{r}
+ggmiami(data = gwas_results, split_by = "study", split_at = "A", p = "pval", 
+        upper_ylab = "Study A", lower_ylab = "Study B", 
+        upper_labels_df = studyA_labels, lower_labels_df = studyB_labels)
+```
+<br>
+<br>
+<br>
+You can also specify labels for only one plot. But you will get an error if you
+try to mix label methods.
+```{r, error = TRUE, purl = FALSE}
+ggmiami(data = gwas_results, split_by = "study", split_at = "A", p = "pval", 
+        upper_ylab = "Study A", lower_ylab = "Study B", 
+        upper_labels_df = studyA_labels, hits_label_col = c("rsid", "beta"))
+```
+
+## Highlighting SNPs
+If you wanted to highlight specific points, you can do so. For the upper plot 
+I'm going to highlight everything withih 100 bp of the two genome-wide 
+significant peaks.
+```{r}
+# Get the position of the two peaks +- 100 bp.
+studyA_highlight_pos <- plot_data$upper %>%
+  filter(pval < 5e-8) %>%
+  group_by(chr) %>%
+  filter(pval == min(pval)) %>%
+  summarise(start = rel_pos - 100, end = rel_pos + 100) %>%
+  select(-chr) %>%
+  apply(., 1, function(x) x["start"]:x["end"]) %>%
+  as.vector()
+
+# Find which rsids match these SNPs
+studyA_highlight_rsid <- plot_data$upper %>%
+  mutate(in_peak = case_when(rel_pos %in% studyA_highlight_pos ~ "Yes", 
+                             TRUE ~ "No")) %>%
+  filter(in_peak == "Yes") %>%
+  select(rsid)
+```
+  
+Add to plot.
+```{r}
+ggmiami(data = gwas_results, split_by = "study", split_at = "A", p = "pval", 
+        upper_ylab = "Study A", lower_ylab = "Study B", 
+        upper_labels_df = studyA_labels, lower_labels_df = studyB_labels, 
+        upper_highlight = studyA_highlight_rsid$rsid, 
+        upper_highlight_col = "rsid")
+```
+<br>
+<br>
+<br>
+You can also change the highlighting color with either names or hex codes 
+using `upper_highlight_color` and `lower_highlight_color`, much like what was 
+done when changing the chromosome colors. 
+```{r}
+studyA_highlight_rsid <- plot_data$upper %>%
+  mutate(in_peak = case_when(rel_pos %in% studyA_highlight_pos ~ "Yes", 
+                             TRUE ~ "No")) %>%
+  filter(in_peak == "Yes") %>%
+  arrange(logged_p) %>%
+  mutate(color = rep(c("magenta", "green"), length.out = n())) %>%
+  select(rsid, logged_p, color)
+```
+  
+Add to plot
+```{r}
+ggmiami(data = gwas_results, split_by = "study", split_at = "A", p = "pval", 
+        upper_ylab = "Study A", lower_ylab = "Study B", 
+        upper_labels_df = studyA_labels, lower_labels_df = studyB_labels, 
+        upper_highlight = studyA_highlight_rsid$rsid, 
+        upper_highlight_col = "rsid", 
+        upper_highlight_color = studyA_highlight_rsid$color)
+```
+
+## Saving the plot 
+Since the plot produced is a patchwork of ggplot2 objects, it can be saved using
+ggsave.
+```{r}
+p <- ggmiami(data = gwas_results, split_by = "study", split_at = "A", 
+             p = "pval", upper_ylab = "Study A", lower_ylab = "Study B", 
+             upper_labels_df = studyA_labels, lower_labels_df = studyB_labels, 
+             upper_highlight = studyA_highlight_rsid$rsid, 
+             upper_highlight_col = "rsid", upper_highlight_color = "magenta")
+
+# ggsave(p, filename = "ExampleMiamiPlot.png", device = "png", width = 8, 
+       # height = 6, units = "in")
+```
+
+# A few notes
+* The default values for chromosome, position and p-value are `chr`, `pos`, and
+`p`, respectively. If you're creating a miami plot and your column names are
+different, you'll have to pass the column names to the `chr = `, `pos = `, and 
+`p = ` arguments. See help(ggmiami) for details. 
+* The chromosome column must be numeric. If you have "X," "Y," or "MT" 
+chromosomes, you'll need to rename these 23, 24, 25, etc. You can modify the
+source code (e.g. `fix(ggmiami)`) to change the line designating the axis tick
+labels in the upper plot `labels = plot_data$axis$chr` to set this to whatever
+you'd like it to be. 
+

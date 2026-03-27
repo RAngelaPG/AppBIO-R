@@ -161,12 +161,13 @@
   #undef  ARMA_GCC_VERSION
   #define ARMA_GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
   
-  #if (ARMA_GCC_VERSION < 60100)
-    #error "*** newer compiler required; need gcc 6.1 or newer ***"
+  #if (ARMA_GCC_VERSION < 40803)
+    #error "*** newer compiler required; need gcc 4.8.3 or newer ***"
   #endif
   
-  // gcc 6.1 has proper C++14 support and fixes an OpenMP related bug:
-  // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57580
+  // #if (ARMA_GCC_VERSION < 60100)
+  //   #pragma message ("WARNING: support for gcc versions older than 6.1 is deprecated")
+  // #endif
   
   #define ARMA_GOOD_COMPILER
   
@@ -299,7 +300,7 @@
     #error "*** newer compiler required ***"
   #endif
   
-  #if (__INTEL_COMPILER < 1600)
+  #if (__INTEL_COMPILER < 1500)
     #error "*** newer compiler required ***"
   #endif
   
@@ -318,15 +319,12 @@
   
   #undef  arma_deprecated
   #define arma_deprecated __declspec(deprecated)
-  
-  #undef  arma_noinline
-  #define arma_noinline __declspec(noinline)
-  
+  // #undef  arma_inline
+  // #define arma_inline __forceinline inline
   
   #pragma warning(push)
   
   #pragma warning(disable: 4127)  // conditional expression is constant
-  #pragma warning(disable: 4146)  // unary minus operator applied to unsigned type, result still unsigned
   #pragma warning(disable: 4180)  // qualifier has no meaning
   #pragma warning(disable: 4244)  // possible loss of data when converting types (see also 4305)
   #pragma warning(disable: 4510)  // default constructor could not be generated
@@ -345,6 +343,8 @@
   #pragma warning(disable: 4711)  // call was inlined
   #pragma warning(disable: 4714)  // __forceinline can't be inlined
   #pragma warning(disable: 4800)  // value forced to bool
+  
+  // NOTE: also possible to disable 4146 (unary minus operator applied to unsigned type, result still unsigned)
   
   #if defined(ARMA_HAVE_CXX17)
   #pragma warning(disable: 26812)  // unscoped enum
@@ -372,6 +372,18 @@
   //   #pragma warning(disable: 4324)
   //   
   // #endif
+  
+#endif
+
+
+#if defined(__SUNPRO_CC)
+  
+  // http://www.oracle.com/technetwork/server-storage/solarisstudio/training/index-jsp-141991.html
+  // http://www.oracle.com/technetwork/server-storage/solarisstudio/documentation/cplusplus-faq-355066.html
+  
+  #if (__SUNPRO_CC < 0x5140)
+    #error "*** newer compiler required ***"
+  #endif
   
 #endif
 
@@ -414,6 +426,17 @@
   #if (defined(_OPENMP) && (_OPENMP < 201107))
     #pragma message ("NOTE: your compiler has an outdated version of OpenMP")
     #pragma message ("NOTE: consider upgrading to a better compiler")
+  #endif
+#endif
+
+
+#if defined(ARMA_USE_OPENMP)
+  #if (defined(ARMA_GCC_VERSION) && (ARMA_GCC_VERSION < 50400))
+    // due to https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57580
+    #undef ARMA_USE_OPENMP
+    #if !defined(ARMA_DONT_PRINT_OPENMP_WARNING)
+      #pragma message ("WARNING: use of OpenMP disabled due to compiler bug in gcc <= 5.3")
+    #endif
   #endif
 #endif
 
@@ -479,7 +502,7 @@
 // NOTE: option 'ARMA_IGNORE_DEPRECATED_MARKER' will be removed
 // NOTE: disabling deprecation messages is counter-productive
 
-#if defined(ARMA_IGNORE_DEPRECATED_MARKER) && (!defined(ARMA_DONT_IGNORE_DEPRECATED_MARKER)) && (!defined(ARMA_DEBUG))
+#if defined(ARMA_IGNORE_DEPRECATED_MARKER) && (!defined(ARMA_DONT_IGNORE_DEPRECATED_MARKER)) && (!defined(ARMA_EXTRA_DEBUG))
   #undef  arma_deprecated
   #define arma_deprecated
 

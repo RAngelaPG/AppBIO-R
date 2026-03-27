@@ -1,0 +1,146 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Weights of evidence</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for woe {klaR}"><tr><td>woe {klaR}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Weights of evidence</h2>
+
+<h3>Description</h3>
+
+<p>Computes weight of evidence transform of factor variables for binary classification.</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+woe(x, ...)
+## Default S3 method:
+woe(x, grouping, weights = NULL, zeroadj = 0, ids = NULL, 
+                      appont = TRUE, ...)
+## S3 method for class 'formula'
+woe(formula, data = NULL, weights = NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A matrix or data frame containing the explanatory variables.</p>
+</td></tr>
+<tr valign="top"><td><code>grouping</code></td>
+<td>
+<p>A factor specifying the binary class for each observation.</p>
+</td></tr>
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>A formula of the form <code>grouping ~ x1 + x2 + ...</code> That is, the response is the grouping factor and the right hand side specifies the discriminators.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>Data frame from which variables specified in formula are to be taken.</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>Vector with observation weights. For call <code>woe(formula, data, weights)</code> also a a character is possible that specifies the name of the weight coloumn in data.</p>
+</td></tr> 
+<tr valign="top"><td><code>zeroadj</code></td>
+<td>
+<p>Additive constant to be added for a level with 0 observations in a class.</p>
+</td></tr>  
+<tr valign="top"><td><code>ids</code></td>
+<td>
+<p>Vector of either indices or variable names that specifies the variables to be transformed.</p>
+</td></tr>
+<tr valign="top"><td><code>appont</code></td>
+<td>
+<p>Application on training data: logical indicating whether the transformed values for the training data should be returned by recursive calling of <code>predict.woe</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>For <code>woe.formula</code>: Further arguments passed to function <code>woe.default</code> such as <code>ids</code>. For <code>woe.default</code>: <code>replace = FALSE</code> can be passed to recursive call of <code>predict.woe</code> if <code>appont</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>To each factor level <i>x</i> a numeric value <i>WOE(x) = ln(f(x|1)/f(x|2))</i> is assigned where 1 and 2 denote the class labels. The WOE transform is motivated for subsequent modelling by logistic regression. Note that the frequencies of the classes should be investigated before. Information values heuristically quantify the discriminatory power of a variable by <i>IV = (f(x|1)-f(x|2)) ln(f(x|1)/f(x|2))</i>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns an object of class <em>woe</em> that can be applied to new data. 
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>woe</code></td>
+<td>
+<p>WOE coefficients for factor2numeric transformation of each (specified) variable.</p>
+</td></tr>
+<tr valign="top"><td><code>IV</code></td>
+<td>
+<p>Vector of information values of all transformed variables.</p>
+</td></tr>
+<tr valign="top"><td><code>newx</code></td>
+<td>
+<p>Data frame of transformed data if <code>appont</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Gero Szepannek</p>
+
+
+<h3>References</h3>
+
+<p>Good, I. (1950): <em>Probability and the Weighting of Evidences.</em> Charles Griffin, London.
+</p>
+<p>Kullback, S. (1959): <em>Information Theory and Statistics.</em> Wiley, New York.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../klaR/help/predict.woe.html">predict.woe</a></code>, <code><a href="../../klaR/help/plot.woe.html">plot.woe</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## load German credit data
+data("GermanCredit")
+
+## training/validation split
+train &lt;- sample(nrow(GermanCredit), round(0.6*nrow(GermanCredit)))
+
+woemodel &lt;- woe(credit_risk~., data = GermanCredit[train,], zeroadj=0.5, applyontrain = TRUE)
+woemodel
+
+## plot variable information values and woes
+plot(woemodel)
+plot(woemodel, type = "woes")
+
+## apply woes 
+traindata &lt;- predict(woemodel, GermanCredit[train,], replace = TRUE)
+str(traindata)
+
+## fit logistic regression model
+glmodel     &lt;- glm(credit_risk~., traindata, family=binomial)
+summary(glmodel)
+pred.trn &lt;- predict(glmodel, traindata, type = "response")
+
+## predict validation data
+validata &lt;- predict(woemodel, GermanCredit[-train,], replace = TRUE)
+pred.val &lt;- predict(glmodel, validata, type = "response")
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>klaR</em> version 1.7-4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

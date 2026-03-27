@@ -1,0 +1,151 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Calculate Flow Betweenness Scores of Network Positions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for flowbet {sna}"><tr><td>flowbet {sna}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Calculate Flow Betweenness Scores of Network Positions
+</h2>
+
+<h3>Description</h3>
+
+<p><code>flowbet</code> takes one or more graphs (<code>dat</code>) and returns the flow betweenness scores of positions (selected by <code>nodes</code>) within the graphs indicated by <code>g</code>.  Depending on the specified mode, flow betweenness on directed or undirected geodesics will be returned; this function is compatible with <code><a href="../../sna/help/centralization.html">centralization</a></code>, and will return the theoretical maximum absolute deviation (from maximum) conditional on size (which is used by <code><a href="../../sna/help/centralization.html">centralization</a></code> to normalize the observed centralization score).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+flowbet(dat, g = 1, nodes = NULL, gmode = "digraph", diag = FALSE,
+    tmaxdev = FALSE, cmode = "rawflow", rescale = FALSE, 
+    ignore.eval = FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>dat</code></td>
+<td>
+
+<p>one or more input graphs.
+</p>
+</td></tr>
+<tr valign="top"><td><code>g</code></td>
+<td>
+
+<p>integer indicating the index of the graph for which centralities are to be calculated (or a vector thereof).  By default, <code>g</code>=1.
+</p>
+</td></tr>
+<tr valign="top"><td><code>nodes</code></td>
+<td>
+
+<p>vector indicating which nodes are to be included in the calculation.  By default, all nodes are included.
+</p>
+</td></tr>
+<tr valign="top"><td><code>gmode</code></td>
+<td>
+
+<p>string indicating the type of graph being evaluated.  <code>digraph</code> indicates that edges should be interpreted as directed (with flows summed over directed dyads); <code>graph</code> indicates that edges are undirected (with only undirected pairs considered).  <code>gmode</code> is set to <code>digraph</code> by default. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>diag</code></td>
+<td>
+
+<p>boolean indicating whether or not the diagonal should be treated as valid data.  Set this true if and only if the data can contain loops.  <code>diag</code> is <code>FALSE</code> by default.
+</p>
+</td></tr>
+<tr valign="top"><td><code>tmaxdev</code></td>
+<td>
+
+<p>boolean indicating whether or not the theoretical maximum absolute deviation from the maximum nodal centrality should be returned.  By default, <code>tmaxdev</code>==<code>FALSE</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>cmode</code></td>
+<td>
+
+<p>one of <code>rawflow</code>, <code>normflow</code>, or <code>fracflow</code> (see below).
+</p>
+</td></tr>
+<tr valign="top"><td><code>rescale</code></td>
+<td>
+
+<p>if true, centrality scores are rescaled such that they sum to 1.
+</p>
+</td></tr>
+<tr valign="top"><td><code>ignore.eval</code></td>
+<td>
+
+<p>logical; ignore edge values when computing maximum flow (alternately, edge values will be assumed to carry capacity information)?
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The (&ldquo;raw,&rdquo; or unnormalized) flow betweenness of a vertex, <i>v in V(G)</i>, is defined by Freeman et al. (1991) as
+</p>
+<p style="text-align: center;"><i>
+C_F(v) = sum( f(i,j,G) - f(i,j,G\v), i,j: i!=j,i!=v,j!=v ),</i></p>
+
+<p>where <i>f(i,j,G)</i> is the maximum flow from <i>i</i> to <i>j</i> within <i>G</i> (under the assumption of infinite vertex capacities, finite edge capacities, and non-simultaneity of pairwise flows).  Intuitively, unnormalized flow betweenness is simply the total maximum flow (aggregated across all pairs of third parties) mediated by <i>v</i>.
+</p>
+<p>The above flow betweenness measure is computed by <code>flowbet</code> when <code>cmode=="rawflow"</code>.  In some cases, it may be desirable to normalize the raw flow betweenness by the total maximum flow among third parties (including <i>v</i>); this leads to the following normalized flow betweenness measure:
+</p>
+<p style="text-align: center;"><i>
+C'_F(v) = sum( f(i,j,G) - f(i,j,G\v), i,j: i!=j,i!=v,j!=v ) / sum( f(i,j,G), i,j: i!=j,i!=v,j!=v ).</i></p>
+
+<p>This variant can be selected by setting <code>cmode=="normflow"</code>.
+</p>
+<p>Finally, it may be noted that the above normalization (from Freeman et al. (1991)) is rather different from that used in the definition of shortest-path betweenness, which normalizes within (rather than across) third-party dyads.  A third flow betweenness variant has been suggested by Koschutzki et al. (2005) based on a normalization of this type:
+</p>
+<p style="text-align: center;"><i>
+C''_F(v) = sum( (f(i,j,G) - f(i,j,G\v)) / f(i,j,G), i,j: i!=j,i!=v,j!=v ),</i></p>
+
+<p>where 0/0 flow ratios are treated as 0 (as in shortest-path betweenness).  Setting <code>cmode=="fracflow"</code> selects this variant.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A vector of centrality scores.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Carter T. Butts <a href="mailto:buttsc@uci.edu">buttsc@uci.edu</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Freeman, L.C.; Borgatti, S.P.; and White, D.R.  (1991).  &ldquo;Centrality in Valued Graphs: A Measure of Betweenness Based on Network Flow.&rdquo;  <em>Social Networks</em>, 13(2), 141-154.
+</p>
+<p>Koschutzki, D.; Lehmann, K.A.; Peeters, L.; Richter, S.; Tenfelde-Podehl, D.; Zlotowski, O.  (2005).  &ldquo;Centrality Indices.&rdquo;  In U. Brandes and T. Erlebach (eds.), <em>Network Analysis: Methodological Foundations.</em>  Berlin: Springer.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../sna/help/betweenness.html">betweenness</a></code>, <code><a href="../../sna/help/maxflow.html">maxflow</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+g&lt;-rgraph(10)                                     #Draw a random graph
+flowbet(g)                                        #Raw flow betweenness
+flowbet(g,cmode="normflow")                       #Normalized flow betweenness
+
+g&lt;-g*matrix(rpois(100,4),10,10)                   #Add capacity constraints
+flowbet(g)                                        #Note the difference!
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sna</em> version 2.8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,4 +1,4 @@
-## ---- echo = FALSE, message = FALSE, warning=FALSE----------------------------
+## ----echo = FALSE, message = FALSE, warning=FALSE-----------------------------
 library(dendextend)
 library(knitr)
 knitr::opts_chunk$set(
@@ -12,7 +12,7 @@ knitr::opts_chunk$set(
 # < ! -- rmarkdown v1 -->
 
 
-## ---- fig.show='hold', fig.width=8, fig.height=3------------------------------
+## ----fig.show='hold', fig.width=8, fig.height=3-------------------------------
 # install.packages("dendextend")
 library(dendextend)
 
@@ -31,7 +31,7 @@ labels_colors(dend) <- 1:5
 labels_colors(dend) 
 plot(dend, main = "A color for every state")
 
-## ---- fig.show='hold', fig.width=8, fig.height=3------------------------------
+## ----fig.show='hold', fig.width=8, fig.height=3-------------------------------
 # install.packages("dendextend")
 library(dendextend)
 
@@ -76,7 +76,7 @@ plot(dend, main = "A color for every Species")
  # labels_colors(dend)  <- get_leaves_branches_col(dend)
  plot(dend)
 
-## ---- fig.show='hold', fig.width=8, fig.height=3------------------------------
+## ----fig.show='hold', fig.width=8, fig.height=3-------------------------------
 # install.packages("dendextend")
 library(dendextend)
 
@@ -103,7 +103,7 @@ labels(dend)
 labels(dend) <- 1:5
 labels(dend)
 
-## ---- fig.show='hold', fig.width=8, fig.height=4------------------------------
+## ----fig.show='hold', fig.width=8, fig.height=4-------------------------------
 # install.packages("dendextend")
 library(dendextend)
 
@@ -135,7 +135,7 @@ get_nodes_attr(dend, "midpoint")
 # Perhaps also for the height:
 get_nodes_attr(dend, "height")
 
-## ---- echo = FALSE------------------------------------------------------------
+## ----echo = FALSE-------------------------------------------------------------
 test0 <- structure(c(0.641122711554543, 1.23425751165366, -0.325822271157288, 
 -0.452769780259602, 0.0544008811521789, -0.419431342616865, -0.972784235576774, 
 -1.08436301942649, 0.80835607360689, 0.265694432492288, -0.394391484747309, 
@@ -698,7 +698,7 @@ NA), .Dim = c(23L, 96L), .Dimnames = list(c("varA", "varB", "varC",
 "var13", "var14", "var15", "var16", "var17")))
 
 
-## ---- eval = FALSE------------------------------------------------------------
+## ----eval = FALSE-------------------------------------------------------------
 #  
 #  test <- test0
 #  rnames <- test[,1]
@@ -770,11 +770,11 @@ NA), .Dim = c(23L, 96L), .Dimnames = list(c("varA", "varB", "varC",
 #  		
 #  
 
-## ---- eval = FALSE------------------------------------------------------------
+## ----eval = FALSE-------------------------------------------------------------
 #  dendextend::assign_dendextend_options()
 #  # This populates the dendextend::dendextend_options() space
 
-## ---- fig.width=10, fig.height=10---------------------------------------------
+## ----fig.width=10, fig.height=10----------------------------------------------
 # install.packages("dendextend")
 # install.packages("circlize")
 library(dendextend)

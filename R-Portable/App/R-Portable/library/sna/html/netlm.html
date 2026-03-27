@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Linear Regression for Network Data</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for netlm {sna}"><tr><td>netlm {sna}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Linear Regression for Network Data </h2>
+
+<h3>Description</h3>
+
+<p><code>netlm</code> regresses the network variable in <code>y</code> on the network variables in stack <code>x</code> using ordinary least squares.  The resulting fits (and coefficients) are then tested against the indicated null hypothesis.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+netlm(y, x, intercept=TRUE, mode="digraph", diag=FALSE,
+    nullhyp=c("qap", "qapspp", "qapy", "qapx", "qapallx", 
+    "cugtie", "cugden", "cuguman", "classical"), 
+    test.statistic = c("t-value", "beta"), tol=1e-7,
+    reps=1000)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p> dependent network variable.  This should be a matrix, for obvious reasons; NAs are allowed, but dichotomous data is strongly discouraged due to the assumptions of the analysis. </p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p> stack of independent network variables.  Note that NAs are permitted, as is dichotomous data. </p>
+</td></tr>
+<tr valign="top"><td><code>intercept</code></td>
+<td>
+<p> logical; should an intercept term be added? </p>
+</td></tr>
+<tr valign="top"><td><code>mode</code></td>
+<td>
+<p> string indicating the type of graph being evaluated.  <code>"digraph"</code> indicates that edges should be interpreted as directed; <code>"graph"</code> indicates that edges are undirected.  <code>mode</code> is set to <code>"digraph"</code> by default. </p>
+</td></tr>
+<tr valign="top"><td><code>diag</code></td>
+<td>
+<p> logical; should the diagonal be treated as valid data?  Set this true if and only if the data can contain loops.  <code>diag</code> is <code>FALSE</code> by default. </p>
+</td></tr>
+<tr valign="top"><td><code>nullhyp</code></td>
+<td>
+<p> string indicating the particular null hypothesis against which to test the observed estimands. </p>
+</td></tr>
+<tr valign="top"><td><code>test.statistic</code></td>
+<td>
+<p> string indicating the test statistic to be used for the Monte Carlo procedures.</p>
+</td></tr>
+<tr valign="top"><td><code>tol</code></td>
+<td>
+<p> tolerance parameter for <code><a href="../../base/html/qr.html">qr.solve</a></code>. </p>
+</td></tr>
+<tr valign="top"><td><code>reps</code></td>
+<td>
+<p> integer indicating the number of draws to use for quantile estimation.  (Relevant to the null hypothesis test only - the analysis itself is unaffected by this parameter.)  Note that, as for all Monte Carlo procedures, convergence is slower for more extreme quantiles.  By default, <code>reps</code>=1000. </p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>netlm</code> performs an OLS linear network regression of the graph <code>y</code> on the graphs in <code>x</code>.  Network regression using OLS is directly analogous to standard OLS regression elementwise on the appropriately vectorized adjacency matrices of the networks involved.  In particular, the network regression attempts to fit the model:
+</p>
+<p style="text-align: center;"><i>
+A_y = b_0 A_1 + b_1 A_x1 + b_2 A_x2 + &hellip; + Z</i></p>
+
+<p>where <i>A_y</i> is the dependent adjacency matrix, <i>A_xi</i> is the ith independent adjacency matrix, <i>A_1</i> is an n x n matrix of 1's, and <i>Z</i> is an n x n matrix of independent normal random variables with mean 0 and variance <i>sigma^2</i>.  Clearly, this model is nonoptimal when <i>A_y</i> is dichotomous (or, for that matter, categorical in general); an alternative such as <code>netlogit</code> should be employed in such cases.  (Note that <code>netlm</code> will still attempt to fit such data...the user should consider him or herself to have been warned.)
+</p>
+<p>Because of the frequent presence of row/column/block autocorrelation in network data, classical hull hypothesis tests (and associated standard errors) are generally suspect.  Further, it is sometimes of interest to compare fitted parameter values to those arising from various baseline models (e.g., uniform random graphs conditional on certain observed statistics).  The tests supported by <code>netlm</code> are as follows:
+</p>
+
+<dl>
+<dt><code>classical</code></dt><dd><p> tests based on classical asymptotics. </p>
+</dd>
+<dt><code>cug</code></dt><dd><p>conditional uniform graph test (see <code><a href="../../sna/help/cugtest.html">cugtest</a></code>) controlling for order.</p>
+</dd>
+<dt><code>cugden</code></dt><dd><p>conditional uniform graph test, controlling for order and density.</p>
+</dd>
+<dt><code>cugtie</code></dt><dd><p>conditional uniform graph test, controlling for order and tie distribution.</p>
+</dd>
+<dt><code>qap</code></dt><dd><p>QAP permutation test (see <code><a href="../../sna/help/qaptest.html">qaptest</a></code>); currently identical to <code>qapspp</code>. </p>
+</dd>
+<dt><code>qapallx</code></dt><dd><p>QAP permutation test, using independent x-permutations.</p>
+</dd>
+<dt><code>qapspp</code></dt><dd><p>QAP permutation test, using Dekker's &quot;semi-partialling plus&quot; procedure. </p>
+</dd>
+<dt><code>qapx</code></dt><dd><p>QAP permutation test, using (single) x-permutations.</p>
+</dd>
+<dt><code>qapy</code></dt><dd><p>QAP permutation test, using y-permutations.</p>
+</dd>
+</dl>
+
+<p>The statistic to be employed in the above tests may be selected via <code>test.statistic</code>.  By default, the <i>t</i>-statistic (rather than estimated coefficient) is used, as this is more approximately pivotal; coefficient-based tests are not recommended for QAP null hypotheses, although they are provided here for legacy purposes.
+</p>
+<p>Note that interpretation of quantiles for single coefficients can be complex in the presence of multicollinearity or third variable effects.  <code>qapspp</code>  is generally recommended for most multivariable analyses, as it is known to be fairly robust to these conditions.  Reasonable printing and summarizing of <code>netlm</code> objects is provided by <code><a href="../../sna/help/print.netlm.html">print.netlm</a></code> and <code><a href="../../sna/help/summary.netlm.html">summary.netlm</a></code>, respectively.  No plot methods exist at this time, alas. 
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>netlm</code>
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Carter T. Butts <a href="mailto:buttsc@uci.edu">buttsc@uci.edu</a> </p>
+
+
+<h3>References</h3>
+
+<p>Dekker, D.; Krackhardt, D.; Snijders, T.A.B.  (2007).  &ldquo;Sensitivity of MRQAP Tests to Collinearity and Autocorrelation Conditions.&rdquo;  <em>Psychometrika</em>, 72(4), 563-581.
+</p>
+<p>Dekker, D.; Krackhardt, D.; Snijders, T.A.B.  (2003).  &ldquo;Mulicollinearity Robust QAP for Multiple Regression.&rdquo;  CASOS Working Paper, Carnegie Mellon University.
+</p>
+<p>Krackhardt, D.  (1987).  &ldquo;QAP Partialling as a Test of Spuriousness.&rdquo; <em>Social Networks</em>, 9 171-186.
+</p>
+<p>Krackhardt, D.  (1988).  &ldquo;Predicting With Networks: Nonparametric Multiple Regression Analyses of Dyadic Data.&rdquo;  <em>Social Networks</em>, 10, 359-382.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../stats/html/lm.html">lm</a></code>, <code><a href="../../sna/help/netlogit.html">netlogit</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+#Create some input graphs
+x&lt;-rgraph(20,4)
+
+#Create a response structure
+y&lt;-x[1,,]+4*x[2,,]+2*x[3,,]   #Note that the fourth graph is unrelated
+
+#Fit a netlm model
+nl&lt;-netlm(y,x,reps=100)
+
+#Examine the results
+summary(nl)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sna</em> version 2.8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

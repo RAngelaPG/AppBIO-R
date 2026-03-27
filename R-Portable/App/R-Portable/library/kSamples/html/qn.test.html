@@ -1,0 +1,263 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Rank Score k-Sample Tests</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for qn.test {kSamples}"><tr><td>qn.test {kSamples}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Rank Score k-Sample Tests
+</h2>
+
+<h3>Description</h3>
+
+<p>This function uses the <i>QN</i> criterion (Kruskal-Wallis, van der Waerden scores, normal scores) to test
+the hypothesis that <i>k</i> independent samples arise
+from a common unspecified distribution.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+qn.test(..., data = NULL, test = c("KW", "vdW", "NS"), 
+	method = c("asymptotic", "simulated", "exact"),
+	dist = FALSE, Nsim = 10000)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>Either several sample vectors, say 
+<i>x_1, &hellip;, x_k</i>, 
+with <i>x_i</i> containing <i>n_i</i> sample values.
+<i>n_i &gt; 4</i> is recommended for reasonable asymptotic 
+<i>P</i>-value calculation. The pooled sample size is denoted 
+by <i>N=n_1+&hellip;+n_k</i>,
+</p>
+<p>or a list of such sample vectors,
+</p>
+<p>or a formula y ~ g, where y contains the pooled sample values 
+and g (same length as y) is a factor with levels identifying 
+the samples to which the elements of y belong. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>= an optional data frame providing the variables in formula y ~ g.
+</p>
+</td></tr>
+<tr valign="top"><td><code>test</code></td>
+<td>
+<p>= <code>c("KW", "vdW", "NS")</code>, where
+</p>
+<p><code>"KW"</code> uses scores <code>1:N</code> (Kruskal-Wallis test)
+</p>
+<p><code>"vdW"</code> uses van der Waerden scores, <code>qnorm( (1:N) / (N+1) )</code>
+</p>
+<p><code>"NS"</code> uses normal scores, i.e., expected standard normal order statistics,
+invoking function <code>normOrder</code> of <code>package SuppDists (&gt;=1.1-9.4)</code>
+</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>= <code>c("asymptotic","simulated","exact")</code>, where
+</p>
+<p><code>"asymptotic"</code> uses only an asymptotic chi-square approximation 
+with <code>k-1</code> degrees of freedom to approximate the <i>P</i>-value. 
+This calculation is always done.
+</p>
+<p><code>"simulated"</code> uses <code>Nsim</code> simulated <i>QN</i> statistics based on random 
+splits of the pooled samples into samples of sizes 
+<i>n_1, &hellip;, n_k</i>, to estimate the <i>P</i>-value.
+</p>
+<p><code>"exact"</code> uses full enumeration of all sample splits with resulting 
+<i>QN</i> statistics to obtain the exact <i>P</i>-value. 
+It is used only when <code>Nsim</code> is at least as large as the number
+</p>
+<p style="text-align: center;"><i>N!/(n_1!&hellip; n_k!)</i></p>
+<p> of
+full enumerations. Otherwise, <code>method</code>
+reverts to <code>"simulated"</code> using the given <code>Nsim</code>. It also reverts
+to <code>"simulated"</code> when <i>ncomb &gt; 1e8</i> and <code>dist = TRUE</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>dist</code></td>
+<td>
+<p><code>FALSE</code> (default) or <code>TRUE</code>. If <code>TRUE</code>, the 
+simulated or fully enumerated null distribution vector <code>null.dist</code> 
+is returned for the <i>QN</i> test statistic. Otherwise, <code>NULL</code> 
+is returned. When <code>dist = TRUE</code> then <code>Nsim &lt;- min(Nsim, 1e8)</code>, 
+to limit object size.
+</p>
+</td></tr>
+<tr valign="top"><td><code>Nsim</code></td>
+<td>
+<p><code>= 10000</code> (default), number of simulation sample splits to use.	
+It is only used when <code>method = "simulated"</code>,
+or when <code>method = "exact"</code> reverts to <code>method =</code>
+<code> "simulated"</code>, as previously explained.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The <i>QN</i> criterion based on rank scores <i>v_1,&hellip;,v_N</i> is
+</p>
+<p style="text-align: center;"><i>QN=\frac{1}{s_v^2}&le;ft(&sum;_{i=1}^k \frac{(S_{iN}-n_i \bar{v}_{N})^2}{n_i}\right)</i></p>
+
+<p>where <i>S_{iN}</i> is the sum of rank scores for the <i>i</i>-th sample and 
+<i>\bar{v}_N</i> and 
+<i>s_v^2</i> are sample mean and sample variance (denominator <i>N-1</i>)
+of all scores.
+</p>
+<p>The statistic <i>QN</i> is used to test the hypothesis that the samples all come 
+from the same but unspecified continuous distribution function <i>F(x)</i>.
+<i>QN</i> is always adjusted for ties by averaging the scores of tied observations.
+</p>
+<p>Conditions for the asymptotic approximation (chi-square  with <i>k-1</i> degrees of freedom)  
+can be found in Lehmann, E.L. (2006), Appendix Corollary 10, or in 
+Hajek, Sidak, and Sen (1999), Ch. 6, problems 13 and 14.
+</p>
+<p>For small sample sizes exact null distribution
+calculations are possible (with or without ties), based on a recursively extended
+version of Algorithm C (Chase's sequence) in Knuth (2011), which allows the 
+enumeration of all possible splits of the pooled data into samples of
+sizes of <i>n_1, &hellip;, n_k</i>, as appropriate under treatment randomization. This 
+is done in C, as is the simulation.
+</p>
+<p>NA values are removed and the user is alerted with the total NA count.
+It is up to the user to judge whether the removal of NA's is appropriate.
+</p>
+<p>The continuity assumption can be dispensed with, if we deal with 
+independent random samples from any common distribution, 
+or if randomization was used in allocating
+subjects to samples or treatments, and if 
+the asymptotic, simulated or exact <i>P</i>-values are viewed conditionally, given the tie pattern
+in the pooled sample. Under such randomization any conclusions 
+are valid only with respect to the subjects that were randomly allocated
+to their respective treatment samples.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of class <code>kSamples</code> with components 
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>test.name</code></td>
+<td>
+<p><code>"Kruskal-Wallis"</code>, <code>"van der Waerden scores"</code>, or
+</p>
+<p><code>"normal scores"</code></p>
+</td></tr>
+<tr valign="top"><td><code>k</code></td>
+<td>
+<p>number of samples being compared</p>
+</td></tr>
+<tr valign="top"><td><code>ns</code></td>
+<td>
+<p>vector <i>(n_1,&hellip;,n_k)</i> of the <i>k</i> sample sizes</p>
+</td></tr>
+<tr valign="top"><td><code>N</code></td>
+<td>
+<p>size of the pooled samples <i>= n_1+&hellip;+n_k</i></p>
+</td></tr>
+<tr valign="top"><td><code>n.ties</code></td>
+<td>
+<p>number of ties in the pooled sample</p>
+</td></tr>
+<tr valign="top"><td><code>qn</code></td>
+<td>
+<p>2 (or 3) vector containing the observed <i>QN</i>, its asymptotic <i>P</i>-value, 
+(its simulated or exact <i>P</i>-value)</p>
+</td></tr>
+<tr valign="top"><td><code>warning</code></td>
+<td>
+<p>logical indicator, <code>warning = TRUE</code> when at least one 
+<i>n_i &lt; 5</i></p>
+</td></tr>
+<tr valign="top"><td><code>null.dist</code></td>
+<td>
+<p>simulated or enumerated null distribution 
+of the test statistic. It is <code>NULL</code> when <code>dist = FALSE</code> or when
+<code>method = "asymptotic"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>the <code>method</code> used.</p>
+</td></tr>
+<tr valign="top"><td><code>Nsim</code></td>
+<td>
+<p>the number of simulations used.</p>
+</td></tr>
+</table>
+
+
+<h3>warning</h3>
+
+<p><code>method = "exact"</code> should only be used with caution.
+Computation time is proportional to the number of enumerations. 
+Experiment with <code><a href="../../base/html/system.time.html">system.time</a></code> and trial values for
+<code>Nsim</code> to get a sense of the required computing time.
+In most cases
+<code>dist = TRUE</code> should not be used, i.e.,  
+when the returned distribution objects 
+become too large for R's work space.</p>
+
+
+<h3>References</h3>
+
+<p>Hajek, J., Sidak, Z., and Sen, P.K. (1999), <em>Theory of Rank Tests (Second Edition)</em>, Academic Press.
+</p>
+<p>Knuth, D.E. (2011), <em>The Art of Computer Programming, Volume 4A 
+Combinatorial Algorithms Part 1</em>, Addison-Wesley
+</p>
+<p>Kruskal, W.H. (1952), A Nonparametric Test for the Several Sample Problem,
+<em>The Annals of Mathematical Statistics</em>,
+<b>Vol 23, No. 4</b>, 525-540
+</p>
+<p>Kruskal, W.H. and Wallis, W.A. (1952), Use of Ranks in One-Criterion Variance Analysis,
+<em>Journal of the American Statistical Association</em>, 
+<b>Vol 47, No. 260</b>, 583&ndash;621. 
+</p>
+<p>Lehmann, E.L. (2006),
+<em>Nonparametrics, Statistical Methods Based on Ranks, Revised First Edition</em>,
+Springer Verlag.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../kSamples/help/qn.test.combined.html">qn.test.combined</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+u1 &lt;- c(1.0066, -0.9587,  0.3462, -0.2653, -1.3872)
+u2 &lt;- c(0.1005, 0.2252, 0.4810, 0.6992, 1.9289)
+u3 &lt;- c(-0.7019, -0.4083, -0.9936, -0.5439, -0.3921)
+yy &lt;- c(u1, u2, u3)
+gy &lt;- as.factor(c(rep(1,5), rep(2,5), rep(3,5)))
+set.seed(2627)
+qn.test(u1, u2, u3, test="KW", method = "simulated", 
+  dist = FALSE, Nsim = 1000)
+# or with same seed
+# qn.test(list(u1, u2, u3),test = "KW", method = "simulated", 
+#  dist = FALSE, Nsim = 1000)
+# or with same seed
+# qn.test(yy ~ gy, test = "KW", method = "simulated", 
+#  dist = FALSE, Nsim = 1000)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>kSamples</em> version 1.2-12 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

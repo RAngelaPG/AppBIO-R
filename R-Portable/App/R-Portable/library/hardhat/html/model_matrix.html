@@ -1,0 +1,131 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Construct a design matrix</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for model_matrix {hardhat}"><tr><td>model_matrix {hardhat}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Construct a design matrix</h2>
+
+<h3>Description</h3>
+
+<p><code>model_matrix()</code> is a stricter version of <code><a href="../../stats/help/model.matrix.html">stats::model.matrix()</a></code>. Notably,
+<code>model_matrix()</code> will <em>never</em> drop rows, and the result will be a tibble.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+model_matrix(terms, data, ..., call = current_env())
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>terms</code></td>
+<td>
+<p>A terms object to construct a model matrix with. This is
+typically the terms object returned from the corresponding call to
+<code><a href="../../hardhat/help/model_frame.html">model_frame()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A tibble to construct the design matrix with. This is
+typically the tibble returned from the corresponding call to
+<code><a href="../../hardhat/help/model_frame.html">model_frame()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>These dots are for future extensions and must be empty.</p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>The call used for errors and warnings.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The following explains the rationale for some of the difference in arguments
+compared to <code><a href="../../stats/help/model.matrix.html">stats::model.matrix()</a></code>:
+</p>
+
+<ul>
+<li> <p><code>contrasts.arg</code>: Set the contrasts argument, <code>options("contrasts")</code>
+globally, or assign a contrast to the factor of interest directly using
+<code><a href="../../stats/help/contrasts.html">stats::contrasts()</a></code>. See the examples section.
+</p>
+</li>
+<li> <p><code>xlev</code>: Not allowed because <code>model.frame()</code> is never called, so it is
+unnecessary.
+</p>
+</li>
+<li> <p><code>...</code>: Not allowed because the default method of <code>model.matrix()</code> does
+not use it, and the <code>lm</code> method uses it to pass potential offsets and
+weights through, which are handled differently in hardhat.
+</p>
+</li></ul>
+
+
+
+<h3>Value</h3>
+
+<p>A tibble containing the design matrix.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# ---------------------------------------------------------------------------
+# Example usage
+
+framed &lt;- model_frame(Sepal.Width ~ Species, iris)
+
+model_matrix(framed$terms, framed$data)
+
+# ---------------------------------------------------------------------------
+# Missing values never result in dropped rows
+
+iris2 &lt;- iris
+iris2$Species[1] &lt;- NA
+
+framed2 &lt;- model_frame(Sepal.Width ~ Species, iris2)
+
+model_matrix(framed2$terms, framed2$data)
+
+# ---------------------------------------------------------------------------
+# Contrasts
+
+# Default contrasts
+y &lt;- factor(c("a", "b"))
+x &lt;- data.frame(y = y)
+framed &lt;- model_frame(~y, x)
+
+# Setting contrasts directly
+y_with_contrast &lt;- y
+contrasts(y_with_contrast) &lt;- contr.sum(2)
+x2 &lt;- data.frame(y = y_with_contrast)
+framed2 &lt;- model_frame(~y, x2)
+
+# Compare!
+model_matrix(framed$terms, framed$data)
+model_matrix(framed2$terms, framed2$data)
+
+# Also, can set the contrasts globally
+global_override &lt;- c(unordered = "contr.sum", ordered = "contr.poly")
+
+rlang::with_options(
+  .expr = {
+    model_matrix(framed$terms, framed$data)
+  },
+  contrasts = global_override
+)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>hardhat</em> version 1.4.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

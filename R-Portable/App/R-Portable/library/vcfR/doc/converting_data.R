@@ -3,8 +3,8 @@ library(vcfR)
 data(vcfR_example)
 
 ## ----write.vcf, eval=FALSE----------------------------------------------------
-#  write.vcf(vcf, "test.vcf.gz")
-#  unlink("test.vcf.gz") # Clean up after our example is done.
+# write.vcf(vcf, "test.vcf.gz")
+# unlink("test.vcf.gz") # Clean up after our example is done.
 
 ## ----genind, eval=TRUE--------------------------------------------------------
 my_genind <- vcfR2genind(vcf)
@@ -58,10 +58,10 @@ ape::image.DNAbin(my_dnabin1[,ape::seg.sites(my_dnabin1)])
 par(mar=c(5,4,4,2))
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  write.dna( my_dnabin1, file = 'my_gene.fasta', format = 'fasta' )
-#  unlink('my_gene.fasta') # Clean up after we're done with the example.
+# write.dna( my_dnabin1, file = 'my_gene.fasta', format = 'fasta' )
+# unlink('my_gene.fasta') # Clean up after we're done with the example.
 
 ## ----vcfR2loci, eval=FALSE----------------------------------------------------
-#  system.time( my_loci <- vcfR2loci(vcf) )
-#  class(my_loci)
+# system.time( my_loci <- vcfR2loci(vcf) )
+# class(my_loci)
 

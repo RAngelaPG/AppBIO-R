@@ -1,0 +1,246 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Summaries of fitted flexible survival models</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for summary.flexsurvreg {flexsurv}"><tr><td>summary.flexsurvreg {flexsurv}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Summaries of fitted flexible survival models</h2>
+
+<h3>Description</h3>
+
+<p>Return fitted survival, cumulative hazard or hazard at a series of times
+from a fitted <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code> or <code><a href="../../flexsurv/help/flexsurvspline.html">flexsurvspline</a></code>
+model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'flexsurvreg'
+summary(
+  object,
+  newdata = NULL,
+  X = NULL,
+  type = "survival",
+  fn = NULL,
+  t = NULL,
+  quantiles = 0.5,
+  start = 0,
+  cross = TRUE,
+  ci = TRUE,
+  se = FALSE,
+  B = 1000,
+  cl = 0.95,
+  tidy = FALSE,
+  na.action = na.pass,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>Output from <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code> or
+<code><a href="../../flexsurv/help/flexsurvspline.html">flexsurvspline</a></code>, representing a fitted survival model object.</p>
+</td></tr>
+<tr valign="top"><td><code>newdata</code></td>
+<td>
+<p>Data frame containing covariate values to produce fitted
+values for.  Or a list that can be coerced to such a data frame.  There
+must be a column for every covariate in the model formula, and one row for
+every combination of covariates the fitted values are wanted for.  These
+are in the same format as the original data, with factors as a single
+variable, not 0/1 contrasts.
+</p>
+<p>If this is omitted, if there are any continuous covariates, then a single
+summary is provided with all covariates set to their mean values in the
+data - for categorical covariates, the means of the 0/1 indicator variables
+are taken.  If there are only factor covariates in the model, then all
+distinct groups are used by default.</p>
+</td></tr>
+<tr valign="top"><td><code>X</code></td>
+<td>
+<p>Alternative way of defining covariate values to produce fitted
+values for.  Since version 0.4, <code>newdata</code> is an easier way that
+doesn't require the user to create factor contrasts, but <code>X</code> has been
+kept for backwards compatibility.
+</p>
+<p>Columns of <code>X</code> represent different covariates, and rows represent
+multiple combinations of covariate values.  For example
+<code>matrix(c(1,2),nrow=2)</code> if there is only one covariate in the model,
+and we want survival for covariate values of 1 and 2.  A vector can also be
+supplied if just one combination of covariates is needed.
+</p>
+<p>For &ldquo;factor&rdquo; (categorical) covariates, the values of the contrasts
+representing factor levels (as returned by the <code><a href="../../stats/html/contrasts.html">contrasts</a></code>
+function) should be used.  For example, for a covariate <code>agegroup</code>
+specified as an unordered factor with levels <code>20-29, 30-39, 40-49,
+50-59</code>, and baseline level <code>20-29</code>, there are three contrasts.  To
+return summaries for groups <code>20-29</code> and <code>40-49</code>, supply <code>X =
+rbind(c(0,0,0), c(0,1,0))</code>, since all contrasts are zero for the baseline
+level, and the second contrast is &ldquo;turned on&rdquo; for the third level
+<code>40-49</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p><code>"survival"</code> for survival probabilities.
+</p>
+<p><code>"cumhaz"</code> for cumulative hazards.
+</p>
+<p><code>"hazard"</code> for hazards.
+</p>
+<p><code>"rmst"</code> for restricted mean survival.
+</p>
+<p><code>"mean"</code> for mean survival.
+</p>
+<p><code>"median"</code> for median survival (alternative to <code>type="quantile"</code> with <code>quantiles=0.5</code>).
+</p>
+<p><code>"quantile"</code> for quantiles of the survival time distribution.
+</p>
+<p><code>"link"</code> for the fitted value of the location parameter (i.e. the &quot;linear predictor&quot; but on the natural scale of the parameter, not on the log scale)
+</p>
+<p>Ignored if <code>"fn"</code> is specified.</p>
+</td></tr>
+<tr valign="top"><td><code>fn</code></td>
+<td>
+<p>Custom function of the parameters to summarise against time.
+This has optional first two arguments <code>t</code> representing time, and
+<code>start</code> representing left-truncation points, and any remaining
+arguments must be parameters of the distribution.  It should be vectorised, and
+return a vector corresponding to the vectors given by <code>t</code>, <code>start</code> and
+the parameter vectors.</p>
+</td></tr>
+<tr valign="top"><td><code>t</code></td>
+<td>
+<p>Times to calculate fitted values for. By default, these are the
+sorted unique observation (including censoring) times in the data - for
+left-truncated datasets these are the &quot;stop&quot; times.</p>
+</td></tr>
+<tr valign="top"><td><code>quantiles</code></td>
+<td>
+<p>If <code>type="quantile"</code>, this specifies the quantiles of the survival time distribution to return estimates for.</p>
+</td></tr>
+<tr valign="top"><td><code>start</code></td>
+<td>
+<p>Optional left-truncation time or times.  The returned
+survival, hazard or cumulative hazard will be conditioned on survival up to
+this time.   Predicted times returned with <code>"rmst"</code>, <code>"mean"</code>, <code>"median"</code> or <code>"quantile"</code>
+will be times since time zero, not times since the <code>start</code> time.
+</p>
+<p>A vector of the same length as <code>t</code> can be supplied to allow different
+truncation times for each prediction time, though this doesn't make sense
+in the usual case where this function is used to calculate a predicted
+trajectory for a single individual.  This is why the default <code>start</code>
+time was changed for version 0.4 of <span class="pkg">flexsurv</span> - this was previously a
+vector of the start times observed in the data.</p>
+</td></tr>
+<tr valign="top"><td><code>cross</code></td>
+<td>
+<p>If <code>TRUE</code> (the default) then summaries are calculated for all combinations of times
+specified in <code>t</code> and covariate vectors specifed in <code>newdata</code>.
+</p>
+<p>If <code>FALSE</code>,
+then the times <code>t</code> should be of length equal to the number of rows in <code>newdata</code>,
+and one summary is produced for each row of <code>newdata</code> paired with the corresponding
+element of <code>t</code>. This is used, e.g. when determining Cox-Snell residuals.</p>
+</td></tr>
+<tr valign="top"><td><code>ci</code></td>
+<td>
+<p>Set to <code>FALSE</code> to omit confidence intervals.</p>
+</td></tr>
+<tr valign="top"><td><code>se</code></td>
+<td>
+<p>Set to <code>TRUE</code> to include standard errors.</p>
+</td></tr>
+<tr valign="top"><td><code>B</code></td>
+<td>
+<p>Number of simulations from the normal asymptotic distribution of
+the estimates used to calculate confidence intervals or standard errors.
+Decrease for greater
+speed at the expense of accuracy, or set <code>B=0</code> to turn off calculation
+of CIs and SEs.</p>
+</td></tr>
+<tr valign="top"><td><code>cl</code></td>
+<td>
+<p>Width of symmetric confidence intervals, relative to 1.</p>
+</td></tr>
+<tr valign="top"><td><code>tidy</code></td>
+<td>
+<p>If <code>TRUE</code>, then the results are returned as a tidy data
+frame instead of a list.  This can help with using the <span class="pkg">ggplot2</span>
+package to compare summaries for different covariate values.</p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+<p>Function determining what should be done with missing values in <code>newdata</code>.  If <code>na.pass</code> (the default) then summaries of <code>NA</code> are produced for missing covariate values.  If <code>na.omit</code>, then missing values are dropped, the behaviour of <code>summary.flexsurvreg</code> before <code>flexsurv</code> version 1.2.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Further arguments passed to or from other methods.  Currently
+unused.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Time-dependent covariates are not currently supported.  The covariate
+values are assumed to be constant through time for each fitted curve.
+</p>
+
+
+<h3>Value</h3>
+
+<p>If <code>tidy=FALSE</code>, a list with one component for each unique
+covariate value (if there are only categorical covariates) or one component
+(if there are no covariates or any continuous covariates).  Each of these
+components is a matrix with one row for each time in <code>t</code>, giving the
+estimated survival (or cumulative hazard, or hazard) and 95% confidence
+limits.  These list components are named with the covariate names and
+values which define them.
+</p>
+<p>If <code>tidy=TRUE</code>, a data frame is returned instead.  This is formed by
+stacking the above list components, with additional columns to identify the
+covariate values that each block corresponds to.
+</p>
+<p>If there are multiple summaries, an additional list component named
+<code>X</code> contains a matrix with the exact values of contrasts (dummy
+covariates) defining each summary.
+</p>
+<p>The <code><a href="../../flexsurv/help/plot.flexsurvreg.html">plot.flexsurvreg</a></code> function can be used to quickly plot
+these model-based summaries against empirical summaries such as
+Kaplan-Meier curves, to diagnose model fit.
+</p>
+<p>Confidence intervals are obtained by sampling randomly from the asymptotic
+normal distribution of the maximum likelihood estimates and then taking quantiles
+(see, e.g. Mandel (2013)).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>C. H. Jackson <a href="mailto:chris.jackson@mrc-bsu.cam.ac.uk">chris.jackson@mrc-bsu.cam.ac.uk</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Mandel, M. (2013). &quot;Simulation based confidence intervals for
+functions with complicated derivatives.&quot; The American Statistician (in
+press).
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>, <code><a href="../../flexsurv/help/flexsurvspline.html">flexsurvspline</a></code>.
+</p>
+
+<hr /><div style="text-align: center;">[Package <em>flexsurv</em> version 2.3.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

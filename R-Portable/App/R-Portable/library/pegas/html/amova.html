@@ -1,0 +1,173 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Analysis of Molecular Variance</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for amova {pegas}"><tr><td>amova {pegas}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Analysis of Molecular Variance</h2>
+
+<h3>Description</h3>
+
+<p>This function performs a hierarchical analysis of molecular variance
+as described in Excoffier et al. (1992). This implementation accepts
+any number of hierarchical levels.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+amova(formula, data = NULL, nperm = 1000, is.squared = FALSE)
+## S3 method for class 'amova'
+print(x, ...)
+getPhi(sigma2)
+write.pegas.amova(x, file = "")
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>a formula giving the AMOVA model to be fitted with the
+distance matrix on the left-hand side of the <code>~</code>, and the
+population, region, etc, levels on its right-hand side (see details).</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>an optional data frame where to find the hierarchical
+levels; by default they are searched for in the user's workspace.</p>
+</td></tr>
+<tr valign="top"><td><code>nperm</code></td>
+<td>
+<p>the number of permutations for the tests of hypotheses
+(1000 by default). Set this argument to 0 to skip the tests and
+simply estimate the variance components.</p>
+</td></tr>
+<tr valign="top"><td><code>is.squared</code></td>
+<td>
+<p>a logical specifying whether the distance matrix has
+already been squared.</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>an object of class <code>"amova"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>sigma2</code></td>
+<td>
+<p>a named vector of variance components.</p>
+</td></tr>
+<tr valign="top"><td><code>file</code></td>
+<td>
+<p>a file name.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>unused (here for compatibility.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The formula must be of the form <code>d ~ A/B/...</code> where <code>d</code> is a
+distance object, and <code>A</code>, <code>B</code>, etc, are the hierarchical
+levels from the highest to the lowest one. Any number of levels is
+accepted, so specifying <code>d ~ A</code> will simply test for population
+differentiation.
+</p>
+<p>It is assumed that the rows of the distance matrix are in the same
+order than the hierarchical levels (which may be checked by the user).
+</p>
+<p>The function <code>getPhi()</code> is a convenience function for extracting a
+table of hierarchical Phi-statistics for reporting. This will be an N+1
+by N matrix where N is the number of hierarchcial levels and GLOBAL is
+always the first row of the matrix. The matrix can read as COLUMN in ROW.
+</p>
+<p>If the variance components passed to getPhi() are not named, they will
+be reported as &quot;level 1&quot;, &quot;level 2&quot;, etc.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>"amova"</code> which is a list with a table of sums
+of square deviations (SSD), mean square deviations (MSD), and the
+number of degrees of freedom, and a vector of variance components.
+</p>
+
+
+<h3>Note</h3>
+
+<p>If there are more than three levels, approximate formulae are used to
+estimate the variance components.
+</p>
+<p>If there is an error message like this:
+</p>
+<p><code>Error in FUN(X[[1L]], ...) : 'bin' must be numeric or a factor</code>
+</p>
+<p>it may be that the factors you use in the formula were not read
+correctly. You may convert them with the function <code>factor</code>, or,
+before reading your data files, do this command (in case this option
+was modified):
+</p>
+<p><code>options(stringsAsFactors = TRUE)</code>
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Emmanuel Paradis, Zhian N. Kamvar, and Brian Knaus</p>
+
+
+<h3>References</h3>
+
+<p>Excoffier, L., Smouse, P. E. and Quattro, J. M. (1992) Analysis of
+molecular variance inferred from metric distances among DNA
+haplotypes: application to human mitochondrial DNA restriction
+data. <em>Genetics</em>, <b>131</b>, 479&ndash;491.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>amova</code> in <span class="pkg">ade4</span> for an implementation of the original
+Excoffier et al.'s model; <code>adonis</code> in <span class="pkg">vegan</span> for a general
+(multivariate) implementation of an ANOVA framework with distances.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+### All examples below have 'nperm = 100' for faster execution times.
+### The default 'nperm = 1000' is recommended.
+require(ape)
+data(woodmouse)
+d &lt;- dist.dna(woodmouse)
+g &lt;- factor(c(rep("A", 7), rep("B", 8)))
+p &lt;- factor(c(rep(1, 3), rep(2, 4), rep(3, 4), rep(4, 4)))
+(d_gp &lt;- amova(d ~ g/p, nperm = 100)) # 2 levels
+sig2 &lt;- setNames(d_gp$varcomp$sigma2, rownames(d_gp$varcomp))
+getPhi(sig2) # Phi table
+amova(d ~ p, nperm = 100) # 1 level
+amova(d ~ g, nperm = 100)
+
+## 3 levels (quite slow):
+## Not run: 
+pop &lt;- gl(64, 5, labels = paste0("pop", 1:64))
+region &lt;- gl(16, 20, labels = paste0("region", 1:16))
+conti &lt;- gl(4, 80, labels = paste0("conti", 1:4))
+dd &lt;- as.dist(matrix(runif(320^2), 320))
+(dd_crp &lt;- amova(dd ~ conti/region/pop, nperm = 100))
+sig2 &lt;- setNames(dd_crp$varcomp$sigma2, rownames(dd_crp$varcomp))
+getPhi(sig2)
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>pegas</em> version 1.4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

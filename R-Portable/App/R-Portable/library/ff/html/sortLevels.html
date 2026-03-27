@@ -1,0 +1,164 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Factor level manipulation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for sortLevels {ff}"><tr><td>sortLevels {ff}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Factor level manipulation
+</h2>
+
+<h3>Description</h3>
+
+<p><code>appendLevels</code> combines <code><a href="../../ff/help/levels.ff.html">levels</a></code> without sorting such that levels of the first argument will not require re-coding.
+<br />
+<code>recodeLevels</code> is a generic for recoding a factor to a desired set of levels - also has a method for large <code><a href="../../ff/help/ff.html">ff</a></code> objects
+<br />
+<code>sortLevels</code> is a generic for level sorting and recoding of single factors or of all factors of a <code><a href="../../ff/help/ffdf.html">ffdf</a></code> dataframe.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+appendLevels(...)
+recodeLevels(x, lev)
+## S3 method for class 'factor'
+recodeLevels(x, lev)
+## S3 method for class 'ff'
+recodeLevels(x, lev)
+sortLevels(x)
+## S3 method for class 'factor'
+sortLevels(x)
+## S3 method for class 'ff'
+sortLevels(x)
+## S3 method for class 'ffdf'
+sortLevels(x)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>character vector of levels or <code><a href="../../ff/help/is.factor.ff.html">is.factor</a></code> objects from which the level attribute is taken</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>a <code><a href="../../base/html/factor.html">factor</a></code> or <code><a href="../../ff/help/ff.html">ff</a></code> factor or a <code><a href="../../ff/help/ffdf.html">ffdf</a></code> dataframe (<code>sortLevels</code> only) </p>
+</td></tr>
+<tr valign="top"><td><code>lev</code></td>
+<td>
+<p>a character vector of levels</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>When reading a long file with categorical columns the final set of factor levels is only known once the complete file has been read.
+When a file is so large that we read it in chunks, the new levels need to be added incrementally.
+<code><a href="../../base/html/cbind.html">rbind.data.frame</a></code> sorts combined levels, which requires recoding. For <code><a href="../../ff/help/ff.html">ff</a></code> factors this would require recoding of all previous chunks at the next chunk - potentially on disk, which is too expensive.
+Therefore <code><a href="../../ff/help/read.table.ffdf.html">read.table.ffdf</a></code> will simply <code>appendLevels</code> without sorting, and the <code>recodeLevels</code> and <code>sortLevels</code> generics provide a convenient means for sorting and recoding levels after all chunks have been read.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>appendLevels</code> returns a vector of combined levels, <code>recodeLevels</code> and <code>sortLevels</code> return the input object with changed levels. Do read the note!
+</p>
+
+
+<h3>Note</h3>
+
+<p>You need to re-assign the return value not only for ram- but also for ff-objects. Remember ff's hybrid copying semantics: <code><a href="../../ff/help/LimWarn.html">LimWarn</a></code>.
+If you forget to re-assign the returned object, you will end up with ff objects that have their integer codes re-coded to the new levels but still carry the old levels as a <code><a href="../../ff/help/Extract.ff.html">virtual</a></code> attribute.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Jens Oehlschlägel
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../ff/help/read.table.ffdf.html">read.table.ffdf</a></code>, <code><a href="../../ff/help/levels.ff.html">levels.ff</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+  message("Let's create a factor with little levels")
+  x &lt;- ff(letters[4:6], levels=letters[4:6])
+  message("Let's interpret the same ff file without levels in order to see the codes")
+  y &lt;- x
+  levels(y) &lt;- NULL
+
+  levels(x)
+  data.frame(factor=x[], codes=y[], stringsAsFactors = TRUE)
+
+  levels(x) &lt;- appendLevels(levels(x), letters)
+  levels(x)
+  data.frame(factor=x[], codes=y[], stringsAsFactors = TRUE)
+
+  x &lt;- sortLevels(x) # implicit recoding is chunked were necessary
+  levels(x)
+  data.frame(factor=x[], codes=y[], stringsAsFactors = TRUE)
+
+  message("NEVER forget to reassign the result of recodeLevels or sortLevels, 
+look at the following mess")
+  recodeLevels(x, rev(levels(x)))
+  message("NOW the codings have changed, but not the levels, the result is wrong data")
+  levels(x)
+  data.frame(factor=x[], codes=y[], stringsAsFactors = TRUE)
+
+  rm(x);gc()
+
+## Not run: 
+ n &lt;- 5e7
+
+ message("reading a factor from a file ist as fast ...")
+ system.time(
+ fx &lt;- ff(factor(letters[1:25]), length=n)
+ )
+ system.time(x &lt;- fx[])
+ str(x)
+ rm(x); gc()
+
+
+ message("... as creating it in-RAM (R-2.11.1) which is theoretically impossible ...")
+ system.time({
+ x &lt;- integer(n)
+ x[] &lt;- 1:25
+ levels(x) &lt;- letters[1:25]
+ class(x) &lt;- "factor"
+ })
+ str(x)
+ rm(x); gc()
+
+
+ message("... but is possible if we avoid some  unnecessary copying that is triggered 
+by assignment functions")
+ system.time({
+ x &lt;- integer(n)
+ x[] &lt;- 1:25
+ setattr(x, "levels", letters[1:25])
+ setattr(x, "class", "factor")
+ })
+ str(x)
+ rm(x); gc()
+
+ rm(n)
+
+## End(Not run)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ff</em> version 4.5.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

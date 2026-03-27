@@ -1,0 +1,195 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Transition probability matrix from a fully-parametric,...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for pmatrix.fs {flexsurv}"><tr><td>pmatrix.fs {flexsurv}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Transition probability matrix from a fully-parametric, time-inhomogeneous
+Markov multi-state model</h2>
+
+<h3>Description</h3>
+
+<p>The transition probability matrix for time-inhomogeneous Markov multi-state
+models fitted to time-to-event data with <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>.  This
+has <i>r,s</i> entry giving the probability that an individual is in state
+<i>s</i> at time <i>t</i>, given they are in state <i>r</i> at time <i>0</i>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+pmatrix.fs(
+  x,
+  trans = NULL,
+  t = 1,
+  newdata = NULL,
+  condstates = NULL,
+  ci = FALSE,
+  tvar = "trans",
+  sing.inf = 1e+10,
+  B = 1000,
+  cl = 0.95,
+  tidy = FALSE,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A model fitted with <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>.  See
+<code><a href="../../flexsurv/help/msfit.flexsurvreg.html">msfit.flexsurvreg</a></code> for the required form of the model and the
+data.  Additionally, this must be a Markov / clock-forward model, but can
+be time-inhomogeneous.  See the package vignette for further explanation.
+</p>
+<p><code>x</code> can also be a list of models, with one component for each
+permitted transition, as illustrated in <code><a href="../../flexsurv/help/msfit.flexsurvreg.html">msfit.flexsurvreg</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>trans</code></td>
+<td>
+<p>Matrix indicating allowed transitions.  See
+<code><a href="../../flexsurv/help/msfit.flexsurvreg.html">msfit.flexsurvreg</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>t</code></td>
+<td>
+<p>Time or vector of times to predict state occupancy probabilities
+for.</p>
+</td></tr>
+<tr valign="top"><td><code>newdata</code></td>
+<td>
+<p>A data frame specifying the values of covariates in the
+fitted model, other than the transition number.  See
+<code><a href="../../flexsurv/help/msfit.flexsurvreg.html">msfit.flexsurvreg</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>condstates</code></td>
+<td>
+<p>xInstead of the unconditional probability of being in state <i>s</i> at time <i>t</i> given state <i>r</i> at time 0, return the probability conditional on being in a particular subset of states at time <i>t</i>.  This subset is specified in the <code>condstates</code> argument, as a vector of character labels or integers. 
+</p>
+<p>This is used, for example, in competing risks situations, e.g. if the competing states are death or recovery from a disease, and we want to compute the probability a patient has died, given they have died or recovered.   If these are absorbing states, then as <i>t</i> increases, this converges to the case fatality ratio.  To compute this, set <i>t</i> to a very large number, <code>Inf</code> will not work.</p>
+</td></tr>
+<tr valign="top"><td><code>ci</code></td>
+<td>
+<p>Return a confidence interval calculated by simulating from the
+asymptotic normal distribution of the maximum likelihood estimates.  Turned
+off by default, since this is computationally intensive.  If turned on,
+users should increase <code>B</code> until the results reach the desired
+precision.</p>
+</td></tr>
+<tr valign="top"><td><code>tvar</code></td>
+<td>
+<p>Variable in the data representing the transition type. Not
+required if <code>x</code> is a list of models.</p>
+</td></tr>
+<tr valign="top"><td><code>sing.inf</code></td>
+<td>
+<p>If there is a singularity in the observed hazard, for
+example a Weibull distribution with <code>shape &lt; 1</code> has infinite hazard at
+<code>t=0</code>, then as a workaround, the hazard is assumed to be a large
+finite number, <code>sing.inf</code>, at this time.  The results should not be
+sensitive to the exact value assumed, but users should make sure by
+adjusting this parameter in these cases.</p>
+</td></tr>
+<tr valign="top"><td><code>B</code></td>
+<td>
+<p>Number of simulations from the normal asymptotic distribution used
+to calculate variances.  Decrease for greater speed at the expense of
+accuracy.</p>
+</td></tr>
+<tr valign="top"><td><code>cl</code></td>
+<td>
+<p>Width of symmetric confidence intervals, relative to 1.</p>
+</td></tr>
+<tr valign="top"><td><code>tidy</code></td>
+<td>
+<p>If TRUE then return the results as a tidy data frame</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Arguments passed to <code><a href="../../deSolve/help/ode.html">ode</a></code> in <span class="pkg">deSolve</span>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This is computed by solving the Kolmogorov forward differential equation
+numerically, using the methods in the <span class="pkg">deSolve</span> package.  The
+equation is
+</p>
+<p style="text-align: center;"><i>\frac{dP(t)}{dt} = P(t) Q(t)</i></p>
+
+<p>where <i>P(t)</i> is the transition probability matrix for time <i>t</i>, and
+<i>Q(t)</i> is the transition hazard or intensity as a function of <i>t</i>.
+The initial condition is <i>P(0) = I</i>.
+</p>
+<p>Note that the package <span class="pkg">msm</span> has a similar method <code>pmatrix.msm</code>.
+<code>pmatrix.fs</code> should give the same results as <code>pmatrix.msm</code> when
+both of these conditions hold:
+</p>
+ <ul>
+<li><p> the time-to-event distribution is exponential for all
+transitions, thus the <code>flexsurvreg</code> model was fitted with
+<code>dist="exp"</code> and the model is time-homogeneous.  </p>
+</li>
+<li><p> the <span class="pkg">msm</span>
+model was fitted with <code>exacttimes=TRUE</code>, thus all the event times are
+known, and there are no time-dependent covariates.  </p>
+</li></ul>
+
+<p><span class="pkg">msm</span> only allows exponential or piecewise-exponential time-to-event
+distributions, while <span class="pkg">flexsurvreg</span> allows more flexible models.
+<span class="pkg">msm</span> however was designed in particular for panel data, where the
+process is observed only at arbitrary times, thus the times of transition
+are unknown, which makes flexible models difficult.
+</p>
+<p>This function is only valid for Markov (&quot;clock-forward&quot;) multi-state
+models, though no warning or error is currently given if the model is not
+Markov.  See <code><a href="../../flexsurv/help/pmatrix.simfs.html">pmatrix.simfs</a></code> for the equivalent for semi-Markov
+(&quot;clock-reset&quot;) models.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The transition probability matrix, if <code>t</code> is of length 1.  If <code>t</code> is longer, return a list of matrices, or a data frame if <code>tidy</code> is TRUE. 
+</p>
+<p>If <code>ci=TRUE</code>, each element has attributes <code>"lower"</code> and
+<code>"upper"</code> giving matrices of the corresponding confidence limits.
+These are formatted for printing but may be extracted using <code>attr()</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Christopher Jackson <a href="mailto:chris.jackson@mrc-bsu.cam.ac.uk">chris.jackson@mrc-bsu.cam.ac.uk</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../flexsurv/help/pmatrix.simfs.html">pmatrix.simfs</a></code>, <code><a href="../../flexsurv/help/totlos.fs.html">totlos.fs</a></code>,
+<code><a href="../../flexsurv/help/msfit.flexsurvreg.html">msfit.flexsurvreg</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# BOS example in vignette, and in msfit.flexsurvreg
+bexp &lt;- flexsurvreg(Surv(Tstart, Tstop, status) ~ trans,
+                    data=bosms3, dist="exp")
+tmat &lt;- rbind(c(NA,1,2),c(NA,NA,3),c(NA,NA,NA))
+# more likely to be dead (state 3) as time moves on, or if start with
+# BOS (state 2)
+pmatrix.fs(bexp, t=c(5,10), trans=tmat)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>flexsurv</em> version 2.3.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

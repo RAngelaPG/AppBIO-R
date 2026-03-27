@@ -1,0 +1,171 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Binning the Numeric Data</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for binning {dlookr}"><tr><td>binning {dlookr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Binning the Numeric Data</h2>
+
+<h3>Description</h3>
+
+<p>The binning() converts a numeric variable to a categorization variable.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+binning(
+  x,
+  nbins,
+  type = c("quantile", "equal", "pretty", "kmeans", "bclust"),
+  ordered = TRUE,
+  labels = NULL,
+  approxy.lab = TRUE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>numeric. numeric vector for binning.</p>
+</td></tr>
+<tr valign="top"><td><code>nbins</code></td>
+<td>
+<p>integer. number of intervals(bins). required. if missing, nclass.Sturges is used.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>character. binning method. Choose from &quot;quantile&quot;, &quot;equal&quot;, &quot;pretty&quot;, &quot;kmeans&quot; and &quot;bclust&quot;.
+The &quot;quantile&quot; sets breaks with quantiles of the same interval.
+The &quot;equal&quot; sets breaks at the same interval.
+The &quot;pretty&quot; chooses a number of breaks not necessarily equal
+to nbins using base::pretty function.
+The &quot;kmeans&quot; uses stats::kmeans function to generate the breaks.
+The &quot;bclust&quot; uses e1071::bclust function to generate the breaks using bagged clustering.
+&quot;kmeans&quot; and &quot;bclust&quot; was implemented by classInt::classIntervals() function.</p>
+</td></tr>
+<tr valign="top"><td><code>ordered</code></td>
+<td>
+<p>logical. whether to build an ordered factor or not.</p>
+</td></tr>
+<tr valign="top"><td><code>labels</code></td>
+<td>
+<p>character. the label names to use for each of the bins.</p>
+</td></tr>
+<tr valign="top"><td><code>approxy.lab</code></td>
+<td>
+<p>logical. If TRUE, large number breaks are approximated to pretty numbers. 
+If FALSE, the original breaks obtained by type are used.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This function is useful when used with the mutate/transmute
+function of the dplyr package.
+</p>
+<p>See vignette(&quot;transformation&quot;) for an introduction to these concepts.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of bins class.
+Attributes of bins class is as follows.
+</p>
+
+<ul>
+<li><p> class : &quot;bins&quot;
+</p>
+</li>
+<li><p> type : binning type, &quot;quantile&quot;, &quot;equal&quot;, &quot;pretty&quot;, &quot;kmeans&quot;, &quot;bclust&quot;.
+</p>
+</li>
+<li><p> breaks : breaks for binning. the number of intervals into which x is to be cut.
+</p>
+</li>
+<li><p> levels : levels of binned value.
+</p>
+</li>
+<li><p> raw : raw data, numeric vector corresponding to x argument.
+</p>
+</li></ul>
+
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../dlookr/help/binning_by.html">binning_by</a></code>, <code><a href="../../dlookr/help/print.bins.html">print.bins</a></code>, <code><a href="../../dlookr/help/summary.bins.html">summary.bins</a></code>,
+<code><a href="../../dlookr/help/plot.bins.html">plot.bins</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# Generate data for the example
+heartfailure2 &lt;- heartfailure
+heartfailure2[sample(seq(NROW(heartfailure2)), 20), "platelets"] &lt;- NA
+
+# Binning the platelets variable. default type argument is "quantile"
+bin &lt;- binning(heartfailure2$platelets)
+# Print bins class object
+bin
+
+# Using labels argument
+bin &lt;- binning(heartfailure2$platelets, nbins = 4,
+              labels = c("LQ1", "UQ1", "LQ3", "UQ3"))
+bin
+
+# Using another type argument
+bin &lt;- binning(heartfailure2$platelets, nbins = 5, type = "equal")
+bin
+bin &lt;- binning(heartfailure2$platelets, nbins = 5, type = "pretty")
+bin
+# "kmeans" and "bclust" was implemented by classInt::classIntervals() function.
+# So, you must install classInt package.
+if (requireNamespace("classInt", quietly = TRUE)) {
+  bin &lt;- binning(heartfailure2$platelets, nbins = 5, type = "kmeans")
+  bin
+  bin &lt;- binning(heartfailure2$platelets, nbins = 5, type = "bclust")
+  bin
+} else {
+  cat("If you want to use this feature, you need to install the 'classInt' package.\n")
+}
+
+x &lt;- sample(1:1000, size = 50) * 12345679
+bin &lt;- binning(x)
+bin
+bin &lt;- binning(x, approxy.lab = FALSE)
+bin
+
+# extract binned results
+extract(bin)
+
+# -------------------------
+# Using pipes &amp; dplyr
+# -------------------------
+library(dplyr)
+
+# Compare binned frequency by death_event
+heartfailure2 %&gt;%
+  mutate(platelets_bin = binning(heartfailure2$platelets) %&gt;% 
+           extract()) %&gt;%
+  group_by(death_event, platelets_bin) %&gt;%
+  summarise(freq = n(), .groups = "drop") %&gt;%
+  arrange(desc(freq)) %&gt;%
+  head(10)
+
+ 
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>dlookr</em> version 0.6.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

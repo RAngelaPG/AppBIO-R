@@ -1,0 +1,144 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Reconstruct underlying genotypes</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for argmax.geno {qtl}"><tr><td>argmax.geno {qtl}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Reconstruct underlying genotypes</h2>
+
+<h3>Description</h3>
+
+<p>Uses the Viterbi algorithm to identify the most likely sequence
+of underlying genotypes, given the observed multipoint marker data,
+with possible allowance for genotyping errors.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+argmax.geno(cross, step=0, off.end=0, error.prob=0.0001,
+            map.function=c("haldane","kosambi","c-f","morgan"),
+            stepwidth=c("fixed", "variable", "max"))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>cross</code></td>
+<td>
+<p>An object of class <code>cross</code>. See
+<code><a href="../../qtl/help/read.cross.html">read.cross</a></code> for details.</p>
+</td></tr>
+<tr valign="top"><td><code>step</code></td>
+<td>
+<p>Maximum distance (in cM) between positions at which the
+genotypes are reconstructed, though for <code>step=0</code>, genotypes
+are reconstructed only at the marker locations.</p>
+</td></tr>
+<tr valign="top"><td><code>off.end</code></td>
+<td>
+<p>Distance (in cM) past the terminal markers on each
+chromosome to which the genotype reconstructions will be carried.</p>
+</td></tr>
+<tr valign="top"><td><code>error.prob</code></td>
+<td>
+<p>Assumed genotyping error rate used in the calculation
+of the penetrance Pr(observed genotype | true genotype).</p>
+</td></tr>
+<tr valign="top"><td><code>map.function</code></td>
+<td>
+<p>Indicates whether to use the Haldane, Kosambi,
+Carter-Falconer or Morgan map function when converting genetic
+distances into recombination fractions.</p>
+</td></tr>
+<tr valign="top"><td><code>stepwidth</code></td>
+<td>
+<p>Indicates whether the intermediate points should with
+fixed or variable step sizes.  We recommend using
+<code>"fixed"</code>; <code>"variable"</code> was included for the qtlbim
+package (<a href="https://cran.r-project.org/src/contrib/Archive/qtlbim/">https://cran.r-project.org/src/contrib/Archive/qtlbim/</a>).  The <code>"max"</code>
+option inserts the minimal number of intermediate points so that the
+maximum distance between points is <code>step</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>We use the Viterbi algorithm to calculate
+<i>arg max_v Pr(g = v | O)</i> where
+<i>g</i> is the underlying sequence of genotypes and <i>O</i> is the
+observed marker genotypes.
+</p>
+<p>This is done by calculating
+<i>
+    Q[k](v[k]) = max{v[1], &hellip;, v[k-1]} Pr(g[1] = v[1],
+    &hellip;, g[k] = v[k], O[1], &hellip;, O[k])</i>
+for <i>k = 1, &hellip;, n</i> and then tracing back through the
+sequence.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The input <code>cross</code> object is returned with a component,
+<code>argmax</code>, added to each component of <code>cross$geno</code>.
+The <code>argmax</code> component is a matrix of size [n.ind x n.pos], where
+n.pos is the
+number of positions at which the reconstructed genotypes were obtained,
+containing the most likely sequences of underlying genotypes.
+Attributes <code>"error.prob"</code>, <code>"step"</code>, and <code>"off.end"</code>
+are set to the values of the corresponding arguments, for later
+reference.
+</p>
+
+
+<h3>Warning</h3>
+
+<p>The Viterbi algorithm can behave badly when <code>step</code> is small but
+positive. One may observe quite different results for different values
+of <code>step</code>.
+</p>
+<p>The problem is that, in the presence of data like <code>A----H</code>,  the
+sequences <code>AAAAAA</code> and <code>HHHHHH</code> may be more likely than any
+one of the sequences <code>AAAAAH</code>, <code>AAAAHH</code>, <code>AAAHHH</code>,
+<code>AAHHHH</code>, <code>AHHHHH</code>, <code>AAAAAH</code>.  The Viterbi algorithm
+produces a single &quot;most likely&quot; sequence of underlying genotypes.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Karl W Broman, <a href="mailto:broman@wisc.edu">broman@wisc.edu</a> </p>
+
+
+<h3>References</h3>
+
+<p>Lange, K. (1999) <em>Numerical analysis for statisticians</em>.
+Springer-Verlag. Sec 23.3.
+</p>
+<p>Rabiner, L. R. (1989) A tutorial on hidden Markov models and selected
+applications in speech recognition.  <em>Proceedings of the IEEE</em>
+<b>77</b>, 257&ndash;286.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../qtl/help/sim.geno.html">sim.geno</a></code>, <code><a href="../../qtl/help/calc.genoprob.html">calc.genoprob</a></code>,
+<code><a href="../../qtl/help/fill.geno.html">fill.geno</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(fake.f2)
+fake.f2 &lt;- argmax.geno(fake.f2, step=2, off.end=5, err=0.01)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>qtl</em> version 1.74 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Probability of Direction (pd)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for p_direction.lm {parameters}"><tr><td>p_direction.lm {parameters}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Probability of Direction (pd)</h2>
+
+<h3>Description</h3>
+
+<p>Compute the <strong>Probability of Direction</strong> (<em>pd</em>, also known as
+the Maximum Probability of Effect - <em>MPE</em>). This can be interpreted as the
+probability that a parameter (described by its full confidence, or
+&quot;compatibility&quot; interval) is strictly positive or negative (whichever is the
+most probable). Although differently expressed, this index is fairly similar
+(i.e., is strongly correlated) to the frequentist <em>p-value</em> (see 'Details').
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'lm'
+p_direction(
+  x,
+  ci = 0.95,
+  method = "direct",
+  null = 0,
+  vcov = NULL,
+  vcov_args = NULL,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A statistical model.</p>
+</td></tr>
+<tr valign="top"><td><code>ci</code></td>
+<td>
+<p>Confidence Interval (CI) level. Default to <code>0.95</code> (<code style="white-space: pre;">95%</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>Can be <code>"direct"</code> or one of methods of <code><a href="../../bayestestR/help/estimate_density.html">estimate_density()</a></code>,
+such as <code>"kernel"</code>, <code>"logspline"</code> or <code>"KernSmooth"</code>. See details.</p>
+</td></tr>
+<tr valign="top"><td><code>null</code></td>
+<td>
+<p>The value considered as a &quot;null&quot; effect. Traditionally 0, but
+could also be 1 in the case of ratios of change (OR, IRR, ...).</p>
+</td></tr>
+<tr valign="top"><td><code>vcov</code></td>
+<td>
+<p>Variance-covariance matrix used to compute uncertainty estimates
+(e.g., for robust standard errors). This argument accepts a covariance
+matrix, a function which returns a covariance matrix, or a string which
+identifies the function to be used to compute the covariance matrix.
+</p>
+
+<ul>
+<li><p> A covariance matrix
+</p>
+</li>
+<li><p> A function which returns a covariance matrix (e.g., <code>stats::vcov()</code>)
+</p>
+</li>
+<li><p> A string which indicates the kind of uncertainty estimates to return.
+</p>
+
+<ul>
+<li><p> Heteroskedasticity-consistent: <code>"HC"</code>, <code>"HC0"</code>, <code>"HC1"</code>, <code>"HC2"</code>,
+<code>"HC3"</code>, <code>"HC4"</code>, <code>"HC4m"</code>, <code>"HC5"</code>. See <code>?sandwich::vcovHC</code>
+</p>
+</li>
+<li><p> Cluster-robust: <code>"CR"</code>, <code>"CR0"</code>, <code>"CR1"</code>, <code>"CR1p"</code>, <code>"CR1S"</code>,
+<code>"CR2"</code>, <code>"CR3"</code>. See <code>?clubSandwich::vcovCR</code>
+</p>
+</li>
+<li><p> Bootstrap: <code>"BS"</code>, <code>"xy"</code>, <code>"residual"</code>, <code>"wild"</code>, <code>"mammen"</code>,
+<code>"fractional"</code>, <code>"jackknife"</code>, <code>"norm"</code>, <code>"webb"</code>. See
+<code>?sandwich::vcovBS</code>
+</p>
+</li>
+<li><p> Other <code>sandwich</code> package functions: <code>"HAC"</code>, <code>"PC"</code>, <code>"CL"</code>, <code>"OPG"</code>,
+<code>"PL"</code>.
+</p>
+</li></ul>
+
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>vcov_args</code></td>
+<td>
+<p>List of arguments to be passed to the function identified by
+the <code>vcov</code> argument. This function is typically supplied by the
+<strong>sandwich</strong> or <strong>clubSandwich</strong> packages. Please refer to their
+documentation (e.g., <code>?sandwich::vcovHAC</code>) to see the list of available
+arguments. If no estimation type (argument <code>type</code>) is given, the default
+type for <code>"HC"</code> equals the default from the <strong>sandwich</strong> package; for type
+<code>"CR"</code>, the default is set to <code>"CR3"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Arguments passed to other methods, e.g. <code>ci()</code>. Arguments like
+<code>vcov</code> or <code>vcov_args</code> can be used to compute confidence intervals using a
+specific variance-covariance matrix for the standard errors.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A data frame.
+</p>
+
+
+<h3>What is the <em>pd</em>?</h3>
+
+<p>The Probability of Direction (pd) is an index of effect existence, representing
+the certainty with which an effect goes in a particular direction (i.e., is
+positive or negative / has a sign), typically ranging from 0.5 to 1 (but see
+next section for cases where it can range between 0 and 1). Beyond
+its simplicity of interpretation, understanding and computation, this index
+also presents other interesting properties:
+</p>
+
+<ul>
+<li><p> Like other posterior-based indices, <em>pd</em> is solely based on the posterior
+distributions and does not require any additional information from the data
+or the model (e.g., such as priors, as in the case of Bayes factors).
+</p>
+</li>
+<li><p> It is robust to the scale of both the response variable and the predictors.
+</p>
+</li>
+<li><p> It is strongly correlated with the frequentist p-value, and can thus
+be used to draw parallels and give some reference to readers non-familiar
+with Bayesian statistics (Makowski et al., 2019).
+</p>
+</li></ul>
+
+
+
+<h3>Relationship with the p-value</h3>
+
+<p>In most cases, it seems that the <em>pd</em> has a direct correspondence with the
+frequentist one-sided <em>p</em>-value through the formula (for two-sided <em>p</em>):
+p = 2 * (1 - p<sub>d</sub>)
+Thus, a two-sided p-value of respectively <code>.1</code>, <code>.05</code>, <code>.01</code> and <code>.001</code> would
+correspond approximately to a <em>pd</em> of <code style="white-space: pre;">95%</code>, <code style="white-space: pre;">97.5%</code>, <code style="white-space: pre;">99.5%</code> and <code style="white-space: pre;">99.95%</code>.
+See <code><a href="../../bayestestR/help/pd_to_p.html">pd_to_p()</a></code> for details.
+</p>
+
+
+<h3>Possible Range of Values</h3>
+
+<p>The largest value <em>pd</em> can take is 1 - the posterior is strictly directional.
+However, the smallest value <em>pd</em> can take depends on the parameter space
+represented by the posterior.
+</p>
+<p><strong>For a continuous parameter space</strong>, exact values of 0 (or any point null
+value) are not possible, and so 100% of the posterior has <em>some</em> sign, some
+positive, some negative. Therefore, the smallest the <em>pd</em> can be is 0.5 -
+with an equal posterior mass of positive and negative values. Values close to
+0.5 <em>cannot</em> be used to support the null hypothesis (that the parameter does
+<em>not</em> have a direction) is a similar why to how large p-values cannot be used
+to support the null hypothesis (see <code><a href="../../bayestestR/help/pd_to_p.html">pd_to_p()</a></code>; Makowski et al., 2019).
+</p>
+<p><strong>For a discrete parameter space or a parameter space that is a mixture
+between discrete and continuous spaces</strong>, exact values of 0 (or any point
+null value) <em>are</em> possible! Therefore, the smallest the <em>pd</em> can be is 0 -
+with 100% of the posterior mass on 0. Thus values close to 0 can be used to
+support the null hypothesis (see van den Bergh et al., 2021).
+</p>
+<p>Examples of posteriors representing discrete parameter space:
+</p>
+
+<ul>
+<li><p> When a parameter can only take discrete values.
+</p>
+</li>
+<li><p> When a mixture prior/posterior is used (such as the spike-and-slab prior;
+see van den Bergh et al., 2021).
+</p>
+</li>
+<li><p> When conducting Bayesian model averaging (e.g., <code><a href="../../bayestestR/help/weighted_posteriors.html">weighted_posteriors()</a></code> or
+<code>brms::posterior_average</code>).
+</p>
+</li></ul>
+
+
+
+<h3>Statistical inference - how to quantify evidence</h3>
+
+<p>There is no standardized approach to drawing conclusions based on the
+available data and statistical models. A frequently chosen but also much
+criticized approach is to evaluate results based on their statistical
+significance (<em>Amrhein et al. 2017</em>).
+</p>
+<p>A more sophisticated way would be to test whether estimated effects exceed
+the &quot;smallest effect size of interest&quot;, to avoid even the smallest effects
+being considered relevant simply because they are statistically significant,
+but clinically or practically irrelevant (<em>Lakens et al. 2018, Lakens 2024</em>).
+</p>
+<p>A rather unconventional approach, which is nevertheless advocated by various
+authors, is to interpret results from classical regression models either in
+terms of probabilities, similar to the usual approach in Bayesian statistics
+(<em>Schweder 2018; Schweder and Hjort 2003; Vos 2022</em>) or in terms of relative
+measure of &quot;evidence&quot; or &quot;compatibility&quot; with the data (<em>Greenland et al. 2022;
+Rafi and Greenland 2020</em>), which nevertheless comes close to a probabilistic
+interpretation.
+</p>
+<p>A more detailed discussion of this topic is found in the documentation of
+<code><a href="../../parameters/help/p_function.html">p_function()</a></code>.
+</p>
+<p>The <strong>parameters</strong> package provides several options or functions to aid
+statistical inference. These are, for example:
+</p>
+
+<ul>
+<li> <p><code><a href="../../parameters/help/equivalence_test.lm.html">equivalence_test()</a></code>, to compute the (conditional)
+equivalence test for frequentist models
+</p>
+</li>
+<li> <p><code><a href="../../parameters/help/p_significance.lm.html">p_significance()</a></code>, to compute the probability of
+<em>practical significance</em>, which can be conceptualized as a unidirectional
+equivalence test
+</p>
+</li>
+<li> <p><code><a href="../../parameters/help/p_function.html">p_function()</a></code>, or <em>consonance function</em>, to compute p-values and
+compatibility (confidence) intervals for statistical models
+</p>
+</li>
+<li><p> the <code>pd</code> argument (setting <code>pd = TRUE</code>) in <code>model_parameters()</code> includes
+a column with the <em>probability of direction</em>, i.e. the probability that a
+parameter is strictly positive or negative. See <code><a href="../../bayestestR/help/p_direction.html">bayestestR::p_direction()</a></code>
+for details. If plotting is desired, the <code><a href="../../parameters/help/p_direction.lm.html">p_direction()</a></code>
+function can be used, together with <code>plot()</code>.
+</p>
+</li>
+<li><p> the <code>s_value</code> argument (setting <code>s_value = TRUE</code>) in <code>model_parameters()</code>
+replaces the p-values with their related <em>S</em>-values (<em>Rafi and Greenland 2020</em>)
+</p>
+</li>
+<li><p> finally, it is possible to generate distributions of model coefficients by
+generating bootstrap-samples (setting <code>bootstrap = TRUE</code>) or simulating
+draws from model coefficients using <code><a href="../../parameters/help/simulate_model.html">simulate_model()</a></code>. These samples
+can then be treated as &quot;posterior samples&quot; and used in many functions from
+the <strong>bayestestR</strong> package.
+</p>
+</li></ul>
+
+<p>Most of the above shown options or functions derive from methods originally
+implemented for Bayesian models (<em>Makowski et al. 2019</em>). However, assuming
+that model assumptions are met (which means, the model fits well to the data,
+the correct model is chosen that reflects the data generating process
+(distributional model family) etc.), it seems appropriate to interpret
+results from classical frequentist models in a &quot;Bayesian way&quot; (more details:
+documentation in <code><a href="../../parameters/help/p_function.html">p_function()</a></code>).
+</p>
+
+
+<h3>References</h3>
+
+
+<ul>
+<li><p> Amrhein, V., Korner-Nievergelt, F., and Roth, T. (2017). The earth is
+flat (p &gt; 0.05): Significance thresholds and the crisis of unreplicable
+research. PeerJ, 5, e3544. doi: <a href="https://doi.org/10.7717/peerj.3544">10.7717/peerj.3544</a>
+</p>
+</li>
+<li><p> Greenland S, Rafi Z, Matthews R, Higgs M. To Aid Scientific Inference,
+Emphasize Unconditional Compatibility Descriptions of Statistics. (2022)
+https://arxiv.org/abs/1909.08583v7 (Accessed November 10, 2022)
+</p>
+</li>
+<li><p> Lakens, D. (2024). Improving Your Statistical Inferences (Version v1.5.1).
+Retrieved from https://lakens.github.io/statistical_inferences/.
+doi: <a href="https://doi.org/10.5281/ZENODO.6409077">10.5281/ZENODO.6409077</a>
+</p>
+</li>
+<li><p> Lakens, D., Scheel, A. M., and Isager, P. M. (2018). Equivalence Testing
+for Psychological Research: A Tutorial. Advances in Methods and Practices
+in Psychological Science, 1(2), 259–269.
+</p>
+</li>
+<li><p> Makowski, D., Ben-Shachar, M. S., Chen, S. H. A., and Lüdecke, D. (2019).
+Indices of Effect Existence and Significance in the Bayesian Framework.
+Frontiers in Psychology, 10, 2767. doi: <a href="https://doi.org/10.3389/fpsyg.2019.02767">10.3389/fpsyg.2019.02767</a>
+</p>
+</li>
+<li><p> Rafi Z, Greenland S. Semantic and cognitive tools to aid statistical
+science: replace confidence and significance by compatibility and surprise.
+BMC Medical Research Methodology (2020) 20:244.
+</p>
+</li>
+<li><p> Schweder T. Confidence is epistemic probability for empirical science.
+Journal of Statistical Planning and Inference (2018) 195:116–125.
+doi: <a href="https://doi.org/10.1016/j.jspi.2017.09.016">10.1016/j.jspi.2017.09.016</a>
+</p>
+</li>
+<li><p> Schweder T, Hjort NL. Frequentist analogues of priors and posteriors.
+In Stigum, B. (ed.), Econometrics and the Philosophy of Economics: Theory
+Data Confrontation in Economics, pp. 285-217. Princeton University Press,
+Princeton, NJ, 2003
+</p>
+</li>
+<li><p> Vos P, Holbert D. Frequentist statistical inference without repeated sampling.
+Synthese 200, 89 (2022). doi: <a href="https://doi.org/10.1007/s11229-022-03560-x">10.1007/s11229-022-03560-x</a>
+</p>
+</li></ul>
+
+
+
+<h3>See Also</h3>
+
+<p>See also <code><a href="../../parameters/help/equivalence_test.html">equivalence_test()</a></code>, <code><a href="../../parameters/help/p_function.html">p_function()</a></code> and
+<code><a href="../../parameters/help/p_significance.html">p_significance()</a></code> for functions related to checking effect existence and
+significance.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+data(qol_cancer)
+model &lt;- lm(QoL ~ time + age + education, data = qol_cancer)
+p_direction(model)
+
+# based on heteroscedasticity-robust standard errors
+p_direction(model, vcov = "HC3")
+
+result &lt;- p_direction(model)
+plot(result)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>parameters</em> version 0.28.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

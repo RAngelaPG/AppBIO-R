@@ -1,0 +1,195 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Cleans names of an object (usually a data.frame).</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for clean_names {janitor}"><tr><td>clean_names {janitor}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Cleans names of an object (usually a data.frame).</h2>
+
+<h3>Description</h3>
+
+<p>Resulting names are unique and consist only of the <code>_</code> character, numbers, and letters.
+Capitalization preferences can be specified using the <code>case</code> parameter.
+</p>
+<p>Accented characters are transliterated to ASCII.  For example, an &quot;o&quot; with a
+German umlaut over it becomes &quot;o&quot;, and the Spanish character &quot;enye&quot; becomes
+&quot;n&quot;.
+</p>
+<p>This function takes and returns a data.frame, for ease of piping with
+<code>`%&gt;%`</code>. For the underlying function that works on a character vector
+of names, see <code><a href="../help/make_clean_names.html">make_clean_names</a></code>.  <code>clean_names</code> 
+relies on the versatile function <code><a href="../../snakecase/help/to_any_case.html">to_any_case</a></code>, which 
+accepts many arguments.  See that function's documentation for ideas on getting 
+the most out of <code>clean_names</code>.  A few examples are included below.
+</p>
+<p>A common issue is that the micro/mu symbol is replaced by &quot;m&quot; instead of &quot;u&quot;.
+The replacement with &quot;m&quot; is more correct when doing Greek-to-ASCII
+transliteration but less correct when doing scientific data-to-ASCII
+transliteration.  A warning will be generated if the &quot;m&quot; replacement occurs.
+To replace with &quot;u&quot;, please add the argument <code>replace=janitor:::mu_to_u</code>
+which is a character vector mapping all known mu or micro Unicode code points
+(characters) to &quot;u&quot;.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+clean_names(dat, ...)
+
+## Default S3 method:
+clean_names(dat, ...)
+
+## S3 method for class 'sf'
+clean_names(dat, ...)
+
+## S3 method for class 'tbl_graph'
+clean_names(dat, ...)
+
+## S3 method for class 'tbl_lazy'
+clean_names(dat, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>dat</code></td>
+<td>
+<p>the input data.frame.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>Arguments passed on to <code><a href="../../janitor/help/make_clean_names.html">make_clean_names</a></code>
+</p>
+
+<dl>
+<dt><code>case</code></dt><dd><p>The desired target case (default is <code>"snake"</code>) will be
+passed to <code>snakecase::to_any_case()</code> with the exception of &quot;old_janitor&quot;,
+which exists only to support legacy code (it preserves the behavior of
+<code>clean_names()</code> prior to addition of the &quot;case&quot; argument (janitor
+versions &lt;= 0.3.1).  &quot;old_janitor&quot; is not intended for new code. See
+<code><a href="../../snakecase/help/to_any_case.html">to_any_case</a></code> for a wide variety of supported cases,
+including &quot;sentence&quot; and &quot;title&quot; case.</p>
+</dd>
+<dt><code>replace</code></dt><dd><p>A named character vector where the name is replaced by the
+value.</p>
+</dd>
+<dt><code>ascii</code></dt><dd><p>Convert the names to ASCII (<code>TRUE</code>, default) or not
+(<code>FALSE</code>).</p>
+</dd>
+<dt><code>use_make_names</code></dt><dd><p>Should <code>make.names()</code> be applied to ensure that the
+output is usable as a name without quoting?  (Avoiding <code>make.names()</code>
+ensures that the output is locale-independent but quoting may be required.)</p>
+</dd>
+<dt><code>allow_dupes</code></dt><dd><p>Allow duplicates in the returned names (<code>TRUE</code>) or not
+(<code>FALSE</code>, the default).</p>
+</dd>
+<dt><code>sep_in</code></dt><dd><p>(short for separator input) if character, is interpreted as a
+regular expression (wrapped internally into <code>stringr::regex()</code>). 
+The default value is a regular expression that matches any sequence of
+non-alphanumeric values. All matches will be replaced by underscores 
+(additionally to <code>"_"</code> and <code>" "</code>, for which this is always true, even
+if <code>NULL</code> is supplied). These underscores are used internally to split
+the strings into substrings and specify the word boundaries.</p>
+</dd>
+<dt><code>parsing_option</code></dt><dd><p>An integer that will determine the parsing_option.
+</p>
+
+<ul>
+<li><p>1: <code>"RRRStudio" -&gt; "RRR_Studio"</code>
+</p>
+</li>
+<li><p>2: <code>"RRRStudio" -&gt; "RRRS_tudio"</code>
+</p>
+</li>
+<li><p>3: <code>"RRRStudio" -&gt; "RRRSStudio"</code>. This will become for example <code>"Rrrstudio"</code> when we convert to lower camel case.
+</p>
+</li>
+<li><p>-1, -2, -3: These <code>parsing_options</code>'s will suppress the conversion after non-alphanumeric values.
+</p>
+</li>
+<li><p>0: no parsing
+</p>
+</li></ul>
+</dd>
+<dt><code>transliterations</code></dt><dd><p>A character vector (if not <code>NULL</code>). The entries of this argument
+need to be elements of <code>stringi::stri_trans_list()</code> (like &quot;Latin-ASCII&quot;, which is often useful) or names of lookup tables (currently only &quot;german&quot; is supported). In the order of the entries the letters of the input
+string will be transliterated via <code>stringi::stri_trans_general()</code> or replaced via the 
+matches of the lookup table. When named character elements are supplied as part of 'transliterations', anything that matches the names is replaced by the corresponding value.
+You should use this feature with care in case of <code>case = "parsed"</code>, <code>case = "internal_parsing"</code> and 
+<code>case = "none"</code>, since for upper case letters, which have transliterations/replacements
+of length 2, the second letter will be transliterated to lowercase, for example Oe, Ae, Ss, which
+might not always be what is intended. In this case you can make usage of the option to supply named elements and specify the transliterations yourself.</p>
+</dd>
+<dt><code>numerals</code></dt><dd><p>A character specifying the alignment of numerals (<code>"middle"</code>, <code>left</code>, <code>right</code>, <code>asis</code> or <code>tight</code>). I.e. <code>numerals = "left"</code> ensures that no output separator is in front of a digit.</p>
+</dd>
+</dl>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>clean_names()</code> is intended to be used on <code>data.frames</code>
+and <code>data.frame</code>-like objects. For this reason there are methods to
+support using <code>clean_names()</code> on <code>sf</code> and <code>tbl_graph</code> (from
+<code>tidygraph</code>) objects as well as on database connections through
+<code>dbplyr</code>. For cleaning other named objects like named lists 
+and vectors, use <code>make_clean_names()</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns the data.frame with clean names.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other Set names: 
+<code><a href="../../janitor/help/find_header.html">find_header</a>()</code>,
+<code><a href="../../janitor/help/mu_to_u.html">mu_to_u</a></code>,
+<code><a href="../../janitor/help/row_to_names.html">row_to_names</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# --- Simple Usage ---
+x &lt;- data.frame(caseID = 1, DOB = 2, Other = 3)
+clean_names(x)
+
+# or pipe in the input data.frame:
+x %&gt;%
+  clean_names()
+
+# if you prefer camelCase variable names:
+x %&gt;%
+  clean_names(., "lower_camel")
+
+# (not run) run clean_names after reading in a spreadsheet:
+# library(readxl)
+# read_excel("messy_excel_file.xlsx") %&gt;%
+#   clean_names()
+
+# --- Taking advantage of the underlying snakecase::to_any_case arguments ---
+
+# Restore column names to Title Case, e.g., for plotting
+mtcars %&gt;%
+  clean_names(case = "title")
+  
+# Tell clean_names to leave certain abbreviations untouched:
+x %&gt;%
+  clean_names(case = "upper_camel", abbreviations = c("ID", "DOB")) 
+  
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>janitor</em> version 2.2.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

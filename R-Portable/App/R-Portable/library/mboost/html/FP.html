@@ -1,0 +1,108 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Fractional Polynomials</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for FP {mboost}"><tr><td>FP {mboost}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Fractional Polynomials </h2>
+
+<h3>Description</h3>
+
+<p>Fractional polynomials transformation for continuous covariates.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+FP(x, p = c(-2, -1, -0.5, 0.5, 1, 2, 3), scaling = TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p> a numeric vector. </p>
+</td></tr>
+<tr valign="top"><td><code>p</code></td>
+<td>
+<p> all powers of <code>x</code> to be included. </p>
+</td></tr>
+<tr valign="top"><td><code>scaling</code></td>
+<td>
+<p> a logical indicating if the measurements are scaled prior to model fitting.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>A fractional polynomial refers to a model
+<i>&sum;_{j = 1}^k (&beta;_j x^{p_j} + &gamma;_j x^{p_j} \log(x)) +
+    &beta;_{k + 1} \log(x)  + &gamma;_{k + 1} \log(x)^2</i>,
+where the degree of the fractional polynomial is the number of non-zero regression coefficients
+<i>&beta;</i> and <i>&gamma;</i>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A matrix including all powers <code>p</code> of <code>x</code>,
+all powers <code>p</code> of <code>log(x)</code>, and <code>log(x)</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Willi Sauerbrei and Patrick Royston (1999), Building multivariable prognostic and
+diagnostic models: transformation of the predictors by using fractional polynomials.
+<em>Journal of the Royal Statistical Society A</em>, <b>162</b>, 71&ndash;94.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../mboost/help/gamboost.html">gamboost</a></code> to fit smooth models, <code><a href="../../mboost/help/bbs.html">bbs</a></code>
+for P-spline base-learners</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+    data("bodyfat", package = "TH.data")
+    tbodyfat &lt;- bodyfat
+
+    ### map covariates into [1, 2]
+    indep &lt;- names(tbodyfat)[-2]
+    tbodyfat[indep] &lt;- lapply(bodyfat[indep], function(x) {
+        x &lt;- x - min(x)
+        x / max(x) + 1
+    })
+
+    ### generate formula
+    fpfm &lt;- as.formula(paste("DEXfat ~ ",
+        paste("FP(", indep, ", scaling = FALSE)", collapse = "+")))
+    fpfm
+
+    ### fit linear model
+    bf_fp &lt;- glmboost(fpfm, data = tbodyfat,
+                      control = boost_control(mstop = 3000))
+
+    ### when to stop
+    mstop(aic &lt;- AIC(bf_fp))
+    plot(aic)
+
+    ### coefficients
+    cf &lt;- coef(bf_fp[mstop(aic)])
+    length(cf)
+    cf[abs(cf) &gt; 0]
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mboost</em> version 2.9-11 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

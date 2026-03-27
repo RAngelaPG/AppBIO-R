@@ -139,6 +139,9 @@ class SpMat : public SpBase< eT, SpMat<eT> >
   template<typename T1> inline SpMat& operator*=(const Op<T1, op_diagmat>& expr);
   template<typename T1> inline SpMat& operator/=(const Op<T1, op_diagmat>& expr);
   template<typename T1> inline SpMat& operator%=(const Op<T1, op_diagmat>& expr);
+
+  //! explicit specification of sparse +/- scalar
+  template<typename T1, typename op_type> inline explicit SpMat(const SpToDOp<T1, op_type>& expr);
   
   //! construction of complex matrix out of two non-complex matrices
   template<typename T1, typename T2>
@@ -168,6 +171,7 @@ class SpMat : public SpBase< eT, SpMat<eT> >
   inline SpMat& operator%=(const spdiagview<eT>& X);
   inline SpMat& operator/=(const spdiagview<eT>& X);
   
+  // delayed unary ops
   template<typename T1, typename spop_type> inline             SpMat(const SpOp<T1, spop_type>& X);
   template<typename T1, typename spop_type> inline SpMat& operator= (const SpOp<T1, spop_type>& X);
   template<typename T1, typename spop_type> inline SpMat& operator+=(const SpOp<T1, spop_type>& X);
@@ -176,6 +180,7 @@ class SpMat : public SpBase< eT, SpMat<eT> >
   template<typename T1, typename spop_type> inline SpMat& operator%=(const SpOp<T1, spop_type>& X);
   template<typename T1, typename spop_type> inline SpMat& operator/=(const SpOp<T1, spop_type>& X);
   
+  // delayed binary ops
   template<typename T1, typename T2, typename spglue_type> inline             SpMat(const SpGlue<T1, T2, spglue_type>& X);
   template<typename T1, typename T2, typename spglue_type> inline SpMat& operator= (const SpGlue<T1, T2, spglue_type>& X);
   template<typename T1, typename T2, typename spglue_type> inline SpMat& operator+=(const SpGlue<T1, T2, spglue_type>& X);
@@ -184,6 +189,7 @@ class SpMat : public SpBase< eT, SpMat<eT> >
   template<typename T1, typename T2, typename spglue_type> inline SpMat& operator%=(const SpGlue<T1, T2, spglue_type>& X);
   template<typename T1, typename T2, typename spglue_type> inline SpMat& operator/=(const SpGlue<T1, T2, spglue_type>& X);
   
+  // delayed mixed-type unary ops
   template<typename T1, typename spop_type> inline             SpMat(const mtSpOp<eT, T1, spop_type>& X);
   template<typename T1, typename spop_type> inline SpMat& operator= (const mtSpOp<eT, T1, spop_type>& X);
   template<typename T1, typename spop_type> inline SpMat& operator+=(const mtSpOp<eT, T1, spop_type>& X);
@@ -192,6 +198,7 @@ class SpMat : public SpBase< eT, SpMat<eT> >
   template<typename T1, typename spop_type> inline SpMat& operator%=(const mtSpOp<eT, T1, spop_type>& X);
   template<typename T1, typename spop_type> inline SpMat& operator/=(const mtSpOp<eT, T1, spop_type>& X);
   
+  // delayed mixed-type binary ops
   template<typename T1, typename T2, typename spglue_type> inline             SpMat(const mtSpGlue<eT, T1, T2, spglue_type>& X);
   template<typename T1, typename T2, typename spglue_type> inline SpMat& operator= (const mtSpGlue<eT, T1, T2, spglue_type>& X);
   template<typename T1, typename T2, typename spglue_type> inline SpMat& operator+=(const mtSpGlue<eT, T1, T2, spglue_type>& X);
@@ -199,14 +206,6 @@ class SpMat : public SpBase< eT, SpMat<eT> >
   template<typename T1, typename T2, typename spglue_type> inline SpMat& operator*=(const mtSpGlue<eT, T1, T2, spglue_type>& X);
   template<typename T1, typename T2, typename spglue_type> inline SpMat& operator%=(const mtSpGlue<eT, T1, T2, spglue_type>& X);
   template<typename T1, typename T2, typename spglue_type> inline SpMat& operator/=(const mtSpGlue<eT, T1, T2, spglue_type>& X);
-  
-  template<typename T1, typename op_type> inline             SpMat(const mtSpReduceOp<eT, T1, op_type>& X);
-  template<typename T1, typename op_type> inline SpMat& operator= (const mtSpReduceOp<eT, T1, op_type>& X);
-  template<typename T1, typename op_type> inline SpMat& operator+=(const mtSpReduceOp<eT, T1, op_type>& X);
-  template<typename T1, typename op_type> inline SpMat& operator-=(const mtSpReduceOp<eT, T1, op_type>& X);
-  template<typename T1, typename op_type> inline SpMat& operator*=(const mtSpReduceOp<eT, T1, op_type>& X);
-  template<typename T1, typename op_type> inline SpMat& operator%=(const mtSpReduceOp<eT, T1, op_type>& X);
-  template<typename T1, typename op_type> inline SpMat& operator/=(const mtSpReduceOp<eT, T1, op_type>& X);
   
   
   arma_inline       SpSubview_row<eT> row(const uword row_num);
@@ -399,11 +398,11 @@ class SpMat : public SpBase< eT, SpMat<eT> >
   arma_cold inline bool load(const csv_name&     spec, const file_type type =   csv_ascii);
   arma_cold inline bool load(      std::istream& is,   const file_type type = arma_binary);
   
-  arma_frown("use save() instead") inline bool quiet_save(const std::string   name, const file_type type = arma_binary) const;
-  arma_frown("use save() instead") inline bool quiet_save(      std::ostream& os,   const file_type type = arma_binary) const;
+  arma_deprecated inline bool quiet_save(const std::string   name, const file_type type = arma_binary) const;
+  arma_deprecated inline bool quiet_save(      std::ostream& os,   const file_type type = arma_binary) const;
   
-  arma_frown("use load() instead") inline bool quiet_load(const std::string   name, const file_type type = arma_binary);
-  arma_frown("use load() instead") inline bool quiet_load(      std::istream& is,   const file_type type = arma_binary);
+  arma_deprecated inline bool quiet_load(const std::string   name, const file_type type = arma_binary);
+  arma_deprecated inline bool quiet_load(      std::istream& is,   const file_type type = arma_binary);
   
   
   
@@ -696,7 +695,7 @@ class SpMat : public SpBase< eT, SpMat<eT> >
   // 1: CSC needs to be updated from cache (ie. cache has more recent data)
   // 2: no update required                 (ie. CSC and cache contain the same data)
   
-  #if defined(ARMA_USE_STD_MUTEX)
+  #if (!defined(ARMA_DONT_USE_STD_MUTEX))
   arma_aligned mutable std::mutex cache_mutex;
   #endif
   

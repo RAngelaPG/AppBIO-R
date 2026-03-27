@@ -1,0 +1,211 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Extraction and Replacement Operators for Network Objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for network.extraction {network}"><tr><td>network.extraction {network}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Extraction and Replacement Operators for Network Objects</h2>
+
+<h3>Description</h3>
+
+<p>Various operators which allow extraction or replacement of various
+components of a <code>network</code> object.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'network'
+x[i, j, na.omit = FALSE]
+
+## S3 replacement method for class 'network'
+x[i, j, names.eval = NULL, add.edges = FALSE] &lt;- value
+
+x %e% attrname
+
+x %e% attrname &lt;- value
+
+x %eattr% attrname
+
+x %eattr% attrname &lt;- value
+
+x %n% attrname
+
+x %n% attrname &lt;- value
+
+x %nattr% attrname
+
+x %nattr% attrname &lt;- value
+
+x %v% attrname
+
+x %v% attrname &lt;- value
+
+x %vattr% attrname
+
+x %vattr% attrname &lt;- value
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>an object of class <code>network</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>i, j</code></td>
+<td>
+<p>indices of the vertices with respect to which adjacency is to be
+tested.  Empty values indicate that all vertices should be employed (see
+below).</p>
+</td></tr>
+<tr valign="top"><td><code>na.omit</code></td>
+<td>
+<p>logical; should missing edges be omitted (treated as
+no-adjacency), or should <code>NA</code>s be returned?  (Default: return <code>NA</code>
+on missing.)</p>
+</td></tr>
+<tr valign="top"><td><code>names.eval</code></td>
+<td>
+<p>optionally, the name of an edge attribute to use for
+assigning edge values.</p>
+</td></tr>
+<tr valign="top"><td><code>add.edges</code></td>
+<td>
+<p>logical; should new edges be added to <code>x</code> where edges
+are absent and the appropriate element of <code>value</code> is non-zero?</p>
+</td></tr>
+<tr valign="top"><td><code>value</code></td>
+<td>
+<p>the value (or set thereof) to be assigned to the selected
+element of <code>x</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>attrname</code></td>
+<td>
+<p>the name of a network or vertex attribute (as appropriate).</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Indexing for edge extraction operates in a manner analogous to <code>matrix</code>
+objects.  Thus, <code>x[,]</code> selects all vertex pairs, <code>x[1,-5]</code> selects
+the pairing of vertex 1 with all vertices except for 5, etc.  Following
+this, it is acceptable for <code>i</code> and/or <code>j</code> to be logical vectors
+indicating which vertices are to be included.  During assignment, an attempt
+is made to match the elements of <code>value</code> to the extracted pairs in an
+intelligent way; in particular, elements of <code>value</code> will be replicated
+if too few are supplied (allowing expressions like <code>x[1,]&lt;-1</code>).  Where
+<code>names.eval==NULL</code>, zero and non-zero values are taken to indicate the
+presence of absence of edges.  <code>x[2,4]&lt;-6</code> thus adds a single (2,4)
+edge to <code>x</code>, and <code>x[2,4]&lt;-0</code> removes such an edge (if present).
+If <code>x</code> is multiplex, assigning 0 to a vertex pair will eliminate
+<em>all</em> edges on that pair.  Pairs are taken to be directed where
+<code>is.directed(x)==TRUE</code>, and undirected where
+<code>is.directed(x)==FALSE</code>.
+</p>
+<p>If an edge attribute is specified using <code>names.eval</code>, then the provided
+values will be assigned to that attribute.  When assigning values, only
+extant edges are employed (unless <code>add.edges==TRUE</code>); in the latter
+case, any non-zero assignment results in the addition of an edge where
+currently absent.  If the attribute specified is not present on a given
+edge, it is added.  Otherwise, any existing value is overwritten.  The
+<code>%e%</code> operator can also be used to extract/assign edge values; in those
+roles, it is respectively equivalent to <code>get.edge.value(x,attrname)</code>
+and <code>set.edge.value(x,attrname=attrname,value=value)</code> (if <code>value</code>
+is a matrix) and <code>set.edge.attribute(x,attrname=attrname,value=value)</code>
+(if <code>value</code> is anything else). That is, if <code>value</code> is a matrix,
+the assignment operator treats it as an adjacency matrix; and if not, it
+treats it as a vector (recycled as needed) in the internal ordering of edges
+(i.e., edge IDs), skipping over deleted edges. In no case will attributes be
+assigned to nonexisted edges.
+</p>
+<p>The <code>%n%</code> and <code>%v%</code> operators serve as front-ends to the network
+and vertex extraction/assignment functions (respectively).  In the
+extraction case, <code>x %n% attrname</code> is equivalent to
+<code>get.network.attribute(x,attrname)</code>, with <code>x %v% attrname</code>
+corresponding to <code>get.vertex.attribute(x,attrname)</code>.  In assignment,
+the respective equivalences are to
+<code>set.network.attribute(x,attrname,value)</code> and
+<code>set.vertex.attribute(x,attrname,value)</code>.  Note that the <code>%%</code>
+assignment forms are generally slower than the named versions of the
+functions beause they will trigger an additional internal copy of the
+network object.
+</p>
+<p>The <code>%eattr%</code>, <code>%nattr%</code>, and <code>%vattr%</code> operators are
+equivalent to <code>%e%</code>, <code>%n%</code>, and <code>%v%</code> (respectively).  The
+short forms are more succinct, but may produce less readable code.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The extracted data, or none.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Carter T. Butts <a href="mailto:buttsc@uci.edu">buttsc@uci.edu</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Butts, C. T.  (2008).  &ldquo;network: a Package for Managing
+Relational Data in R.&rdquo; <em>Journal of Statistical Software</em>, 24(2).
+doi: <a href="https://doi.org/10.18637/jss.v024.i02">10.18637/jss.v024.i02</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../network/help/is.adjacent.html">is.adjacent</a></code>, <code><a href="../../network/help/as.sociomatrix.html">as.sociomatrix</a></code>,
+<code><a href="../../network/help/attribute.methods.html">attribute.methods</a></code>, <code><a href="../../network/help/add.edges.html">add.edges</a></code>,
+<code><a href="../../network/help/network.operators.html">network.operators</a></code>, and <code><a href="../../network/help/get.inducedSubgraph.html">get.inducedSubgraph</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+  #Create a random graph (inefficiently)
+  g&lt;-network.initialize(10)
+  g[,]&lt;-matrix(rbinom(100,1,0.1),10,10)
+  plot(g)
+  
+  #Demonstrate edge addition/deletion
+  g[,]&lt;-0
+  g[1,]&lt;-1
+  g[2:3,6:7]&lt;-1
+  g[,]
+  
+  #Set edge values
+  g[,,names.eval="boo"]&lt;-5
+  as.sociomatrix(g,"boo")
+  #Assign edge values from a vector
+  g %e% "hoo" &lt;- "wah"
+  g %e% "hoo"
+  g %e% "om" &lt;- c("wow","whee")
+  g %e% "om"
+  #Assign edge values as a sociomatrix
+  g %e% "age" &lt;- matrix(1:100, 10, 10)
+  g %e% "age"
+  as.sociomatrix(g,"age")
+
+  #Set/retrieve network and vertex attributes
+  g %n% "blah" &lt;- "Pork!"                 #The other white meat?
+  g %n% "blah" == "Pork!"                 #TRUE!
+  g %v% "foo" &lt;- letters[10:1]            #Letter the vertices
+  g %v% "foo" == letters[10:1]            #All TRUE
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>network</em> version 1.20.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

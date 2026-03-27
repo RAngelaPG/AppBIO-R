@@ -19,7 +19,7 @@ are designed for datasets containing upwards of several tens of thousands of dat
 of <code>bam</code> is much lower memory footprint than <code><a href="../../mgcv/help/gam.html">gam</a></code>, but it can also be much faster, 
 for large datasets. <code>bam</code> can also compute on a cluster set up by the <a href="../../parallel/help/parallel-package.html">parallel</a> package.
 </p>
-<p>An alternative fitting approach (Wood et al. 2017, Li and Wood, 2019) is provided by the <code>discrete==TRUE</code> method. In this case a method based on discretization of covariate values and C code level parallelization (controlled by the <code>nthreads</code> argument instead of the <code>cluster</code> argument) is used. This extends both the data set and model size that are practical. Number of response data can not exceed <code>.Machine$integer.max</code>.
+<p>An alternative fitting approach (Wood et al. 2017, Li and Wood, 2019) is provided by the <code>discrete==TRUE</code> method. In this case a method based on discretization of covariate values and C code level parallelization (controlled by the <code>nthreads</code> argument instead of the <code>cluster</code> argument) is used. This extends both the data set and model size that are practical.
 </p>
 
 
@@ -31,8 +31,7 @@ bam(formula,family=gaussian(),data=list(),weights=NULL,subset=NULL,
     select=FALSE,scale=0,gamma=1,knots=NULL,sp=NULL,min.sp=NULL,
     paraPen=NULL,chunk.size=10000,rho=0,AR.start=NULL,discrete=FALSE,
     cluster=NULL,nthreads=1,gc.level=0,use.chol=FALSE,samfrac=1,
-    coef=NULL,drop.unused.levels=TRUE,G=NULL,fit=TRUE,drop.intercept=NULL,
-    in.out=NULL,...)
+    coef=NULL,drop.unused.levels=TRUE,G=NULL,fit=TRUE,drop.intercept=NULL,...)
 </pre>
 
 
@@ -134,8 +133,7 @@ Different terms can use different numbers of knots, unless they share a covariat
 Smoothing parameters must be supplied in the order that the smooth terms appear in the model 
 formula. Negative elements indicate that the parameter should be estimated, and hence a mixture 
 of fixed and estimated parameters is possible. If smooths share smoothing parameters then <code>length(sp)</code> 
-must correspond to the number of underlying smoothing parameters. Note that <code>discrete=TRUE</code>may result in
-re-ordering of variables in tensor product smooths for improved efficiency, and <code>sp</code> must be supplied in re-ordered order.</p>
+must correspond to the number of underlying smoothing parameters.</p>
 </td></tr>
 <tr valign="top"><td><code>min.sp</code></td>
 <td>
@@ -173,7 +171,7 @@ there are no breaks in AR1 correlaion.</p>
 <tr valign="top"><td><code>discrete</code></td>
 <td>
 <p>with <code>method="fREML"</code> it is possible to discretize covariates for storage and efficiency reasons.
-If <code>discrete</code> is <code>TRUE</code>, a number or a vector of numbers for each smoother term, then discretization happens. If numbers are supplied they give the number of discretization bins. Parametric terms use the maximum number specified.</p>
+If <code>discrete</code> is <code>TRUE</code>, a number or a vector of numbers for each smoother term, then discretization happens. If numbers are supplied they give the number of discretization bins.</p>
 </td></tr>
 <tr valign="top"><td><code>cluster</code></td>
 <td>
@@ -190,7 +188,7 @@ If <code>NA</code> set to <code>max(1,length(cluster))</code>. See details.</p>
 <tr valign="top"><td><code>gc.level</code></td>
 <td>
 <p>to keep the memory footprint down, it can help to call the garbage collector often, but this takes 
-a substatial amount of time. Setting this to zero means that garbage collection only happens when R decides it should. Setting to 2 gives frequent garbage collection. 1 is in between. Not as much of a problem as it used to be, but can really matter for very large datasets.
+a substatial amount of time. Setting this to zero means that garbage collection only happens when R decides it should. Setting to 2 gives frequent garbage collection. 1 is in between. Not as much of a problem as it used to be.
 </p>
 </td></tr>
 <tr valign="top"><td><code>use.chol</code></td>
@@ -226,10 +224,6 @@ involving factor variables you might want to turn this off. Only do so if you kn
 <td>
 <p>Set to <code>TRUE</code> to force the model to really not have the a constant in the parametric model part,
 even with factor variables present.</p>
-</td></tr>
-<tr valign="top"><td><code>in.out</code></td>
-<td>
-<p>If supplied then this is a two item list of intial values. <code>sp</code> is initial smoothing parameter estiamtes and <code>scale</code> the initial scale parameter estimate (set to 1 if famiy does not have one).</p>
 </td></tr>
 <tr valign="top"><td><code>...</code></td>
 <td>
@@ -281,11 +275,13 @@ can be used in the 1D case, and tensor product smooths (<code>te</code>) are typ
 
 <p>The routine may be slower than optimal if the default <code>"tp"</code> basis is used. 
 </p>
+<p>Unless discrete=TRUE, you must have more unique combinations of covariates than the model has total
+parameters. (Total parameters is sum of basis dimensions plus sum of non-spline 
+terms less the number of spline terms). 
+</p>
 <p>This routine is less stable than &lsquo;gam&rsquo; for the same dataset.
 </p>
 <p>With <code>discrete=TRUE</code>, <code>te</code> terms are efficiently computed, but <code>t2</code> are not.
-</p>
-<p>Anything close to the maximum n of <code>.Machine$integer.max</code> will need a very large amount of RAM and probably <code>gc.level=1</code>. 
 </p>
 
 
@@ -298,12 +294,12 @@ can be used in the 1D case, and tensor product smooths (<code>te</code>) are typ
 <h3>References</h3>
 
 <p>Wood, S.N., Goude, Y. &amp; Shaw S. (2015) Generalized additive models for large datasets. Journal of the Royal Statistical Society, Series C 64(1): 139-155.
-doi: <a href="https://doi.org/10.1111/rssc.12068">10.1111/rssc.12068</a>
+<a href="https://rss.onlinelibrary.wiley.com/doi/full/10.1111/rssc.12068">https://rss.onlinelibrary.wiley.com/doi/full/10.1111/rssc.12068</a>
 </p>
 <p>Wood, S.N., Li, Z., Shaddick, G. &amp; Augustin N.H. (2017) Generalized additive models for gigadata: modelling the UK black smoke network daily data. Journal of the American Statistical Association. 112(519):1199-1210
 doi: <a href="https://doi.org/10.1080/01621459.2016.1195744">10.1080/01621459.2016.1195744</a>
 </p>
-<p>Li, Z &amp; S.N. Wood (2020) Faster model matrix crossproducts for large generalized linear models with discretized covariates. Statistics and Computing. 30:19-25
+<p>Li, Z &amp; S.N. Wood (2019) Faster model matrix crossproducts for large generalized linear models with discretized covariates. Statistics and Computing.
 doi: <a href="https://doi.org/10.1007/s11222-019-09864-2">10.1007/s11222-019-09864-2</a>
 </p>
 
@@ -362,5 +358,5 @@ b2
 
 </pre>
 
-<hr /><div style="text-align: center;">[Package <em>mgcv</em> version 1.9-1 <a href="00Index.html">Index</a>]</div>
+<hr /><div style="text-align: center;">[Package <em>mgcv</em> version 1.8-38 <a href="00Index.html">Index</a>]</div>
 </div></body></html>

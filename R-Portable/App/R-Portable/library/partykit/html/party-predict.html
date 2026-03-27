@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Tree Predictions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for party-predict {partykit}"><tr><td>party-predict {partykit}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Tree Predictions </h2>
+
+<h3>Description</h3>
+
+<p>Compute predictions from <code>party</code> objects.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'party'
+predict(object, newdata = NULL, perm = NULL, ...)
+predict_party(party, id, newdata = NULL, ...)
+## Default S3 method:
+predict_party(party, id, newdata = NULL, FUN = NULL, ...) 
+## S3 method for class 'constparty'
+predict_party(party, id, newdata = NULL,
+    type = c("response", "prob", "quantile", "density", "node"),
+    at = if (type == "quantile") c(0.1, 0.5, 0.9),
+    FUN = NULL, simplify = TRUE, ...)
+## S3 method for class 'simpleparty'
+predict_party(party, id, newdata = NULL,
+    type = c("response", "prob", "node"), ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p> objects of class <code><a href="../../partykit/help/party.html">party</a></code>. </p>
+</td></tr>
+<tr valign="top"><td><code>newdata</code></td>
+<td>
+<p> an optional data frame in which to look for variables with
+which to predict, if omitted, the fitted values are used.</p>
+</td></tr>
+<tr valign="top"><td><code>perm</code></td>
+<td>
+<p>an optional character vector of variable names. Splits of
+nodes with a primary split in any of these variables will
+be permuted (after dealing with surrogates). Note that
+surrogate split in the <code>perm</code> variables will no be permuted.</p>
+</td></tr>
+<tr valign="top"><td><code>party</code></td>
+<td>
+<p> objects of class <code><a href="../../partykit/help/party.html">party</a></code>. </p>
+</td></tr>
+<tr valign="top"><td><code>id</code></td>
+<td>
+<p> a vector of terminal node identifiers. </p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p> a character string denoting the type of predicted value
+returned, ignored when argument <code>FUN</code> is given.  For
+<code>"response"</code>, the mean of a numeric response, the predicted
+class for a categorical response or the median survival time for a
+censored response is returned.  For <code>"prob"</code> the matrix of
+conditional class probabilities (<code>simplify = TRUE</code>) or a list
+with the conditional class probabilities for each observation
+(<code>simplify = FALSE</code>) is returned for a categorical response. 
+For numeric and censored responses, a list with the empirical
+cumulative distribution functions and empirical survivor functions
+(Kaplan-Meier estimate) is returned when <code>type = "prob"</code>. 
+<code>"node"</code> returns an integer vector of terminal node
+identifiers.</p>
+</td></tr>
+<tr valign="top"><td><code>FUN</code></td>
+<td>
+<p> a function to extract (<code>default</code> method) or compute 
+(<code>constparty</code> method) summary statistics. For the <code>default</code> method,
+this is a function of a terminal node only, for the <code>constparty</code> method, 
+predictions for each node have to be computed based on arguments <code>(y, w)</code>
+where <code>y</code> is the response and <code>w</code> are case weights.</p>
+</td></tr>
+<tr valign="top"><td><code>at</code></td>
+<td>
+<p> if the return value is a function (as the empirical cumulative distribution
+function or the empirical quantile function), this function is evaluated
+at values <code>at</code> and these numeric values are returned. If <code>at</code> is
+<code>NULL</code>, the functions themselves are returned in a list.</p>
+</td></tr>
+<tr valign="top"><td><code>simplify</code></td>
+<td>
+<p> a logical indicating whether the resulting list 
+of predictions should be converted to a suitable
+vector or matrix (if possible).</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p> additional arguments. </p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The <code><a href="../../stats/html/predict.html">predict</a></code> method for <code><a href="../../partykit/help/party.html">party</a></code> objects
+computes the identifiers of the predicted terminal nodes, either
+for new data in <code>newdata</code> or for the learning samples
+(only possible for objects of class <code>constparty</code>).
+These identifiers are delegated to the corresponding
+<code>predict_party</code> method which computes (via 
+<code>FUN</code> for class <code>constparty</code>)
+or extracts (class <code>simpleparty</code>) the actual predictions.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of predictions, possibly simplified to a numeric vector, 
+numeric matrix or factor.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+  ## fit tree using rpart
+  library("rpart")
+  rp &lt;- rpart(skips ~ Opening + Solder + Mask + PadType + Panel,
+              data = solder, method = 'anova')
+
+  ## coerce to `constparty'
+  pr &lt;- as.party(rp)
+
+  ## mean predictions
+  predict(pr, newdata = solder[c(3, 541, 640),])
+
+  ## ecdf
+  predict(pr, newdata = solder[c(3, 541, 640),], type = "prob")
+
+  ## terminal node identifiers
+  predict(pr, newdata = solder[c(3, 541, 640),], type = "node")
+
+  ## median predictions
+  predict(pr, newdata = solder[c(3, 541, 640),], 
+          FUN = function(y, w = 1) median(y))
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>partykit</em> version 1.2-27 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

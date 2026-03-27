@@ -1,0 +1,129 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Apply Functions Over Nodes</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for nodeapply {partykit}"><tr><td>nodeapply {partykit}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Apply Functions Over Nodes </h2>
+
+<h3>Description</h3>
+
+<p>Returns a list of values obtained by applying a function to
+<code>party</code> or <code>partynode</code> objects.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+nodeapply(obj, ids = 1, FUN = NULL, ...)
+## S3 method for class 'partynode'
+nodeapply(obj, ids = 1, FUN = NULL, ...)
+## S3 method for class 'party'
+nodeapply(obj, ids = 1, FUN = NULL, by_node = TRUE, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>obj</code></td>
+<td>
+<p> an object of class <code><a href="../../partykit/help/partynode.html">partynode</a></code> 
+or <code><a href="../../partykit/help/party.html">party</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>ids</code></td>
+<td>
+<p> integer vector of node identifiers to apply over.</p>
+</td></tr>
+<tr valign="top"><td><code>FUN</code></td>
+<td>
+<p> a function to be applied to nodes. By default, the 
+node itself is returned.</p>
+</td></tr>
+<tr valign="top"><td><code>by_node</code></td>
+<td>
+<p> a logical indicating if <code>FUN</code> is applied
+to subsets of <code><a href="../../partykit/help/party.html">party</a></code> objects or 
+<code><a href="../../partykit/help/partynode.html">partynode</a></code> objects (default). </p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p> additional arguments.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Function <code>FUN</code> is applied to all nodes with node identifiers in
+<code>ids</code> for a <code>partynode</code> object.
+The method for <code>party</code> by default calls the <code>nodeapply</code>
+method on it's <code>node</code> slot. If <code>by_node</code> is <code>FALSE</code>,
+it is applied to a <code>party</code> object with root node <code>ids</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of results of length <code>length(ids)</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+    ## a tree as flat list structure
+    nodelist &lt;- list(
+        # root node
+        list(id = 1L, split = partysplit(varid = 4L, breaks = 1.9),
+            kids = 2:3),
+        # V4 &lt;= 1.9, terminal node
+        list(id = 2L, info = "terminal A"),
+        # V4 &gt; 1.9
+        list(id = 3L, split = partysplit(varid = 5L, breaks = 1.7),
+            kids = c(4L, 7L)),
+        # V5 &lt;= 1.7
+        list(id = 4L, split = partysplit(varid = 4L, breaks = 4.8),
+            kids = 5:6),
+        # V4 &lt;= 4.8, terminal node
+        list(id = 5L, info = "terminal B"),
+        # V4 &gt; 4.8, terminal node
+        list(id = 6L, info = "terminal C"),
+        # V5 &gt; 1.7, terminal node
+        list(id = 7L, info = "terminal D")
+    )
+
+    ## convert to a recursive structure
+    node &lt;- as.partynode(nodelist)
+
+    ## return root node 
+    nodeapply(node)
+
+    ## return info slots of terminal nodes
+    nodeapply(node, ids = nodeids(node, terminal = TRUE), 
+        FUN = function(x) info_node(x))
+
+    ## fit tree using rpart
+    library("rpart")
+    rp &lt;- rpart(Kyphosis ~ Age + Number + Start, data = kyphosis)
+
+    ## coerce to `constparty'
+    rpk &lt;- as.party(rp)
+
+    ## extract nodeids
+    nodeids(rpk)
+    unlist(nodeapply(node_party(rpk), ids = nodeids(rpk), 
+        FUN = id_node))
+    unlist(nodeapply(rpk, ids = nodeids(rpk), FUN = id_node))
+
+    ## but root nodes of party objects always have id = 1
+    unlist(nodeapply(rpk, ids = nodeids(rpk), FUN = function(x) 
+        id_node(node_party(x)), by_node = FALSE))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>partykit</em> version 1.2-27 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

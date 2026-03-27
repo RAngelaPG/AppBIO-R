@@ -1,0 +1,175 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Heatmap</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for e_heatmap {echarts4r}"><tr><td>e_heatmap {echarts4r}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Heatmap</h2>
+
+<h3>Description</h3>
+
+<p>Draw heatmap by coordinates.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+e_heatmap(
+  e,
+  y,
+  z,
+  bind,
+  name = NULL,
+  coord_system = "cartesian2d",
+  rm_x = TRUE,
+  rm_y = TRUE,
+  calendar = NULL,
+  ...
+)
+
+e_heatmap_(
+  e,
+  y,
+  z = NULL,
+  bind = NULL,
+  name = NULL,
+  coord_system = "cartesian2d",
+  rm_x = TRUE,
+  rm_y = TRUE,
+  calendar = NULL,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>e</code></td>
+<td>
+<p>An <code>echarts4r</code> object as returned by <code><a href="../../echarts4r/help/e_charts.html">e_charts</a></code> or
+a proxy as returned by <code><a href="../../echarts4r/help/echarts4rProxy.html">echarts4rProxy</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>y, z</code></td>
+<td>
+<p>Coordinates and values.</p>
+</td></tr>
+<tr valign="top"><td><code>bind</code></td>
+<td>
+<p>Binding between datasets, namely for use of <code><a href="../../echarts4r/help/e_brush.html">e_brush</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>name</code></td>
+<td>
+<p>name of the serie.</p>
+</td></tr>
+<tr valign="top"><td><code>coord_system</code></td>
+<td>
+<p>Coordinate system to plot against, takes
+<code>cartesian2d</code>, <code>geo</code> or <code>calendar</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>rm_x, rm_y</code></td>
+<td>
+<p>Whether to remove x and y axis, only applies if <code>coord_system</code> is not
+set to <code>cartesian2d</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>calendar</code></td>
+<td>
+<p>The index of the calendar to plot against.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Any other option to pass, check See Also section.</p>
+</td></tr>
+</table>
+
+
+<h3>See Also</h3>
+
+<p><a href="https://echarts.apache.org/en/option.html#series-heatmap">Additional arguments</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+v &lt;- LETTERS[1:10]
+matrix &lt;- data.frame(
+  x = sample(v, 300, replace = TRUE),
+  y = sample(v, 300, replace = TRUE),
+  z = rnorm(300, 10, 1),
+  stringsAsFactors = FALSE
+) |&gt;
+  dplyr::group_by(x, y) |&gt;
+  dplyr::summarise(z = sum(z)) |&gt;
+  dplyr::ungroup()
+
+matrix |&gt;
+  e_charts(x) |&gt;
+  e_heatmap(y, z, itemStyle = list(emphasis = list(shadowBlur = 10))) |&gt;
+  e_visual_map(z)
+
+# calendar
+dates &lt;- seq.Date(as.Date("2017-01-01"), as.Date("2018-12-31"), by = "day")
+values &lt;- rnorm(length(dates), 20, 6)
+
+year &lt;- data.frame(date = dates, values = values)
+
+year |&gt;
+  e_charts(date) |&gt;
+  e_calendar(range = "2018") |&gt;
+  e_heatmap(values, coord_system = "calendar") |&gt;
+  e_visual_map(max = 30)
+
+# calendar multiple years
+year |&gt;
+  dplyr::mutate(year = format(date, "%Y")) |&gt;
+  group_by(year) |&gt;
+  e_charts(date) |&gt;
+  e_calendar(range = "2017", top = 40) |&gt;
+  e_calendar(range = "2018", top = 260) |&gt;
+  e_heatmap(values, coord_system = "calendar") |&gt;
+  e_visual_map(max = 30)
+
+# map
+quakes |&gt;
+  e_charts(long) |&gt;
+  e_geo(
+    boundingCoords = list(
+      c(190, -10),
+      c(180, -40)
+    )
+  ) |&gt;
+  e_heatmap(
+    lat,
+    mag,
+    coord_system = "geo",
+    blurSize = 5,
+    pointSize = 3
+  ) |&gt;
+  e_visual_map(mag)
+
+# timeline
+library(dplyr)
+
+axis &lt;- LETTERS[1:10]
+df &lt;- expand.grid(axis, axis)
+
+bind_rows(df, df) |&gt;
+  mutate(
+    values = runif(n(), 1, 10),
+    grp = c(
+      rep("A", 100),
+      rep("B", 100)
+    )
+  ) |&gt;
+  group_by(grp) |&gt;
+  e_charts(Var1, timeline = TRUE) |&gt;
+  e_heatmap(Var2, values) |&gt;
+  e_visual_map(values)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>echarts4r</em> version 0.5.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

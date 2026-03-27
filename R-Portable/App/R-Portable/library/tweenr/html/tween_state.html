@@ -1,0 +1,168 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Compose tweening between states</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for tween_state {tweenr}"><tr><td>tween_state {tweenr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Compose tweening between states</h2>
+
+<h3>Description</h3>
+
+<p>The <code>tween_state()</code> is a counterpart to <code>tween_states()</code> that is aimed at
+letting you gradually build up a scene by composing state changes one by one.
+This setup lets you take more control over each state change and allows you
+to work with datasets with uneven number of rows, flexibly specifying what
+should happen with entering and exiting data. <code>keep_state()</code> is a simple
+helper for letting you pause at a state. <code>open_state()</code> is a shortcut from
+tweening from an empty dataset with a given <code>enter()</code> function while
+<code>close_state()</code> is the same but will instead tween into an empty dataset with
+a given <code>exit()</code> function.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+tween_state(.data, to, ease, nframes, id = NULL, enter = NULL, exit = NULL)
+
+keep_state(.data, nframes)
+
+open_state(.data, ease, nframes, enter)
+
+close_state(.data, ease, nframes, exit)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>.data</code></td>
+<td>
+<p>A data.frame to start from. If <code>.data</code> is the result of a prior
+tween, only the last frame will be used for the tween. The new tween will
+then be added to the prior tween</p>
+</td></tr>
+<tr valign="top"><td><code>to</code></td>
+<td>
+<p>A data.frame to end at. It must contain the same columns as .data
+(exluding <code>.frame</code>)</p>
+</td></tr>
+<tr valign="top"><td><code>ease</code></td>
+<td>
+<p>The easing function to use. Either a single string or one for
+each column in the data set.</p>
+</td></tr>
+<tr valign="top"><td><code>nframes</code></td>
+<td>
+<p>The number of frames to calculate for the tween</p>
+</td></tr>
+<tr valign="top"><td><code>id</code></td>
+<td>
+<p>The column to match observations on. If <code>NULL</code> observations will be
+matched by position. See the <em>Match, Enter, and Exit</em> section for more
+information.</p>
+</td></tr>
+<tr valign="top"><td><code>enter, exit</code></td>
+<td>
+<p>functions that calculate a start state for new observations
+that appear in <code>to</code> or an end state for observations that are not present in
+<code>to</code>. If <code>NULL</code> the new/old observations will not be part of the tween. The
+function gets a data.frame with either the start state of the exiting
+observations, or the end state of the entering observations and must return
+a modified version of that data.frame. See the <em>Match, Enter, and Exit</em>
+section for more information.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A data.frame containing all the intermediary states in the tween,
+each state will be enumerated by the <code>.frame</code> column
+</p>
+
+
+<h3>Match, Enter, and Exit</h3>
+
+<p>When there are discrepancies between the two states to tweeen between you
+need a way to resolve the discrepancy before calculating the intermediary
+states. With discrepancies we mean that some data points are present in the
+start state and not in the end state, and/or some are present in the end
+state but not in the start state. A simple example is that the start state
+contains 100 rows and the end state contains 70. There are 30 missing rows
+that we need to do something about before we can calculate the tween.
+</p>
+<p><strong>Making pairs</strong>
+The first question to answer is &quot;How do we know which observations are
+disappearing (<em>exiting</em>) and/or appearing (<em>entering</em>)?&quot;. This is done with
+the <code>id</code> argument which should give a column name to match rows between the
+two states on. If <code>id = NULL</code> the rows will be matched by position (in the
+above example the last 30 rows in the start state will be entering). The <code>id</code>
+column must only contain unique values in order to work.
+</p>
+<p><strong>Making up states</strong>
+Once the rows in each state has been paired you'll end up with three sets of
+data. One containing rows that is present in both the start and end state,
+one containing rows only present in the start state, and one only containing
+rows present in the end state. The first group is easy - here you just tween
+between each rows - but for the other two we'll need some state to start or
+end the tween with. This is really the purpose of the <code>enter</code> and <code>exit</code>
+functions. They take a data frame containing the subset of data that has not
+been matched and must return a new data frame giving the state that these
+rows must be tweened from/into. A simple example could be an <code>enter</code> function
+that sets the variable giving the opacity in the plot to 0 - this will make
+the new points fade into view during the transition.
+</p>
+<p><strong>Ignoring discrepancies</strong>
+The default values for <code>enter</code> and <code>exit</code> is <code>NULL</code>. This value indicate that
+non-matching rows should simply be ignored for the transition and simply
+appear in the last frame of the tween. This is the default.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data1 &lt;- data.frame(
+  x = 1:20,
+  y = 0,
+  colour = 'forestgreen',
+  stringsAsFactors = FALSE
+)
+data2 &lt;- data1
+data2$x &lt;- 20:1
+data2$y &lt;- 1
+
+data &lt;- data1 %&gt;%
+  tween_state(data2, 'linear', 50) %&gt;%
+  keep_state(20) %&gt;%
+  tween_state(data1, 'bounce-out', 50)
+
+# Using enter and exit (made up numbers)
+df1 &lt;- data.frame(
+  country = c('Denmark', 'Sweden', 'Norway'),
+  population = c(5e6, 10e6, 3.5e6)
+)
+df2 &lt;- data.frame(
+  country = c('Denmark', 'Sweden', 'Norway', 'Finland'),
+  population = c(6e6, 10.5e6, 4e6, 3e6)
+)
+df3 &lt;- data.frame(
+  country = c('Denmark', 'Norway'),
+  population = c(10e6, 6e6)
+)
+to_zero &lt;- function(x) {
+  x$population &lt;- 0
+  x
+}
+pop_devel &lt;- df1 %&gt;%
+  tween_state(df2, 'cubic-in-out', 50, id = country, enter = to_zero) %&gt;%
+  tween_state(df3, 'cubic-in-out', 50, id = country, enter = to_zero,
+              exit = to_zero)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>tweenr</em> version 2.0.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

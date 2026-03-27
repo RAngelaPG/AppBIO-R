@@ -1,0 +1,134 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Construct a model frame</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for model_frame {hardhat}"><tr><td>model_frame {hardhat}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Construct a model frame</h2>
+
+<h3>Description</h3>
+
+<p><code>model_frame()</code> is a stricter version of <code><a href="../../stats/help/model.frame.html">stats::model.frame()</a></code>. There are
+a number of differences, with the main being that rows are <em>never</em> dropped
+and the return value is a list with the frame and terms separated into
+two distinct objects.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+model_frame(formula, data, ..., call = current_env())
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>A formula or terms object representing the terms of the
+model frame.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A data frame or matrix containing the terms of <code>formula</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>These dots are for future extensions and must be empty.</p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>The call used for errors and warnings.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The following explains the rationale for some of the difference in arguments
+compared to <code><a href="../../stats/help/model.frame.html">stats::model.frame()</a></code>:
+</p>
+
+<ul>
+<li> <p><code>subset</code>: Not allowed because the number of rows before and after
+<code>model_frame()</code> has been run should always be the same.
+</p>
+</li>
+<li> <p><code>na.action</code>: Not allowed and is forced to <code>"na.pass"</code> because the
+number of rows before and after <code>model_frame()</code> has been run should always
+be the same.
+</p>
+</li>
+<li> <p><code>drop.unused.levels</code>: Not allowed because it seems inconsistent for
+<code>data</code> and the result of <code>model_frame()</code> to ever have the same factor column
+but with different levels, unless specified though <code>original_levels</code>. If
+this is required, it should be done through a recipe step explicitly.
+</p>
+</li>
+<li> <p><code>xlev</code>: Not allowed because this check should have been done ahead of
+time. Use <code><a href="../../hardhat/help/scream.html">scream()</a></code> to check the integrity of <code>data</code> against a training
+set if that is required.
+</p>
+</li>
+<li> <p><code>...</code>: Not exposed because offsets are handled separately, and
+it is not necessary to pass weights here any more because rows are never
+dropped (so weights don't have to be subset alongside the rest of the
+design matrix). If other non-predictor columns are required, use the
+&quot;roles&quot; features of recipes.
+</p>
+</li></ul>
+
+<p>It is important to always use the results of <code>model_frame()</code> with
+<code><a href="../../hardhat/help/model_matrix.html">model_matrix()</a></code> rather than <code><a href="../../stats/help/model.matrix.html">stats::model.matrix()</a></code> because the tibble
+in the result of <code>model_frame()</code> does <em>not</em> have a terms object attached.
+If <code style="white-space: pre;">model.matrix(&lt;terms&gt;, &lt;tibble&gt;)</code> is called directly, then a call to
+<code>model.frame()</code> will be made automatically, which can give faulty results.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A named list with two elements:
+</p>
+
+<ul>
+<li> <p><code>"data"</code>: A tibble containing the model frame.
+</p>
+</li>
+<li> <p><code>"terms"</code>: A terms object containing the terms for the model frame.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+# ---------------------------------------------------------------------------
+# Example usage
+
+framed &lt;- model_frame(Species ~ Sepal.Width, iris)
+
+framed$data
+
+framed$terms
+
+# ---------------------------------------------------------------------------
+# Missing values never result in dropped rows
+
+iris2 &lt;- iris
+iris2$Sepal.Width[1] &lt;- NA
+
+framed2 &lt;- model_frame(Species ~ Sepal.Width, iris2)
+
+head(framed2$data)
+
+nrow(framed2$data) == nrow(iris2)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>hardhat</em> version 1.4.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

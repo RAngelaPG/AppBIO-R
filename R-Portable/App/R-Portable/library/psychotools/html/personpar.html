@@ -1,0 +1,242 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Extract Person Parameters of Item Response Models</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for personpar {psychotools}"><tr><td>personpar {psychotools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Extract Person Parameters of Item Response Models</h2>
+
+<h3>Description</h3>
+
+<p>A class and generic function for representing and estimating the person
+parameters of a given item response model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+personpar(object, ...)
+## S3 method for class 'raschmodel'
+personpar(object, personwise = FALSE, ref = NULL,
+  vcov = TRUE, interval = NULL, tol = 1e-8, ...)
+## S3 method for class 'rsmodel'
+personpar(object, personwise = FALSE, ref = NULL,
+  vcov = TRUE, interval = NULL, tol = 1e-8, ...)
+## S3 method for class 'pcmodel'
+personpar(object, personwise = FALSE, ref = NULL,
+  vcov = TRUE, interval = NULL, tol = 1e-8, ...)
+## S3 method for class 'nplmodel'
+personpar(object, personwise = FALSE, vcov = TRUE,
+  interval = NULL, tol = 1e-6, method = "EAP", ...)
+## S3 method for class 'gpcmodel'
+personpar(object, personwise = FALSE, vcov = TRUE,
+  interval = NULL, tol = 1e-6, method = "EAP", ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>a fitted model object for which person parameters should be
+returned/estimated.</p>
+</td></tr>
+<tr valign="top"><td><code>personwise</code></td>
+<td>
+<p>logical. Should the distributional parameters of the
+latent person ability distribution be computed (default) or the person-wise
+(individual) person parameters? See below for details.</p>
+</td></tr>
+<tr valign="top"><td><code>ref</code></td>
+<td>
+<p>a vector of labels or position indices of item parameters or a
+contrast matrix which should be used as restriction/for normalization. This
+argument will be passed over to internal calls of <code>itempar</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>vcov</code></td>
+<td>
+<p>logical. Should a covariance matrix be returned/estimated for the
+person parameter estimates? See also details below.</p>
+</td></tr>
+<tr valign="top"><td><code>interval</code></td>
+<td>
+<p>numeric vector of length two, specifying an interval for
+<code><a href="../../stats/help/uniroot.html">uniroot</a></code> or <code><a href="../../mirt/help/fscores.html">fscores</a></code> to calculate
+the person parameter estimates.</p>
+</td></tr>
+<tr valign="top"><td><code>tol</code></td>
+<td>
+<p>numeric tolerance passed to <code><a href="../../stats/help/uniroot.html">uniroot</a></code> or
+<code><a href="../../mirt/help/fscores.html">fscores</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>type of estimation method being passed to
+<code><a href="../../mirt/help/fscores.html">fscores</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>further arguments which are passed to <code><a href="../../stats/help/optim.html">optim</a></code>
+in case of <code>vcov = TRUE</code> or <code><a href="../../mirt/help/fscores.html">fscores</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>personpar</code> is both a class to represent person parameters of item
+response models as well as a generic function. The generic function can be
+used to return/estimate the person parameters of a given item response model.
+</p>
+<p>By default, the function <code>personpar()</code> reports the distribution
+parameters of the assumed person ability distribution. For models estimated by
+marginal maximum likelihood estimation (MML) this is the mean/variance of the
+underlying normal distribution, whereas for models estimated by conditional
+maximum likelihood estimation (CML) this is a discrete distribution with one
+estimation for each observed raw score in the data.
+</p>
+<p>Alternatively, when setting <code>personwise = TRUE</code>, the person parameter for
+each person/subject in the underlying data set can be extracted. In the CML
+case, this simply computes the raw score for each person and then extracts
+the corresponding person parameter. In the MML case, this necessitates
+(numerically) integrating out the individual person parameters (also known as
+factor scores or latent trait estimates) based on the underlying normal
+distribution.
+</p>
+<p>More specifically, the following algorithms are employed for obtaining the
+distributional person parameters: </p>
+
+<ul>
+<li><p> In the MML case &ndash; i.e., for <code>nplmodel</code>s and <code>gpcmodel</code>s &ndash;
+the distributional parameters are already part of the model specification.
+In a single-group specification and in the reference group of a multi-group
+specification the mean/variance parameters are fixed to 0/1. In the multi-group
+case the remaining mean/variance parameters were already estimated along with
+all other model parameters and simply need to be extracted. Analogously,
+the corresponding variance-covariance matrix just needs to be extracted and
+has zero covariances in the cells corresponding to fixed parameters.
+</p>
+</li>
+<li><p> In the CML case &ndash; i.e., <code>raschmodel</code>s, <code>rsmodel</code>s, and <code>pcmodel</code>s &ndash;
+the distributional parameters are estimated via <code>uniroot()</code> with the estimation
+equations given by Hoijtink &amp; Boomsma (1995) as well as Andersen (1995). This
+approach is fast and estimates for all possible raw scores are available. If
+the covariance matrix of the estimated person parameters is requested
+(<code>vcov = TRUE</code>), an additional call of <code>optim</code> is employed to
+obtain the Hessian numerically. With this approach, person parameters are
+available only for observed raw scores.
+</p>
+</li></ul>
+
+<p>As already explained above, obtaining the person-wise (individual) person
+paremeters (or ability estimates or factor scores) is straightforward in the
+CML case. In the MML case, <code><a href="../../mirt/help/fscores.html">fscores</a></code> is used, see Chalmers
+(2012) for further details. If <code>personwise = TRUE</code>, the associated
+variance-covariance matrix is not provided and simply a matrix with <code>NA</code>s
+is returned. (The same is done for <code>vcov = FALSE</code>.)
+</p>
+<p>For objects of class <code>personpar</code>, several methods to standard generic
+functions exist: <code>print</code>, <code>coef</code>, <code>vcov</code>. <code>coef</code> and
+<code>vcov</code> can be used to extract the person parameters and covariance matrix
+without additional attributes. Based on this Wald tests or confidence
+intervals can be easily computed, e.g., via <code>confint</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A named vector with person parmeters of class <code>personpar</code> and
+additional attributes <code>"model"</code> (the model name), <code>"vcov"</code> (the
+covariance matrix of the estimates if <code>vcov = TRUE</code> or an
+<code>NA</code>-matrix otherwise) and <code>"type"</code> (the type of the parameters,
+depending on <code>personwise</code>).
+</p>
+
+
+<h3>References</h3>
+
+<p>Andersen EB (1995).
+Polytomous Rasch Models and Their Estimation.
+In Fischer GH, Molenaar IW (eds.).
+<em>Rasch Models: Foundations, Recent Developments, and Applications</em>.
+Springer, New York.
+</p>
+<p>Chalmers RP (2012).
+mirt: A Multidimensional Item Response Theory Package for the R
+Environment.
+<em>Journal of Statistical Software</em>, <b>48</b>(6), 1&ndash;29.
+</p>
+<p>Hoijtink H, Boomsma A (1995).
+On Person Parameter Estimation in the Dichotomous Rasch Model.
+In Fischer GH, Molenaar IW (eds.).
+<em>Rasch Models: Foundations, Recent Developments, and Applications</em>.
+Springer, New York.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../psychotools/help/itempar.html">itempar</a></code>, <code><a href="../../psychotools/help/threshpar.html">threshpar</a></code>,
+<code><a href="../../psychotools/help/discrpar.html">discrpar</a></code>, <code><a href="../../psychotools/help/guesspar.html">guesspar</a></code>, <code><a href="../../psychotools/help/upperpar.html">upperpar</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+o &lt;- options(digits = 3)
+
+## load verbal aggression data
+data("VerbalAggression", package = "psychotools")
+
+## fit a Rasch model to dichotomized verbal aggression data and
+ram &lt;- raschmodel(VerbalAggression$resp2)
+
+## extract person parameters
+## (= parameters of the underlying ability distribution)
+rap &lt;- personpar(ram)
+rap
+
+## extract variance-covariance matrix and standard errors
+vc &lt;- vcov(rap)
+sqrt(diag(vc))
+
+## Wald confidence intervals
+confint(rap)
+
+## now match each person to person parameter with the corresponding raw score
+personpar(ram, personwise = TRUE)[1:6]
+
+## person parameters for RSM/PCM fitted to original polytomous data
+rsm &lt;- rsmodel(VerbalAggression$resp)
+pcm &lt;- pcmodel(VerbalAggression$resp)
+cbind(personpar(rsm, vcov = FALSE), personpar(pcm, vcov = FALSE))
+
+if(requireNamespace("mirt")) {
+## fit a 2PL accounting for gender impact and
+twoplm &lt;- nplmodel(VerbalAggression$resp2, impact = VerbalAggression$gender)
+
+## extract the person parameters
+## (= mean/variance parameters from the normal ability distribution)
+twoplp &lt;- personpar(twoplm)
+twoplp
+
+## extract the standard errors
+sqrt(diag(vcov(twoplp)))
+
+## Wald confidence intervals
+confint(twoplp)
+
+## now look at the individual person parameters
+## (integrated out over the normal ability distribution)
+personpar(twoplm, personwise = TRUE)[1:6]
+}
+
+options(digits = o$digits)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>psychotools</em> version 0.7-6 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Simulated data for random regression</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for DT_legendre {enhancer}"><tr><td>DT_legendre {enhancer}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Simulated data for random regression
+</h2>
+
+<h3>Description</h3>
+
+<p>A data frame with 4 columns; SUBJECT, X, Xf and Y to show how to use the Legendre polynomials in the lmeb function using a numeric variable X and a response variable Y. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>data("DT_legendre")</pre>
+
+
+<h3>Format</h3>
+
+<p>The format is:
+chr &quot;DT_legendre&quot;
+</p>
+
+
+<h3>Source</h3>
+
+<p>This data was simulated for fruit breeding applications.
+</p>
+
+
+<h3>References</h3>
+
+<p>Giovanny Covarrubias-Pazaran (2024).  lme4breeding: enabling genetic evaluation in the age of genomic data. To be submitted to Bioinformatics.
+</p>
+<p>Douglas Bates, Martin Maechler, Ben Bolker, Steve Walker (2015). Fitting Linear Mixed-Effects Models Using lme4. Journal of Statistical Software, 67(1), 1-48.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+data(DT_legendre)
+DT &lt;- DT_legendre
+head(DT)
+
+
+
+########################################
+############### sommer #################
+########################################
+if(requireNamespace("sommer")){
+library(sommer)
+library(orthopolynom)
+mRR2&lt;-mmes(Y~ 1 + Xf
+           , random=~ vsm(usm(leg(X,1)),ism(SUBJECT))
+           , rcov=~units
+           , data=DT)
+summary(mRR2)$varcomp
+
+}
+
+##############################################
+############### lme4breeding #################
+##############################################
+if(requireNamespace("lme4breeding")){
+library(lme4breeding)
+library(orthopolynom)
+Z &lt;- with(DT, smm(leg(X,1)) )
+for(i in 1:ncol(Z)){DT[,colnames(Z)[i]] &lt;- Z[,i]}
+## diagonal random regression Y ~ Xf + (0+leg0+leg1|| SUBJECT)
+## unstructured random regression Y ~ Xf + (0+leg0+leg1| SUBJECT)
+mRR2b&lt;-lmeb(Y ~ Xf + (0+leg0+leg1| SUBJECT),
+                , data=DT)
+vc &lt;- VarCorr(mRR2b); print(vc,comp=c("Variance"))
+sigma(mRR2b)^2 # error variance
+
+BLUP &lt;- ranef(mRR2b, condVar=TRUE)
+condVAR &lt;- lapply(BLUP, function(x){attr(x, which="postVar")}) # take sqrt() for SEs
+
+}
+
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>enhancer</em> version 1.1.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

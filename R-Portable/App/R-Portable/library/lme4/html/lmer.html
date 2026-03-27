@@ -10,7 +10,8 @@
 
 <h3>Description</h3>
 
-<p>Fit a linear mixed-effects model (LMM) to data, via REML or maximum
+<p>Fit a linear mixed-effects model (LMM) to data, via restricted maximum
+likelihood (REML) or maximum
 likelihood.
 </p>
 
@@ -34,15 +35,53 @@ fixed-effects and random-effects part of the model, with the
 response on the left of a <code>~</code> operator and the terms, separated
 by <code>+</code> operators, on the right.  Random-effects terms are
 distinguished by vertical bars (<code>|</code>) separating expressions
-for design matrices from grouping factors.  Two vertical bars
+for design matrices from grouping factors. By default, non-scalar
+random effects (where the design matrix has more than one column,
+e.g. <code>(1+x|f)</code>) are fitted with <em>unstructured</em> (general
+positive semidefinite) covariance matrices.
+</p>
+
+<ul>
+<li><p> Two vertical bars
 (<code>||</code>) can be used to specify multiple uncorrelated random
 effects for the same grouping variable. 
-(Because of the way it is implemented, the <code>||</code>-syntax <em>works
+With default settings, the <code>||</code>-syntax <em>works
 only for design matrices containing numeric (continuous) predictors</em>;
-to fit models with independent categorical effects, see <code><a href="../../lme4/help/dummy.html">dummy</a></code>
-or the <code>lmer_alt</code> function from the <a href="https://CRAN.R-project.org/package=afex"><span class="pkg">afex</span></a> package.)
+to fit models with independent categorical effects, use
+<code>diag(f|g)</code> or set <code>options(lme4.doublevert.default = "diag_special")</code> (see
+<code><a href="../../lme4/help/getDoublevertDefault.html">getDoublevertDefault</a></code>).
 </p>
-</td></tr>
+</li>
+<li><p> Tags preceding a random effect term specify covariance
+structure:
+</p>
+
+<ul>
+<li> <p><code>us</code> (default: <code>us(f|g)</code> is equivalent to <code>(f|g)</code>):
+unstructured, positive semi-definite
+</p>
+</li>
+<li> <p><code>diag</code>: diagonal (all correlations set to zero).
+Specify <code>diag(f|g, hom = TRUE)</code>
+to fit a homogeneous diagonal covariance matrix
+</p>
+</li>
+<li> <p><code>cs</code>: compound symmetric (all pairwise correlations
+set identical). Specify <code>cs(f|g, hom = TRUE)</code> for homogeneous
+variances.
+</p>
+</li>
+<li> <p><code>ar1</code>: autoregressive order 1. Note that AR1 models
+are homogeneous by default; specify <code>ar1(f|g, hom = FALSE)</code>
+for heterogeneous variances.
+</p>
+</li></ul>
+ 
+</li></ul>
+ 
+</td></tr> </table>
+
+<table summary="R argblock">
 <tr valign="top"><td><code>data</code></td>
 <td>
 <p>an optional data frame containing the variables named in
@@ -72,9 +111,13 @@ details.</p>
 </td></tr>
 <tr valign="top"><td><code>start</code></td>
 <td>
-<p>a named <code><a href="../../base/html/list.html">list</a></code> of starting values for the
-parameters in the model.  For <code>lmer</code> this can be a numeric
-vector or a list with one component named <code>"theta"</code>.</p>
+<p>a numeric vector or a named <a href="../../base/html/list.html">list</a> with one optional
+component named <code>par</code> or <code>theta</code>, giving starting values
+for covariance parameters.  Numeric <code>start</code> is equivalent to
+<code>list(par = start)</code>.  Parameters corresponding to unstructured
+covariance matrices are on the scale of the Cholesky factor of the
+relative covariance matrix.  By default, all relative covariance
+matrices are identity matrices.</p>
 </td></tr>
 <tr valign="top"><td><code>verbose</code></td>
 <td>
@@ -141,46 +184,62 @@ should always be within machine tolerance).</p>
 
 
 <ul>
-<li><p>If the <code>formula</code> argument is specified as a character
+<li><p> If the <code>formula</code> argument is specified as a character
 vector, the function will attempt to coerce it to a formula.
 However, this is not recommended (users who want to construct
 formulas by pasting together components are advised to use
 <code><a href="../../stats/html/formula.html">as.formula</a></code> or <code><a href="../../stats/html/delete.response.html">reformulate</a></code>); model fits
 will work but subsequent methods such as <code><a href="../../stats/html/add1.html">drop1</a></code>,
-<code><a href="../../stats/html/update.html">update</a></code> may fail.
+<code><a href="../../stats/html/update.html">update</a></code>, etc. may fail.
 </p>
 </li>
-<li><p>When handling perfectly collinear predictor variables
-(i.e. design matrices of less than full rank),
-<code>[gn]lmer</code> is not quite as sophisticated
-as some simpler modeling frameworks such as
+<li><p> When handling perfectly collinear predictor variables
+(i.e. fixed-effect design matrices of less than full rank),
+<code>[gn]lmer</code> is not as sophisticated
+as modeling frameworks such as
 <code><a href="../../stats/html/lm.html">lm</a></code> and <code><a href="../../stats/html/glm.html">glm</a></code>. While it does
 automatically drop collinear variables (with a message
 rather than a warning), it does not automatically fill
 in <code>NA</code> values for the dropped coefficients;
-these can be added via
-<code>fixef(fitted.model,add.dropped=TRUE)</code>.
+these can be added via <code>fixef(fitted.model, add.dropped=TRUE)</code>.
 This information can also be retrieved via
-<code>attr(getME(fitted.model,"X"),"col.dropped")</code>.
-
+<code>attr(getME(fitted.model, "X"), "col.dropped")</code>.
 </p>
 </li>
-<li><p>the deviance function returned when <code>devFunOnly</code> is
-<code>TRUE</code> takes a single numeric vector argument, representing
-the <code>theta</code> vector.  This vector defines the scaled
-variance-covariance matrices of the random effects, in the
-Cholesky parameterization.  For models with only simple
-(intercept-only) random effects, <code>theta</code> is a vector of the
+<li><p> the deviance function returned when <code>devFunOnly</code> is
+<code>TRUE</code> takes a single numeric vector argument which defines
+the scaled variance-covariance matrices of the random effects.
+</p>
+
+<ul>
+<li><p> In the case of unstructured covariances, this vector
+is directly mapped to the <code>theta</code> vector, which represents
+the unique non-zero values in the Cholesky factor of the
+(scaled) covariance matrix. For models with only simple
+(intercept-only) random effects, <code>par</code> (and thus
+<code>theta</code>) is a vector of the
 standard deviations of the random effects.  For more complex or
-multiple random effects, running <code>getME(.,"theta")</code> to
-retrieve the <code>theta</code> vector for a fitted model and examining
+multiple random effects, running <code>getME(.,"par")</code> or
+(equivalently) <code>getME(., "theta")</code> to retrieve the
+<code>theta</code> 
+vector for a fitted model and examining
 the names of the vector is probably the easiest way to determine
 the correspondence between the elements of the <code>theta</code> vector
 and elements of the lower triangles of the Cholesky factors of the
 random effects.
 </p>
+</li>
+<li><p> For structured covariances, the <code>getTheta</code> method
+translates the parameter vector to the <code>theta</code>
+(Cholesky-factor element) scale for internal use. The parameter
+vector is usually composed of a set of standard-deviation values
+(one if <code>hom = TRUE</code> or many if <code>hom = FALSE</code>),
+followed by one or more parameters that determine the correlation matrix.
+</p>
 </li></ul>
-
+ 
+</li></ul>
+ 
 
 
 <h3>Value</h3>
@@ -208,6 +267,8 @@ and been disabled in spring 2019.
 <code><a href="../../lme4/help/glmer.html">glmer</a></code> for generalized linear; and
 <code><a href="../../lme4/help/nlmer.html">nlmer</a></code> for nonlinear mixed models.
 </p>
+<p><code><a href="../../lme4/help/plot.merMod.html">plot.merMod</a></code> for plot diagnostics.
+</p>
 
 
 <h3>Examples</h3>
@@ -215,7 +276,8 @@ and been disabled in spring 2019.
 <pre>
 ## linear mixed models - reference values from older code
 (fm1 &lt;- lmer(Reaction ~ Days + (Days | Subject), sleepstudy))
-summary(fm1)# (with its own print method; see class?merMod % ./merMod-class.Rd
+summary(fm1) # (with its own print method; see class?merMod % ./merMod-class.Rd
+plot(fm1) # plotting the model diagnostics; see ?plot.merMod
 
 str(terms(fm1))
 stopifnot(identical(terms(fm1, fixed.only=FALSE),
@@ -230,9 +292,6 @@ sm2 &lt;- summary(fm2)
 print(fm2, digits=7, ranef.comp="Var") # the print.merMod()         method
 print(sm2, digits=3, corr=FALSE)       # the print.summary.merMod() method
 
-(vv &lt;- vcov.merMod(fm2, corr=TRUE))
-as(vv, "corMatrix")# extracts the ("hidden") 'correlation' entry in @factors
-
 ## Fit sex-specific variances by constructing numeric dummy variables
 ## for sex and sex:age; in this case the estimated variance differences
 ## between groups in both intercept and slope are zero ...
@@ -243,5 +302,5 @@ lmer(distance ~ age + (age|Subject) + (0+nsex|Subject) +
      (0 + nsexage|Subject), data=Orthodont)
 </pre>
 
-<hr /><div style="text-align: center;">[Package <em>lme4</em> version 1.1-35.5 <a href="00Index.html">Index</a>]</div>
+<hr /><div style="text-align: center;">[Package <em>lme4</em> version 2.0-1 <a href="00Index.html">Index</a>]</div>
 </div></body></html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Compute spatial or temporal empirical orthogonal function...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for EOF {spacetime}"><tr><td>EOF {spacetime}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Compute spatial or temporal empirical orthogonal function (EOF) </h2>
+
+<h3>Description</h3>
+
+<p> Compute spatial or temporal empirical orthogonal function (EOF) </p>
+
+
+<h3>Usage</h3>
+
+<pre> 
+eof(x, how = c("spatial", "temporal"), returnEOFs = TRUE, ...)
+EOF(x, how = c("spatial", "temporal"), returnPredictions = TRUE, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p> object of class <code>STFDF</code></p>
+</td></tr>
+<tr valign="top"><td><code>how</code></td>
+<td>
+<p> character; choose <code>"spatial"</code> or <code>"temporal"</code> mode </p>
+</td></tr>
+<tr valign="top"><td><code>returnEOFs</code></td>
+<td>
+<p> logical; if TRUE, the eigenvectors (EOFs) are returned 
+in the form of a <a href="../../sp/help/Spatial.html">Spatial</a> or <a href="../../xts/help/xts.html">xts</a> object;
+if FALSE, the object returned by <a href="../../stats/html/prcomp.html">prcomp</a> is returned, 
+which can be printed, or from which a summary can be computed; see examples. </p>
+</td></tr>
+<tr valign="top"><td><code>returnPredictions</code></td>
+<td>
+<p> logical; if TRUE, the functions are returned (i.e.,
+predicted principle components, or PC scores); if FALSE, the object returned
+by <a href="../../stats/html/prcomp.html">prcomp</a> is returned, which can be printed, or from which a
+summary can be computed; see examples (deprecated, see below). </p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p> arguments passed on to function <a href="../../stats/html/prcomp.html">prcomp</a>; note that
+<code>scale.=TRUE</code> needs to be specified to obtain EOFs based 
+on correlation (default: covariance) </p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>In spatial mode, the appropriate <code>Spatial*</code> object. In temporal
+mode, an object of class <code>xts</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p><code>EOF</code> is deprecated: it mixes up spatial and temporal EOFs,
+and returns projections (PC scores) instead of EOFs (eigenvectors); 
+to compute EOFs, use <code>eof</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+if (require(gstat)) {
+data(wind)
+library(sp)
+wind.loc$y = as.numeric(char2dms(as.character(wind.loc[["Latitude"]])))
+wind.loc$x = as.numeric(char2dms(as.character(wind.loc[["Longitude"]])))
+coordinates(wind.loc) = ~x+y
+proj4string(wind.loc) = "+proj=longlat +datum=WGS84"
+
+# match station order to names in wide table:
+stations = 4:15
+wind.loc = wind.loc[match(names(wind[stations]), wind.loc$Code),]
+row.names(wind.loc) = wind.loc$Station
+wind$time = ISOdate(wind$year+1900, wind$month, wind$day, 0)
+space = list(values = names(wind)[stations])
+wind.st = stConstruct(wind[stations], space, wind$time, SpatialObj = wind.loc)
+# select firt 500 time steps, to limit run time:
+wind.st = wind.st[,1:500]
+wind.eof.1 = eof(wind.st)
+wind.eof.2 = eof(wind.st, "temporal")
+wind.eof.1.PCs = eof(wind.st, returnEOFs = FALSE)
+eof(wind.st, "temporal", returnEOFs = FALSE)
+summary(eof(wind.st, returnEOFs = FALSE))
+summary(eof(wind.st, "temporal", returnEOFs = FALSE))
+plot(eof(wind.st, "temporal", returnEOFs = FALSE))
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>spacetime</em> version 1.3-3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

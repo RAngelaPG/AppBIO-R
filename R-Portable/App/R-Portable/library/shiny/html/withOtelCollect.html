@@ -1,0 +1,146 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Temporarily set OpenTelemetry (OTel) collection level</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for withOtelCollect {shiny}"><tr><td>withOtelCollect {shiny}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Temporarily set OpenTelemetry (OTel) collection level</h2>
+
+<h3>Description</h3>
+
+<p>Control Shiny's OTel collection level for particular reactive expression(s).
+</p>
+<p><code>withOtelCollect()</code> sets the OpenTelemetry collection level for
+the duration of evaluating <code>expr</code>. <code>localOtelCollect()</code> sets the collection
+level for the remainder of the current function scope.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+withOtelCollect(collect, expr)
+
+localOtelCollect(collect, envir = parent.frame())
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>collect</code></td>
+<td>
+<p>Character string specifying the OpenTelemetry collection level.
+Must be one of the following:
+</p>
+<div class="sourceCode"><pre>* `"none"` - No telemetry data collected
+* `"reactivity"` - Collect reactive execution spans (includes session and
+  reactive update events)
+* `"all"` - All available telemetry (currently equivalent to `"reactivity"`)
+</pre></div></td></tr>
+<tr valign="top"><td><code>expr</code></td>
+<td>
+<p>Expression to evaluate with the specified collection level
+(for <code>withOtelCollect()</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>envir</code></td>
+<td>
+<p>Environment where the collection level should be set
+(for <code>localOtelCollect()</code>). Defaults to the parent frame.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Note that <code>"session"</code> and <code>"reactive_update"</code> levels are not permitted as
+these are runtime-specific levels that should only be set permanently via
+<code>options(shiny.otel.collect = ...)</code> or the <code>SHINY_OTEL_COLLECT</code> environment
+variable, not temporarily during reactive expression creation.
+</p>
+
+
+<h3>Value</h3>
+
+
+<ul>
+<li> <p><code>withOtelCollect()</code> returns the value of <code>expr</code>.
+</p>
+</li>
+<li> <p><code>localOtelCollect()</code> is called for its side effect and returns the previous
+<code>collect</code> value invisibly.
+</p>
+</li></ul>
+
+
+
+<h3>Best practice</h3>
+
+<p>Best practice is to set the collection level for code that <em>creates</em> reactive
+expressions, not code that <em>runs</em> them. For instance:
+</p>
+<div class="sourceCode r"><pre># Disable telemetry for a reactive expression
+withOtelCollect("none", {
+  my_reactive &lt;- reactive({ ... })
+})
+
+# Disable telemetry for a render function
+withOtelCollect("none", {
+  output$my_plot &lt;- renderPlot({ ... })
+})
+
+#' # Disable telemetry for an observer
+withOtelCollect("none", {
+  observe({ ... }))
+})
+
+# Disable telemetry for an entire module
+withOtelCollect("none", {
+  my_result &lt;- my_module("my_id")
+})
+# Use `my_result` as normal here
+</pre></div>
+<p>NOTE: It's not recommended to pipe existing reactive objects into
+<code>withOtelCollect()</code> since they won't inherit their intended OTel settings,
+leading to confusion.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>See the <code>shiny.otel.collect</code> option within <code><a href="../../shiny/help/shinyOptions.html">shinyOptions</a></code>. Setting
+this value will globally control OpenTelemetry collection levels.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+# Temporarily disable telemetry collection
+withOtelCollect("none", {
+  # Code here won't generate telemetry
+  reactive({ input$x + 1 })
+})
+
+# Collect reactivity telemetry but not other events
+withOtelCollect("reactivity", {
+  # Reactive execution will be traced
+  observe({ print(input$x) })
+})
+
+# Use local variant in a function
+my_function &lt;- function() {
+  localOtelCollect("none")
+  # Rest of function executes without telemetry
+  reactive({ input$y * 2 })
+}
+
+## End(Not run)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>shiny</em> version 1.13.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

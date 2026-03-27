@@ -39,7 +39,8 @@ x[i, j, by, keyby, with = TRUE,
   .SDcols,
   verbose = getOption("datatable.verbose"),                   # default: FALSE
   allow.cartesian = getOption("datatable.allow.cartesian"),   # default: FALSE
-  drop = NULL, on = NULL, env = NULL]
+  drop = NULL, on = NULL, env = NULL, 
+  showProgress = getOption("datatable.showProgress", interactive())]
 </pre>
 
 
@@ -60,7 +61,7 @@ x[i, j, by, keyby, with = TRUE,
 </td></tr>
 <tr valign="top"><td><code>key</code></td>
 <td>
-<p> Character vector of one or more column names which is passed to <code><a href="../../data.table/help/setkey.html">setkey</a></code>. It may be a single comma separated string such as <code>key="x,y,z"</code>, or a vector of names such as <code>key=c("x","y","z")</code>.</p>
+<p> Character vector of one or more column names which is passed to <code><a href="../../data.table/help/setkey.html">setkey</a></code>.</p>
 </td></tr>
 <tr valign="top"><td><code>stringsAsFactors</code></td>
 <td>
@@ -112,9 +113,9 @@ x[i, j, by, keyby, with = TRUE,
 </p>
 <p>As long as <code>j</code> returns a <code>list</code>, each element of the list becomes a column in the resulting <code>data.table</code>. When the output of <code>j</code> is not a <code>list</code>, the output is returned as-is (e.g. <code>x[ , a]</code> returns the column vector <code>a</code>), unless <code>by</code> is used, in which case it is implicitly wrapped in <code>list</code> for convenience (e.g. <code>x[ , sum(a), by=b]</code> will create a column named <code>V1</code> with value <code>sum(a)</code> for each group).
 </p>
-<p>The expression '.()' is a <em>shorthand</em> alias to <code>list()</code>; they both mean the same. (An exception is made for the use of <code>.()</code> within a call to <code><a href="../../base/html/bquote.html">bquote</a></code>, where <code>.()</code> is left unchanged.)
+<p>The expression <code>.()</code> is a <em>shorthand</em> alias to <code>list()</code>; they both mean the same. (An exception is made for the use of <code>.()</code> within a call to <code><a href="../../base/html/bquote.html">bquote</a></code>, where <code>.()</code> is left unchanged.)
 </p>
-<p>When <code>j</code> is a vector of column names or positions to select (as in <code>data.frame</code>). There is no need to use <code>with=FALSE</code> anymore. Note that <code>with=FALSE</code> is still necessary when using a logical vector with length <code>ncol(x)</code> to include/exclude columns. Note: if a logical vector with length <code>k &lt; ncol(x)</code> is passed, it will be filled to length <code>ncol(x)</code> with <code>FALSE</code>, which is different from <code>data.frame</code>, where the vector is recycled.
+<p>When <code>j</code> is a vector of column names or positions to select (as in <code>data.frame</code>), there is no need to use <code>with=FALSE</code>. Note that <code>with=FALSE</code> is still necessary when using a logical vector with length <code>ncol(x)</code> to include/exclude columns. Note: if a logical vector with length <code>k &lt; ncol(x)</code> is passed, it will be filled to length <code>ncol(x)</code> with <code>FALSE</code>, which is different from <code>data.frame</code>, where the vector is recycled.
 </p>
 <p><em>Advanced:</em> <code>j</code> also allows the use of special <em>read-only</em> symbols: <code><a href="../../data.table/help/.SD.html">.SD</a></code>, <code><a href="../../data.table/help/.N.html">.N</a></code>, <code><a href="../../data.table/help/.I.html">.I</a></code>, <code><a href="../../data.table/help/.GRP.html">.GRP</a></code>, <code><a href="../../data.table/help/.BY.html">.BY</a></code>. See <code><a href="../../data.table/help/special-symbols.html">special-symbols</a></code> and the Examples below for more.
 </p>
@@ -146,19 +147,21 @@ x[i, j, by, keyby, with = TRUE,
 </p>
 </li></ul>
 
-<p><em>Advanced:</em> When <code>i</code> is a <code>list</code> (or <code>data.frame</code> or <code>data.table</code>), <code>DT[i, j, by=.EACHI]</code> evaluates <code>j</code> for the groups in 'DT' that each row in <code>i</code> joins to. That is, you can join (in <code>i</code>) and aggregate (in <code>j</code>) simultaneously. We call this <em>grouping by each i</em>. See <a href="https://stackoverflow.com/a/27004566/559784">this StackOverflow answer</a> for a more detailed explanation until we <a href="https://github.com/Rdatatable/data.table/issues/944">roll out vignettes</a>.
+<p><em>Advanced:</em> When <code>i</code> is a <code>list</code> (or <code>data.frame</code> or <code>data.table</code>), <code>DT[i, j, by=.EACHI]</code> evaluates <code>j</code> for the groups in <code>DT</code> that each row in <code>i</code> joins to. That is, you can join (in <code>i</code>) and aggregate (in <code>j</code>) simultaneously. We call this <em>grouping by each i</em>. See <a href="https://stackoverflow.com/a/27004566/559784">this StackOverflow answer</a> for a more detailed explanation until we <a href="https://github.com/Rdatatable/data.table/issues/944">roll out vignettes</a>.
 </p>
 <p><em>Advanced:</em> In the <code>X[Y, j]</code> form of grouping, the <code>j</code> expression sees variables in <code>X</code> first, then <code>Y</code>. We call this <em>join inherited scope</em>. If the variable is not in <code>X</code> or <code>Y</code> then the calling frame is searched, its calling frame, and so on in the usual way up to and including the global environment.</p>
 </td></tr>
 <tr valign="top"><td><code>keyby</code></td>
 <td>
-<p> Same as <code>by</code>, but with an additional <code>setkey()</code> run on the <code>by</code> columns of the result, for convenience. It is common practice to use 'keyby=' routinely when you wish the result to be sorted. May also be <code>TRUE</code> or <code>FALSE</code> when <code>by</code> is provided as an alternative way to accomplish the same operation.</p>
+<p> Same as <code>by</code>, but with an additional <code>setkey()</code> run on the <code>by</code> columns of the result, for convenience. It is common practice to use <code>keyby=</code> routinely when you wish the result to be sorted. May also be <code>TRUE</code> or <code>FALSE</code> when <code>by</code> is provided as an alternative way to accomplish the same operation.</p>
 </td></tr>
 <tr valign="top"><td><code>with</code></td>
 <td>
-<p> By default <code>with=TRUE</code> and <code>j</code> is evaluated within the frame of <code>x</code>; column names can be used as variables. In case of overlapping variables names inside dataset and in parent scope you can use double dot prefix <code>..cols</code> to explicitly refer to '<code>cols</code> variable parent scope and not from your dataset.
+<p> By default <code>with=TRUE</code> and <code>j</code> is evaluated within the frame of <code>x</code>; column names can be used as variables. In the case of overlapping variable names inside <code>x</code> and in parent scope, you can use the double dot prefix <code>..cols</code> to explicitly refer to the <code>cols</code> variable in parent scope and not from <code>x</code>.
 </p>
-<p>When <code>j</code> is a character vector of column names, a numeric vector of column positions to select or of the form <code>startcol:endcol</code>, and the value returned is always a <code>data.table</code>. <code>with=FALSE</code> is not necessary anymore to select columns dynamically. Note that <code>x[, cols]</code> is equivalent to <code>x[, ..cols]</code> and to <code>x[, cols, with=FALSE]</code> and to <code>x[, .SD, .SDcols=cols]</code>.</p>
+<p>When <code>j</code> is a character vector of column names, a numeric vector of column positions to select, or of the form <code>startcol:endcol</code>, the value returned is always a <code>data.table</code>.
+</p>
+<p>New code should rarely use this argument, which was originally needed for similarity to data.frame. For example, to select columns from a character vector <code>cols</code>, in data.frame we do <code>x[, cols]</code>, which has several equivalents in data.table: <code>x[, .SD, .SDcols=cols]</code>, <code>x[, ..cols]</code>, <code>x[, cols, env = list(cols = I(cols))]</code>, or <code>x[, cols, with=FALSE]</code>.</p>
 </td></tr>
 <tr valign="top"><td><code>nomatch</code></td>
 <td>
@@ -212,13 +215,13 @@ x[i, j, by, keyby, with = TRUE,
 </td></tr>
 <tr valign="top"><td><code>.SDcols</code></td>
 <td>
-<p> Specifies the columns of <code>x</code> to be included in the special symbol <code><a href="../../data.table/help/.SD.html">.SD</a></code> which stands for <code>Subset of data.table</code>. May be character column names, numeric positions, logical, a function name such as 'is.numeric', or a function call such as 'patterns()'. '.SDcols' is particularly useful for speed when applying a function through a subset of (possible very many) columns by group; e.g., <code>DT[, lapply(.SD, sum), by="x,y", .SDcols=301:350]</code>.
+<p> Specifies the columns of <code>x</code> to be included in the special symbol <code><a href="../../data.table/help/.SD.html">.SD</a></code> which stands for <code>Subset of data.table</code>. May be character column names, numeric positions, logical, a function name such as <code>is.numeric</code>, or a function call such as <code>patterns()</code>. <code>.SDcols</code> is particularly useful for speed when applying a function through a subset of (possible very many) columns by group; e.g., <code>DT[, lapply(.SD, sum), by="x,y", .SDcols=301:350]</code>.
 </p>
 <p>For convenient interactive use, the form <code>startcol:endcol</code> is also allowed (as in <code>by</code>), e.g., <code>DT[, lapply(.SD, sum), by=x:y, .SDcols=a:f]</code>.
 </p>
 <p>Inversion (column dropping instead of keeping) can be accomplished be prepending the argument with <code>!</code> or <code>-</code> (there's no difference between these), e.g. <code>.SDcols = !c('x', 'y')</code>.
 </p>
-<p>Finally, you can filter columns to include in <code>.SD</code> based on their <em>names</em> according to regular expressions via <code>.SDcols=patterns(regex1, regex2, ...)</code>. The included columns will be the <em>intersection</em> of the columns identified by each pattern; pattern unions can easily be specified with <code>|</code> in a regex. You can filter columns on <code>values</code>  by passing a function, e.g. <code>.SDcols=<a href="../../base/html/numeric.html">is.numeric</a></code>. You can also invert a pattern as usual with <code>.SDcols=!patterns(...)</code> or <code>.SDcols=!is.numeric</code>.
+<p>Finally, you can filter columns to include in <code>.SD</code> based on their <em>names</em> according to regular expressions via <code>.SDcols=patterns(regex1, regex2, ...)</code>. The included columns will be the <em>intersection</em> of the columns identified by each pattern; pattern unions can easily be specified with <code>|</code> in a regex. You can filter columns on <code>values</code> by passing a function, e.g. <code>.SDcols=<a href="../../base/html/numeric.html">is.numeric</a></code>. You can also invert a pattern as usual with <code>.SDcols=!patterns(...)</code> or <code>.SDcols=!is.numeric</code>.
 </p>
 </td></tr>
 <tr valign="top"><td><code>verbose</code></td>
@@ -228,7 +231,7 @@ x[i, j, by, keyby, with = TRUE,
 </td></tr>
 <tr valign="top"><td><code>allow.cartesian</code></td>
 <td>
- <p><code>FALSE</code> prevents joins that would result in more than <code>nrow(x)+nrow(i)</code> rows. This is usually caused by duplicate values in <code>i</code>'s join columns, each of which join to the same group in 'x' over and over again: a <em>misspecified</em> join. Usually this was not intended and the join needs to be changed. The word 'cartesian' is used loosely in this context. The traditional cartesian join is (deliberately) difficult to achieve in <code>data.table</code>: where every row in <code>i</code> joins to every row in <code>x</code> (a <code>nrow(x)*nrow(i)</code> row result). 'cartesian' is just meant in a 'large multiplicative' sense, so FALSE does not always prevent a traditional cartesian join. </p>
+ <p><code>FALSE</code> prevents joins that would result in more than <code>nrow(x)+nrow(i)</code> rows. This is usually caused by duplicate values in <code>i</code>'s join columns, each of which join to the same group in <code>x</code> over and over again: a <em>misspecified</em> join. Usually this was not intended and the join needs to be changed. The word 'cartesian' is used loosely in this context. The traditional cartesian join is (deliberately) difficult to achieve in <code>data.table</code>: where every row in <code>i</code> joins to every row in <code>x</code> (a <code>nrow(x)*nrow(i)</code> row result). 'cartesian' is just meant in a 'large multiplicative' sense, so FALSE does not always prevent a traditional cartesian join. </p>
 </td></tr>
 <tr valign="top"><td><code>drop</code></td>
 <td>
@@ -258,12 +261,16 @@ For example, <code>X[Y, on=c(x1="y1", x2="y2")]</code> joins <code>X</code> and 
 </p>
 </li></ul>
 
-<p>See examples as well as <a href="../doc/datatable-secondary-indices-and-auto-indexing.html"><code>vignette("datatable-secondary-indices-and-auto-indexing")</code></a>.
+<p>Note that providing <code>on</code> is <em>required</em> for <code>X[Y]</code> joins when <code>X</code> is unkeyed. See examples as well as <a href="../doc/datatable-secondary-indices-and-auto-indexing.html"><code>vignette("datatable-secondary-indices-and-auto-indexing")</code></a>.
 </p>
 </td></tr>
 <tr valign="top"><td><code>env</code></td>
 <td>
 <p> List or an environment, passed to <code><a href="../../data.table/help/substitute2.html">substitute2</a></code> for substitution of parameters in <code>i</code>, <code>j</code> and <code>by</code> (or <code>keyby</code>). Use <code>verbose</code> to preview constructed expressions. For more details see <a href="../doc/datatable-programming.html"><code>vignette("datatable-programming")</code></a>. </p>
+</td></tr>
+<tr valign="top"><td><code>showProgress</code></td>
+<td>
+ <p><code>TRUE</code> shows progress indicator with estimated time to completion for lengthy &quot;by&quot; operations. </p>
 </td></tr>
 </table>
 
@@ -346,7 +353,7 @@ column called <code>keep</code> containing <code>TRUE</code> and this is correct
 
 <h3>See Also</h3>
 
- <p><code><a href="../../data.table/help/special-symbols.html">special-symbols</a></code>, <code><a href="../../base/html/data.frame.html">data.frame</a></code>, <code><a href="../../base/html/Extract.data.frame.html">[.data.frame</a></code>, <code><a href="../../data.table/help/as.data.table.html">as.data.table</a></code>, <code><a href="../../data.table/help/setkey.html">setkey</a></code>, <code><a href="../../data.table/help/setorder.html">setorder</a></code>, <code><a href="../../data.table/help/setDT.html">setDT</a></code>, <code><a href="../../data.table/help/setDF.html">setDF</a></code>, <code><a href="../../data.table/help/J.html">J</a></code>, <code><a href="../../data.table/help/SJ.html">SJ</a></code>, <code><a href="../../data.table/help/CJ.html">CJ</a></code>, <code><a href="../../data.table/help/merge.data.table.html">merge.data.table</a></code>, <code><a href="../../data.table/help/tables.html">tables</a></code>, <code><a href="../../data.table/help/test.data.table.html">test.data.table</a></code>, <code><a href="../../data.table/help/IDateTime.html">IDateTime</a></code>, <code><a href="../../data.table/help/unique.data.table.html">unique.data.table</a></code>, <code><a href="../../data.table/help/copy.html">copy</a></code>, <code><a href="../../data.table/help/+3A+3D.html">:=</a></code>, <code><a href="../../data.table/help/setalloccol.html">setalloccol</a></code>, <code><a href="../../data.table/help/truelength.html">truelength</a></code>, <code><a href="../../data.table/help/rbindlist.html">rbindlist</a></code>, <code><a href="../../data.table/help/setNumericRounding.html">setNumericRounding</a></code>, <code><a href="../../data.table/help/datatable-optimize.html">datatable-optimize</a></code>, <code><a href="../../data.table/help/fsetdiff.html">fsetdiff</a></code>, <code><a href="../../data.table/help/funion.html">funion</a></code>, <code><a href="../../data.table/help/fintersect.html">fintersect</a></code>, <code><a href="../../data.table/help/fsetequal.html">fsetequal</a></code>, <code><a href="../../data.table/help/anyDuplicated.html">anyDuplicated</a></code>, <code><a href="../../data.table/help/uniqueN.html">uniqueN</a></code>, <code><a href="../../data.table/help/rowid.html">rowid</a></code>, <code><a href="../../data.table/help/rleid.html">rleid</a></code>, <code><a href="../../data.table/help/na.omit.html">na.omit</a></code>, <code><a href="../../data.table/help/frank.html">frank</a></code> </p>
+ <p><code><a href="../../data.table/help/special-symbols.html">special-symbols</a></code>, <code><a href="../../base/html/data.frame.html">data.frame</a></code>, <code><a href="../../base/html/Extract.data.frame.html">[.data.frame</a></code>, <code><a href="../../data.table/help/as.data.table.html">as.data.table</a></code>, <code><a href="../../data.table/help/setkey.html">setkey</a></code>, <code><a href="../../data.table/help/setorder.html">setorder</a></code>, <code><a href="../../data.table/help/setDT.html">setDT</a></code>, <code><a href="../../data.table/help/setDF.html">setDF</a></code>, <code><a href="../../data.table/help/J.html">J</a></code>, <code><a href="../../data.table/help/SJ.html">SJ</a></code>, <code><a href="../../data.table/help/CJ.html">CJ</a></code>, <code><a href="../../data.table/help/merge.data.table.html">merge.data.table</a></code>, <code><a href="../../data.table/help/tables.html">tables</a></code>, <code><a href="../../data.table/help/test.data.table.html">test.data.table</a></code>, <code><a href="../../data.table/help/IDateTime.html">IDateTime</a></code>, <code><a href="../../data.table/help/unique.data.table.html">unique.data.table</a></code>, <code><a href="../../data.table/help/copy.html">copy</a></code>, <code><a href="../../data.table/help/+3A+3D.html">:=</a></code>, <code><a href="../../data.table/help/setalloccol.html">setalloccol</a></code>, <code><a href="../../data.table/help/truelength.html">truelength</a></code>, <code><a href="../../data.table/help/rbindlist.html">rbindlist</a></code>, <code><a href="../../data.table/help/setNumericRounding.html">setNumericRounding</a></code>, <code><a href="../../data.table/help/datatable-optimize.html">datatable-optimize</a></code>, <code><a href="../../data.table/help/fsetdiff.html">fsetdiff</a></code>, <code><a href="../../data.table/help/funion.html">funion</a></code>, <code><a href="../../data.table/help/fintersect.html">fintersect</a></code>, <code><a href="../../data.table/help/fsetequal.html">fsetequal</a></code>, <code><a href="../../data.table/help/anyDuplicated.html">anyDuplicated</a></code>, <code><a href="../../data.table/help/uniqueN.html">uniqueN</a></code>, <code><a href="../../data.table/help/rowid.html">rowid</a></code>, <code><a href="../../data.table/help/rleid.html">rleid</a></code>, <code><a href="../../data.table/help/na.omit.html">na.omit</a></code>, <code><a href="../../data.table/help/frank.html">frank</a></code>, <code><a href="../../data.table/help/rowwiseDT.html">rowwiseDT</a></code> </p>
 
 
 <h3>Examples</h3>
@@ -408,7 +415,9 @@ DT[, sum(v), by=x][order(x)]   # same but by chaining expressions together
 
 # fast ad hoc row subsets (subsets as joins)
 DT["a", on="x"]                # same as x == "a" but uses binary search (fast)
+                               #   NB: requires DT to be keyed!
 DT["a", on=.(x)]               # same, for convenience, no need to quote every column
+                               #   NB: works regardless of whether or not DT is keyed!
 DT[.("a"), on="x"]             # same
 DT[x=="a"]                     # same, single "==" internally optimised to use binary search (fast)
 DT[x!="b" | y!=3]              # not yet optimized, currently vector scan subset
@@ -528,6 +537,10 @@ DT[, list(MySum=sum(v),
           MyMax=max(v)),
     by=.(x, y%%2)]                    # by 2 expressions
 
+# programmatic query with env=
+DT[, .(funvar = fun(var)), by=grp_var,
+   env = list(fun="sum", var="a", funvar="sum_a_by_x", grp_var="x")]
+
 DT[, .(a = .(a), b = .(b)), by=x]     # list columns
 DT[, .(seq = min(a):max(b)), by=x]    # j is not limited to just aggregations
 DT[, sum(v), by=x][V1&lt;20]             # compound query
@@ -566,5 +579,5 @@ if (interactive()) {
 
 ## End(Not run)</pre>
 
-<hr /><div style="text-align: center;">[Package <em>data.table</em> version 1.15.4 <a href="00Index.html">Index</a>]</div>
+<hr /><div style="text-align: center;">[Package <em>data.table</em> version 1.18.2.1 <a href="00Index.html">Index</a>]</div>
 </div></body></html>

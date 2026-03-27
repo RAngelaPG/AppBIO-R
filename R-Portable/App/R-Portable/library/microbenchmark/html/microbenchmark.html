@@ -1,0 +1,217 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Sub-millisecond accurate timing of expression evaluation.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for microbenchmark {microbenchmark}"><tr><td>microbenchmark {microbenchmark}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Sub-millisecond accurate timing of expression evaluation.</h2>
+
+<h3>Description</h3>
+
+<p><code>microbenchmark</code> serves as a more accurate replacement of the
+often seen <code>system.time(replicate(1000, expr))</code>
+expression. It tries hard to accurately measure only the time it
+takes to evaluate <code>expr</code>. To achieved this, the
+sub-millisecond (supposedly nanosecond) accurate timing functions
+most modern operating systems provide are used. Additionally all
+evaluations of the expressions are done in C code to minimize any
+overhead.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+microbenchmark(
+  ...,
+  list = NULL,
+  times = 100L,
+  unit = NULL,
+  check = NULL,
+  control = list(),
+  setup = NULL
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Expressions to benchmark.</p>
+</td></tr>
+<tr valign="top"><td><code>list</code></td>
+<td>
+<p>List of unevaluated expressions to benchmark.</p>
+</td></tr>
+<tr valign="top"><td><code>times</code></td>
+<td>
+<p>Number of times to evaluate each expression.</p>
+</td></tr>
+<tr valign="top"><td><code>unit</code></td>
+<td>
+<p>Default unit used in <code>summary</code> and <code>print</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>check</code></td>
+<td>
+<p>A function to check if the expressions are equal. By default <code>NULL</code> which omits the check.
+In addition to a function, a string can be supplied.
+The string &lsquo;equal&rsquo; will compare all values using <code><a href="../../base/html/all.equal.html">all.equal</a></code>, &lsquo;equivalent&rsquo; will compare all values using <code><a href="../../base/html/all.equal.html">all.equal</a></code> and check.attributes = FALSE, and &lsquo;identical&rsquo; will compare all values using <code><a href="../../base/html/identical.html">identical</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+<p>List of control arguments. See Details.</p>
+</td></tr>
+<tr valign="top"><td><code>setup</code></td>
+<td>
+<p>An unevaluated expression to be run (untimed) before each benchmark expression.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This function is only meant for micro-benchmarking small pieces of
+source code and to compare their relative performance
+characteristics. You should generally avoid benchmarking larger
+chunks of your code using this function. Instead, try using the R
+profiler to detect hot spots and consider rewriting them in C/C++
+or FORTRAN.
+</p>
+<p>The <code>control</code> list can contain the following entries:
+</p>
+
+<dl>
+<dt>order</dt><dd><p>the order in which the expressions are evaluated.
+&ldquo;random&rdquo; (the default) randomizes the execution order,
+&ldquo;inorder&rdquo; executes each expression in order and
+&ldquo;block&rdquo; executes all repetitions of each expression
+as one block.</p>
+</dd>
+<dt>warmup</dt><dd><p>the number of iterations to run the timing code before
+evaluating the expressions in .... These warm-up iterations are used
+to estimate the timing overhead as well as spinning up the processor
+from any sleep or idle states it might be in. The default value is 2.</p>
+</dd>
+</dl>
+
+
+
+<h3>Value</h3>
+
+<p>Object of class &lsquo;microbenchmark&rsquo;, a data frame with
+columns <code>expr</code> and <code>time</code>. <code>expr</code> contains the
+deparsed expression as passed to <code>microbenchmark</code> or the name
+of the argument if the expression was passed as a named
+argument. <code>time</code> is the measured execution time of the
+expression in nanoseconds. The order of the observations in the
+data frame is the order in which they were executed.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Depending on the underlying operating system, different
+methods are used for timing. On Windows the
+<code>QueryPerformanceCounter</code> interface is used to measure the
+time passed. For Linux the <code>clock_gettime</code> API is used and on
+Solaris the <code>gethrtime</code> function. Finally on MacOS X the,
+undocumented, <code>mach_absolute_time</code> function is used to avoid
+a dependency on the CoreServices Framework.
+</p>
+<p>Before evaluating each expression <code>times</code> times, the overhead
+of calling the timing functions and the C function call overhead
+are estimated. This estimated overhead is subtracted from each
+measured evaluation time. Should the resulting timing be negative,
+a warning is thrown and the respective value is replaced by
+<code>0</code>. If the timing is zero, a warning is raised.
+Should all evaluations result in one of the two error conditions described above, an error is raised.
+</p>
+<p>One platform on which the clock resolution is known to be too low to measure short runtimes with the required precision is 
+Oracle&reg;
+Solaris 
+on some 
+SPARC&reg;
+hardware.
+Reports of other platforms with similar problems are welcome.
+Please contact the package maintainer.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Olaf Mersmann
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../microbenchmark/help/print.microbenchmark.html">print.microbenchmark</a></code> to display and
+<code><a href="../../microbenchmark/help/boxplot.microbenchmark.html">boxplot.microbenchmark</a></code> or
+<code><a href="../../microbenchmark/help/autoplot.microbenchmark.html">autoplot.microbenchmark</a></code> to plot the results.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Measure the time it takes to dispatch a simple function call
+## compared to simply evaluating the constant \code{NULL}
+f &lt;- function() NULL
+res &lt;- microbenchmark(NULL, f(), times=1000L)
+
+## Print results:
+print(res)
+
+## Plot results:
+boxplot(res)
+
+## Pretty plot:
+if (requireNamespace("ggplot2")) {
+  ggplot2::autoplot(res)
+}
+
+## Example check usage
+my_check &lt;- function(values) {
+  all(sapply(values[-1], function(x) identical(values[[1]], x)))
+}
+
+f &lt;- function(a, b)
+  2 + 2
+
+a &lt;- 2
+## Check passes
+microbenchmark(2 + 2, 2 + a, f(2, a), f(2, 2), check=my_check)
+## Not run: 
+a &lt;- 3
+## Check fails
+microbenchmark(2 + 2, 2 + a, f(2, a), f(2, 2), check=my_check)
+
+## End(Not run)
+## Example setup usage
+set.seed(21)
+x &lt;- rnorm(10)
+microbenchmark(x, rnorm(10), check=my_check, setup=set.seed(21))
+## Will fail without setup
+## Not run: 
+microbenchmark(x, rnorm(10), check=my_check)
+
+## End(Not run)
+## using check
+a &lt;- 2
+microbenchmark(2 + 2, 2 + a, sum(2, a), sum(2, 2), check='identical')
+microbenchmark(2 + 2, 2 + a, sum(2, a), sum(2, 2), check='equal')
+attr(a, 'abc') &lt;- 123
+microbenchmark(2 + 2, 2 + a, sum(2, a), sum(2, 2), check='equivalent')
+## check='equal' will fail due to difference in attribute
+## Not run: 
+microbenchmark(2 + 2, 2 + a, sum(2, a), sum(2, 2), check='equal')
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>microbenchmark</em> version 1.5.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

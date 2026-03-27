@@ -1,0 +1,174 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Leave-one-out cross-validation for a 'discrimin' analysis</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for loocv.discrimin {ade4}"><tr><td>loocv.discrimin {ade4}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Leave-one-out cross-validation for a <code>discrimin</code> analysis
+</h2>
+
+<h3>Description</h3>
+
+<p>Leave-one-out cross-validation to test the existence of groups in a <code>discrimin</code> analysis.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'discrimin'
+loocv(x, nax = 0, progress = FALSE, ...)
+## S3 method for class 'discloocv'
+print(x, ...)
+## S3 method for class 'discloocv'
+plot(x, xax = 1, yax = 2, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+
+<p>the <code>discrimin</code> analysis on which cross-validation should be done
+</p>
+</td></tr>
+<tr valign="top"><td><code>nax</code></td>
+<td>
+
+<p>list of axes for mean overlap index computation (0 = all axes)
+</p>
+</td></tr>
+<tr valign="top"><td><code>progress</code></td>
+<td>
+
+<p>logical to display a progress bar during computations (see the <code>progress</code> package)
+</p>
+</td></tr>
+<tr valign="top"><td><code>xax, yax</code></td>
+<td>
+
+<p>the numbers of the x-axis and the y-axis
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>further arguments passed to or from other methods</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This function returns a list containing the cross-validated coordinates of the rows. The analysis on which the <code>discrimin</code> was computed is redone after removing each row of the data table, one at a time. A <code>discrimin</code> analysis is done on this new analysis and the coordinates of the missing row are computed by projection as supplementary element in the new <code>discrimin</code> analysis. This can be useful to check that the groups evidenced by the <code>discrimin</code> analysis are supported.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with:
+</p>
+<p>- <code>XValCoord</code>: 
+the cross-validated row coordinates 
+</p>
+<p>- <code>PRESS</code>: 
+the Predicted Residual Error Sum for each row
+</p>
+<p>- <code>PRESSTot</code>: 
+the sum of <code>PRESS</code> for each <code>bca</code> axis 
+</p>
+<p>- <code>Oij_disc</code>: 
+the mean overlap index for the discriminant analysis
+</p>
+<p>- <code>Oij_XVal</code>: 
+the mean overlap index for cross-validation
+</p>
+<p>- <code>DeltaOij</code>: 
+the spuriousness index
+
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Jean Thioulouse
+</p>
+
+
+<h3>See Also</h3>
+
+<p><a href="../../ade4/help/loocv.dudi.html">loocv.dudi</a>
+<a href="../../ade4/help/loocv.between.html">loocv.between</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+# Data = skulls
+data(skulls)
+pcaskul &lt;- dudi.pca(skulls, scan = FALSE)
+facskul &lt;- gl(5,30)
+diskul &lt;- discrimin(pcaskul, facskul, scan = FALSE)
+xdiskul &lt;- loocv(diskul, progress = TRUE)
+oijdisc &lt;- xdiskul$Oij_disc
+oijxval &lt;- xdiskul$Oij_XVal
+Doij &lt;- (oijxval - oijdisc)/0.5*100
+pst1 &lt;- paste0("Skulls discrimin randtest: p=", round(randtest(diskul)$pvalue, 4), 
+", Oij = ", round(oijdisc,2))
+pst2 &lt;- paste0("Skulls cross-validation: Oij = ", round(oijxval,2), ", dOij = ",
+round(Doij), "%")
+if (adegraphicsLoaded()) {
+	sc1 &lt;- s.class(diskul$li, facskul, col = TRUE, psub.text = pst1, ellipseSize=0,
+	chullSize=1, plot = FALSE)
+	sc2 &lt;- s.class(xdiskul$XValCoord, facskul, col = TRUE, psub.text = pst2,
+	ellipseSize=0, chullSize=1, plot = FALSE)
+	ADEgS(list(sc1, sc2), layout=c(2,2))
+} else {
+	par(mfrow=c(2,2))
+	s.class(diskul$li, facskul, sub = pst1)
+	s.class(xdiskul$XValCoord, facskul, sub = pst2)
+}
+data(chazeb)
+pcacz &lt;- dudi.pca(chazeb$tab, scan = FALSE)
+discz &lt;- discrimin(pcacz, chazeb$cla, scan = FALSE)
+xdiscz &lt;- loocv(discz, progress = TRUE)
+oijdiscz &lt;- xdiscz$Oij_disc
+oijxvalz &lt;- xdiscz$Oij_XVal
+Doijz &lt;- (oijxvalz - oijdiscz)/0.5*100
+pst1 &lt;- paste0("Chazeb discrimin randtest: p=", round(randtest(discz)$pvalue, 4), 
+", Oij = ", round(oijdiscz,2))
+pst2 &lt;- paste0("Chazeb cross-validation: Oij = ", round(oijxvalz,2), ", dOij = ", 
+round(Doijz), "%")
+if (adegraphicsLoaded()) {
+	tabi &lt;- cbind(discz$li, pcacz$tab)
+	gr1 &lt;- s.class(tabi, xax=1, yax=2:7, chazeb$cla, col = TRUE, plot = FALSE)
+	for (i in 1:6) gr1[[i]] &lt;- update(gr1[[i]], psub.text = names(tabi)[i+1],
+	plot = FALSE)
+	pos1 &lt;- gr1@positions
+	pos1[,1] &lt;- c(0, .3333, .6667, 0, .3333, .6667)
+	pos1[,2] &lt;- c(.6667, .6667, .6667, .3333, .3333, .3333)
+	pos1[,3] &lt;- c(.3333, .6667, 1, .3333, .6667, 1)
+	pos1[,4] &lt;- c(1, 1, 1, .6667, .6667, .6667)
+	gr1@positions &lt;- pos1
+	sc1 &lt;- s1d.gauss(discz$li, chazeb$cla, col = TRUE, psub.text = pst1,
+	plot = FALSE)
+	sc2 &lt;- s1d.gauss(xdiscz$XValCoord, chazeb$cla, col = TRUE, psub.text = pst2,
+	plot = FALSE)
+	ADEgS(list(gr1[[1]], gr1[[2]], gr1[[3]], gr1[[4]], gr1[[5]], gr1[[6]], sc1, sc2))
+} else {
+	dev.new()
+	sco.gauss(discz$li[,1], as.data.frame(chazeb$cla), sub = pst1)
+	dev.new()
+	sco.gauss(xdiscz$XValCoord[,1], as.data.frame(chazeb$cla), sub = pst2)
+}
+
+## End(Not run)</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ade4</em> version 1.7-23 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

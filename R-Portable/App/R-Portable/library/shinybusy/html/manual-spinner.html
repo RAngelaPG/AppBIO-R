@@ -1,0 +1,138 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Manual busy indicator (spinner)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for manual-spinner {shinybusy}"><tr><td>manual-spinner {shinybusy}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Manual busy indicator (spinner)</h2>
+
+<h3>Description</h3>
+
+<p>Declare <code>use_busy_spinner</code> in your UI and show/hide
+server-side with <code>show_spinner</code>/<code>hide_spinner</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+use_busy_spinner(
+  spin = "double-bounce",
+  color = "#112446",
+  position = c("top-right", "top-left", "bottom-right", "bottom-left", "full-page"),
+  margins = c(10, 10),
+  spin_id = NULL,
+  height = "50px",
+  width = "50px"
+)
+
+show_spinner(spin_id = NULL, session = shiny::getDefaultReactiveDomain())
+
+hide_spinner(spin_id = NULL, session = shiny::getDefaultReactiveDomain())
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>spin</code></td>
+<td>
+<p>Style of the spinner, see <code><a href="../../shinybusy/help/spin_epic.html">spin_epic</a></code> or <code><a href="../../shinybusy/help/spin_kit.html">spin_kit</a></code>
+for possible choices. Note that for <code>spin_epic</code>, height and width are ignored.</p>
+</td></tr>
+<tr valign="top"><td><code>color</code></td>
+<td>
+<p>Color for the spinner, in a valid CSS format.</p>
+</td></tr>
+<tr valign="top"><td><code>position</code></td>
+<td>
+<p>Where to display the spinner: <code>'top-right'</code>, <code>'top-left'</code>, <code>'bottom-right'</code>,
+<code>'bottom-left'</code>, <code>'full-page'</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>margins</code></td>
+<td>
+<p>Distance from margins, a vector of length two, where first element is distance from top/bottom,
+second element distance from right/left.</p>
+</td></tr>
+<tr valign="top"><td><code>spin_id</code></td>
+<td>
+<p>An explicit id for the spinner, useful if you want to use multiple spinners.</p>
+</td></tr>
+<tr valign="top"><td><code>height, width</code></td>
+<td>
+<p>Height and width of the spinner, default to <code>'50px'</code> for both, must be specified.</p>
+</td></tr>
+<tr valign="top"><td><code>session</code></td>
+<td>
+<p>Shiny session.</p>
+</td></tr>
+</table>
+
+
+<h3>Examples</h3>
+
+<pre>
+if (interactive()) {
+  library(shiny)
+  library(shinybusy)
+
+  ui &lt;- fluidPage(
+
+    # Use this function somewhere in UI
+    use_busy_spinner(spin = "fading-circle"),
+
+    headerPanel('Iris k-means clustering'),
+
+    sidebarLayout(
+      sidebarPanel(
+        selectInput('xcol', 'X Variable', names(iris)),
+        selectInput('ycol', 'Y Variable', names(iris),
+                    selected=names(iris)[[2]]),
+        numericInput('clusters', 'Cluster count', 3,
+                     min = 1, max = 9),
+        actionButton("sleep", "Long calculation")
+      ),
+      mainPanel(
+        plotOutput('plot1')
+      )
+    )
+  )
+
+  server &lt;- function(input, output, session) {
+
+    selectedData &lt;- reactive({
+      iris[, c(input$xcol, input$ycol)]
+    })
+
+    clusters &lt;- reactive({
+      kmeans(selectedData(), input$clusters)
+    })
+
+    output$plot1 &lt;- renderPlot({
+      palette(c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
+                "#FF7F00", "#FFFF33", "#A65628", "#F781BF",
+                "#999999"))
+
+      par(mar = c(5.1, 4.1, 0, 1))
+      plot(selectedData(),
+           col = clusters()$cluster,
+           pch = 20, cex = 3)
+      points(clusters()$centers, pch = 4, cex = 4, lwd = 4)
+    })
+
+    observeEvent(input$sleep, {
+      show_spinner()
+      Sys.sleep(5)
+      hide_spinner()
+    })
+
+  }
+
+  shinyApp(ui, server)
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>shinybusy</em> version 0.3.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

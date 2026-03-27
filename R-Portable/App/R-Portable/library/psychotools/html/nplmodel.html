@@ -1,0 +1,338 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Parametric Logistic Model (n-PL) Fitting Function</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for nplmodel {psychotools}"><tr><td>nplmodel {psychotools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Parametric Logistic Model (n-PL) Fitting Function</h2>
+
+<h3>Description</h3>
+
+<p><code>nplmodel</code> is a basic fitting function for n-PL type parametric logistic IRT models
+(2PL, 3PL, 3PLu, 4PL, Rasch/1PL), providing a wrapper around
+<code><a href="../../mirt/help/mirt.html">mirt</a></code> and <code><a href="../../mirt/help/multipleGroup.html">multipleGroup</a></code> relying on
+marginal maximum likelihood (MML) estimation via the standard EM algorithm.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+nplmodel(y, weights = NULL, impact = NULL,
+  type = c("2PL", "3PL", "3PLu", "4PL", "1PL", "RM"),
+  grouppars = FALSE, vcov = TRUE, 
+  start = NULL, method = "BFGS", maxit = 500, reltol = 1e-5, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>item response object that can be coerced (via <code><a href="../../base/help/as.matrix.html">as.matrix</a></code>)
+to a numeric matrix with scores 0, 1. Typically, either
+already a matrix, data frame, or dedicated object of class
+<code><a href="../../psychotools/help/itemresp.html">itemresp</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>an optional vector of weights (interpreted as case
+weights).</p>
+</td></tr>
+<tr valign="top"><td><code>impact</code></td>
+<td>
+<p>an optional <code>factor</code> allowing for grouping
+the subjects (rows). If specified, a multiple-group model is fitted
+to account for impact (see details below). By default, no impact is
+modelled, i.e., a single-group model is used.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>character string, specifying the type of parametric logistic
+IRT model to be estimated (see details below).</p>
+</td></tr>
+<tr valign="top"><td><code>grouppars</code></td>
+<td>
+<p>logical. Should the estimated distributional group parameters
+of a multiple group model be included in the model parameters?</p>
+</td></tr>
+<tr valign="top"><td><code>vcov</code></td>
+<td>
+<p>logical or character specifying the type of variance-covariance
+matrix (if any) computed for the final model. The default <code>vcov = TRUE</code>
+corresponds to <code>vcov = "Oakes"</code>, see <code><a href="../../mirt/help/mirt.html">mirt</a></code> for
+further options. If set to <code>vcov = FALSE</code> (or <code>vcov = "none"</code>),
+<code>vcov()</code> will return a matrix of <code>NA</code>s only.</p>
+</td></tr>
+<tr valign="top"><td><code>start</code></td>
+<td>
+<p>an optional vector or list of starting values (see examples
+below).</p>
+</td></tr>
+<tr valign="top"><td><code>method, maxit, reltol</code></td>
+<td>
+<p>control parameters for the optimizer employed
+by <code><a href="../../mirt/help/mirt.html">mirt</a></code> for the EM algorithm.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>further arguments passed to <code><a href="../../mirt/help/mirt.html">mirt</a></code> or
+<code><a href="../../mirt/help/multipleGroup.html">multipleGroup</a></code>, respectively.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>nplmodel</code> (<code>plmodel</code> for backward compatibility with earlier
+<span class="pkg">psychotools</span> versions) provides a basic fitting function for n-PL type parametric logistic IRT
+models (2PL, 3PL, 3PLu, 4PL, Rasch/1PL) providing a wrapper around
+<code><a href="../../mirt/help/mirt.html">mirt</a></code> and <code><a href="../../mirt/help/multipleGroup.html">multipleGroup</a></code> relying on
+MML estimation via the standard EM algorithm (Bock &amp; Aitkin, 1981). Models are
+estimated under the slope/intercept parametrization, see e.g. Chalmers (2012).
+The probability of person <i>i</i> &lsquo;solving&rsquo; item <i>j</i> is modelled as:
+</p>
+<p style="text-align: center;"><i>P(X_{ij} = 1|&theta;_{i},a_{j},d_{j},g_{j},u_{j}) =
+  g_{j} + \frac{(u_{j} - g_{j})}{1 + \exp{(-(a_{j}&theta;_{i} + d_{j}))}}</i></p>
+
+<p>A reparametrization of the intercepts to the classical IRT parametrization,
+<i>b_{j} = -\frac{d_{j}}{a_{j}}</i>, is provided via the corresponding
+<code><a href="../../psychotools/help/itempar.html">itempar</a></code> method.
+</p>
+<p>If an optional <code>impact</code> variable is supplied, a multiple-group model of
+the following form is being fitted: Item parameters are fixed to be equal
+across the whole sample. For the first group of the <code>impact</code> variable the
+person parameters are fixed to follow the standard normal distribution. In the
+remaining <code>impact</code> groups, the distributional parameters (mean and
+variance of a normal distribution) of the person parameters are
+estimated freely. See e.g. Baker &amp; Kim (2004, Chapter 11), Debelak &amp; Strobl
+(2019), or Schneider et al. (2022) for further details. To improve convergence of the model fitting
+algorithm, the first level of the <code>impact</code> variable should always correspond
+to the largest group. If this is not the case, levels are re-ordered internally.
+</p>
+<p>If <code>grouppars</code> is set to <code>TRUE</code> the freely estimated distributional
+group parameters (if any) are returned as part of the model parameters.
+</p>
+<p>By default, <code>type</code> is set to <code>"2PL"</code>. Therefore, all so-called
+guessing parameters are fixed at 0 and all upper asymptotes are fixed at 1.
+<code>"3PL"</code> results in all upper asymptotes being fixed at 1 and <code>"3PLu"</code>
+results in all all guessing parameters being fixed at 0. <code>"4PL"</code> results
+in a full estimated model as specified above. Finally, if <code>type</code> is set to
+<code>"1PL"</code> (or equivalently <code>"RM"</code>), an MML-estimated Rasch model is
+being fitted. This means that all slopes are restricted to be equal across all
+items, all guessing parameters are fixed at 0 and all upper asymptotes are
+fixed at 1.
+</p>
+<p>Note that internally, the so-called guessing parameters and upper asymptotes
+are estimated on the logit scale (see also <code><a href="../../mirt/help/mirt.html">mirt</a></code>).
+Therefore, most of the basic methods below include a <code>logit</code> argument,
+which can be set to <code>TRUE</code> or <code>FALSE</code> allowing for a retransformation
+of the estimates and their variance-covariance matrix (if requested) using the
+logistic function and the delta method if <code>logit = FALSE</code>.
+</p>
+<p><code>nplmodel</code> returns an object of class <code>"nplmodel"</code> for which
+several basic methods are available, including <code>print</code>, <code>plot</code>,
+<code>summary</code>, <code>coef</code>, <code>vcov</code>, <code>logLik</code>, <code>estfun</code>,
+<code><a href="../../psychotools/help/discrpar.html">discrpar</a></code>, <code><a href="../../psychotools/help/itempar.html">itempar</a></code>, <code><a href="../../psychotools/help/threshpar.html">threshpar</a></code>,
+<code><a href="../../psychotools/help/guesspar.html">guesspar</a></code>, <code><a href="../../psychotools/help/upperpar.html">upperpar</a></code>, and <code><a href="../../psychotools/help/personpar.html">personpar</a></code>.
+</p>
+<p>Finally, if <code>type</code> is set to <code>"1PL"</code>, a Rasch model is estimated. 
+Here, a common slope parameter is estimated for all items, whereas the
+person parameters are assumed to follow a standard normal distribution.
+Please note that this variant of the Rasch model differs from the one used 
+by <code><a href="../../mirt/help/mirt.html">mirt</a></code>, which sets all slope parameters to 1, and 
+estimates the variance of the person parameters instead. Both variants 
+are mathematically equivalent and hence should lead to the same intercept parameter 
+estimates. For numerical reasons, <code>nplmodel</code> and <code>mirt</code> 
+can lead to slightly different item parameter estimates, though, under their 
+respective default settings, in particular when some items are very easy 
+or very difficult and the common slope parameter is large. A distinct advantage 
+of the variant used by <code>nplmodel</code> is that it allows a direct 
+comparison of the slope and intercept parameters with that estimated in more complex 
+IRT models, such as the 2PL model. 
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>nplmodel</code> returns an S3 object of class <code>"nplmodel"</code>, 
+i.e., a list of the following components:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>coefficients</code></td>
+<td>
+<p>estimated model parameters in slope/intercept parametrization,</p>
+</td></tr>
+<tr valign="top"><td><code>vcov</code></td>
+<td>
+<p>covariance matrix of the model parameters,</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>modified data, used for model-fitting, i.e., without
+observations with zero weight,</p>
+</td></tr>
+<tr valign="top"><td><code>items</code></td>
+<td>
+<p>logical vector of length <code>ncol(y)</code>, indicating
+which items were used during estimation,</p>
+</td></tr>
+<tr valign="top"><td><code>n</code></td>
+<td>
+<p>number of observations (with non-zero weights),</p>
+</td></tr>
+<tr valign="top"><td><code>n_org</code></td>
+<td>
+<p>original number of observations in <code>y</code>,</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>the weights used (if any),</p>
+</td></tr>
+<tr valign="top"><td><code>na</code></td>
+<td>
+<p>logical indicating whether the data contain <code>NA</code>s,</p>
+</td></tr>
+<tr valign="top"><td><code>impact</code></td>
+<td>
+<p>either <code>NULL</code> or the supplied <code>impact</code> variable
+with the levels reordered in decreasing order (if this has not been the case
+prior to fitting the model),</p>
+</td></tr>
+<tr valign="top"><td><code>loglik</code></td>
+<td>
+<p>log-likelihood of the fitted model,</p>
+</td></tr>
+<tr valign="top"><td><code>df</code></td>
+<td>
+<p>number of estimated (more precisely, returned) model parameters,</p>
+</td></tr>
+<tr valign="top"><td><code>code</code></td>
+<td>
+<p>convergence code from <code>mirt</code>,</p>
+</td></tr>
+<tr valign="top"><td><code>iterations</code></td>
+<td>
+<p>number of iterations used by <code>mirt</code>,</p>
+</td></tr>
+<tr valign="top"><td><code>reltol</code></td>
+<td>
+<p>convergence threshold passed to <code>mirt</code>,</p>
+</td></tr>
+<tr valign="top"><td><code>grouppars</code></td>
+<td>
+<p>the logical <code>grouppars</code> value,</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>the <code>type</code> of model restriction specified,</p>
+</td></tr>
+<tr valign="top"><td><code>mirt</code></td>
+<td>
+<p>the <code>mirt</code> object fitted internally,</p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>original function call.</p>
+</td></tr>
+</table>
+
+
+<h3>References</h3>
+
+<p>Baker FB, Kim SH (2004).
+<em>Item Response Theory: Parameter Estimation Techniques</em>.
+Chapman &amp; Hall/CRC, Boca Raton.
+</p>
+<p>Bock RD, Aitkin M (1981).
+Marginal Maximum Likelihood Estimation of Item Parameters: Application of an EM Algorithm.
+<em>Psychometrika</em>, <b>46</b>(4), 443&ndash;459.
+</p>
+<p>Chalmers RP (2012).
+mirt: A Multidimensional Item Response Theory Package for the R Environment.
+<em>Journal of Statistical Software</em>, <b>48</b>(6), 1&ndash;29.
+doi: <a href="https://doi.org/10.18637/jss.v048.i06">10.18637/jss.v048.i06</a>
+</p>
+<p>Debelak R, Strobl C (2019).
+Investigating Measurement Invariance by Means of Parameter Instability Tests for 2PL and 3PL Models.
+<em>Educational and Psychological Measurement</em>, <b>79</b>(2), 385&ndash;398.
+doi: <a href="https://doi.org/10.1177/0013164418777784">10.1177/0013164418777784</a>
+</p>
+<p>Schneider L, Strobl C, Zeileis A, Debelak R (2022).
+An R Toolbox for Score-Based Measurement Invariance Tests in IRT Models.
+<em>Behavior Research Methods</em>, forthcoming.
+doi: <a href="https://doi.org/10.3758/s13428-021-01689-0">10.3758/s13428-021-01689-0</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../psychotools/help/raschmodel.html">raschmodel</a></code>, <code><a href="../../psychotools/help/gpcmodel.html">gpcmodel</a></code>,
+<code><a href="../../psychotools/help/rsmodel.html">rsmodel</a></code>, <code><a href="../../psychotools/help/pcmodel.html">pcmodel</a></code>, <code><a href="../../psychotools/help/btmodel.html">btmodel</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+if(requireNamespace("mirt")) {
+
+o &lt;- options(digits = 4)
+
+## mathematics 101 exam results
+data("MathExam14W", package = "psychotools")
+
+## 2PL
+twopl &lt;- nplmodel(y = MathExam14W$solved)
+summary(twopl)
+
+## how to specify starting values as a vector of model parameters
+st &lt;- coef(twopl)
+twopl &lt;- nplmodel(y = MathExam14W$solved, start = st)
+## or a list containing a vector of slopes and a vector of intercepts
+set.seed(0)
+st &lt;- list(a = rlnorm(13, 0, 0.0625), d = rnorm(13, 0, 1))
+twopl &lt;- nplmodel(y = MathExam14W$solved, start = st)
+
+## visualizations
+plot(twopl, type = "profile")
+plot(twopl, type = "regions")
+plot(twopl, type = "piplot")
+plot(twopl, type = "curves", xlim = c(-6, 6))
+plot(twopl, type = "information", xlim = c(-6, 6))
+## visualizing the IRT parametrization
+plot(twopl, type = "curves", xlim = c(-6, 6), items = 1)
+abline(v = itempar(twopl)[1])
+abline(h = 0.5, lty = 2)
+
+## 2PL accounting for gender impact
+table(MathExam14W$gender)
+mtwopl &lt;- nplmodel(y = MathExam14W$solved, impact = MathExam14W$gender,
+  grouppars = TRUE)
+summary(mtwopl)
+plot(mtwopl, type = "piplot")
+## specifying starting values as a vector of model parameters, note that in
+## this example impact is being modelled and therefore grouppars must be TRUE
+## to get all model parameters
+st &lt;- coef(mtwopl)
+mtwopl &lt;- nplmodel(y = MathExam14W$solved, impact = MathExam14W$gender,
+  start = st)
+## or a list containing a vector of slopes, a vector of intercepts and a vector
+## of means and a vector of variances as the distributional group parameters
+set.seed(1)
+st &lt;- list(a = rlnorm(13, 0, 0.0625), d = rnorm(13, 0, 1), m = 0, v = 1)
+mtwopl &lt;- nplmodel(y = MathExam14W$solved, impact = MathExam14W$gender,
+  start = st)
+
+## MML estimated Rasch model (1PL)
+rm &lt;- nplmodel(y = MathExam14W$solved, type = "1PL")
+summary(rm)
+
+options(digits = o$digits)
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>psychotools</em> version 0.7-6 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

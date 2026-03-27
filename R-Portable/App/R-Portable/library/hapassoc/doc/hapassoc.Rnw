@@ -1,0 +1,1072 @@
+\documentclass[article, shortnames]{jss}
+\usepackage{graphicx}
+%% \VignetteIndexEntry{hapassoc}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% declarations for jss.cls %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% just as usual
+\author{Kelly Burkett\\Simon Fraser University \And
+        Jinko Graham\\Simon Fraser University \And 
+	Brad McNeney\\Simon Fraser University  
+	}
+\title{\pkg{hapassoc}:\\ Software for likelihood inference of trait associations with SNP haplotypes and other attributes}
+
+%% for pretty printing and a nice hypersummary also set:
+\Plainauthor{Kelly Burkett} %% comma-separated
+\Plaintitle{Hapassoc: Software for likelihood inference of trait associations with SNP haplotypes and other attributes} %% without formatting
+\Shorttitle{} %% a short title (if necessary)
+
+%% an abstract and keywords
+\Abstract{
+Complex medical disorders, such as heart disease and diabetes, are thought
+to involve a number of genes which act in conjunction with lifestyle and
+environmental factors to increase
+disease susceptibility.
+Associations between complex traits and single nucleotide polymorphisms 
+(SNPs) in candidate genomic regions can provide a useful tool for 
+identifying genetic risk factors. However, analysis of trait 
+associations with single SNPs ignores the potential for extra information 
+from haplotypes, combinations of variants at multiple SNPs 
+along a chromosome inherited from a parent.  
+When haplotype-trait associations are of interest and haplotypes of 
+individuals can be determined, generalized linear models (GLMs) may be used 
+to investigate haplotype associations 
+while adjusting for the effects of non-genetic cofactors or attributes. 
+Unfortunately, haplotypes cannot always be determined cost-effectively 
+when data is collected on unrelated subjects. 
+Uncertain haplotypes may be inferred on the basis of data from single SNPs.
+However, subsequent analyses of risk factors must account for the resulting 
+uncertainty in haplotype assignment in order to avoid potential errors in 
+interpretation. To account for such uncertainty, we have developed
+\pkg{hapassoc}, software for \proglang{R} implementing a 
+likelihood approach to inference of haplotype and non-genetic effects 
+in GLMs of trait associations. We provide a description of the underlying 
+statistical method and illustrate the use of \pkg{hapassoc} with examples 
+that highlight the flexibility to specify dominant and recessive effects 
+of genetic risk factors, a feature not shared by other software that 
+restricts users to additive effects only. Additionally, \pkg{hapassoc} 
+can accommodate missing SNP genotypes for limited numbers of subjects.
+}
+\Keywords{genetic association, single-nucleotide polymorphisms,
+haplotypes, generalized linear models, missing data, EM algorithm}
+%%at least one keyword, comma-separated, not capitalized
+
+%% publication information
+%% NOTE: This needs to filled out ONLY IF THE PAPER WAS ACCEPTED.
+%% If it was not (yet) accepted, leave them commented.
+\Volume{16}
+\Issue{2}
+\Month{May}
+\Year{2006}
+\Submitdate{2005-10-20}
+\Acceptdate{2006-04-26}
+
+%% The address of (at least) one author should be given
+%% in the following format: 
+\Address{
+Kelly Burkett\\
+Department of Statistics and Actuarial Science \\
+Simon Fraser University \\
+8888 University Drive \\
+Burnaby BC, Canada,V5A 1S6 \\
+E-mail: kburkett@sfu.ca\\
+URL: http://stat-db.stat.sfu.ca:8080/statgen\\
+}
+%% It is also possible to add a telephone and fax number
+%% before the e-mail in the following format:
+%% Telephone: +43/1/31336-5053
+%% Fax: +43/1/31336-734
+
+%% for those who use Sweave please include the following line (with % symbols):
+%% need no \usepackage{Sweave.sty}
+
+%% end of declarations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+
+\section{Introduction and Background}
+
+
+The identification of genetic factors influencing susceptibility to
+complex diseases such as cancer and diabetes is important for improving
+our understanding of disease pathways. Genetic factors are measured at
+multiple sites of known genomic location (\emph{genetic markers}) 
+to determine if variants at these sites
+are associated with the disease trait.
+A common type of genetic marker in association studies is the
+\emph{single nucleotide polymorphism} (SNP). SNPs
+generally have only two different variants, called
+\emph{alleles}, which can be labelled as 0 or 1. For each marker, an
+individual inherits one allele from their mother, and one from their
+father. The \emph{genotype} is the particular two alleles that are
+inherited. The three possible genotypes for a SNP marker are 0/0, 0/1 and 1/1, 
+where ``/'' is used to separate the alleles inherited from each parent. 
+The 0/0 and 1/1 genotypes are called \emph{homozygous} (both alleles are the same)
+and the 0/1 genotype is called \emph{heterozygous} (the two alleles are different).
+
+A \emph{haplotype} denotes the alleles at multiple
+markers that are inherited together on the same chromosome from a parent.  
+For example, if an individual inherits a 0 allele at 
+one SNP and a 0 allele at another SNP  
+from their mother, the haplotype they inherit is 00.  
+Because the SNPs may be close together on the same 
+chromosome, their alleles are not necessarily independent.
+The \emph{haplotype phase} is the combination of the two 
+haplotypes that an individual inherits. For example, 
+the phased genotype 00/01 indicates 
+that the two haplotypes inherited were 00 and 01; the genotype at 
+the first SNP is 0/0 and the genotype at the second SNP is 0/1.  
+
+When associations between haplotypes and disease outcomes or \emph{traits} are
+of interest, a potential difficulty is that haplotype phase is not 
+necessarily known because, typically, genotypes are only measured at 
+individual markers. For a subject who is heterozygous at one or fewer
+markers, the haplotype phase can be inferred from the 
+genotypes at individual markers. However, for a subject who is heterozygous at 
+two or more markers, the phase can not be determined with certainty. 
+This is illustrated in figure \ref{fig.unknown.phase}. 
+Current cost-effective genotyping technology gives the observed genotypes 
+at the two SNPs as (0/1, 0/1). The observed genotypes could involve the 
+inheritance of haplotypes 00 and 11, or of haplotypes 01 and 10.
+Therefore, two possible haplotype phasings,
+00/11 and 01/10, are compatible with the observed data.
+
+\begin{figure}[htp]\label{fig.unknown.phase}
+\begin{center}
+\begin{picture}(260,130)
+
+%First pedigree
+\put(20,111){\circle{30}}
+%square
+\put(70,125){\line(1,0){30}}
+\put(70,95){\line(1,0){30}}
+\put(70,95){\line(0,1){30}}
+\put(100,95){\line(0,1){30}}
+\put(53,55){\circle{30}}
+
+\put(85,95){\line(-1,-1){25}}
+\put(20,95){\line(1,-1){25}}
+\put(20,75){00}
+\put(75,75){11}
+\put(40,27){00/11}
+\put(0,10){\bf Observed Genotypes}
+\put(35,0){\bf 0/1; 0/1}
+
+%Second pedigree
+\put(175,111){\circle{30}}
+%square
+\put(225,125){\line(1,0){30}}
+\put(225,95){\line(1,0){30}}
+\put(225,95){\line(0,1){30}}
+\put(255,95){\line(0,1){30}}
+\put(208,55){\circle{30}}
+
+\put(240,95){\line(-1,-1){25}}
+\put(175,95){\line(1,-1){25}}
+\put(175,75){01}
+\put(230,75){10}
+\put(195,27){01/10}
+\put(155,10){\bf Observed Genotypes}
+\put(190,0){\bf 0/1; 0/1}
+
+\end{picture}
+\caption{Illustration of unknown haplotype phase for certain observed genotypes}
+\end{center}
+\end{figure}
+
+The analysis of haplotype-trait associations therefore involves 
+handling the missing phase data. To describe such associations, 
+\citet{Lake03} and \citet{Burkett04} adopt a \emph{generalized linear model} 
+(GLM) framework \citep{McCullaghNelder83}. GLMs provide the flexibility to 
+incorporate non-genetic risk factors or potential confounding variables such 
+as age or sex as covariates. They also allow the incorporation of interaction 
+between genetic and environmental risk factors, a current research focus in 
+the study of complex diseases. Finally, GLMs can accommodate a variety of disease
+ outcomes including dichotomous, count and continuous traits. The method of 
+\citet{Burkett04} is implemented in \pkg{hapassoc}, a contributed package for 
+\proglang{R}. Standard population- and quantitative-genetic assumptions,
+such as population Hardy-Weinberg equilibrium and independence of 
+haplotypes and non-genetic covariates, are made. Parameter estimates are 
+obtained by use of an expectation-maximization (EM) algorithm, called the 
+method of weights \citep{Ibrahim90}, for missing categorical covariates. 
+Standard errors that account for the extra uncertainty due to missing phase 
+are calculated using Louis' method \citep{Louis82}. The statistical approach 
+implemented in \pkg{hapassoc} is briefly described and the use of the program is
+illustrated with examples.
+
+\section{Statistical Description}
+
+Let $y_i$ be the measured trait and $x_i$ be the vector of covariates for
+the $i$th subject, assuming known haplotype phase. The covariates $x_i$
+provide information about the individual's haplotypes and non-genetic
+cofactors. Let $\Prob(x_i \mid \gamma)$ be the probability of covariates
+$x_i$, parametrized by $\gamma$.  For notational convenience, suppose $\gamma$ is
+a column-vector. A GLM specifies the conditional probability of the
+trait given the covariates as $$\Prob(y_i \mid x_i, \beta, \phi) = \exp \left
+[ \frac{y_i \nu_i - b(\nu_i)}{a_i(\phi)} + c(y_i, \phi) \right ],$$ where
+$\nu_i$ is the canonical parameter for a probability distribution in the
+exponential family, $\phi$ is a dispersion parameter, $a_i(\phi)=\phi/m_i$
+for a known constant $m_i$, and $b(\cdot)$ and $c(\cdot,\cdot)$ are known
+functions. A link function $g(\mu_i)=\eta_i$ relates the linear model
+$\eta_i = x_i^T \beta$ to the mean trait value $\mu_i=b'(\nu_i)$. The
+regression coefficients $\beta$ describe the effects of haplotypes and
+non-genetic cofactors, including possible interactions, on the mean trait
+value. The parameters that describe the trait and covariate data are thus
+$\theta = (\beta^T, \phi, \gamma^T)^T$. However, we only consider $\phi$ and
+$\gamma$ as needed for inference about $\beta$, which is of primary
+interest.
+
+If haplotype phase were known and complete covariate information were
+available on all subjects, the complete-data log-likelihood for the $i$th
+individual would be $$l_{ci}(\theta)=\log \left [ \Prob (y_i \mid x_i, \beta,
+\phi) \times \Prob(x_i \mid \gamma) \right ].$$ Haplotypes are not necessarily
+known, and therefore for some subjects the genetic components of the
+covariate vector $x_i$ are not available. However, the observed 
+genotypes at individual SNPs constrain the potential haplotype configurations. 
+Hereafter, let $x_{obs,i}$ be the observed covariate information for
+the $i$th subject and $x_i^j$ be the $j$th possible covariate vector 
+(i.e. covariates that code haplotype information 
+and non-genetic covariates) consistent with $x_{obs,i}$.
+
+We account for missing haplotype phase by use of the EM algorithm
+\citep{Dempster77}, in which maximum likelihood estimates $\widehat
+\theta$ are obtained by iteratively maximizing the conditional expectation
+of the complete-data log-likelihood, $Q(\theta \mid \theta_t)$, given the
+observed data and current parameter estimates $\theta_t$ to determine new
+parameter estimates $\theta_{t+1}$. Assuming independent subjects,
+$Q(\theta \mid \theta_t) = \sum_i Q_i (\theta \mid \theta_t)$, 
+where $Q_i (\theta \mid \theta_t) = 
+{\E} \left [ l_{ci}(\theta) \mid 
+y_i, x_{obs,i}, \theta_t \right ]$.
+
+Our EM algorithm is based on the method of weights \citep{Ibrahim90}, an
+implementation for generalized linear models with categorical covariates
+that may be missing \citep[see][for a review]{HortonLaird99}. 
+Let $l_{ci}^j(\theta)=\log \Prob(y_i, x_i^j \mid \theta)$
+be the complete-data log-likelihood for the $i$th subject
+if that subject had covariate vector $x_i^j$. Then 
+$$Q_i (\theta \mid \theta_t)= \sum_j l_{ci}^j(\theta)
+\Prob(x_i^j \mid y_i, x_{obs,i}, \theta_t) 
+= \sum_j l_{ci}^j(\theta ) \; w_{ij}(\theta_t), $$
+where $w_{ij}(\theta_t)=\Prob(x_i^j \mid y_i, x_{obs,i}, \theta_t)$ are the
+``weights''. 
+Note that each subject's contribution $Q_i(\theta \mid \theta_t)$ to $Q(\theta
+\mid \theta_t)$ is summed over the set of covariate vectors consistent
+with their observed data ($y_i,x_{obs,i}$). The EM algorithm involves 
+computing weights for each possible complete-data covariate vector (E-step), 
+and computing new parameter estimates by maximizing a weighted 
+log-likelihood function (M-step). Upon convergence, standard errors can be 
+calculated.  We implemented this EM algorithm and the calculation of 
+standard errors in \proglang{R} (http://www.r-project.org) as described 
+in detail below. Our implementation is freely available on the Comprehensive 
+R Archive Network (CRAN) as a package called \pkg{hapassoc}.
+  
+\subsection[EM algorithm implemented in hapassoc]{EM algorithm implemented in \pkg{hapassoc}}
+
+Our implementation of the algorithm is summarized by the following steps.
+
+\begin{enumerate}
+
+\item For each individual with unknown haplotypes, add a ``pseudo-individual'' 
+for each possible haplotype combination consistent with that individual's 
+observed genotypes. The genetic data for each pseudo-individual is a different 
+haplotype configuration; the non-genetic data is the same for each 
+pseudo-individual. Initial values for regression coefficients and haplotype 
+frequencies are set.
+
+\item At the $t$th iteration:
+
+\begin{enumerate}
+
+\item E-step: Compute the expected log-likelihood conditional on the
+observed data and the current parameter estimates
+$\theta_t = (\beta_t^T,\phi_t, \gamma_t^T)^T$.
+
+This step simplifies to weighting each pseudo-individual by 
+the conditional probability of the corresponding haplotype configuration given 
+the observed data:
+$$
+w_{ij}(\theta_t)  =  
+\Prob(x_i^j \mid y_i,x_{obs,i} \; \theta_t) 
+ = 
+\frac{\Prob(y_i\mid x_i^j, \beta_t, \phi_t) \Prob(x_i^j \mid \gamma_t)}{
+\sum_{k}\Prob (y_i\mid x_i^k, \beta_t, \phi_t) \Prob(x_i^k \mid \gamma_t)}
+. $$
+
+Calculation of $\Prob(y_i \mid x_i^j , \beta_t, \phi_t)$ is 
+straightforward using the GLM and the estimates $\beta_t$ and $\phi_t$
+from fitting the model in the M-step at iteration $t$.
+To specify the covariate distribution $\Prob (x_i^{j} |\ \gamma_t)$,
+two standard assumptions from the genetics literature
+are made. The first is independence of the 
+genetic and non-genetic factors:
+$$\Prob (x_i^{j} |\ \gamma_t)=\Prob(x_{gi}^{j} |\ \gamma_t) 
+\Prob(x_{ei}^{j}|\ \gamma_t),$$ where $x_{gi}^{j}$ 
+and $x^j_{ei}$ code, respectively, the haplotype and non-genetic covariate 
+information. If only the haplotype information is missing, this assumption 
+means that 
+$$w_{ij}(\theta_t) 
+ = 
+\frac{\Prob(y_i\mid x_i^j, \beta_t, \phi_t) \Prob(x_{gi}^j \mid \gamma_t)}{
+\sum_{k}\Prob (y_i\mid x_i^k, \beta_t, \phi_t) \Prob(x_{gi}^k \mid \gamma_t)}
+\equiv w_{ij}(\beta_t,\phi_t,\gamma_{gt})  
+$$
+so that only the distribution $\Prob(x_{gi}^{j} |\ \gamma_t)$
+has to be specified.  Such a simplification
+is convenient because specifying 
+$\Prob(x_{ei}^{j}|\ \gamma_t)$ can be difficult for non-genetic 
+covariates that are continuous, for example.
+
+In general, the frequencies of haplotype configurations are not identifiable 
+from the genotypes at individual SNPs. For example, haplotype configurations 
+resulting in two or more heterozygous SNP genotypes are never observed 
+unambiguously. However, under Hardy-Weinberg proportions (HWP), the probability 
+of a haplotype configuration can be written in terms of the haplotype frequencies,
+allowing both the frequencies of haplotypes and of haplotype configurations to
+be estimated from genotypes at individual SNPs. The assumption of HWP holds
+if the haplotype inherited from the mother is independent of the haplotype 
+inherited from the father. Assuming HWP also leads to a
+considerable reduction in the number of parameters $\gamma_g$ 
+describing the haplotype covariate distribution $\Prob(x_{gi} \mid \gamma_g)$. 
+For example, when considering haplotypes of 3 SNPs, there are $2^{3}=8$ 
+possible haplotypes compared to $8(9)/2=36$ possible phase configurations. 
+The substantive reduction in the number of genetic parameters leads to 
+faster convergence of the EM algorithm and greater stability of estimation.
+
+
+\item M-step: Maximize the conditional expected log-likelihood $Q(\theta
+\mid \theta_t)$ to determine the \mbox{$(t+1)$th} parameter estimate.
+
+Under the assumption of independence of the genetic and non-genetic
+covariates, $Q(\theta \mid \theta_t)$ may be re-expressed as a sum of
+components involving one of either ($\beta$, $\phi$), $\gamma_g$ or $\gamma_e$:
+\begin{eqnarray*}
+Q(\theta \mid \theta_t) & = & \sum_i Q_i(\theta \mid \theta_t) 
+  \;\;  = \;\; \sum_i \sum_j w_{ij}(\beta_t,\phi_t,\gamma_{gt})
+ l_{ci}^j(\theta) \\
+  & = & \sum_i \sum_j 
+    w_{ij}(\beta_t,\phi_t,\gamma_{gt})
+    \log\left[ \Prob(y_i \mid x^j_i, \beta, \phi)
+      \Prob(x^j_{gi} \mid \gamma_g) \Prob(x_{ei} \mid \gamma_e) \right] \\
+ & = & \sum_i \sum_j 
+    w_{ij}(\beta_t,\phi_t,\gamma_{gt})
+         \log \Prob(y_i \mid x^j_i, \beta, \phi)\\
+ & &+\qquad \sum_i \sum_j 
+    w_{ij}(\beta_t,\phi_t,\gamma_{gt})
+\log \Prob(x^j_{gi} \mid\gamma_g) \\
+& &+\qquad \sum_i \sum_j 
+    w_{ij}(\beta_t,\phi_t,\gamma_{gt})
+       \log \Prob(x_{ei} \mid \gamma_e) \\
+ & \equiv & Q(\beta , \phi \mid \beta_t, \phi_t, \gamma_{gt})+
+      Q(\gamma_g \mid \beta_t, \phi_t, \gamma_{gt})+
+     Q(\gamma_e \mid \beta_t, \phi_t, \gamma_{gt})
+\end{eqnarray*}
+Therefore, each component is maximized separately to update the estimates
+of $\beta$, $\phi$ and $\gamma_{g}$.
+
+The summand $Q(\beta , \phi\mid \beta_t, \phi_t, \gamma_{gt})$ is a
+weighted log-likelihood for regression and dispersion parameters in a
+GLM. The \proglang{R} \code{glm} function is used to estimate 
+ $\beta_{t+1}$ with the $w_{ij}(\beta_t,\phi_t,\gamma_{gt})$
+input to the \code{glm} function through the ``weights'' option. 
+The summand $Q(\gamma_g \mid \beta_t, \phi_t, \gamma_{gt})$ is a weighted 
+multinomial log-likelihood and so its maximization is also straightforward.
+%% as the weighted frequencies of each haplotype. 
+Since estimates of $\gamma_e$ are not
+required for the weights or for updating estimates of the other
+parameters, $\gamma_e$ can be ignored when finding maximum-likelihood
+estimates of the regression parameters $\beta$.
+
+\end{enumerate}
+
+\item Repeat E- and M-steps until convergence. 
+
+\item Calculate the standard errors using values from the final GLM.
+
+The variance-covariance matrix of $\widehat{\theta}$ can be approximated
+by the inverse of the observed information matrix $I(\widehat{\theta})$.
+\citet{Louis82} gives an expression for the observed information in
+missing data problems. With ambiguous haplotype configurations, the expression 
+consists of a term for the expected complete-data information given the observed
+genotypes minus a penalty for unknown phase \citep{Schaid02}.
+Factorization of the likelihood implies that only the observed information
+$I(\widehat{\beta},\widehat{\phi},\widehat{\gamma_g})$ is required to
+obtain standard errors for $\widehat{\beta}$. The variance of
+$\widehat{\beta}$ is approximated by the appropriate submatrix of
+$I^{-1}(\widehat{\beta},\widehat{\phi},\widehat{\gamma_g})$. Appendix A
+provides details of the derivation of
+$I^{-1}(\widehat{\beta},\widehat{\phi},\widehat{\gamma_g})$.
+
+\end{enumerate}
+
+\section[Using hapassoc and its features]{Using \pkg{hapassoc} and its features}
+
+Our contributed \proglang{R} package \pkg{hapassoc} 
+can be downloaded from the CRAN webpage using the install command at the
+\proglang{R} command line (\texttt{>}):
+
+<<eval=FALSE>>=
+install.packages('hapassoc')
+@
+
+\pkg{hapassoc} does not depend on any optional R packages. After it has 
+been installed, the package may be loaded with:
+
+<<>>=
+library(hapassoc)
+@
+
+There are four main functions for the user of \pkg{hapassoc}:
+\code{pre.hapassoc, hapassoc, summary.hapassoc} 
+and \code{anova.hapassoc}. The function
+\code{pre.hapassoc} takes the input dataset, with columns of genotype
+data, and outputs an augmented dataset consisting of all
+pseudo-individuals. The function \code{hapassoc} fits the 
+user-specified generalized linear model, with haplotypes as covariates. 
+The \code{summary} function provides a summary of the results
+while \code{anova} returns a likelihood ratio test of two
+nested models fit with \code{hapassoc}.
+Further details on each of these functions are now given.
+
+The function \code{pre.hapassoc} pre-processes the input dataset for 
+\code{hapassoc}. This pre-processing involves converting the genotype 
+data into haplotype data and adding rows to the input dataset 
+representing haplotype configurations compatible with the observed 
+genotype data for a subject. If the 
+haplotype configuration of a subject is known,
+no extra rows are added for this subject. 
+The pre-processing also involves obtaining initial estimates
+for haplotype frequencies based on the genotype data
+from all subjects combined.  Haplotypes with non-negligible 
+frequency below a user-defined pooling
+tolerance (\code{pooling.tol}) are then grouped together.
+The function requires the input dataset to have the following form:
+
+\begin{enumerate}
+
+\item Each row represents an individual. Columns represent the trait 
+(response), non-genetic covariate information and genotype information.
+
+\item The columns of genotype information may have one of two formats. 
+For the ``allelic'' format, each genotype is denoted by two columns, 
+one column for each allele, with alleles coded as either 0 or 1. For the
+``genotypic'' format, the genotype at each locus is given in one column by
+a character string or factor. 
+Only two possible variants or alleles are permitted,
+forming three possible genotypes. Genotypes with 
+more than two alleles will cause \code{pre.hapassoc} to issue an 
+error and stop execution. Examples of both allelic and genotypic
+formats are given in section \ref{section.examples}.
+
+\item If there are $n$ SNPs, the final $n$ columns of the ``genotypic'' 
+dataset or $2n$ columns of the ``allelic'' dataset contain the genotype 
+data. By default, \code{pre.hapassoc} prints a list
+of genotype variables used to form haplotypes and a list of 
+other ``non-genetic'' variables passed to the function.
+
+\item There are no restrictions on the non-genetic covariate columns,
+except that missing data should be coded as {\tt NA}. 
+Note that only missing
+genotype data is handled by \pkg{hapassoc}; individuals with missing
+non-genetic data will be removed from the dataset and a warning will be
+given to the user.
+
+\item Missing allelic data should be coded as {\tt NA} 
+or ` '. 
+Missing genotypic data should be coded as, e.g., 
+`A', if one allele is missing and the other allele is the 
+nucleotide adenine (say), and ` ' or {\tt NA} 
+if both alleles are missing.
+
+\end{enumerate}
+
+This function has a number of optional parameters that may be set by the
+user. The option \code{maxMissingGenos} specifies the maximum number of 
+SNPs which may be missing genotypes for a subject in order
+for that subject to be included 
+in the analysis, with a default of 1. Each SNP with a missing genotype 
+leads to more haplotype configurations being added for that subject in 
+the augmented dataset. 
+To avoid convergence problems due to haplotypes of low frequency, 
+\code{pooling.tol} can be used to specify a threshold frequency below 
+which haplotypes will be pooled into a single category. 
+The threshold is applied to the initial haplotype
+frequencies provided by \code{pre.hapassoc}. The ``pooled'' category
+returned by \code{pre.hapassoc} is not updated 
+with the haplotype frequencies 
+from subsequent iterations of the EM algorithm
+in \code{hapassoc}.
+The default pooling threshold is set to 0.05. 
+Similarly, the parameter \code{zero.tol} 
+gives the frequency below which it is assumed that a haplotype does not 
+exist. The default threshold is the inverse of ten times the 
+total number of haplotypes in all subjects. Pseudo-individuals carrying 
+haplotypes of estimated frequency below this zero threshold will be removed 
+from the augmented dataset.
+The \code{verbose} flag, if \code{TRUE} (the default),
+causes \code{pre.hapassoc} to print a list of the genotype
+variables used to form haplotypes and a list of other non-genetic
+variables.
+
+The function \code{pre.hapassoc} will return a list with components 
+required for \code{hapassoc}. The components include two data frames,
+\code{haploMat} and \code{haploDM}, with the haplotype information. 
+The data frame \code{haploMat} consists of two columns, one for each of the 
+inferred haplotypes, and a row for each pseudo-individual in the dataset. 
+The data frame \code{haploDM} consists of a column for each of the haplotypes 
+inferred to be present in the dataset and a row for each pseudo-individual. 
+Each pseudo-individual is given a code of 0, 1 or 2 in each column for the 
+number of copies they have of that haplotype. Therefore, all  
+rows of \code{haploDM} should sum to 2, as each individual can have 
+only two haplotypes. The non-haplotype data is returned in the data frame 
+\code{nonHaploDM}. Some rows of \code{nonHaploDM} may be identical, as they 
+represent the trait value and non-genetic covariate information for the same 
+individual who has multiple haplotype configurations compatible with
+their observed genotype data. Other components of the list returned by 
+\code{pre.hapassoc} include a vector \code{initFreq} of initial estimates of 
+all haplotype frequencies (including pooled haplotypes), vectors \code{zeroFreqHaplos} 
+and \code{pooledHaplos} of the zero-frequency and pooled haplotypes, 
+respectively, and a vector \code{wt} of the initial estimates for the 
+weights. For more information on this function, type
+
+<<eval=FALSE>>=
+help(pre.hapassoc)
+@
+
+The function \code{hapassoc} uses the list returned from 
+\code{pre.hapassoc} as input, and fits the linear model provided in the
+model-formula argument. The model formula is specified the same way as it
+would be for the \code{glm} or \code{lm} functions in \proglang{R}. 
+The elements of the model formula must have names from among the names of 
+columns in the data frames \code{nonHaploDM} and \code{haploDM}.
+The availability of \code{haploDM}
+provides the user with the flexibility to specify recessive, dominant
+or other types of genetic risk models.
+See the examples in section \ref{section.examples} below for more details 
+on specifying the model equation. As with \code{glm}, the family of the 
+GLM is specified with the family parameter. Currently 
+the \code{binomial}, \code{gaussian}, \code{poisson},
+and \code{Gamma} families are supported by \code{hapassoc}. 
+Unlike \code{glm}, we have opted for a \code{binomial}
+family as the default,
+since in most of the biomedical applications 
+we have encountered 
+binary traits (e.g. diseased/not diseased) have been investigated.
+Other optional parameters 
+can be set including the initial estimates of haplotype frequencies and of 
+regression coefficients used to start the EM algorithm, the maximum number 
+of iterations for the algorithm,
+the tolerance for convergence,
+and a \code{verbose} flag that controls 
+printing of the iteration number and the value of 
+the covergence criterion at each iteration.
+
+The function returns a list of class ``hapassoc" with components such as the 
+estimated regression coefficients, the estimated haplotype frequencies and an 
+estimate of their joint variance-covariance matrix. The associated
+help file, found by typing \texttt{help(hapassoc)},
+provides a detailed description of the components
+of the returned list.
+The function \code{summary.hapassoc} is the 
+summary method for the class and provides a nicer way of viewing the
+results. The summary includes a table of the estimated regression 
+coefficients and the associated standard errors, Z scores and p-values, 
+a table of the estimated haplotype frequencies and their standard errors, 
+and the estimated dispersion parameter (when appropriate).
+Likelihood ratio tests to compare
+two nested models fit with \code{hapassoc} may be performed with
+\code{anova.hapassoc}. 
+
+\section{Examples} \label{section.examples}
+
+This section illustrates the use of \code{hapassoc} with examples of logistic 
+and linear regression, when input genotypes are in ``allelic" and ``genotypic" 
+format, respectively.
+
+\subsection{Logistic regression with input genotypes in ``allelic'' format}
+
+The ``hypoDat'' dataset from the \code{hapassoc} package will be used 
+for this example. The dataset can be loaded into \proglang{R} with the command
+
+<<>>=
+data(hypoDat)
+@
+
+The first five rows of the dataset are shown
+<<>>=
+hypoDat[1:5,]
+@
+The data consists of eight columns, the affection status (0/1), a continuous 
+non-genetic covariate, and information on three diallelic genetic markers. 
+The genotype data is in ``allelic'' format, so there are six genotype columns 
+for the three SNPs. The genotype of the first SNP is represented by the two 
+columns M1.1 and M1.2. For example, the fourth individual has genotype 
+1/1 (two copies of allele 1) at the first SNP.
+
+The genotype data is converted to haplotype data by the \code{pre.hapassoc} 
+function. Data frames passed to \code{pre.hapassoc}
+are assumed to contain the 
+response, an arbitrary number of non-genetic covariates and the 
+genotype data. The user must tell the function explicitly how to 
+separate the genetic and 
+non-genetic data by specifying \code{numSNPs} and by passing a data frame 
+whose last 2$\times$\code{numSNPs} (allelic format) or last \code{numSNPs}
+(genotypic format) columns comprise the data on genotypes. The data frame
+\code{hypoDat} is in allelic format and so the appropriate call is
+<<>>=
+example1.haplos <- pre.hapassoc(hypoDat,numSNPs=3)
+@
+As an aside, if only the first and third
+SNPs were of interest for haplotype effects, the call to  
+\code{pre.hapassoc} could be modified to
+<<>>=
+example2.haplos <- pre.hapassoc(hypoDat[,c(1:4,7:8)],numSNPs=2)
+@
+
+Similarly, if only the first two SNPs were of interest the call would be
+<<>>=
+example2.haplos <- pre.hapassoc(hypoDat[,1:6],numSNPs=2)
+@
+
+Finally, if the last two SNPs were of interest the possible calls are
+<<>>=
+example2.haplos <- pre.hapassoc(hypoDat[,c(1:2,5:8)],numSNPs=2)
+example2.haplos <- pre.hapassoc(hypoDat,numSNPs=2)
+@
+
+We prefer the first of these calls since it 
+will exclude the data on
+the first SNP, \code{M1.1} and \code{M1.2}, from the non-haplotype 
+data frame \code{nonHaploDM}
+output by \code{pre.hapassoc}.  The second call includes the 
+columns \code{M1.1} and \code{M1.2} describing the first SNP
+in \code{nonHaploDM}.
+
+The first two individuals in the \code{hypoDat} dataset 
+have haplotype configurations that can be inferred with certainty. 
+However, the haplotype configuration of the third individual 
+is uncertain. This subject either has haplotypes 000/011 or
+001/010. The uncertain haplotype phasing for this subject is reflected 
+in the data frames \code{haploDM} and \code{nonHaploDM} 
+returned by \code{pre.hapassoc}. The rows of \code{haploDM} corresponding 
+to the first five rows of \code{hypoDat} are
+<<>>=
+example1.haplos$haploDM[1:7,]
+@
+Rows three and four of \code{haploDM} correspond to row three of \code{hypoDat}
+for the third subject with the uncertain haplotype configuration. 
+The column for the ``pooled'' category of \code{haploDM} is comprised 
+of haplotypes 101, 110 and 111 (see the estimated haplotype frequencies 
+below). The rows of \code{nonHaploDM} corresponding to the first five 
+subjects in \code{hypoDat} are:
+
+<<>>=
+example1.haplos$nonHaploDM[1:7,]
+@
+As with \code{HaploDM}, rows three and four of \code{nonHaploDM} 
+are pseudo-individuals 
+that correspond to the subject in row three of \code{hypoDat}, and therefore 
+have the same trait and non-genetic covariate data.
+
+The initial estimates of haplotype frequencies are
+<<>>=
+example1.haplos$initFreq
+@
+Haplotypes h101, h110, and h111 all have frequencies 
+below the default pooling threshold of 0.05 and so they 
+comprise the pooled category in
+\code{example1.haplos\$haploDM}. 
+
+Logistic regression is now performed to determine the effects of haplotypes 
+on affection status, after adjusting for the non-genetic covariate ``attr''.
+
+<<>>=
+example1.regr1<-hapassoc(affected ~ attr+h000+h010+h011+h100+pooled,
+                           example1.haplos,family=binomial())
+@
+
+The same regression can be fit with 
+<<eval=FALSE>>=
+example1.regr<-hapassoc(affected ~ .,baseline="h001",
+                        example1.haplos,family=binomial())
+@
+where the ``.''
+in the model formula
+is an \proglang{R} short form for the other columns in the
+data matrix. Haplotype h001 was chosen as the baseline haplotype
+in this example because it is the most frequent (the default
+in \code{hapassoc}). Users are free to choose their own 
+baseline haplotype, but are cautioned that using a rare haplotype (or the
+pooled category, if rare) as the baseline can lead to unstable
+parameter estimates.
+
+Other formula syntax is supported in the hapassoc function.
+For example,
+<<>>=
+example1.regr<-hapassoc(affected == 0 ~ attr+h000+h010+h011+h100+pooled,
+                        example1.haplos,family=binomial())
+@
+can be used to specify that the probability that affection status is 0 is
+modelled, rather than 1. This feature can be useful if the binary outcome 
+is specified by character strings, such as ``yes''/``no'', since the 
+formula may then be specified as \code{hapassoc(affected == 'yes' ~ ...)}
+
+Additionally, different models for haplotype effects can be fit using
+\proglang{R} formula syntax. The default is an additive effect for each 
+copy of the haplotype on the scale of the linear predictor. The following 
+command fits recessive effects for haplotypes h000 and h001 
+(i.e., the haplotype has an effect only if the individual has two copies).
+<<eval=FALSE>>=
+example1.regr2 <- hapassoc(affected ~ attr + I(h000==2) + I(h001==2), 
+                           example1.haplos, family=binomial())
+@
+The output of \code{hapassoc} may be summarized with:
+<<>>=
+summary(example1.regr)
+@
+A global hypothesis test for haplotype effects may be performed with:
+<<>>=
+example1.regr2 <- hapassoc(affected ~ attr, example1.haplos, family=binomial())
+anova(example1.regr1,example1.regr2)
+@
+
+\subsection{Linear regression with input genotypes in ``genotypic'' format}
+
+An example of the ``genotypic" input format is found in the dataset 
+\code{hypoDatGeno}. The first five rows are shown below.
+
+<<>>=
+data(hypoDatGeno)
+hypoDatGeno[1:5,]
+@
+In this case, the alleles at all three SNPs are now represented with A's
+and C's rather than 0's and 1's. Additionally, the genotype at each 
+SNP is given in one column.
+
+To illustrate how \code{hapassoc} handles missing genotype data,
+we introduce missing genotypic information for SNPs M1 and M2,
+as shown below. We modify the first subject's genotype at M1
+so that it is completely missing. We modify the second subject's
+genotype at M2 so that only one allele, an `A', is known.
+Since the data frame \code{hypoDataGeno} is in genotypic format,
+M2 is a factor.  Therefore, before modifying the second subject's M2
+genotype, we must add a level `A' to M2:
+<<>>=
+hypoDatGeno[1,"M1"]<-NA #First subject missing genotype at M1
+#Add a level 'A' to M2
+levels(hypoDatGeno[,"M2"])<-c(levels(hypoDatGeno[,"M2"]),"A")
+hypoDatGeno[2,"M2"]<-"A" #Modify second subject's genotype
+@
+
+The data in \code{hypoDatGeno} is now pre-processed by \code{pre.hapassoc}. 
+For illustration, the optional parameter \code{maxMissingGenos} 
+has been changed from its default value of one to two.
+
+<<>>=
+example2.haplos<-pre.hapassoc(hypoDatGeno,3,maxMissingGenos=2,allelic=F)
+example2.haplos$nonHaploDM[142:148,]
+@
+
+When there are no more than \code{maxMissingGenos} SNPs with missing 
+genotype data, rows corresponding to haplotype configurations compatible
+with the missing genotype data for a subject are added to the end of the 
+augmented data matrices \code{haploDM} and \code{nonhaploDM} returned by 
+\code{pre.hapassoc}. For example, rows 142 to 145 of \code{nonHaploDM} 
+correspond to the first subject in \code{hypoDatGeno} and rows 146 to 148
+of \code{nonHaploDM} correspond to the second subject in \code{hypoDatGeno}.
+When there are more missing genotypes than 
+are allowed by the user, as in the following command, a warning 
+message is given to indicate that some individuals have been removed from 
+the dataset. 
+
+<<eval=FALSE>>=
+pre.hapassoc(hypoDatGeno,3,maxMissingGenos=0,allelic=F,verbose=FALSE)
+@
+%% Have to manually insert the Warning message
+\begin{Code}
+Warning message:
+2 subjects with missing data in more than 0 genotype(s) removed
+ in: handleMissings(SNPdat, nonSNPdat, numSNPs, maxMissingGenos)
+\end{Code}
+
+
+With SNP data in genotypic format, the haplotypes are now denoted by 
+combinations of the A and C alleles at each SNP, as can be seen 
+in the display of the initial haplotype frequency estimates.
+<<>>=
+example2.haplos$init
+@
+
+To illustrate linear regression, the continuous non-genetic covariate 
+{\tt attr} will be used as a continuous trait in the call to \code{hapassoc}:
+
+<<>>=
+example2.regr<-hapassoc(attr~hAAA+hACA+hACC+hCAA+pooled,
+                        example2.haplos,family=gaussian())
+summary(example2.regr)
+@
+The \code{dispersion} reported by the summary function
+is the maximum likelihood estimate of the error variance in the linear
+model.
+
+\section{Summary}
+
+\pkg{hapassoc} is an \proglang{R} package for haplotype-trait associations
+in the presence of uncertain haplotype phase, for dichotomous or
+continuous traits. It uses an EM algorithm called the method of weights to
+handle the missing haplotype-phase information. Non-genetic attributes, 
+environmental covariates and haplotype-environment interactions can be 
+included in generalized linear models of trait associations. Assumptions 
+of Hardy-Weinberg proportions and independence of genetic and non-genetic 
+covariates are made.  In addition to additive effects, dominant and recessive 
+effects of the haplotype risk factors can also be specified in \pkg{hapassoc}, 
+in contrast to similar haplotype-trait association software. 
+Missing genotype data
+is also handled by \pkg{hapassoc} so that those 
+individuals with a limited amount 
+of missing genotype data are not removed during the analysis. 
+
+\pkg{hapassoc} relies on many of the \proglang{R} base functions, and for that
+reason it uses much of the same syntax. For someone familiar with the
+\proglang{R} \code{glm} and \code{lm} functions, using \pkg{hapassoc}
+should be relatively straightforward, as the specification of 
+model formulae is 
+identical, the output of the \code{summary} method is 
+similar and the \code{anova} method is similar
+when used to compare two nested models. 
+Currently \code{anova.hapassoc} differs from the \code{anova} methods
+for \code{lm} and \code{glm} in that \code{anova.hapassoc} requires
+exactly two models as input. By contrast, \code{anova.lm} and 
+\code{anova.glm} take either one fitted model, in which case a 
+sequence of possible sub-models are compared, or 
+an arbitrary number of nested models.
+Work to make \code{anova.hapassoc} behave more like \code{anova.lm}
+and \code{anova.glm} is underway and will
+be included in a future version of \pkg{hapassoc}. 
+As an alternative to likelihood ratio tests, users may construct the
+appropriate Wald statistics in the usual way, with the 
+estimated coefficients and variance-covariance matrix returned by the 
+\code{hapassoc} function.
+
+
+\section*{Acknowledgements}
+
+We would like to thank Matthew Pratola for optimizing the R code and 
+initiating its conversion to an R package, and Sigal Blay for 
+code optimization and package maintenence. We would also like to
+thank the \pkg{hapassoc} users for their valuable feedback 
+in bug reports. This research was supported
+by Natural Sciences and Engineering Research Council of Canada grants
+227972-00 and 213124-03,
+by Juvenile Diabetes Research Foundation International grant 1-2001-873,
+by Canadian Institutes of Health Research grants 
+NPG-64869, ATF-66667 and GEI-53960, and in part by
+the Mathematics of Information Technology and Complex Systems,
+Canadian National Centres of Excellence.
+JG is a Scholar of the BC Michael Smith Foundation for Health Research.
+
+\bibliography{burkett_biblio} 
+
+\section*{Appendix: Details on the computation of the standard errors}
+
+>From standard likelihood theory
+\citep[e.g.][]{McCullaghNelder83}, 
+the variance-covariance
+matrix of the maximum likelihood estimators $\widehat{\theta}$
+can be approximated by
+the inverse of the Fisher information matrix
+$$ {\cal I}(\theta_0) = \E\left[ I(\theta_0) \right]
+\equiv \E\left[ - \frac{\partial^2}{\partial \theta \partial \theta^T}
+l(\theta_0) \right] $$
+where $\theta_0$ is the ``true'' value of $\theta$ and $l(\theta)$ is
+the observed-data log-likelihood. The usual estimate of
+$ {\cal I}(\theta_0)$ is the observed information $I(\widehat{\theta})$.
+
+Under independence of genetic and non-genetic covariates,
+the observed-data likelihood
+$L(\theta)$ factors into a term
+involving $\beta$, $\phi$ and $\gamma_g$ and another term involving
+$\gamma_e$:
+\begin{eqnarray*}
+L(\theta)  =  \prod_i \Prob(y_i , x_{obs,i} \mid \theta)
+& = & \prod_i \sum_j  \Prob(y_i , x^j_i \mid \theta) \\
+& = & \prod_i \sum_j  \Prob(y_i \mid x^j_i, \beta, \phi)
+      \Prob(x^j_{gi} \mid \gamma_g) \Prob(x_{ei} \mid \gamma_e)  \\
+& = & \prod_i \Prob(x_{ei} \mid \gamma_e) \sum_j  
+      \Prob(y_i \mid x^j_i, \beta,\phi)
+      \Prob(x^j_{gi} \mid \gamma_g)  \\
+& = & \left[ \prod_i \sum_j  \Prob(y_i \mid x^j_i, \beta,\phi)
+      \Prob(x^j_{gi} \mid \gamma_g) \right] \times
+      \prod_i \Prob(x_{ei} \mid \gamma_e)
+\end{eqnarray*}
+The observed information $I(\theta)$
+is therefore block-diagonal:
+$$
+I(\theta) =
+\left[ \begin{array}{ll} I(\beta,\phi,\gamma_g) & 0 \\
+                                    0 & I(\gamma_e) \\
+       \end{array} \right],
+\qquad \mbox{and so}
+\qquad
+I^{-1}(\theta) =
+\left[ \begin{array}{ll} I^{-1}(\beta,\phi,\gamma_g) & 0 \\
+                                    0 & I^{-1}(\gamma_e) \\
+       \end{array} \right].
+$$
+Thus, only $I(\beta,\phi,\gamma_g)$
+is required for inference of $\beta$.
+
+
+\subsection*{Information matrix for  $\beta$, $\phi$ and $\gamma_g$}
+
+\citet{Louis82} derived an expression for the observed information
+in missing data problems in terms of complete-data score vectors and 
+information matrices.
+Let $S_c(\beta,\phi,\gamma_g)$ and $S_{ci}(\beta,\phi, \gamma_g)$
+be the complete-data score functions for all subjects
+and for the $i$th subject, respectively.
+Define $I_c(\beta, \phi, \gamma_g)$ and $I_{ci}(\beta, \phi, \gamma_g)$
+to be the corresponding observed information matrices.
+Further, let $S^j_{ci}(\beta,\phi,\gamma_g)$
+and $I^j_{ci}(\beta, \phi, \gamma_g)$
+be, respectively, the complete-data
+score function and observed information
+for the $i$th subject with covariate vector $x^j_i$.
+Under the linear model,
+recall $\eta^j_i = x^j_i \, ^T \beta$ and $\mu^j_i=g^{-1}(\eta^j_i)=
+b'(\nu^j_i)$. Define $d_{ij}= y_i \nu_i^j - b(\nu_i^j)$ and
+let $c'(y,\phi)$ and $c''(y,\phi)$ denote
+the first and second derivatives of $c(y, \phi)$ with respect to $\phi$.
+Then $S^j_{ci}(\beta,\phi,\gamma_g)^T =
+   \left[ S^j_{ci}(\beta)^T,S^j_{ci}(\phi),S^j_{ci}(\gamma_g)^T\right]$
+where
+\begin{eqnarray*}
+S^j_{ci}(\beta) & = &
+      \frac{\partial}{\partial \beta} \log P(y_i \mid x^j_i, \beta,\phi)
+\; = \; \frac{m_i(y_i - \mu^j_i)}{\phi} \; x^j_i, \\
+S^j_{ci}(\phi) & = &
+      \frac{\partial}{\partial \phi} \log P(y_i \mid x^j_i, \beta,\phi)
+\; = \; -\frac{m_i d_{ij}}{\phi^2} + c'(y_i,\phi) \\
+\mbox{and} \quad S^j_{ci}(\gamma_g) &= &
+      \frac{\partial}{\partial \gamma_g} \log P(x^j_i \mid \gamma_g).
+\end{eqnarray*}
+
+The observed information
+$I^j_{ci}(\beta, \phi, \gamma_g)$
+has three submatrices along its diagonal.
+In the top left-hand corner,
+$$
+     I^j_{ci}(\beta,\beta)  =
+     - \frac{\partial^2}{\partial \beta \partial \beta^T}
+               \log P(y_i \mid x^j_i, \beta,\phi) =
+\frac {m_i \, x^j_i \, {x^j_i}^{\,T}} {\phi \, g'( \mu^j_i)},
+$$
+where
+$g'(\mu^j_i)$ is the derivative of the link function
+with respect to $\mu$,
+evaluated at $\mu^j_i$.
+The next diagonal submatrix is
+$$
+     I^j_{ci}(\phi,\phi)=
+     -\frac{\partial^2}{\partial \phi \partial \phi}
+               \log P(y_i \mid x^j_i, \beta,\phi) =
+-\frac{2 m_i d_{ij}}{\phi^3} - c''(y_i,\phi).$$
+Finally, in the bottom right-hand corner
+$$
+\quad I^j_{ci}(\gamma_g,\gamma_g)=
+     -\frac{\partial^2}{\partial \gamma_g \partial \gamma_g^T}
+               \log P(x^j_i \mid \gamma_g).
+$$
+The three off-diagonal submatrices
+are $I^j_{ci}(\beta,\gamma_g) = I^j_{ci}(\phi,\gamma_g) = 0$
+and
+$$
+     I^j_{ci}(\beta,\phi)  =
+     -\frac{\partial^2}{\partial \beta \partial \phi}
+               \log P(y_i \mid x^j_i, \beta,\phi).
+$$
+
+The expressions for
+ $S^j_{ci}(\gamma_g)$ and $I^j_{ci}(\gamma_g,\gamma_g)$ depend on the
+distribution of genetic covariates.
+For example, suppose that the $j$th
+possible haplotype configuration consistent with
+the observed SNP genotypes of the $i$th subject has
+$x_{gi}^j = (n_1, \ldots, n_{H+1}),$ where
+$n_h=0,1,2$ codes the number of copies of haplotype $h$
+and there are $H+1$ haplotypes in the population.
+Then, under HWP,
+$$\Prob(x_{gi}^j | \gamma_g) \propto
+{\gamma_{g1}}^{n_1} \times
+{\gamma_{g2}}^{n_2} \times \cdots \times
+{\gamma_{gH}}^{n_H} \times
+\left( 1- \sum_{h=1}^{H} \gamma_{gh} \right ) ^{n_{H+1}},$$
+where $\gamma_{gh}$ is the population frequency of haplotype $h$.
+The score vector is
+$$
+S^j_{ci}(\gamma_g) = \left ( \frac{n_1}{\gamma_{g1}}, \;\; \cdots \;\;,
+\frac{n_H}{\gamma_{gH}} \right )^T
+- \frac{n_{H+1}} {1- \sum_{h=1}^{H} \gamma_{gh}}
+\;\left ( 1, \cdots, 1 \right )^T
+$$ 
+$$
+\mbox{and} \quad I^j_{ci}(\gamma_g,\gamma_g) = -{\rm diag} \left (
+\frac{n_1}{\gamma_{g1}^2},
+\cdots,
+\frac{n_{H}}{\gamma_{gH}^2} \right ) -
+\frac{n_{H+1}}{ \left(1- \sum_{h=1}^{H} \gamma_{gh}\right )^2} \; J,
+$$
+where $J$ is an $H \times H$ matrix of ones.
+
+\citet{Louis82} writes the observed information as
+$$
+       I(\beta, \phi, \gamma_g) =
+{\rm E}[I_c(\beta, \phi, \gamma_g ) | x_{obs}, y] -
+                       {\rm Var}[S_c(\beta,\phi,\gamma_g) | x_{obs}, y].
+$$
+Under independence of subjects, it follows that
+$$
+I(\beta, \phi, \gamma_g) =
+ \sum_i \E[I_{ci}(\beta, \phi, \gamma_g ) | x_{obs,i}, y_i] -
+         \sum_i \VAR[S_{ci}(\beta,\phi, \gamma_g) | x_{obs,i}, y_i]
+$$
+where
+\begin{equation}
+\E[I_{ci}(\beta,\phi, \gamma_g ) | x_{obs,i}, y_i] \
+     = \sum_j w_{ij}(\beta,\phi,\gamma_g) I^j_{ci}(\beta,\phi, \gamma_g )
+\label{eq_Louis1}
+\end{equation}
+and
+\begin{eqnarray*}
+\VAR[S_{ci}(\beta,\phi,\gamma_g) | x_{obs,i}, y_i] &=&
+\sum_j w_{ij}(\beta,\phi,\gamma_g) S^j_{ci}(\beta,\phi,\gamma_g)
+                              S^j_{ci}(\beta,\phi,\gamma_g)^T  - \\
+& &  \qquad \left\{ \sum_k w_{ik}(\beta,\phi,\gamma_g)
+S^k_{ci}(\beta,\phi,\gamma_g) \right\}
+    \left\{ \sum_l w_{il}(\beta,\phi,\gamma_g)
+S^l_{ci}(\beta,\phi,\gamma_g)^T \right\}
+\end{eqnarray*}
+\citep{LipsitzIbrahim96, Burkett02}
+
+It can be shown that the expected value of
+$ \sum_j w_{ij}  I^j_{ci}(\beta,\phi)$ is a vector of zeroes.
+Thus, to estimate the Fisher information,
+we may replace the $I^j_{ci}(\beta,\phi)$ submatrix of
+$I^j_{ci}(\beta,\phi,\gamma_g)$
+in
+equation~(\ref{eq_Louis1}) by a vector of zeros and take
+$I^j_{ci}(\beta, \phi, \gamma_g)$ to be a block-diagonal
+matrix.
+%$$I^j_{ci}(\beta, \phi, \gamma_g)
+% = \left[
+%      \begin{array}{lll}   I^j_{ci}(\beta,\beta) & 0 & 0 \\
+%                           0 & I^j_{ci}(\phi,\phi) & 0  \\
+%                           0 &  0 &   I^j_{ci}(\gamma_g,\gamma_g)
+%\end{array}
+%      \right].
+%   $$
+
+\end{document}

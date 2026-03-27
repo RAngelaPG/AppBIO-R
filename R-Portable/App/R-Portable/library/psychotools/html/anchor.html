@@ -1,0 +1,352 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Anchor Methods for the Detection of Uniform DIF the Rasch...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for anchor {psychotools}"><tr><td>anchor {psychotools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Anchor Methods for the Detection of Uniform DIF the Rasch Model</h2>
+
+<h3>Description</h3>
+
+<p>The <code>anchor</code> function provides a variety of anchor
+methods for the detection of uniform differential item functioning (DIF)
+in the Rasch model between two pre-specified groups. These methods can
+be divided in an anchor class that determines characteristics of the
+anchor method and an anchor selection that determines the ranking order
+of candidate anchor items. The aim of the <code>anchor</code> function is to
+provide anchor items for DIF testing, e.g. with
+<code><a href="../../psychotools/help/anchortest.html">anchortest</a></code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+anchor(object, ...)
+## Default S3 method:
+anchor(object, object2,
+  class = c("constant", "forward"), select = NULL,
+  length = NULL, range = c(0.1, 0.8), ...)
+## S3 method for class 'formula'
+anchor(formula, data = NULL, subset = NULL,
+  na.action = NULL, weights = NULL, model = raschmodel, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object, object2</code></td>
+<td>
+<p>Fitted model objects of class &ldquo;raschmodel&rdquo;
+estimated via conditional maximum likelihood using <code><a href="../../psychotools/help/raschmodel.html">raschmodel</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>further arguments passed over to an internal call
+of <code><a href="../../psychotools/help/anchor.default.html">anchor.default</a></code> in the formula method. In the
+default method, these additional arguments are currently not being used.</p>
+</td></tr>
+<tr valign="top"><td><code>class</code></td>
+<td>
+<p>character. Available anchor classes are the
+<code>constant</code> anchor class implying a constant anchor length
+defined by <code>length</code> and the iterative <code>forward</code> anchor
+class, for an overview see Kopf et al. (2015a).</p>
+</td></tr>
+<tr valign="top"><td><code>select</code></td>
+<td>
+<p>character. Several anchor selection strategies are
+available: <code>"MTT"</code>, <code>"MPT"</code>, <code>"MT"</code>, <code>"MP"</code>,
+<code>"NST"</code>, <code>"AO"</code>, <code>"AOP"</code> based on
+Kopf et al. (2015b) as well as <code>"Gini"</code>, <code>"CLF"</code>,
+<code>"GiniT"</code>, <code>"CLFT"</code> based on Strobl et al. (2021).
+The latter four can only be combined with <code>class = "constant"</code>
+and <code>length = 1</code>. The default is <code>select = "Gini"</code> unless
+either <code>length &gt; 1</code> where <code>"MPT"</code> is used
+or <code>class = "forward"</code> where <code>"MTT"</code> is used. For more
+details see below.</p>
+</td></tr>
+<tr valign="top"><td><code>length</code></td>
+<td>
+<p>integer. It pre-defines a maximum anchor length.
+Per default, the <code>forward</code> anchor grows up to the proportion
+of currently presumed DIF-free items specified in <code>range</code>
+and the <code>constant</code> anchor class selects one anchor item,
+unless an explicit limiting number is defined in <code>length</code>
+by the user.</p>
+</td></tr>
+<tr valign="top"><td><code>range</code></td>
+<td>
+<p>numeric vector of length 2. The first element is
+the percentage of first anchor candidates to be excluded for
+consideration when the <code>forward</code> anchor class is used and the
+second element determines a percentage of currently presumed DIF-free
+items up to which the anchor from the <code>forward</code> anchor class is
+allowed to grow.</p>
+</td></tr>
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>formula of type <code>y ~ x</code> where <code>y</code> specifies a
+matrix of dichotomous item responses and <code>x</code> the grouping
+variable, e.g., gender, for which DIF should be tested for.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>a data frame containing the variables of the specified
+<code>formula</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>subset</code></td>
+<td>
+<p>logical expression indicating elements or rows to keep:
+missing values are taken as false.</p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+<p>a function which indicates what should happen when the data
+contain missing values (<code>NA</code>s).</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>an optional vector of weights (interpreted as case weights).</p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>an IRT model fitting function with a suitable <code>itempar</code>
+method, by default <code><a href="../../psychotools/help/raschmodel.html">raschmodel</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The anchor methods provided consist of an anchor class that determines
+characteristics of the anchor and an anchor selection that determines
+the ranking order of candidate anchor items.
+</p>
+<p>In the <code>constant</code> anchor class, the anchor length is pre-defined by the
+user within the argument <code>length</code>, defaulting to a length of one.
+In contrast, the iterative <code>forward</code> class starts with a single anchor item and
+includes items in the anchor as long as the anchor length is shorter
+than a certain percentage of the number of items that do not display
+statistically significant DIF (default: 0.8). Furthermore, a percentage 
+of first anchor candidates is excluded from consideration (default: 0.1) 
+and the user is allowed to set a maximum number of anchor items using the 
+argument <code>length</code>. A detailed description of the anchor classes can be found
+in Kopf et al. (2015a).
+</p>
+<p>In more recent work Strobl et al. (2021) suggest a simpler yet powerful 
+anchor method based on inequality criteria like the Gini coefficient. A
+similar approach based on the component loss function (CLF) was suggested
+by Muthén &amp; Asparouhov (2014). These criteria can be shown to attain their
+optimium for a single-anchor, thus correponding to a <code>constant</code> class of
+<code>length</code> 1. Due to the simple structure in combination with good
+empirical performance the Gini-based selection was made the default in
+version 0.7-0 of the package.
+</p>
+<p>Both anchor classes require an explicit anchor selection strategy (as opposed to
+the <code>all-other</code> anchor class which is therefore not included in the
+function <code>anchor</code>). The anchor selection strategy determines the ranking order of
+candidate anchor items. In case of two groups, each item <i>j, j = 1, &hellip;, k</i> (where <i>k</i> denotes the number of
+items in the test) obtains a criterion value <i>c_j</i> that is
+defined by the anchor selection strategy. The ranking order is
+determined by the rank of the criterion value
+rank<i>(c_j)</i>. 
+</p>
+<p>The criterion values <i>c_j</i> for item <i>j</i> from the different
+anchor selection strategies are provided in the following equations:
+<i>d_j</i> denotes the difference of the item parameters,
+<i>t_j</i> the corresponding test statistic, and
+<i>p_j</i> the resulting p-values. In all cases, the anchor items
+are given in parentheses. Furthermore,
+<i>Gini(.)</i> denotes the Gini inequality index,
+<i>CLF(.)</i> the component loss function (sum of square root values),
+<i>1(.)</i> the indicator function,
+<i>&lt;0.5k&gt;</i> the empirical 50% quantile,
+and <i>A_{purified}</i> the anchor after purification steps.
+More detailed descriptions are available in Strobl et al. (2021) and
+Kopf et al. (2015b).
+</p>
+<p>Gini selection (of item parameter differences) by Strobl et al. (2021):
+</p>
+<p style="text-align: center;"><i>
+ c_j^{Gini} = -Gini({|d_1(j)|, &hellip;, |d_k(j)|}) </i></p>
+
+<p>GiniT selection (of test statistics) similar to Strobl et al. (2021):
+</p>
+<p style="text-align: center;"><i>
+ c_j^{GiniT} = -Gini({|t_1(j)|, &hellip;, |t_k(j)|}) </i></p>
+
+<p>CLF selection (of item parameter differences) by Muthén &amp; Asparouhov (2014):
+</p>
+<p style="text-align: center;"><i>
+ c_j^{CLF} = CLF({|d_1(j)|, &hellip;, |d_k(j)|}) </i></p>
+
+<p>CLFT selection (of test statistics) similar to Muthén &amp; Asparouhov (2014):
+</p>
+<p style="text-align: center;"><i>
+ c_j^{CLFT} = CLF({|t_1(j)|, &hellip;, |t_k(j)|}) </i></p>
+
+<p>All-other selection by Woods (2009), here abbreviated AO:
+</p>
+<p style="text-align: center;"><i>
+ c_j^{AO} = | t_j ({1,&hellip;,k}\j) |</i></p>
+
+<p>All-other purified selection by Wang et al. (2012), here abbreviated AOP:
+</p>
+<p style="text-align: center;"><i>
+ c_j^{AOP} = | t_j ( A_{purified} ) |</i></p>
+
+<p>Number of significant threshold selection based on Wang et al. (2004), here abbreviated NST:
+</p>
+<p style="text-align: center;"><i>
+ c_j^{NST} = &sum;_{l in {1,&hellip;,k} \ j} 1 { p_j ({l}) &le; &alpha; }) |</i></p>
+
+<p>Mean test statistic selection by Shih et al. (2009), here abbreviated MT:
+</p>
+<p style="text-align: center;"><i>
+ c_j^{MT} = 1/(k-1) &sum;_{l in {1,&hellip;,k} \ j} | t_j ({l}) |</i></p>
+
+<p>Mean p-value selection by Kopf et al. (2015b), here abbreviated MP:
+</p>
+<p style="text-align: center;"><i>
+c_j^{MP} = - 1/(k-1) &sum;_{l in {1,&hellip;,k} \ j} p_j ({l})</i></p>
+
+<p>Mean test statistic threshold selection by Kopf et al. (2015b), here abbreviated MTT:
+</p>
+<p style="text-align: center;"><i>
+c_j^\mathrm{MTT} = 
+ &sum;_{l in {1,&hellip;,k} \ j} 
+1 { |  t_j ({l}) | &gt; ( | 1/(k-1) &sum;_{l \in { 1,&hellip;, k } \ j} 
+t_j ({l}) | )_{&lt;0.5k&gt;}}  
+</i></p>
+
+<p>Mean p-value threshold selection by Kopf et al. (2015b), here abbreviated MPT:
+</p>
+<p style="text-align: center;"><i>
+c_j^\mathrm{MPT} = 
+ -  &sum;_{l in {1,&hellip;,k} \ j} 
+1 { p_j ({l}) &gt; ( 1/(k-1) &sum;_{l in { 1, &hellip;, k } \ j} 
+ p_j ({l}))_{&lt;0.5k&gt;}
+  }
+</i></p>
+
+<p>Kopf et al. (2015b) recommend to combine the <code>class = "constant"</code> with
+<code>select = "MPT"</code> and the <code>class = "forward"</code> with <code>select = "MTT"</code>,
+respectively.
+</p>
+<p>The <code>all-other</code> anchor class (that assumes that DIF is balanced i.e. no 
+group has an advantage in the test) is here
+not considered as explicit anchor selection and, thus, not included
+in the <code>anchor</code> function (but in the <code><a href="../../psychotools/help/anchortest.html">anchortest</a></code>
+function). Note that the <code>all-other</code> anchor class requires strong prior
+knowledge that DIF is balanced.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>anchor</code>, i.e. a list including 
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>anchor_items</code></td>
+<td>
+<p>the integer index for the selected anchor items</p>
+</td></tr>
+<tr valign="top"><td><code>ranking_order</code></td>
+<td>
+<p>a ranking order (integer index) of the candidate anchor items by their criterion values</p>
+</td></tr>
+<tr valign="top"><td><code>criteria</code></td>
+<td>
+<p>the criterion values obtained in the anchor selection for each item (unsorted)</p>
+</td></tr>
+</table>
+
+
+<h3>References</h3>
+
+<p>Kopf J, Zeileis A, Strobl C (2015a).
+A Framework for Anchor Methods and an Iterative Forward Approach for DIF Detection.
+<em>Applied Psychological Measurement</em>, <b>39</b>(2), 83&ndash;103.
+doi: <a href="https://doi.org/10.1177/0146621614544195">10.1177/0146621614544195</a>
+</p>
+<p>Kopf J, Zeileis A, Strobl C (2015b).
+Anchor Selection Strategies for DIF Analysis: Review, Assessment, and New Approaches.
+<em>Educational and Psychological Measurement</em>, <b>75</b>(1), 22&ndash;56.
+doi: <a href="https://doi.org/10.1177/0013164414529792">10.1177/0013164414529792</a>
+</p>
+<p>Muthén B, Asparouhov T (2014).
+IRT Studies of Many Groups: The Alignment Method.
+<em>Frontiers in Psychology</em>, <b>5</b>, 978.
+doi: <a href="https://doi.org/10.3389/fpsyg.2014.00978">10.3389/fpsyg.2014.00978</a>
+</p>
+<p>Shih CL, Wang WC (2009).
+Differential Item Functioning Detection Using the Multiple Indicators, Multiple Causes Method with a Pure Short Anchor.
+<em>Applied Psychological Measurement</em>, <b>33</b>(3), 184&ndash;199.
+</p>
+<p>Strobl C, Kopf J, Kohler L, von Oertzen T, Zeileis A (2021).
+Anchor Point Selection: Scale Alignment Based on an Inequality Criterion.
+<em>Applied Psychological Measurement</em>, <b>45</b>(3), 214&ndash;230.
+doi: <a href="https://doi.org/10.1177/0146621621990743">10.1177/0146621621990743</a>
+</p>
+<p>Wang WC (2004).
+Effects of Anchor Item Methods on the Detection of Differential Item Functioning within the Family of Rasch Models.
+<em>Journal of Experimental Education</em>, <b>72</b>(3), 221&ndash;261.
+</p>
+<p>Wang WC, Shih CL, Sun GW (2012).
+The DIF-Free-then-DIF Strategy for the Assessment of Differential Item Functioning.
+<em>Educational and Psychological Measurement</em>, <b>72</b>(4), 687&ndash;708.
+</p>
+<p>Woods C (2009).
+Empirical Selection of Anchors for Tests of Differential Item Functioning.
+<em>Applied Psychological Measurement</em>, <b>33</b>(1), 42&ndash;57.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../psychotools/help/anchortest.html">anchortest</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Verbal aggression data
+data("VerbalAggression", package = "psychotools")
+
+## Gini anchor (Strobl et al. 2021) for gender DIF in the self-to-blame situations
+anchor(resp2[, 1:12] ~ gender , data = VerbalAggression)
+
+## alternatively: based on fitted raschmodel objects
+raschmodels &lt;- with(VerbalAggression, lapply(levels(gender), function(i) 
+  raschmodel(resp2[gender == i, 1:12])))
+anchor(raschmodels[[1]], raschmodels[[2]])
+
+if(requireNamespace("multcomp")) {
+
+## four anchor items from constant anchor class using MPT-selection (Kopf et al. 2015b)
+anchor(object = raschmodels[[1]], object2 = raschmodels[[2]], 
+  class = "constant", select = "MPT", length = 4)
+
+## iterative forward anchor class using MTT-selection (Kopf et al. 2015b)
+set.seed(1)
+fanchor &lt;- anchor(object = raschmodels[[1]], object2 = raschmodels[[2]],
+  class = "forward", select = "MTT", range = c(0.05, 1))
+fanchor
+
+## the same using the formula interface
+set.seed(1)
+fanchor2 &lt;- anchor(resp2[, 1:12] ~ gender , data = VerbalAggression,
+  class = "forward", select = "MTT", range = c(0.05, 1))
+
+## criteria really the same?
+all.equal(fanchor$criteria, fanchor2$criteria, check.attributes = FALSE)
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>psychotools</em> version 0.7-6 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Define a new S7 class</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for new_class {S7}"><tr><td>new_class {S7}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Define a new S7 class</h2>
+
+<h3>Description</h3>
+
+<p>A class specifies the properties (data) that each of its objects will
+possess. The class, and its parent, determines which method will be used
+when an object is passed to a generic.
+</p>
+<p>Learn more in <code>vignette("classes-objects")</code>
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+new_class(
+  name,
+  parent = S7_object,
+  package = topNamespaceName(parent.frame()),
+  properties = list(),
+  abstract = FALSE,
+  constructor = NULL,
+  validator = NULL
+)
+
+new_object(.parent, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>name</code></td>
+<td>
+<p>The name of the class, as a string. The result of calling
+<code>new_class()</code> should always be assigned to a variable with this name,
+i.e. <code>Foo &lt;- new_class("Foo")</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>parent</code></td>
+<td>
+<p>The parent class to inherit behavior from.
+There are three options:
+</p>
+
+<ul>
+<li><p> An S7 class, like <a href="../../S7/help/S7_object.html">S7_object</a>.
+</p>
+</li>
+<li><p> An S3 class wrapped by <code><a href="../../S7/help/new_S3_class.html">new_S3_class()</a></code>.
+</p>
+</li>
+<li><p> A base type, like <a href="../../S7/help/class_logical.html">class_logical</a>, <a href="../../S7/help/class_integer.html">class_integer</a>, etc.
+</p>
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>package</code></td>
+<td>
+<p>Package name. This is automatically resolved if the class is
+defined in a package, and <code>NULL</code> otherwise.
+</p>
+<p>Note, if the class is intended for external use, the constructor should be
+exported. Learn more in <code>vignette("packages")</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>properties</code></td>
+<td>
+<p>A named list specifying the properties (data) that
+belong to each instance of the class. Each element of the list can
+either be a type specification (processed by <code><a href="../../S7/help/as_class.html">as_class()</a></code>) or a
+full property specification created <code><a href="../../S7/help/new_property.html">new_property()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>abstract</code></td>
+<td>
+<p>Is this an abstract class? An abstract class can not be
+instantiated.</p>
+</td></tr>
+<tr valign="top"><td><code>constructor</code></td>
+<td>
+<p>The constructor function. In most cases, you can rely
+on the default constructor, which will generate a function with one
+argument for each property.
+</p>
+<p>A custom constructor should call <code>new_object()</code> to create the S7 object.
+The first argument, <code>.data</code>, should be an instance of the parent class
+(if used). The subsequent arguments are used to set the properties.</p>
+</td></tr>
+<tr valign="top"><td><code>validator</code></td>
+<td>
+<p>A function taking a single argument, <code>self</code>, the object
+to validate.
+</p>
+<p>The job of a validator is to determine whether the object is valid,
+i.e. if the current property values form an allowed combination. The
+types of the properties are always automatically validated so the job of
+the validator is to verify that the <em>values</em> of individual properties are
+ok (i.e. maybe a property should have length 1, or should always be
+positive), or that the <em>combination</em> of values of multiple properties is ok.
+It is called after construction and whenever any property is set.
+</p>
+<p>The validator should return <code>NULL</code> if the object is valid. If not, it
+should return a character vector where each element describes a single
+problem, using <code style="white-space: pre;">@prop_name</code> to describe where the problem lies.
+</p>
+<p>See <code>validate()</code> for more details, examples, and how to temporarily
+suppress validation when needed.</p>
+</td></tr>
+<tr valign="top"><td><code>.parent, ...</code></td>
+<td>
+<p>Parent object and named properties used to construct the
+object.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A object constructor, a function that can be used to create objects
+of the given class.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Create an class that represents a range using a numeric start and end
+Range &lt;- new_class("Range",
+  properties = list(
+    start = class_numeric,
+    end = class_numeric
+  )
+)
+r &lt;- Range(start = 10, end = 20)
+r
+# get and set properties with @
+r@start
+r@end &lt;- 40
+r@end
+
+# S7 automatically ensures that properties are of the declared types:
+try(Range(start = "hello", end = 20))
+
+# But we might also want to use a validator to ensure that start and end
+# are length 1, and that start is &lt; end
+Range &lt;- new_class("Range",
+  properties = list(
+    start = class_numeric,
+    end = class_numeric
+  ),
+  validator = function(self) {
+    if (length(self@start) != 1) {
+      "@start must be a single number"
+    } else if (length(self@end) != 1) {
+      "@end must be a single number"
+    } else if (self@end &lt; self@start) {
+      "@end must be great than or equal to @start"
+    }
+  }
+)
+try(Range(start = c(10, 15), end = 20))
+try(Range(start = 20, end = 10))
+
+r &lt;- Range(start = 10, end = 20)
+try(r@start &lt;- 25)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>S7</em> version 0.2.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Generic mnf method</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mnf {spacetime}"><tr><td>mnf {spacetime}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Generic mnf method</h2>
+
+<h3>Description</h3>
+
+<p> Compute mnf from spatial, temporal, or spatio-temporal data </p>
+
+
+<h3>Usage</h3>
+
+<pre>
+mnf(x, ...)
+## S3 method for class 'matrix'
+mnf(x, ..., Sigma.Noise, use = "complete.obs")
+## S3 method for class 'mts'
+mnf(x, ..., use = "complete.obs")
+## S3 method for class 'zoo'
+mnf(x, ..., use = "complete.obs")
+## S3 method for class 'SpatialPixelsDataFrame'
+mnf(x, ..., use = "complete.obs")
+## S3 method for class 'SpatialGridDataFrame'
+mnf(x, ..., Sigma.Noise, use = "complete.obs")
+## S3 method for class 'RasterStack'
+mnf(x, ..., use = "complete.obs")
+## S3 method for class 'RasterBrick'
+mnf(x, ..., use = "complete.obs")
+## S3 method for class 'STSDF'
+mnf(x, ..., use = "complete.obs", mode = "temporal")
+## S3 method for class 'STFDF'
+mnf(x, ..., use = "complete.obs", mode = "temporal")
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>object for which an mnf method is available</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>ignored</p>
+</td></tr>
+<tr valign="top"><td><code>Sigma.Noise</code></td>
+<td>
+<p>Noise covariance matrix; when missing, estimated from the data by using the
+covariance of lag-one spatial or temporal differences (MAF)</p>
+</td></tr>
+<tr valign="top"><td><code>use</code></td>
+<td>
+<p>method to deal with missing values when computing covariances; see <a href="../../stats/html/cor.html">cov</a></p>
+</td></tr>
+<tr valign="top"><td><code>mode</code></td>
+<td>
+<p>for <code>ST</code> objects: if <code>"temporal"</code>, compute covariances in time dimension,
+if <code>"spatial"</code>, compute them in spatial dimension.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p> Uses MAF (Min/max Autocorrelation Factors) to estimate the
+noise covariance.  This implementation estimates the noise covariance
+by <i>0.5 \mbox{Cov}(Z(s)-Z(s+&Delta;))</i>, so that eigenvalues can be
+directly interpreted as approximate estimates of the noice covariance. </p>
+
+
+<h3>Value</h3>
+
+<p> object of class <code>(c("mnf", "prcomp")</code>; see <a href="../../stats/html/prcomp.html">prcomp</a>. Additional elements
+are <code>values</code>, containing the eigenvalues.  </p>
+
+
+<h3>See Also</h3>
+
+<p>https://r-spatial.org/r/2016/03/09/MNF-PCA-EOF.html </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# temporal data:
+set.seed(13531) # make reproducible
+s1 = arima.sim(list(ma = rep(1,20)), 500)
+s2 = arima.sim(list(ma = rep(1,20)), 500)
+s3 = arima.sim(list(ma = rep(1,20)), 500)
+s3 = s3 + rnorm(500, sd = 10)
+d = cbind(s1,s2,s3)
+plot(d)
+m = mnf(d)
+m
+summary(m)
+plot(predict(m))
+
+# spatial example:
+## Not run: 
+library(sp)
+grd = SpatialPoints(expand.grid(x=1:100, y=1:100))
+gridded(grd) = TRUE
+fullgrid(grd) = TRUE
+pts = spsample(grd, 50, "random")
+pts$z = rnorm(50)
+library(gstat)
+v = vgm(1, "Sph", 90)
+out = krige(z~1, pts, grd, v, nmax = 20, nsim = 4)
+out[[3]] = 0.5 * out[[3]] + 0.5 * rnorm(1e4)
+out[[4]] = rnorm(1e4)
+spplot(out, as.table = TRUE)
+m = mnf(out)
+m
+summary(m)
+
+## End(Not run)
+if (require(gstat)) {
+ data(wind)
+ library(sp)
+ wind.loc$y = as.numeric(char2dms(as.character(wind.loc[["Latitude"]])))
+ wind.loc$x = as.numeric(char2dms(as.character(wind.loc[["Longitude"]])))
+ coordinates(wind.loc) = ~x+y
+ proj4string(wind.loc) = "+proj=longlat +datum=WGS84"
+
+ # match station order to names in wide table:
+ stations = 4:15
+ wind.loc = wind.loc[match(names(wind[stations]), wind.loc$Code),]
+ row.names(wind.loc) = wind.loc$Station
+ wind$time = ISOdate(wind$year+1900, wind$month, wind$day, 0)
+ space = list(values = names(wind)[stations])
+ wind.st = stConstruct(wind[stations], space, wind$time, SpatialObj = wind.loc, interval = TRUE)
+ m = mnf(wind.st)
+ m
+ plot(m)
+ stplot(predict(m), mode = "tp")
+}
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>spacetime</em> version 1.3-3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

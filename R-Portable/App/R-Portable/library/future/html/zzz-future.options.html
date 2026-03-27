@@ -1,0 +1,280 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Options used for futures</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for zzz-future.options {future}"><tr><td>zzz-future.options {future}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Options used for futures</h2>
+
+<h3>Description</h3>
+
+<p>Below are the <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> options and environment variables that are used by the
+<span class="pkg">future</span> package and packages enhancing it.<br />
+<br />
+<em>WARNING: Note that the names and the default values of these options may
+change in future versions of the package.  Please use with care until
+further notice.</em>
+</p>
+
+
+<h3>Packages must not change future options</h3>
+
+<p>Just like for other R options, as a package developer you must <em>not</em> change
+any of the below <code style="white-space: pre;">future.*</code> options.  Only the end-user should set these.
+If you find yourself having to tweak one of the options, make sure to
+undo your changes immediately afterward.  For example, if you want to
+bump up the <code>future.globals.maxSize</code> limit when creating a future,
+use something like the following inside your function:
+</p>
+<div class="sourceCode r"><pre>oopts &lt;- options(future.globals.maxSize = 1.0 * 1e9)  ## 1.0 GB
+on.exit(options(oopts))
+f &lt;- future({ expr })  ## Launch a future with large objects
+</pre></div>
+
+
+<h3>Options for controlling futures</h3>
+
+
+<dl>
+<dt><span class="option">future.plan</span>:</dt><dd><p>(character string or future function) Default future backend used unless otherwise specified via <code><a href="../../future/help/plan.html">plan()</a></code>. This will also be the future plan set when calling <code>plan("default")</code>.  If not specified, this option may be set when the <span class="pkg">future</span> package is <em>loaded</em> if command-line option <code>--parallel=ncores</code> (short <code style="white-space: pre;">-p ncores</code>) is specified; if <code>ncores &gt; 1</code>, then option <span class="option">future.plan</span> is set to <code>multisession</code> otherwise <code>sequential</code> (in addition to option <span class="option">mc.cores</span> being set to <code>ncores</code>, if <code>ncores &gt;= 1</code>). (Default: <code>sequential</code>)</p>
+</dd>
+<dt><span class="option">future.globals.maxSize</span>:</dt><dd><p>(numeric) Maximum allowed total size (in bytes) of global variables identified. This is used to protect against exporting too large objects to parallel workers by mistake. Transferring large objects over a network, or over the internet, can be slow and therefore introduce a large bottleneck that increases the overall processing time. It can also result in large egress or ingress costs, which may exist on some systems. If set of <code>+Inf</code>, then the check for large globals is skipped. (Default: <code>500 * 1024 ^ 2</code> = 500 MiB)</p>
+</dd>
+<dt><span class="option">future.globals.onReference</span>: (<em>beta feature - may change</em>)</dt><dd><p>(character string) Controls whether the identified globals should be scanned for so called <em>references</em> (e.g. external pointers and connections) or not.  It is unlikely that another <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> process (&quot;worker&quot;) can use a global that uses a internal reference of the master <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> process&mdash;we call such objects <em>non-exportable globals</em>.
+If this option is <code>"error"</code>, an informative error message is produced if a non-exportable global is detected.
+If <code>"warning"</code>, a warning is produced, but the processing will continue; it is likely that the future will be resolved with a run-time error unless processed in the master <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> process (e.g. <code>plan(sequential)</code> and <code>plan(multicore)</code>).
+If <code>"ignore"</code>, no scan is performed.
+(Default: <code>"ignore"</code> but may change)
+</p>
+</dd>
+<dt><span class="option">future.resolve.recursive</span>:</dt><dd><p>(integer) An integer specifying the maximum recursive depth to which futures should be resolved. If negative, nothing is resolved.  If <code>0</code>, only the future itself is resolved.  If <code>1</code>, the future and any of its elements that are futures are resolved, and so on. If <code>+Inf</code>, infinite search depth is used. (Default: <code>0</code>)</p>
+</dd>
+<dt><span class="option">future.onFutureCondition.keepFuture</span>:</dt><dd><p>(logical) If <code>TRUE</code>, a <code>FutureCondition</code> keeps a copy of the <code>Future</code> object that triggered the condition. If <code>FALSE</code>, it is dropped. (Default: <code>TRUE</code>)</p>
+</dd>
+<dt><span class="option">future.wait.timeout</span>:</dt><dd><p>(numeric) Maximum waiting time (in seconds) for a future to resolve or for a free worker to become available before a timeout error is generated. (Default: <code>30 * 24 * 60 * 60</code> (= 30 days))</p>
+</dd>
+<dt><span class="option">future.wait.interval</span>:</dt><dd><p>(numeric) Initial interval (in
+seconds) between polls. This controls the polling frequency for finding
+an available worker when all workers are currently busy. It also controls
+the polling frequency of <code>resolve()</code>. (Default: <code>0.01</code> = 1 ms)</p>
+</dd>
+<dt><span class="option">future.wait.alpha</span>:</dt><dd><p>(numeric) Positive scale factor used to increase the interval after each poll. (Default: <code>1.01</code>)</p>
+</dd>
+</dl>
+
+
+
+<h3>Options for built-in sanity checks</h3>
+
+<p>Ideally, the evaluation of a future should have no side effects. To
+protect against unexpected side effects, the future framework comes
+with a set of built-in tools for checking against this.
+Below R options control these built-in checks and what should happen
+if they fail. You may modify them for troubleshooting purposes, but
+please refrain from disabling these checks when there is an underlying
+problem that should be fixed.
+</p>
+<p><em>Beta features: Please consider these checks to be &quot;under construction&quot;.</em>
+</p>
+
+<dl>
+<dt><span class="option">future.connections.onMisuse</span>:</dt><dd><p>(character string)
+A future must close any connections it opens and must not close
+connections it did not open itself.
+If such misuse is detected and this option is set to <code>"error"</code>,
+then an informative error is produced. If it is set to <code>"warning"</code>,
+a warning is produced. If<code>"ignore"</code>, no check is performed.
+(Default: <code>"warning"</code>)
+</p>
+</dd>
+<dt><span class="option">future.defaultDevice.onMisuse</span>:</dt><dd><p>(character string)
+A future must open graphics devices explicitly, if it creates new
+plots. It should not rely on the default graphics device that
+is given by R option <code>"default"</code>, because that rarely does what
+is intended.
+If such misuse is detected and this option is set to <code>"error"</code>,
+then an informative error is produced. If it is set to <code>"warning"</code>,
+a warning is produced. If<code>"ignore"</code>, no check is performed.
+(Default: <code>"warning"</code>)
+</p>
+</dd>
+<dt><span class="option">future.devices.onMisuse</span>:</dt><dd><p>(character string)
+A future must close any graphics devices it opens and must not close
+devices it did not open itself.
+If such misuse is detected and this option is set to <code>"error"</code>,
+then an informative error is produced. If it is set to <code>"warning"</code>,
+a warning is produced. If<code>"ignore"</code>, no check is performed.
+(Default: <code>"warning"</code>)
+</p>
+</dd>
+<dt><span class="option">future.globalenv.onMisuse</span>:</dt><dd><p>(character string)
+Assigning variables to the global environment for the purpose of using
+the variable at a later time makes no sense with futures, because the
+next the future may be evaluated in different R process.
+To protect against mistakes, the future framework attempts to detect
+when variables are added to the global environment.
+If this is detected, and this option is set to <code>"error"</code>, then an
+informative error is produced. If <code>"warning"</code>, then a warning is
+produced. If <code>"ignore"</code>, no check is performed.
+(Default: <code>"ignore"</code>)
+</p>
+</dd>
+<dt><span class="option">future.rng.onMisuse</span>:</dt><dd><p>(character string)
+If random numbers are used in futures, then parallel RNG should be
+<em>declared</em> in order to get statistical sound RNGs. You can declare
+this by specifying future argument <code>seed = TRUE</code>. The defaults in the
+future framework assume that <em>no</em> random number generation (RNG) is
+taken place in the future expression because L'Ecuyer-CMRG RNGs come
+with an unnecessary overhead if not needed.
+To protect against  mistakes of not declaring use of the RNG, the
+future framework detects when random numbers were used despite not
+declaring such use.
+If this is detected, and this options is set <code>"error"</code>, then an
+informative error is produced. If <code>"warning"</code>, then a warning is
+produced.  If <code>"ignore"</code>, no check is performed.
+(Default: <code>"warning"</code>)
+</p>
+</dd>
+</dl>
+
+
+
+<h3>Options for debugging futures</h3>
+
+
+<dl>
+<dt><span class="option">future.debug</span>:</dt><dd><p>(logical) If <code>TRUE</code>, extensive debug messages are generated. (Default: <code>FALSE</code>)</p>
+</dd>
+</dl>
+
+
+
+<h3>Options for controlling package startup</h3>
+
+
+<dl>
+<dt><span class="option">future.startup.script</span>:</dt><dd><p>(character vector or a logical) Specifies zero of more future startup scripts to be sourced when the <span class="pkg">future</span> package is <em>attached</em>. It is only the first existing script that is sourced. If none of the specified files exist, nothing is sourced&mdash;there will be neither a warning nor an error.
+If this option is not specified, environment variable <span class="env">R_FUTURE_STARTUP_SCRIPT</span> is considered, where multiple scripts may be separated by either a colon (<code>:</code>) or a semicolon (<code style="white-space: pre;">;</code>). If neither is set, or either is set to <code>TRUE</code>, the default is to look for a &lsquo;<span class="file">.future.R</span>&rsquo; script in the current directory and then in the user's home directory.  To disable future startup scripts, set the option or the environment variable to <code>FALSE</code>.  <em>Importantly</em>, this option is <em>always</em> set to <code>FALSE</code> if the <span class="pkg">future</span> package is loaded as part of a future expression being evaluated, e.g. in a background process. In other words, they are sourced in the main <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> process but not in future processes. (Default: <code>TRUE</code> in main <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> process and <code>FALSE</code> in future processes / during future evaluation)</p>
+</dd>
+<dt><span class="option">future.cmdargs</span>:</dt><dd><p>(character vector) Overrides <code><a href="../../base/help/commandArgs.html">commandArgs</a>()</code> when the <span class="pkg">future</span> package is <em>loaded</em>.</p>
+</dd>
+</dl>
+
+
+
+<h3>Options for configuring low-level system behaviors</h3>
+
+
+<dl>
+<dt><span class="option">future.fork.multithreading.enable</span> (<em>beta feature - may change</em>):</dt><dd><p>(logical) Enable or disable <em>multi-threading</em> while using <em>forked</em> parallel processing.  If <code>FALSE</code>, different multi-thread library settings are overridden such that they run in single-thread mode. Specifically, multi-threading will be disabled for OpenMP (which requires the <span class="pkg">RhpcBLASctl</span> package) and for <strong>RcppParallel</strong>. If <code>TRUE</code>, or not set (the default), multi-threading is allowed.  Parallelization via multi-threaded processing (done in native code by some packages and external libraries) while at the same time using forked (aka &quot;multicore&quot;) parallel processing is known to unstable.  Note that this is not only true when using <code>plan(multicore)</code> but also when using, for instance, <code><a href="../../parallel/html/mcdummies.html">mclapply</a>()</code> of the <span class="pkg">parallel</span> package. (Default: not set)</p>
+</dd>
+<dt><span class="option">future.output.windows.reencode</span>:</dt><dd><p>(logical) Enable or disable re-encoding of UTF-8 symbols that were incorrectly encoded while captured.  In R (&lt; 4.2.0) and on older versions of MS Windows, R cannot capture UTF-8 symbols as-is when they are captured from the standard output.  For examples, a UTF-8 check mark symbol (<code>"\u2713"</code>) would be relayed as <code>"&lt;U+2713&gt;"</code> (a string with eight ASCII characters).  Setting this option to <code>TRUE</code> will cause <code>value()</code> to attempt to recover the intended UTF-8 symbols from <code style="white-space: pre;">&lt;U+nnnn&gt;</code> string components, if, and only if, the string was captured by a future resolved on MS Windows. (Default: <code>TRUE</code>)</p>
+</dd>
+</dl>
+
+
+
+<h3>Options for demos</h3>
+
+
+<dl>
+<dt><span class="option">future.demo.mandelbrot.region</span>:</dt><dd><p>(integer) Either a named list of <code><a href="../../future/help/mandelbrot.html">mandelbrot()</a></code> arguments or an integer in {1, 2, 3} specifying a predefined Mandelbrot region. (Default: <code>1L</code>)</p>
+</dd>
+<dt><span class="option">future.demo.mandelbrot.nrow</span>:</dt><dd><p>(integer) Number of rows and columns of tiles. (Default: <code>3L</code>)</p>
+</dd>
+</dl>
+
+
+
+<h3>Deprecated or for internal prototyping</h3>
+
+<p>The following options exists only for troubleshooting purposes and must not
+be used in production.  If used, there is a risk that the results are
+non-reproducible if processed elsewhere.  To lower the risk of them being
+used by mistake, they are marked as deprecated and will produce warnings
+if set.
+</p>
+
+<dl>
+<dt><span class="option">future.globals.onMissing</span>:</dt><dd><p>(character string) Action to take when non-existing global variables (&quot;globals&quot; or &quot;unknowns&quot;) are identified when the future is created.  If <code>"error"</code>, an error is generated immediately.  If <code>"ignore"</code>, no action is taken and an attempt to evaluate the future expression will be made.  The latter is useful when there is a risk for false-positive globals being identified, e.g. when future expression contains non-standard evaluation (NSE).  (Default: <code>"ignore"</code>)</p>
+</dd>
+<dt><span class="option">future.globals.method</span>:</dt><dd><p>(character string) Method used to identify globals. For details, see <code><a href="../../globals/help/globalsOf.html">globalsOf</a>()</code>. (Default: <code>"ordered"</code>)</p>
+</dd>
+<dt><span class="option">future.globals.resolve</span>:</dt><dd><p>(logical) If <code>TRUE</code>, globals that are <code><a href="../../future/help/Future.html">Future</a></code> objects (typically created as <em>explicit</em> futures) will be resolved and have their values (using <code>value()</code>) collected.  Because searching for unresolved futures among globals (including their content) can be expensive, the default is not to do it and instead leave it to the run-time checks that assert proper ownership when resolving futures and collecting their values. (Default: <code>FALSE</code>)</p>
+</dd>
+</dl>
+
+
+
+<h3>Environment variables that set R options</h3>
+
+<p>All of the above <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> <span class="option">future.*</span> options can be set by corresponding
+environment variable <span class="env">R_FUTURE_*</span> <em>when the <span class="pkg">future</span> package is
+loaded</em>. This means that those environment variables must be set before
+the <span class="pkg">future</span> package is loaded in order to have an effect.
+For example, if <code>R_FUTURE_RNG_ONMISUSE="ignore"</code>, then option
+<span class="option">future.rng.onMisuse</span> is set to <code>"ignore"</code> (character string).
+Similarly, if <code>R_FUTURE_GLOBALS_MAXSIZE="50000000"</code>, then option
+<span class="option">future.globals.maxSize</span> is set to <code>50000000</code> (numeric).
+</p>
+
+
+<h3>Options moved to the 'parallelly' package</h3>
+
+<p>Several functions have been moved to the <span class="pkg">parallelly</span> package:
+</p>
+
+<ul>
+<li> <p><code><a href="../../parallelly/help/availableCores.html">parallelly::availableCores()</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../parallelly/help/availableWorkers.html">parallelly::availableWorkers()</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../parallelly/help/makeClusterMPI.html">parallelly::makeClusterMPI()</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../parallelly/help/makeClusterPSOCK.html">parallelly::makeClusterPSOCK()</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../parallelly/help/makeClusterPSOCK.html">parallelly::makeNodePSOCK()</a></code>
+</p>
+</li>
+<li> <p><code><a href="../../parallelly/help/supportsMulticore.html">parallelly::supportsMulticore()</a></code>
+</p>
+</li></ul>
+
+<p>The options and environment variables controlling those have been adjusted
+accordingly to have different prefixes.
+For example, option <span class="option">future.fork.enable</span> has been renamed to
+<span class="option">parallelly.fork.enable</span> and the corresponding environment variable
+<span class="env">R_FUTURE_FORK_ENABLE</span> has been renamed to
+<span class="env">R_PARALLELLY_FORK_ENABLE</span>.
+For backward compatibility reasons, the <span class="pkg">parallelly</span> package will
+support both versions for a long foreseeable time.
+See the <a href="../../parallelly/help/zzz-parallelly.options.html">parallelly::parallelly.options</a> page for the settings.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>To set <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> options or environment variables when <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> starts (even before the <span class="pkg">future</span> package is loaded), see the <a href="../../base/help/Startup.html">Startup</a> help page.  The <a href="https://cran.r-project.org/package=startup"><span class="pkg">startup</span></a> package provides a friendly mechanism for configurating <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>'s startup process.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Allow at most 5 MB globals per futures
+options(future.globals.maxSize = 5e6)
+
+# Be strict; catch all RNG mistakes
+options(future.rng.onMisuse = "error")
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>future</em> version 1.70.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

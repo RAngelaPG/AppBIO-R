@@ -1,0 +1,198 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Helper for creating a line chart</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for bb_linechart {billboarder}"><tr><td>bb_linechart {billboarder}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Helper for creating a line chart</h2>
+
+<h3>Description</h3>
+
+<p>Helper for creating a line chart
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+bb_linechart(
+  bb,
+  data,
+  mapping = NULL,
+  type = "line",
+  show_point = FALSE,
+  dasharray = NULL,
+  width = NULL,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>bb</code></td>
+<td>
+<p>A <code>billboard</code> <code>htmlwidget</code> object.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A <code>data.frame</code> or a <code>vector</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>mapping</code></td>
+<td>
+<p>Mapping of variables on the chart, see <code><a href="../../billboarder/help/bbaes.html">bbaes</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>Type of chart : <code>"line"</code>, <code>"spline"</code>, <code>"step"</code>, <code>"area"</code>, <code>"area-spline"</code>, <code>"area-step"</code>, 
+<code>"area-line-range"</code>, <code>"area-spline-range"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>show_point</code></td>
+<td>
+<p>Whether to show each point in line.</p>
+</td></tr>
+<tr valign="top"><td><code>dasharray</code></td>
+<td>
+<p>Pattern of dashes and gaps used to paint the outline of the line,
+see <a href="https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-dasharray">https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-dasharray</a> for specifications.</p>
+</td></tr>
+<tr valign="top"><td><code>width</code></td>
+<td>
+<p>Width of the stroke to be applied to the line,
+see <a href="https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-width">https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-width</a> for specifications.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Not used.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A <code>billboard</code> <code>htmlwidget</code> object.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Types area-line-range and area-spline-range don't work in RStudio viewer, open chart in a browser. 
+This function can be used with <code><a href="../../billboarder/help/billboarderProxy.html">billboarderProxy</a></code> in shiny application.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## Different types
+x &lt;- round(rnorm(20), 2)
+
+billboarder() %&gt;% 
+  bb_linechart(data = x)
+
+billboarder() %&gt;% 
+  bb_linechart(data = x, type = "spline")
+
+billboarder() %&gt;% 
+  bb_linechart(data = x, type = "area")
+
+billboarder() %&gt;% 
+  bb_linechart(data = x, type = "area-spline")
+  
+  
+## Timeserie with date (Date)
+data("economics", package = "ggplot2")
+
+billboarder() %&gt;%
+  bb_linechart(data = economics[, c("date", "psavert")]) %&gt;% 
+  bb_x_axis(tick = list(format = "%Y-%m", fit = FALSE)) %&gt;%
+  bb_y_axis(tick = list(format = suffix("%")), 
+            label = list(text = "Personal savings rate")) %&gt;% 
+  bb_legend(show = FALSE) %&gt;% 
+  bb_x_grid(show = TRUE) %&gt;% 
+  bb_y_grid(show = TRUE) %&gt;% 
+  bb_subchart(show = TRUE)
+  
+  
+# With multiple lines :
+
+data("economics_long", package = "ggplot2")
+
+billboarder() %&gt;%
+  bb_linechart(economics_long, bbaes(date, value, variable)) %&gt;% 
+  bb_data(hide = "pop") %&gt;% 
+  bb_x_axis(tick = list(format = "%Y-%m", fit = FALSE))
+  
+  
+
+## Timeserie with datetime (POSIXct)
+data("cdc_prod_filiere")
+
+billboarder() %&gt;% 
+  bb_linechart(data = cdc_prod_filiere[, c("date_heure", "prod_eolien")])
+
+# or with mapping :
+billboarder() %&gt;% 
+  bb_linechart(cdc_prod_filiere, bbaes(date_heure, prod_bioenergies))
+  
+  
+ 
+### Other type for x-axis 
+ 
+## character/factor on x-axis
+AirPassengers1960 &lt;- data.frame(
+  month = month.name, 
+  AirPassengers = tail(AirPassengers, 12)
+)
+# you have to specify that x-axis is of type 'category'
+# and that column 'month' must be used for x-axis values
+billboarder() %&gt;% 
+  bb_linechart(data = AirPassengers1960, x = "month") %&gt;% 
+  bb_x_axis(type = "category")
+
+
+## numeric on x-axis
+lynx.df &lt;- data.frame(
+  year = time(lynx),
+  lynx = lynx
+)
+# just specify which variable must be use n the x-axis
+billboarder() %&gt;% 
+  bb_linechart(data = lynx.df, x = "year")
+  
+  
+### Area range charts
+
+# Generate data
+dat &lt;- data.frame(
+  date = seq.Date(Sys.Date(), length.out = 20, by = "day"),
+  y1 = round(rnorm(20, 100, 15)),
+  y2 = round(rnorm(20, 100, 15))
+)
+dat$ymin1 &lt;- dat$y1 - 5
+dat$ymax1 &lt;- dat$y1 + 5
+
+dat$ymin2 &lt;- dat$y2 - sample(3:15, 20, TRUE)
+dat$ymax2 &lt;- dat$y2 + sample(3:15, 20, TRUE)
+
+
+# Make chart : use ymin &amp; ymax aes for range
+billboarder(data = dat) %&gt;% 
+  bb_linechart(
+    mapping = bbaes(x = date, y = y1, ymin = ymin1, ymax = ymax1),
+    type = "area-line-range"
+  ) %&gt;% 
+  bb_linechart(
+    mapping = bbaes(x = date, y = y2, ymin = ymin2, ymax = ymax2), 
+    type = "area-spline-range"
+  ) %&gt;% 
+  bb_y_axis(min = 50)
+  
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>billboarder</em> version 0.5.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

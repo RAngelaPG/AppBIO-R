@@ -1,0 +1,144 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Append Proxy</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for e_append1_p {echarts4r}"><tr><td>e_append1_p {echarts4r}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Append Proxy</h2>
+
+<h3>Description</h3>
+
+<p>Append data dynamically.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+e_append1_p(proxy, series_index = NULL, data, x, y, name = NULL)
+
+e_append1_p_(proxy, series_index = NULL, data, x, y, name = NULL)
+
+e_append2_p(
+  proxy,
+  series_index = NULL,
+  data,
+  x,
+  y,
+  z,
+  scale = NULL,
+  symbol_size = 1
+)
+
+e_append2_p_(
+  proxy,
+  series_index = NULL,
+  data,
+  x,
+  y,
+  z,
+  scale = NULL,
+  symbol_size = 1
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>proxy</code></td>
+<td>
+<p>An echarts4r proxy as returned by <code><a href="../../echarts4r/help/echarts4rProxy.html">echarts4rProxy</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>series_index</code></td>
+<td>
+<p>Index of serie to append to (starts from 0).</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>Data.frame containing data to append.</p>
+</td></tr>
+<tr valign="top"><td><code>x, y, z</code></td>
+<td>
+<p>Columns names to plot.</p>
+</td></tr>
+<tr valign="top"><td><code>name</code></td>
+<td>
+<p>if using 'bind' with e.g 'e_scatter' this can be used to supply the colname for
+the name attribute bind is mapping to</p>
+</td></tr>
+<tr valign="top"><td><code>scale</code></td>
+<td>
+<p>A scaling function as passed to <code><a href="../../echarts4r/help/e_scatter.html">e_scatter</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>symbol_size</code></td>
+<td>
+<p>Multiplier of scaling function as in <code><a href="../../echarts4r/help/e_scatter.html">e_scatter</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Currently not all types of series supported incremental rendering when using appendData.
+Only these types of series support it: <code><a href="../../echarts4r/help/e_scatter.html">e_scatter</a></code> and <code><a href="../../echarts4r/help/e_line.html">e_line</a></code> of pure echarts, and
+<code><a href="../../echarts4r/help/e_scatter_3d.html">e_scatter_3d</a></code>, and <code><a href="../../echarts4r/help/e_line_3d.html">e_line_3d</a></code> of echarts-gl.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+library(shiny)
+
+ui &lt;- fluidPage(
+  actionButton("add", "Add Data to y"),
+  echarts4rOutput("plot"),
+  h4("Brush"),
+  verbatimTextOutput("selected"),
+  h4("Legend select change"),
+  verbatimTextOutput("legend")
+)
+
+server &lt;- function(input, output, session) {
+  data &lt;- data.frame(x = rnorm(10, 5, 3), y = rnorm(10, 50, 12), z = rnorm(10, 5, 20))
+
+  react &lt;- eventReactive(input$add, {
+    set.seed(sample(1:1000, 1))
+    data.frame(x = rnorm(10, 5, 2), y = rnorm(10, 50, 10), z = rnorm(10, 5, 20))
+  })
+
+  output$plot &lt;- renderEcharts4r({
+    data |&gt;
+      e_charts(x) |&gt;
+      e_scatter(y, z, scale = NULL) |&gt;
+      e_scatter(z) |&gt;
+      e_brush()
+  })
+
+  observeEvent(input$add, {
+
+    echarts4rProxy("plot") |&gt;
+      e_append2_p(0, react(), x, y, z)
+  })
+
+  output$selected &lt;- renderPrint({
+    input$plot_brush
+  })
+
+  output$legend &lt;- renderPrint({
+    input$plot_legend_change
+  })
+}
+
+shinyApp(ui, server)
+
+## End(Not run)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>echarts4r</em> version 0.5.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

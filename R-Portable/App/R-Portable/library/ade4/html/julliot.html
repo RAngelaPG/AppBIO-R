@@ -1,0 +1,147 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Seed dispersal</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for julliot {ade4}"><tr><td>julliot {ade4}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Seed dispersal</h2>
+
+<h3>Description</h3>
+
+<p>This data set gives the spatial distribution of seeds (quadrats counts) of 
+seven species in the understorey of tropical rainforest.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>data(julliot)</pre>
+
+
+<h3>Format</h3>
+
+<p><code>julliot</code> is a list with the following components:
+</p>
+
+<dl>
+<dt>tab</dt><dd><p>a data frame with 160 rows (quadrats) and 7 variables (species)</p>
+</dd>
+<dt>xy</dt><dd><p>a data frame with the coordinates of the 160 quadrats
+(positioned by their centers)</p>
+</dd>
+<dt>area</dt><dd><p>a data frame with 3 variables returning the boundary lines of 
+each quadrat. The first variable is a factor. The levels of this one are 
+the row.names of <code>tab</code>. The second and third variables return the 
+coordinates (x,y) of the points of the boundary line.</p>
+</dd>
+<dt>Spatial</dt><dd><p>an object of the class <code>SpatialPolygons</code> of <code>sp</code>,
+containing the map</p>
+</dd>
+</dl>
+
+
+<h3>Details</h3>
+
+<p>Species names of <code>julliot$tab</code> are:
+<em>Pouteria torta</em>, 
+<em>Minquartia guianensis</em>, 
+<em>Quiina obovata</em>, 
+<em>Chrysophyllum lucentifolium</em>, 
+<em>Parahancornia fasciculata</em>, 
+<em>Virola michelii</em>, 
+and <em>Pourouma spp</em>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Julliot, C. (1992). Utilisation des ressources alimentaires par le singe hurleur 
+roux, <em>Alouatta seniculus</em> (Atelidae, Primates), en Guyane : impact de 
+la dissémination des graines sur la régénération forestière. Thèse de troisième
+cycle, Université de Tours.
+</p>
+<p>Julliot, C. (1997). Impact of seed dispersal by red howler monkeys 
+<em>Alouatta seniculus</em> on the seedling population in the understorey of 
+tropical rain forest. <em>Journal of Ecology</em>, <b>85</b>, 431&ndash;440.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(julliot)
+
+## Not run: 
+if(adegraphicsLoaded()) {
+  if(requireNamespace("sp", quietly = TRUE)) {
+    obj1 &lt;- sp::SpatialPolygonsDataFrame(Sr = julliot$Spatial, data = log(julliot$tab + 1))
+    g1 &lt;- s.Spatial(obj1)
+    g2 &lt;- s.value(julliot$xy, scalewt(log(julliot$tab + 1)), Sp = julliot$Spatial, 
+      pSp.col = "white", pgrid.draw = FALSE)
+  }
+} else {
+  if(requireNamespace("splancs", quietly = TRUE)) {
+    par(mfrow = c(3, 3))
+    for(k in 1:7)
+      area.plot(julliot$area, val = log(julliot$tab[, k] + 1),
+        sub = names(julliot$tab)[k], csub = 2.5)
+    par(mfrow = c(1, 1))
+    
+    par(mfrow = c(3, 3))
+    for(k in 1:7) {
+      area.plot(julliot$area)
+      s.value(julliot$xy, scalewt(log(julliot$tab[, k] + 1)),
+        sub = names(julliot$tab)[k], csub = 2.5, add.p = TRUE)
+    }
+    par(mfrow = c(1, 1))
+  }
+}
+## End(Not run)
+
+
+if(adegraphicsLoaded()) {
+  if(requireNamespace("sp", quietly = TRUE)) {
+    g3 &lt;- s.image(julliot$xy, log(julliot$tab + 1), span = 0.25)
+  }
+  g4 &lt;- s.value(julliot$xy, log(julliot$tab + 1))
+  
+} else {
+  if(requireNamespace("splancs", quietly = TRUE)) {
+    par(mfrow = c(3, 3))
+    for(k in 1:7)
+      s.image(julliot$xy, log(julliot$tab[, k] + 1), kgrid = 3, span = 0.25,
+        sub = names(julliot$tab)[k], csub = 2.5)
+    par(mfrow = c(1, 1))
+    
+    par(mfrow = c(3, 3))
+    for(k in 1:7)
+      s.value(julliot$xy, log(julliot$tab[, k] + 1),
+        sub = names(julliot$tab)[k], csub = 2.5)
+    par(mfrow = c(1, 1))    
+  }
+}
+        
+## Not run: 
+if (requireNamespace("spdep", quietly = TRUE)) {
+  neig0 &lt;- nb2neig(spdep::dnearneigh(as.matrix(julliot$xy), 1, 1.8))
+  if(adegraphicsLoaded()) {
+    g5 &lt;- s.label(julliot$xy, nb = spdep::dnearneigh(as.matrix(julliot$xy), 1, 1.8))
+  
+  } else {
+    par(mfrow = c(1, 1))
+    s.label(julliot$xy, neig = neig0, clab = 0.75, incl = FALSE,
+     addax = FALSE, grid = FALSE)
+  }
+  gearymoran(ade4:::neig.util.LtoG(neig0), log(julliot$tab + 1))
+  
+  if (requireNamespace("adephylo", quietly = TRUE)) {
+    adephylo::orthogram(log(julliot$tab[, 3] + 1), ortho = scores.neig(neig0))
+  }
+}
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ade4</em> version 1.7-23 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,415 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Geometric unary operations on simple feature geometry sets</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for geos_unary {sf}"><tr><td>geos_unary {sf}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Geometric unary operations on simple feature geometry sets</h2>
+
+<h3>Description</h3>
+
+<p>Geometric unary operations on simple feature geometries. These are all generics, with methods for <code>sfg</code>, <code>sfc</code> and <code>sf</code> objects, returning an object of the same class. All operations work on a per-feature basis, ignoring all other features.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+st_buffer(
+  x,
+  dist,
+  nQuadSegs = 30,
+  endCapStyle = "ROUND",
+  joinStyle = "ROUND",
+  mitreLimit = 1,
+  singleSide = FALSE,
+  ...
+)
+
+st_boundary(x)
+
+st_convex_hull(x)
+
+st_concave_hull(x, ratio, ..., allow_holes)
+
+st_simplify(x, preserveTopology, dTolerance = 0)
+
+st_triangulate(x, dTolerance = 0, bOnlyEdges = FALSE)
+
+st_triangulate_constrained(x)
+
+st_inscribed_circle(x, dTolerance, ...)
+
+st_minimum_rotated_rectangle(x, ...)
+
+st_minimum_bounding_circle(x, ...)
+
+st_voronoi(
+  x,
+  envelope,
+  dTolerance = 0,
+  bOnlyEdges = FALSE,
+  point_order = FALSE
+)
+
+st_polygonize(x)
+
+st_line_merge(x, ..., directed = FALSE)
+
+st_centroid(x, ..., of_largest_polygon = FALSE)
+
+st_point_on_surface(x)
+
+st_reverse(x)
+
+st_node(x)
+
+st_segmentize(x, dfMaxLength, ...)
+
+st_exterior_ring(x, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>object of class <code>sfg</code>, <code>sfc</code> or <code>sf</code></p>
+</td></tr>
+<tr valign="top"><td><code>dist</code></td>
+<td>
+<p>numeric or object of class <code>units</code>; buffer distance(s) for all, or for each of the elements in <code>x</code>.
+In case <code>x</code> has geodetic coordinates (lon/lat) and <code>sf_use_s2()</code> is <code>TRUE</code>, a numeric
+<code>dist</code> is taken as distance in meters and a <code>units</code> object in <code>dist</code> is converted to meters.
+In case <code>x</code> has geodetic coordinates (lon/lat) and <code>sf_use_s2()</code> is <code>FALSE</code>, a numeric
+<code>dist</code> is taken as degrees, and a <code>units</code> object in <code>dist</code> is converted to <code>arc_degree</code> (and warnings are issued).
+In case <code>x</code> does not have geodetic coordinates (projected) then
+numeric <code>dist</code> is assumed to have the units of the coordinates, and a <code>units</code> <code>dist</code> is converted to those if <code>st_crs(x)</code> is not <code>NA</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>nQuadSegs</code></td>
+<td>
+<p>integer; number of segments per quadrant (fourth of a circle), for all or per-feature; see details</p>
+</td></tr>
+<tr valign="top"><td><code>endCapStyle</code></td>
+<td>
+<p>character; style of line ends, one of 'ROUND', 'FLAT', 'SQUARE'; see details</p>
+</td></tr>
+<tr valign="top"><td><code>joinStyle</code></td>
+<td>
+<p>character; style of line joins, one of 'ROUND', 'MITRE', 'BEVEL'; see details</p>
+</td></tr>
+<tr valign="top"><td><code>mitreLimit</code></td>
+<td>
+<p>numeric; limit of extension for a join if <code>joinStyle</code> 'MITRE' is used (default 1.0, minimum 0.0); see details</p>
+</td></tr>
+<tr valign="top"><td><code>singleSide</code></td>
+<td>
+<p>logical; if <code>TRUE</code>, single-sided buffers are returned for linear geometries,
+in which case negative <code>dist</code> values give buffers on the right-hand side, positive on the left; see details</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>in <code>st_buffer</code> passed on to  <code><a href="../../s2/help/s2_boundary.html">s2::s2_buffer_cells()</a></code>, otherwise ignored</p>
+</td></tr>
+<tr valign="top"><td><code>ratio</code></td>
+<td>
+<p>numeric; fraction convex: 1 returns the convex hulls, 0 maximally concave hulls</p>
+</td></tr>
+<tr valign="top"><td><code>allow_holes</code></td>
+<td>
+<p>logical; if <code>TRUE</code>, the resulting concave hull may have holes</p>
+</td></tr>
+<tr valign="top"><td><code>preserveTopology</code></td>
+<td>
+<p>logical; carry out topology preserving
+simplification? May be specified for each, or for all feature geometries.
+Note that topology is preserved only for single feature geometries, not for
+sets of them. If not specified (i.e. the default), then it is internally
+set equal to <code>FALSE</code> when the input data is specified with projected
+coordinates or <code>sf_use_s2()</code> returns <code>FALSE</code>. Ignored in all the
+other cases (with a warning when set equal to <code>FALSE</code>) since the
+function implicitly calls <code>s2::s2_simplify</code> which always preserve
+topological relationships (per single feature).</p>
+</td></tr>
+<tr valign="top"><td><code>dTolerance</code></td>
+<td>
+<p>numeric; tolerance parameter, specified for all or for each
+feature geometry. If you run <code>st_simplify</code>, the input data is
+specified with long-lat coordinates and <code>sf_use_s2()</code> returns
+<code>TRUE</code>, then the value of <code>dTolerance</code> must be specified in
+meters.</p>
+</td></tr>
+<tr valign="top"><td><code>bOnlyEdges</code></td>
+<td>
+<p>logical; if <code>TRUE</code>, return lines, else return polygons</p>
+</td></tr>
+<tr valign="top"><td><code>envelope</code></td>
+<td>
+<p>object of class <code>sfc</code> or <code>sfg</code> containing a <code>POLYGON</code> with the envelope for a voronoi diagram; this only takes effect when it is larger than the default envelope, chosen when <code>envelope</code> is an empty polygon</p>
+</td></tr>
+<tr valign="top"><td><code>point_order</code></td>
+<td>
+<p>logical; preserve point order if TRUE and GEOS version &gt;= 3.12; overrides bOnlyEdges</p>
+</td></tr>
+<tr valign="top"><td><code>directed</code></td>
+<td>
+<p>logical; if <code>TRUE</code>, lines with opposite directions will not be merged</p>
+</td></tr>
+<tr valign="top"><td><code>of_largest_polygon</code></td>
+<td>
+<p>logical; for <code>st_centroid</code>: if <code>TRUE</code>, return centroid of the largest (sub)polygon of a <code>MULTIPOLYGON</code> rather than of the whole <code>MULTIPOLYGON</code></p>
+</td></tr>
+<tr valign="top"><td><code>dfMaxLength</code></td>
+<td>
+<p>maximum length of a line segment. If <code>x</code> has geographical coordinates (long/lat), <code>dfMaxLength</code> is either a numeric expressed in meter, or an object of class <code>units</code> with length units <code>rad</code> or <code>degree</code>; segmentation in the long/lat case takes place along the great circle, using <a href="../../lwgeom/help/geod.html">st_geod_segmentize</a>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>st_buffer</code> computes a buffer around this geometry/each geometry. Depending on the spatial
+coordinate system, a different engine (GEOS or S2) can be used, which have different function
+arguments. The <code>nQuadSegs</code>, <code>endCapsStyle</code>, <code>joinStyle</code>, <code>mitreLimit</code> and
+<code>singleSide</code> parameters only work if the GEOS engine is used (i.e. projected coordinates or
+when <code>sf_use_s2()</code> is set to <code>FALSE</code>). See <a href="https://postgis.net/docs/ST_Buffer.html">postgis.net/docs/ST_Buffer.html</a>
+for details. The <code>max_cells</code> and <code>min_level</code> parameters (<code><a href="../../s2/help/s2_boundary.html">s2::s2_buffer_cells()</a></code>) work with the S2
+engine (i.e. geographic coordinates) and can be used to change the buffer shape (e.g. smoothing).
+The S2 engine returns a polygon <em>around</em> a number of S2 cells that
+contain the buffer, and hence will always have an area larger than the
+true buffer, depending on <code>max_cells</code>, and will be non-smooth when sufficiently zoomed in.
+The GEOS engine will return line segments between points
+on the circle, and so will always be <em>smaller</em> than the true
+buffer, and be smooth, depending on the number of segments <code>nQuadSegs</code>.
+A negative <code>dist</code> value for geodetic coordinates using S2 does not give a proper (geodetic) buffer.
+</p>
+<p><code>st_boundary</code> returns the boundary of a geometry
+</p>
+<p><code>st_convex_hull</code> creates the convex hull of a set of points
+</p>
+<p><code>st_concave_hull</code> creates the concave hull of a geometry
+</p>
+<p><code>st_simplify</code> simplifies lines by removing vertices.
+</p>
+<p><code>st_triangulate</code> triangulates set of points (not constrained). <code>st_triangulate</code> requires GEOS version 3.4 or above
+</p>
+<p><code>st_triangulate_constrained</code> returns the constrained delaunay triangulation of polygons; requires GEOS version 3.10 or above
+</p>
+<p><code>st_inscribed_circle</code> returns the maximum inscribed circle for polygon geometries.
+For <code>st_inscribed_circle</code>, if <code>nQuadSegs</code> is 0 a 2-point LINESTRING is returned with the
+center point and a boundary point of every circle, otherwise a circle (buffer) is returned where
+<code>nQuadSegs</code> controls the number of points per quadrant to approximate the circle.
+<code>st_inscribed_circle</code> requires GEOS version 3.9 or above
+</p>
+<p><code>st_minimum_rotated_rectangle</code> returns the minimum
+rotated rectangular POLYGON which encloses the input geometry. The
+rectangle has width equal to the minimum diameter, and a longer
+length. If the convex hill of the input is degenerate (a line or
+point) a linestring or point is returned.
+</p>
+<p><code>st_minimum_bounding_circle</code>
+returns a geometry which represents the &quot;minimum bounding circle&quot;,
+the smallest circle that contains the input.
+</p>
+<p><code>st_voronoi</code> creates voronoi tessellation. <code>st_voronoi</code> requires GEOS version 3.5 or above
+</p>
+<p><code>st_polygonize</code> creates a polygon from lines that form a closed ring. In case of <code>st_polygonize</code>, <code>x</code> must be an object of class <code>LINESTRING</code> or <code>MULTILINESTRING</code>, or an <code>sfc</code> geometry list-column object containing these
+</p>
+<p><code>st_line_merge</code> merges lines. In case of <code>st_line_merge</code>, <code>x</code> must be an object of class <code>MULTILINESTRING</code>, or an <code>sfc</code> geometry list-column object containing these
+</p>
+<p><code>st_centroid</code> gives the centroid of a geometry
+</p>
+<p><code>st_point_on_surface</code> returns a point guaranteed to be on the (multi)surface.
+</p>
+<p><code>st_reverse</code> reverses the nodes in a line
+</p>
+<p><code>st_node</code> adds nodes to linear geometries at intersections without a node, and only works on individual linear geometries
+</p>
+<p><code>st_segmentize</code> adds points to straight lines
+</p>
+<p><code>st_exterior_ring</code> returns the exterior rings of polygons, removing all holes.
+</p>
+
+
+<h3>Value</h3>
+
+<p>an object of the same class of <code>x</code>, with manipulated geometry.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><a href="../../grDevices/help/chull.html">chull</a> for a more efficient algorithm for calculating the convex hull
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## st_buffer, style options (taken from rgeos gBuffer)
+l1 = st_as_sfc("LINESTRING(0 0,1 5,4 5,5 2,8 2,9 4,4 6.5)")
+op = par(mfrow=c(2,3))
+plot(st_buffer(l1, dist = 1, endCapStyle="ROUND"), reset = FALSE, main = "endCapStyle: ROUND")
+plot(l1,col='blue',add=TRUE)
+plot(st_buffer(l1, dist = 1, endCapStyle="FLAT"), reset = FALSE, main = "endCapStyle: FLAT")
+plot(l1,col='blue',add=TRUE)
+plot(st_buffer(l1, dist = 1, endCapStyle="SQUARE"), reset = FALSE, main = "endCapStyle: SQUARE")
+plot(l1,col='blue',add=TRUE)
+plot(st_buffer(l1, dist = 1, nQuadSegs=1), reset = FALSE, main = "nQuadSegs: 1")
+plot(l1,col='blue',add=TRUE)
+plot(st_buffer(l1, dist = 1, nQuadSegs=2), reset = FALSE, main = "nQuadSegs: 2")
+plot(l1,col='blue',add=TRUE)
+plot(st_buffer(l1, dist = 1, nQuadSegs= 5), reset = FALSE, main = "nQuadSegs: 5")
+plot(l1,col='blue',add=TRUE)
+par(op)
+
+
+l2 = st_as_sfc("LINESTRING(0 0,1 5,3 2)")
+op = par(mfrow = c(2, 3))
+plot(st_buffer(l2, dist = 1, joinStyle="ROUND"), reset = FALSE, main = "joinStyle: ROUND")
+plot(l2, col = 'blue', add = TRUE)
+plot(st_buffer(l2, dist = 1, joinStyle="MITRE"), reset = FALSE, main = "joinStyle: MITRE")
+plot(l2, col= 'blue', add = TRUE)
+plot(st_buffer(l2, dist = 1, joinStyle="BEVEL"), reset = FALSE, main = "joinStyle: BEVEL")
+plot(l2, col= 'blue', add=TRUE)
+plot(st_buffer(l2, dist = 1, joinStyle="MITRE" , mitreLimit=0.5), reset = FALSE,
+   main = "mitreLimit: 0.5")
+plot(l2, col = 'blue', add = TRUE)
+plot(st_buffer(l2, dist = 1, joinStyle="MITRE",mitreLimit=1), reset = FALSE,
+   main = "mitreLimit: 1")
+plot(l2, col = 'blue', add = TRUE)
+plot(st_buffer(l2, dist = 1, joinStyle="MITRE",mitreLimit=3), reset = FALSE,
+   main = "mitreLimit: 3")
+plot(l2, col = 'blue', add = TRUE)
+par(op)
+
+# compare approximation errors depending on S2 or GEOS backend:
+# geographic coordinates, uses S2:
+x = st_buffer(st_as_sf(data.frame(lon=0,lat=0), coords=c("lon","lat"),crs='OGC:CRS84'), 
+      units::as_units(1,"km"))
+y = units::set_units(st_area(x), "km^2")
+# error: postive, default maxcells = 1000
+(units::drop_units(y)-pi)/pi
+x = st_buffer(st_as_sf(data.frame(lon=0,lat=0), coords=c("lon","lat"),crs='OGC:CRS84'), 
+      units::as_units(1,"km"), max_cells=1e5)
+y = units::set_units(st_area(x), "km^2")
+# error: positive but smaller:
+(units::drop_units(y)-pi)/pi
+
+# no CRS set: assumes Cartesian (projected) coordinates
+x = st_buffer(st_as_sf(data.frame(lon=0,lat=0), coords=c("lon","lat")), 1)
+y = st_area(x)
+# error: negative, nQuadSegs default at 30
+((y)-pi)/pi
+x = st_buffer(st_as_sf(data.frame(lon=0,lat=0), coords=c("lon","lat")), 1, nQuadSegs = 100)
+y = st_area(x)
+# error: negative but smaller:
+((y)-pi)/pi
+nc = st_read(system.file("shape/nc.shp", package="sf"))
+nc_g = st_geometry(nc)
+plot(st_convex_hull(nc_g))
+plot(nc_g, border = grey(.5), add = TRUE)
+pt = st_combine(st_sfc(st_point(c(0,80)), st_point(c(120,80)), st_point(c(240,80))))
+st_convex_hull(pt) # R2
+st_convex_hull(st_set_crs(pt, 'OGC:CRS84')) # S2
+set.seed(131)
+if (compareVersion(sf_extSoftVersion()[["GEOS"]], "3.11.0") &gt; -1) {
+ pts = cbind(runif(100), runif(100))
+ m = st_multipoint(pts)
+ co = sf:::st_concave_hull(m, 0.3)
+ coh = sf:::st_concave_hull(m, 0.3, allow_holes = TRUE)
+ plot(co, col = 'grey')
+ plot(coh, add = TRUE, border = 'red')
+ plot(m, add = TRUE)
+}
+
+# st_simplify examples:
+op = par(mfrow = c(2, 3), mar = rep(0, 4))
+plot(nc_g[1])
+plot(st_simplify(nc_g[1], dTolerance = 1e3)) # 1000m
+plot(st_simplify(nc_g[1], dTolerance = 5e3)) # 5000m
+nc_g_planar = st_transform(nc_g, 2264) # planar coordinates, US foot
+plot(nc_g_planar[1])
+plot(st_simplify(nc_g_planar[1], dTolerance = 1e3)) # 1000 foot
+plot(st_simplify(nc_g_planar[1], dTolerance = 5e3)) # 5000 foot
+par(op)
+
+if (compareVersion(sf_extSoftVersion()[["GEOS"]], "3.10.0") &gt; -1) {
+ pts = rbind(c(0,0), c(1,0), c(1,1), c(.5,.5), c(0,1), c(0,0))
+ po = st_polygon(list(pts))
+ co = st_triangulate_constrained(po)
+ tr = st_triangulate(po)
+ plot(po, col = NA, border = 'grey', lwd = 15)
+ plot(tr, border = 'green', col = NA, lwd = 5, add = TRUE)
+ plot(co, border = 'red', col = 'NA', add = TRUE)
+}
+if (compareVersion(sf_extSoftVersion()[["GEOS"]], "3.9.0") &gt; -1) {
+  nc_t = st_transform(nc, 'EPSG:2264')
+  x = st_inscribed_circle(st_geometry(nc_t))
+  plot(st_geometry(nc_t), asp = 1, col = grey(.9))
+  plot(x, add = TRUE, col = '#ff9999')
+}
+set.seed(1)
+x = st_multipoint(matrix(runif(10),,2))
+box = st_polygon(list(rbind(c(0,0),c(1,0),c(1,1),c(0,1),c(0,0))))
+if (compareVersion(sf_extSoftVersion()[["GEOS"]], "3.5.0") &gt; -1) {
+ v = st_sfc(st_voronoi(x, st_sfc(box)))
+ plot(v, col = 0, border = 1, axes = TRUE)
+ plot(box, add = TRUE, col = 0, border = 1) # a larger box is returned, as documented
+ plot(x, add = TRUE, col = 'red', cex=2, pch=16)
+ plot(st_intersection(st_cast(v), box)) # clip to smaller box
+ plot(x, add = TRUE, col = 'red', cex=2, pch=16)
+ # matching Voronoi polygons to data points:
+ # https://github.com/r-spatial/sf/issues/1030
+ # generate 50 random unif points:
+ n = 100
+ pts = st_as_sf(data.frame(matrix(runif(n), , 2), id = 1:(n/2)), coords = c("X1", "X2"))
+ # compute Voronoi polygons:
+ pols = st_collection_extract(st_voronoi(do.call(c, st_geometry(pts))))
+ # match them to points:
+ pts_pol = st_intersects(pts, pols)
+ pts$pols = pols[unlist(pts_pol)] # re-order
+ if (isTRUE(try(compareVersion(sf_extSoftVersion()["GEOS"], "3.12.0") &gt; -1,
+   silent = TRUE))) {
+   pols_po = st_collection_extract(st_voronoi(do.call(c, st_geometry(pts)),
+     point_order = TRUE)) # GEOS &gt;= 3.12 can preserve order of inputs
+   pts_pol_po = st_intersects(pts, pols_po)
+   print(all(unlist(pts_pol_po) == 1:(n/2)))
+ }
+ plot(pts["id"], pch = 16) # ID is color
+ plot(st_set_geometry(pts, "pols")["id"], xlim = c(0,1), ylim = c(0,1), reset = FALSE)
+ plot(st_geometry(pts), add = TRUE)
+ layout(matrix(1)) # reset plot layout
+}
+mls = st_multilinestring(list(matrix(c(0,0,0,1,1,1,0,0),,2,byrow=TRUE)))
+st_polygonize(st_sfc(mls))
+mls = st_multilinestring(list(rbind(c(0,0), c(1,1)), rbind(c(2,0), c(1,1))))
+st_line_merge(st_sfc(mls))
+plot(nc_g, axes = TRUE)
+plot(st_centroid(nc_g), add = TRUE, pch = 3, col = 'red')
+mp = st_combine(st_buffer(st_sfc(lapply(1:3, function(x) st_point(c(x,x)))), 0.2 * 1:3))
+plot(mp)
+plot(st_centroid(mp), add = TRUE, col = 'red') # centroid of combined geometry
+plot(st_centroid(mp, of_largest_polygon = TRUE), add = TRUE, col = 'blue', pch = 3)
+plot(nc_g, axes = TRUE)
+plot(st_point_on_surface(nc_g), add = TRUE, pch = 3, col = 'red')
+if (compareVersion(sf_extSoftVersion()[["GEOS"]], "3.7.0") &gt; -1) {
+  st_reverse(st_linestring(rbind(c(1,1), c(2,2), c(3,3))))
+}
+(l = st_linestring(rbind(c(0,0), c(1,1), c(0,1), c(1,0), c(0,0))))
+st_polygonize(st_node(l))
+st_node(st_multilinestring(list(rbind(c(0,0), c(1,1), c(0,1), c(1,0), c(0,0)))))
+sf = st_sf(a=1, geom=st_sfc(st_linestring(rbind(c(0,0),c(1,1)))), crs = 4326)
+if (require(lwgeom, quietly = TRUE)) {
+ seg = st_segmentize(sf, units::set_units(100, km))
+ seg = st_segmentize(sf, units::set_units(0.01, rad))
+ nrow(seg$geom[[1]])
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sf</em> version 1.1-0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

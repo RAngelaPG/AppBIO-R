@@ -1,0 +1,151 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Row sums and means for data frames</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for row_sums {sjmisc}"><tr><td>row_sums {sjmisc}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Row sums and means for data frames</h2>
+
+<h3>Description</h3>
+
+<p><code>row_sums()</code> and <code>row_means()</code> compute row sums or means
+for at least <code>n</code> valid values per row. The functions are designed
+to work nicely within a pipe-workflow and allow select-helpers
+for selecting variables.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+row_sums(x, ...)
+
+## Default S3 method:
+row_sums(x, ..., n, var = "rowsums", append = TRUE)
+
+## S3 method for class 'mids'
+row_sums(x, ..., var = "rowsums", append = TRUE)
+
+row_means(x, ...)
+
+total_mean(x, ...)
+
+## Default S3 method:
+row_means(x, ..., n, var = "rowmeans", append = TRUE)
+
+## S3 method for class 'mids'
+row_means(x, ..., var = "rowmeans", append = TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A vector or data frame.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Optional, unquoted names of variables that should be selected for
+further processing. Required, if <code>x</code> is a data frame (and no
+vector) and only selected variables from <code>x</code> should be processed.
+You may also use functions like <code>:</code> or tidyselect's
+select-helpers.
+See 'Examples' or <a href="../doc/design_philosophy.html">package-vignette</a>.</p>
+</td></tr>
+<tr valign="top"><td><code>n</code></td>
+<td>
+<p>May either be
+</p>
+
+<ul>
+<li><p> a numeric value that indicates the amount of valid values per row to calculate the row mean or sum;
+</p>
+</li>
+<li><p> a value between 0 and 1, indicating a proportion of valid values per row to calculate the row mean or sum (see 'Details').
+</p>
+</li>
+<li><p> or <code>Inf</code>. If <code>n = Inf</code>, all values per row must be non-missing to compute row mean or sum.
+</p>
+</li></ul>
+
+<p>If a row's sum of valid (i.e. non-<code>NA</code>) values is less than <code>n</code>, <code>NA</code> will be returned as value for the row mean or sum.</p>
+</td></tr>
+<tr valign="top"><td><code>var</code></td>
+<td>
+<p>Name of new the variable with the row sums or means.</p>
+</td></tr>
+<tr valign="top"><td><code>append</code></td>
+<td>
+<p>Logical, if <code>TRUE</code> (the default) and <code>x</code> is a data frame,
+<code>x</code> including the new variables as additional columns is returned;
+if <code>FALSE</code>, only the new variables are returned.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>For <code>n</code>, must be a numeric value from <code>0</code> to <code>ncol(x)</code>. If
+a <em>row</em> in <code>x</code> has at least <code>n</code> non-missing values, the
+row mean or sum is returned. If <code>n</code> is a non-integer value from 0 to 1,
+<code>n</code> is considered to indicate the proportion of necessary non-missing
+values per row. E.g., if <code>n = .75</code>, a row must have at least <code>ncol(x) * n</code>
+non-missing values for the row mean or sum to be calculated. See 'Examples'.
+</p>
+
+
+<h3>Value</h3>
+
+<p>For <code>row_sums()</code>, a data frame with a new variable: the row sums from
+<code>x</code>; for <code>row_means()</code>, a data frame with a new variable: the row
+means from <code>x</code>. If <code>append = FALSE</code>, only the new variable
+with row sums resp. row means is returned. <code>total_mean()</code> returns
+the mean of all values from all specified columns in a data frame.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(efc)
+efc %&gt;% row_sums(c82cop1:c90cop9, n = 3, append = FALSE)
+
+library(dplyr)
+row_sums(efc, contains("cop"), n = 2, append = FALSE)
+
+dat &lt;- data.frame(
+  c1 = c(1,2,NA,4),
+  c2 = c(NA,2,NA,5),
+  c3 = c(NA,4,NA,NA),
+  c4 = c(2,3,7,8),
+  c5 = c(1,7,5,3)
+)
+dat
+
+row_means(dat, n = 4)
+row_sums(dat, n = 4)
+
+row_means(dat, c1:c4, n = 4)
+# at least 40% non-missing
+row_means(dat, c1:c4, n = .4)
+row_sums(dat, c1:c4, n = .4)
+
+# total mean of all values in the data frame
+total_mean(dat)
+
+# create sum-score of COPE-Index, and append to data
+efc %&gt;%
+  select(c82cop1:c90cop9) %&gt;%
+  row_sums(n = 1)
+
+# if data frame has only one column, this column is returned
+row_sums(dat[, 1, drop = FALSE], n = 0)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sjmisc</em> version 2.8.11 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

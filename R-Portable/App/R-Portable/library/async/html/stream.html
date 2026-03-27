@@ -1,0 +1,148 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Create an asynchronous iterator by writing sequential code.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for stream {async}"><tr><td>stream {async}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Create an asynchronous iterator by writing sequential code.</h2>
+
+<h3>Description</h3>
+
+<p>(Experimental as of async 0.3) <code>stream(...)</code> constructs a <a href="../../async/help/channel.html">channel</a>
+object, i.e. an asynchronous iterator, which will compute and
+return values according to sequential code written in <code>expr</code>. A
+<code>stream</code> is a coroutine wearing a <a href="../../async/help/channel.html">channel</a> interface in the same
+way that <code>async</code> is a coroutine wearing a <a href="../../base/html/delayedAssign.html">promise</a> interface, and a
+<a href="../../async/help/gen.html">gen</a> is a coroutine sitting behind an <a href="../../async/help/iteror.html">iteror</a> interface.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+stream(
+  expr,
+  ...,
+  split_pipes = TRUE,
+  lazy = TRUE,
+  compileLevel = getOption("async.compileLevel"),
+  debugR = FALSE,
+  debugInternal = FALSE,
+  trace = getOption("async.verbose")
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>expr</code></td>
+<td>
+<p>A coroutine expression, using some combination of
+<code>yield</code>, <code>await</code>, <code>awaitNext</code>, <code>yieldFrom</code>, standard control flow
+operators and other calls.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Undocumented.</p>
+</td></tr>
+<tr valign="top"><td><code>split_pipes</code></td>
+<td>
+<p>See description under <a href="../../async/help/async.html">async</a>; defaults to
+<code>TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>lazy</code></td>
+<td>
+<p>If TRUE, start paused, and pause after <code>yield()</code> (see above.)</p>
+</td></tr>
+<tr valign="top"><td><code>compileLevel</code></td>
+<td>
+<p>Compilation level.</p>
+</td></tr>
+<tr valign="top"><td><code>debugR</code></td>
+<td>
+<p>Set TRUE to single-step debug at R level. Use <code><a href="../../async/help/debugAsync.html">debugAsync()</a></code>
+to enable or disable debugging on a stream after it has been created.</p>
+</td></tr>
+<tr valign="top"><td><code>debugInternal</code></td>
+<td>
+<p>Set TRUE to single-step debug at coroutine
+implementation level.</p>
+</td></tr>
+<tr valign="top"><td><code>trace</code></td>
+<td>
+<p>An optional tracing function.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>In a stream expression, you can call <code>yield()</code> to emit a value, and
+<code>await()</code> to wait for a value from a <a href="../../base/html/delayedAssign.html">promise</a>. To have your stream
+wait for values from another stream or <a href="../../async/help/channel.html">channel</a>, call
+<code>awaitNext()</code>; you can also use <code>awaitNext</code> when you are writing an
+<code>async</code>. You can also use a simple <code>for</code> loop to consume all future
+values from a stream or channel.
+</p>
+<p>The lower-level interface to consume values from a stream is by using
+<a href="../../async/help/nextThen.html">nextThen</a> from the <a href="../../async/help/channel.html">channel</a> interface.
+</p>
+<p>Streams come in both &quot;lazy&quot; and &quot;eager&quot; varieties. If <code>lazy=TRUE</code>,
+a stream starts idle, and does not process anything
+until it is woken up by a call to its channel's <code>nextThen</code>. It will
+pause after reaching <code>yield</code> if there are no more outstanding
+requests. If <code>lazy=FALSE</code>, a stream will begin executing
+immediately, not pausing on <code>yield</code>, possibly queuing up emitted
+values until it needs to <code>await</code> something.
+</p>
+<p>(For comparison, in this package, <a href="../../async/help/gen.html">gen</a> are lazy in that they do
+not start executing until a call to <code>nextOr</code> and pause
+immediately after <code>yield</code>, while <a href="../../async/help/async.html">async</a> blocks are eager,
+starting at construction and running until they hit an <code>await</code>.)
+</p>
+<p>Like its coroutine counterparts, if <code>stream</code> is given a function
+expression, like <code>stream(function(...)  ...)</code>, it will return a
+&quot;stream function&quot; i.e. a function that constructs a stream object.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object with (at least) classes &quot;stream&quot;, &quot;channel&quot;,
+&quot;coroutine&quot;, &quot;iteror&quot;, &quot;iter&quot;.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Peter Meilstrup
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# emit values _no more than_ once per second
+count_to &lt;- stream(function(n, interval=1) {
+  for (i in 1:n) {
+    await(delay(interval))
+    yield(i)
+  }
+})
+
+accumulate &lt;- stream(function(st, sum=0) {
+  for (i in st) {sum &lt;- sum + i; yield(sum)}
+})
+
+print_each &lt;- async(function(st) for (i in st) print(i))
+
+count_to(10) |&gt; accumulate() |&gt; print_each()
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>async</em> version 0.3.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: st_apply apply a function to one or more array dimensions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for st_apply {stars}"><tr><td>st_apply {stars}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>st_apply apply a function to one or more array dimensions</h2>
+
+<h3>Description</h3>
+
+<p>st_apply apply a function to array dimensions: aggregate over space, time, or something else
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'stars'
+st_apply(
+  X,
+  MARGIN,
+  FUN,
+  ...,
+  CLUSTER = NULL,
+  PROGRESS = FALSE,
+  FUTURE = FALSE,
+  rename = TRUE,
+  .fname,
+  single_arg = has_single_arg(FUN, list(...)) || can_single_arg(FUN),
+  keep = FALSE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>X</code></td>
+<td>
+<p>object of class <code>stars</code></p>
+</td></tr>
+<tr valign="top"><td><code>MARGIN</code></td>
+<td>
+<p>see <a href="../../base/help/apply.html">apply</a>; index number(s) or name(s) of the dimensions over which <code>FUN</code> will be applied</p>
+</td></tr>
+<tr valign="top"><td><code>FUN</code></td>
+<td>
+<p>see <a href="../../base/help/apply.html">apply</a> and see Details.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>arguments passed on to <code>FUN</code></p>
+</td></tr>
+<tr valign="top"><td><code>CLUSTER</code></td>
+<td>
+<p>cluster to use for parallel apply; see <a href="../../parallel/help/makeCluster.html">makeCluster</a></p>
+</td></tr>
+<tr valign="top"><td><code>PROGRESS</code></td>
+<td>
+<p>logical; if <code>TRUE</code>, use <code>pbapply::pbapply</code> to show progress bar</p>
+</td></tr>
+<tr valign="top"><td><code>FUTURE</code></td>
+<td>
+<p>logical;if <code>TRUE</code>, use <code>future.apply::future_apply</code></p>
+</td></tr>
+<tr valign="top"><td><code>rename</code></td>
+<td>
+<p>logical; if <code>TRUE</code> and <code>X</code> has only one attribute and 
+<code>FUN</code> is a simple function name, rename the attribute of the returned object 
+to the function name</p>
+</td></tr>
+<tr valign="top"><td><code>.fname</code></td>
+<td>
+<p>function name for the new attribute name (if one or more 
+dimensions are reduced) or the new dimension (if a new dimension is created); 
+if missing, the name of <code>FUN</code> is used</p>
+</td></tr>
+<tr valign="top"><td><code>single_arg</code></td>
+<td>
+<p>logical; if <code>TRUE</code>, FUN takes a single argument (like <code>fn_ndvi1</code> below), 
+if <code>FALSE</code> FUN takes multiple arguments (like <code>fn_ndvi2</code> below).</p>
+</td></tr>
+<tr valign="top"><td><code>keep</code></td>
+<td>
+<p>logical; if <code>TRUE</code>, preserve dimension metadata (e.g. time stamps)</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>FUN is a function which either operates on a single object, which will 
+be the data of each iteration step over dimensions MARGIN, or a function that 
+has as many arguments as there are elements in such an object. See the NDVI 
+examples below. The second form can be VERY much faster e.g. when a trivial 
+function is not being called for every pixel, but only once (example).
+</p>
+<p>The heuristics for the default of <code>single_arg</code> work often, but not always; try
+setting this to the right value when <code>st_apply</code> gives an error.
+</p>
+
+
+<h3>Value</h3>
+
+<p>object of class <code>stars</code> with accordingly reduced number of dimensions; 
+in case <code>FUN</code> returns more than one value, a new dimension is created carrying 
+the name of the function used; see the examples. Following the logic of 
+<a href="../../base/help/apply.html">apply</a>, This new dimension is put before the
+other dimensions; use <a href="../../base/html/aperm.html">aperm</a> to rearrange this, see last example.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+tif = system.file("tif/L7_ETMs.tif", package = "stars")
+x = read_stars(tif)
+st_apply(x, 1:2, mean) # mean band value for each pixel
+st_apply(x, c("x", "y"), mean) # equivalent to the above
+st_apply(x, 3, mean)   # mean of all pixels for each band
+## Not run: 
+ st_apply(x, "band", mean) # equivalent to the above
+ st_apply(x, 1:2, range) # min and max band value for each pixel
+ fn_ndvi1 = function(x) (x[4]-x[3])/(x[4]+x[3]) # ONE argument: will be called for each pixel
+ fn_ndvi2 = function(red,nir) (nir-red)/(nir+red) # n arguments: will be called only once
+ ndvi1 = st_apply(x, 1:2, fn_ndvi1)
+   # note that we can select bands 3 and 4 in the first argument:
+ ndvi2 = st_apply(x[,,,3:4], 1:2, fn_ndvi2) 
+ all.equal(ndvi1, ndvi2)
+ # compute the (spatial) variance of each band; https://github.com/r-spatial/stars/issues/430
+ st_apply(x, 3, function(x) var(as.vector(x))) # as.vector is required!
+ # to get a progress bar also in non-interactive mode, specify:
+ if (require(pbapply)) { # install it, if FALSE
+   pboptions(type = "timer")
+ }
+ st_apply(x, 1:2, range) # dimension "range" is first; rearrange by:
+ st_apply(x, 1:2, range) %&gt;% aperm(c(2,3,1))
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>stars</em> version 0.7-1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

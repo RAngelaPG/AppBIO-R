@@ -1,0 +1,267 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Fit a multiple-QTL model</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for fitqtl {qtl}"><tr><td>fitqtl {qtl}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Fit a multiple-QTL model</h2>
+
+<h3>Description</h3>
+
+<p>Fits a user-specified multiple-QTL model.  If specified,
+a drop-one-term analysis will be performed.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+fitqtl(cross, pheno.col=1, qtl, covar=NULL, formula, method=c("imp", "hk"),
+       model=c("normal", "binary"), dropone=TRUE, get.ests=FALSE,
+       run.checks=TRUE, tol=1e-4, maxit=1000, forceXcovar=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>cross</code></td>
+<td>
+<p>An object of class <code>cross</code>. See
+<code><a href="../../qtl/help/read.cross.html">read.cross</a></code> for details.</p>
+</td></tr>
+<tr valign="top"><td><code>pheno.col</code></td>
+<td>
+<p>Column number in the phenotype matrix which should be
+used as the phenotype.  One may also give a character string matching
+a phenotype name. Finally, one may give a numeric vector of
+phenotypes, in which case it must have the length equal to the number
+of individuals in the cross, and there must be either non-integers or
+values &lt; 1 or &gt; no. phenotypes; this last case may be useful for studying
+transformations.</p>
+</td></tr>
+<tr valign="top"><td><code>qtl</code></td>
+<td>
+<p>An object of class <code>qtl</code>, as output from
+<code><a href="../../qtl/help/makeqtl.html">makeqtl</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>covar</code></td>
+<td>
+<p>A matrix or data.frame of covariates.  These must be
+strictly numeric.</p>
+</td></tr>
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>An object of class <code><a href="../../stats/help/formula.html">formula</a></code>
+indicating the model to be fitted.  (It can also be the character
+string representation of a formula.)  QTLs are referred to as
+<code>Q1</code>, <code>Q2</code>, etc.  Covariates are referred to by their names
+in the data frame <code>covar</code>.  </p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>Indicates whether to use multiple imputation or
+Haley-Knott regression.</p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>The phenotype model: the usual model or a model for binary
+traits</p>
+</td></tr>
+<tr valign="top"><td><code>dropone</code></td>
+<td>
+<p>If TRUE, do drop-one-term analysis.</p>
+</td></tr>
+<tr valign="top"><td><code>get.ests</code></td>
+<td>
+<p>If TRUE, return estimated QTL effects and their
+estimated variance-covariance matrix.</p>
+</td></tr>
+<tr valign="top"><td><code>run.checks</code></td>
+<td>
+<p>If TRUE, check the input formula and check for
+individuals with missing phenotypes or covariates.</p>
+</td></tr>
+<tr valign="top"><td><code>tol</code></td>
+<td>
+<p>Tolerance for convergence for the binary trait model.</p>
+</td></tr>
+<tr valign="top"><td><code>maxit</code></td>
+<td>
+<p>Maximum number of iterations for fitting the binary trait
+model.</p>
+</td></tr>
+<tr valign="top"><td><code>forceXcovar</code></td>
+<td>
+<p>If TRUE, force inclusion of X-chr-related covariates
+(like sex and cross direction).</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The formula is used to specified the model to be fit. In the
+formula, use <code>Q1</code>, <code>Q2</code>, etc., or <code>q1</code>,
+<code>q2</code>, etc., to represent the QTLs, and the column names in the
+covariate data frame to represent the covariates.
+</p>
+<p>We enforce a hierarchical structure on the model formula: if a QTL or
+covariate is in involved in an interaction, its main effect must also
+be included.
+</p>
+<p>In the drop-one-term analysis, for a given QTL/covariate model, all
+submodels will be analyzed.  For each term in the input formula, when
+it is dropped, all higher order terms that contain it will also be
+dropped.  The comparison between the new model and the full (input)
+model will be output.
+</p>
+<p>The estimated percent variances explained for the QTL are simply
+transformations of the conditional LOD scores by the formula <i>h^2
+  = 1 - 10^{-(2/n) {\rm LOD}}</i>.  While these may be reasonable for
+unlinked, additive QTL, <b>they can be completely wrong in the case
+of linked QTL</b>, but we don't currently have any alternative.
+</p>
+<p>For <code>model="binary"</code>, a logistic regression model is used.
+</p>
+<p><b>The part to get estimated QTL effects is not complete for the
+case of the X chromosome and 4-way crosses.  The values returned in
+these cases are based on a design matrix that is convenient for
+calculations but not easily interpreted.</b>
+</p>
+<p>The estimated QTL effects for a backcross are derived by the coding
+scheme <i>+/-</i> 1/2 for AA and AB, so that the additive
+effect corresponds to the difference between phenotype averages for
+the two genotypes.  For doubled haploids and RIL, the coding scheme is
+<i>+/-</i> 1 for AA and BB, so that the additive effect
+corresponds to half the difference between the phenotype averages for
+the two homozygotes.
+</p>
+<p>For an intercross, the additive effect is derived from the coding
+scheme -1/0/+1 for genotypes AA/AB/BB, and so is half the difference
+between the phenotype averages for the two homozygotes.  The dominance
+deviation is derived from the coding scheme 0/+1/0 for genotypes
+AA/AB/BB, and so is the difference between the phenotype average for
+the heterozygotes and the midpoint between the phenotype averages for
+the two homozygotes.
+</p>
+<p>Epistatic effects and QTL <i>x</i> covariate interaction
+effects are obtained through the products of the corresponding
+additive/dominant effect columns.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>fitqtl</code>. It may contains as many as four components:
+</p>
+
+<ul>
+<li> <p><code>result.full</code> is the ANOVA table as a matrix for the full model
+result. It contains the degree of freedom (df), Sum of squares (SS),
+mean square (MS), LOD score (LOD), percentage of variance explained
+(%var) and P value (Pvalue).
+</p>
+</li>
+<li> <p><code>lod</code> is the LOD score from the fit of the full model.
+</p>
+</li>
+<li> <p><code>result.drop</code> is a drop-one-term ANOVA table as a
+matrix. It contains degrees of freedom (df), Type III sum of squares
+(Type III SS), LOD score(LOD), percentage of variance explained
+(%var), F statistics (F value), and P values for chi square
+(Pvalue(chi2)) and F distribution (Pvalue(F)).  Note that the degree
+of freedom, Type III sum of squares, the LOD score and the
+percentage of variance explained are the values comparing the full
+to the sub-model with the term dropped. Also note that for
+imputation method, the percentage of variance explained, the the F
+values and the P values are approximations calculated from the LOD
+score.
+</p>
+</li>
+<li> <p><code>ests</code> contains the estimated QTL effects and standard errors.
+</p>
+</li></ul>
+
+<p>When <code>method="normal"</code>, residuals are saved as an attribute of
+the output, named <code>"residuals"</code> and accessible via the
+<code><a href="../../base/help/attr.html">attr</a></code> function.
+</p>
+<p><b>The part to get estimated QTL effects is fully working only for
+the case of autosomes in a backcross, intercross, RIL or doubled haploids.
+In other cases the values returned are based on a
+design matrix that is convenient for calculations but not easily
+interpreted.</b>
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Hao Wu; Karl W Broman, <a href="mailto:broman@wisc.edu">broman@wisc.edu</a></p>
+
+
+<h3>References</h3>
+
+<p>Haley, C. S. and Knott, S. A. (1992) A simple regression method for mapping
+quantitative trait loci in line crosses using flanking markers.
+<em>Heredity</em> <b>69</b>, 315&ndash;324.
+</p>
+<p>Sen, &#346;. and Churchill, G. A. (2001) A statistical framework for quantitative
+trait mapping.  <em>Genetics</em> <b>159</b>, 371&ndash;387.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../qtl/help/summary.fitqtl.html">summary.fitqtl</a></code>, <code><a href="../../qtl/help/makeqtl.html">makeqtl</a></code>,
+<code><a href="../../qtl/help/scanqtl.html">scanqtl</a></code>, <code><a href="../../qtl/help/refineqtl.html">refineqtl</a></code>,
+<code><a href="../../qtl/help/addtoqtl.html">addtoqtl</a></code> ,
+<code><a href="../../qtl/help/dropfromqtl.html">dropfromqtl</a></code>,
+<code><a href="../../qtl/help/replaceqtl.html">replaceqtl</a></code>,
+<code><a href="../../qtl/help/reorderqtl.html">reorderqtl</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(fake.f2)
+
+# take out several QTLs and make QTL object
+qc &lt;- c(1, 8, 13)
+qp &lt;- c(26, 56, 28)
+fake.f2 &lt;- subset(fake.f2, chr=qc)
+
+fake.f2 &lt;- calc.genoprob(fake.f2, step=2, err=0.001)
+qtl &lt;- makeqtl(fake.f2, qc, qp, what="prob")
+
+# fit model with 3 interacting QTLs interacting
+# (performing a drop-one-term analysis)
+lod &lt;- fitqtl(fake.f2, pheno.col=1, qtl, formula=y~Q1*Q2*Q3, method="hk")
+summary(lod)
+
+## Not run: 
+# fit an additive QTL model
+lod.add &lt;- fitqtl(fake.f2, pheno.col=1, qtl, formula=y~Q1+Q2+Q3, method="hk")
+summary(lod.add)
+
+# fit the model including sex as an interacting covariate
+Sex &lt;- data.frame(Sex=pull.pheno(fake.f2, "sex"))
+lod.sex &lt;- fitqtl(fake.f2, pheno.col=1, qtl, formula=y~Q1*Q2*Q3*Sex,
+                  cov=Sex, method="hk")
+summary(lod.sex)
+
+# fit the same with an additive model
+lod.sex.add &lt;- fitqtl(fake.f2, pheno.col=1, qtl, formula=y~Q1+Q2+Q3+Sex,
+                      cov=Sex, method="hk")
+summary(lod.sex.add)
+
+# residuals
+residuals &lt;- attr(lod.sex.add, "residuals")
+plot(residuals)
+
+## End(Not run)</pre>
+
+<hr /><div style="text-align: center;">[Package <em>qtl</em> version 1.74 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

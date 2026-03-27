@@ -1,0 +1,175 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: FAR(1) process simulation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for simul.far {far}"><tr><td>simul.far {far}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> FAR(1) process simulation </h2>
+
+<h3>Description</h3>
+
+<p>Simulation of a FAR process using a Gram-Schmidt basis.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+simul.far(m=12,
+  n=100,
+  base=base.simul.far(24, 5),
+  d.rho=diag(c(0.45, 0.9, 0.34, 0.45)),
+  alpha=diag(c(0.5, 0.23, 0.018)),
+  cst1=0.05)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>m</code></td>
+<td>
+<p> Integer. Number of discretization points. </p>
+</td></tr>
+<tr valign="top"><td><code>n</code></td>
+<td>
+<p> Integer. Number of observations. </p>
+</td></tr>
+<tr valign="top"><td><code>base</code></td>
+<td>
+<p> A functional basis expressed as a matrix, as the matrix
+created by <code><a href="../../far/help/base.simul.far.html">base.simul.far</a></code> or with
+<code><a href="../../far/help/orthonormalization.html">orthonormalization</a></code>.  </p>
+</td></tr>
+<tr valign="top"><td><code>d.rho</code></td>
+<td>
+<p> Numerical matrix. Expression of the first bloc of the
+linear operator in the Gram-Schmidt basis. </p>
+</td></tr>
+<tr valign="top"><td><code>alpha</code></td>
+<td>
+<p> Numerical matrix. Expression of the first bloc of the
+covariance operator in the Gram-Schmidt basis. </p>
+</td></tr>
+<tr valign="top"><td><code>cst1</code></td>
+<td>
+<p> Numeric. Perturbation coefficient on the linear
+operator. </p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This function simulate a FAR(1) process with a strong white noise.
+</p>
+<p>The simulation is realized in two steps.
+</p>
+<p>First step, the function compute a FAR(1) process <i>Tn</i> in a
+functional space (that we call in the sequel H) using a simple
+equation and the <code>d.rho</code>, <code>alpha</code> and <code>cst</code> parameters.
+</p>
+<p>Second step, the process <i>Tn</i> is projected in the canonical
+basis using the <code>base</code> linear projector. 
+</p>
+<p>The <code>base</code> basis need to be a orthonormal basis wide enought. In the 
+contrary, the function use the <code><a href="../../far/help/orthonormalization.html">orthonormalization</a></code> function
+to make it so. Notice that the size of this matrix corresponds to the
+dimension of the &quot;modelization space&quot; H (let's call it
+<i>m2</i>). Of course, the larger <code>m2</code> the better the
+functionnal approximation is. Whatever, keep in mind that
+<code>m2</code>=2<code>m</code> is a good compromise, in order to avoid the memory
+limits.
+</p>
+<p>In H, the linear operator <i>rho</i> is expressed as:
+</p>
+<p style="text-align: center;"><i>\code{d.rho} 0 \cr
+    0 eps.rho</i></p>
+
+<p>Where <code>d.rho</code> is the matrix provided in the call, the two 0 are
+in fact two blocks of 0, and eps.rho is a diagonal matrix having on
+his diagonal the terms:
+</p>
+<p style="text-align: center;"><i>(eps(k+1), eps(k+2), 
+    &hellip;, eps(\code{m2}))</i></p>
+
+<p>where
+</p>
+<p style="text-align: center;"><i>eps(i)=
+    \code{cst1}/(i^2)+(1-\code{cst1})/exp(i)</i></p>
+
+<p>and k is the length of the <code>d.rho</code> diagonal.
+</p>
+<p>The <code>d.rho</code> matrix can be viewed as the information and the
+eps.rho matrix as a perturbation. In this logic, the norm of eps.rho
+need to be smaller than the one of <code>d.rho</code>.
+</p>
+<p>In H, <i>CT</i>, the covariance operator of <i>Tn</i>, is
+defined by:
+</p>
+<p style="text-align: center;"><i>m2 * \code{alpha} 0 \cr
+    0 eps.alpha</i></p>
+
+<p>Where <code>alpha</code> is the matrix provided in the call, the two 0 are
+in fact two blocks of 0, and eps.alpha is a diagonal matrix having on
+his diagonal the terms:
+</p>
+<p style="text-align: center;"><i>(epsilon(k+1), epsilon(k+2), 
+    &hellip;, epsilon(\code{m2}))</i></p>
+
+<p>where
+</p>
+<p style="text-align: center;"><i>epsilon(i)=
+    \code{cst1}/i</i></p>
+
+
+
+<h3>Value</h3>
+
+<p>A <code>fdata</code> object containing one variable (&quot;var&quot;) which is a
+FAR(1) process of length <code>n</code> with <code>p</code> discretization
+points.
+</p>
+
+
+<h3>Note</h3>
+
+<p>To simulate <i>Tn</i>, the function creates a white noise
+<i>En</i> having the following covariance operator:
+</p>
+<p style="text-align: center;"><i>CT - rho * CT t(CT)</i></p>
+
+<p>where t(.) is the transposition operator.
+<i>Tn</i> is the computed using the equation:
+</p>
+<p style="text-align: center;"><i>Tn+1 = rho * Tn + En</i></p>
+
+
+
+<h3>Author(s)</h3>
+
+<p> J. Damon, S. Guillas </p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../far/help/simul.far.sde.html">simul.far.sde</a></code>, <code><a href="../../far/help/simul.far.wiener.html">simul.far.wiener</a></code>,
+<code><a href="../../far/help/simul.farx.html">simul.farx</a></code>, <code><a href="../../far/help/simul.wiener.html">simul.wiener</a></code>,
+<code><a href="../../far/help/base.simul.far.html">base.simul.far</a></code>.  </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+  far1 &lt;- simul.far(m=64,n=100)
+  summary(far1)
+  print(far(far1,kn=4))
+  par(mfrow=c(2,1))
+  plot(far1,date=1)
+  plot(select.fdata(far1,date=1:5),whole=TRUE,separator=TRUE)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>far</em> version 0.6-7 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

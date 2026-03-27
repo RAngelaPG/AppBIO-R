@@ -1,0 +1,316 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Bagging Classification, Regression and Survival Trees</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for bagging {ipred}"><tr><td>bagging {ipred}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Bagging Classification, Regression and Survival Trees </h2>
+
+<h3>Description</h3>
+
+<p>Bagging for classification, regression and survival trees.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'factor'
+ipredbagg(y, X=NULL, nbagg=25, control=
+                 rpart.control(minsplit=2, cp=0, xval=0), 
+                 comb=NULL, coob=FALSE, ns=length(y), keepX = TRUE, ...)
+## S3 method for class 'numeric'
+ipredbagg(y, X=NULL, nbagg=25, control=rpart.control(xval=0), 
+                  comb=NULL, coob=FALSE, ns=length(y), keepX = TRUE, ...)
+## S3 method for class 'Surv'
+ipredbagg(y, X=NULL, nbagg=25, control=rpart.control(xval=0), 
+               comb=NULL, coob=FALSE, ns=dim(y)[1], keepX = TRUE, ...)
+## S3 method for class 'data.frame'
+bagging(formula, data, subset, na.action=na.rpart, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>the response variable: either a factor vector of class labels
+(bagging classification trees), a vector of numerical values 
+(bagging regression trees) or an object of class 
+<code><a href="../../survival/help/Surv.html">Surv</a></code> (bagging survival trees).</p>
+</td></tr>
+<tr valign="top"><td><code>X</code></td>
+<td>
+<p>a data frame of predictor variables.</p>
+</td></tr>
+<tr valign="top"><td><code>nbagg</code></td>
+<td>
+<p>an integer giving the number of bootstrap replications. </p>
+</td></tr>
+<tr valign="top"><td><code>coob</code></td>
+<td>
+<p>a logical indicating whether an out-of-bag estimate of the
+error rate (misclassification error, root mean squared error
+or Brier score) should be computed. 
+See <code><a href="../../ipred/help/predict.classbagg.html">predict.classbagg</a></code> for
+details.</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+<p>options that control details of the <code>rpart</code>
+algorithm, see <code><a href="../../rpart/help/rpart.control.html">rpart.control</a></code>. It is
+wise to set <code>xval = 0</code> in order to save computing 
+time. Note that the 
+default values depend on the class of <code>y</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>comb</code></td>
+<td>
+<p>a list of additional models for model combination, see below
+for some examples. Note that argument <code>method</code> for double-bagging is no longer there, 
+<code>comb</code> is much more flexible.</p>
+</td></tr>
+<tr valign="top"><td><code>ns</code></td>
+<td>
+<p>number of sample to draw from the learning sample. By default,
+the usual bootstrap n out of n with replacement is performed. 
+If <code>ns</code> is smaller than <code>length(y)</code>, subagging
+(Buehlmann and Yu, 2002), i.e. sampling <code>ns</code> out of
+<code>length(y)</code> without replacement, is performed.</p>
+</td></tr>
+<tr valign="top"><td><code>keepX</code></td>
+<td>
+<p>a logical indicating whether the data frame of predictors
+should be returned. Note that the computation of the 
+out-of-bag estimator requires  <code>keepX=TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>a formula of the form <code>lhs ~ rhs</code> where <code>lhs</code> 
+is the response variable and <code>rhs</code> a set of
+predictors.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>optional data frame containing the variables in the
+model formula.</p>
+</td></tr> 
+<tr valign="top"><td><code>subset</code></td>
+<td>
+<p>optional vector specifying a subset of observations
+to be used.</p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+<p>function which indicates what should happen when
+the data contain <code>NA</code>s.  Defaults to
+<code><a href="../../rpart/help/na.rpart.html">na.rpart</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>additional parameters passed to <code>ipredbagg</code> or 
+<code><a href="../../rpart/help/rpart.html">rpart</a></code>, respectively.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The random forest implementations <code><a href="../../randomForest/help/randomForest.html">randomForest</a></code>
+and <code><a href="../../party/help/cforest.html">cforest</a></code> are more flexible and reliable for computing
+bootstrap-aggregated trees than this function and should be used instead.
+</p>
+<p>Bagging for classification and regression trees were suggested by
+Breiman (1996a, 1998) in order to stabilise trees. 
+</p>
+<p>The trees in this function are computed using the implementation in the 
+<code><a href="../../rpart/help/rpart.html">rpart</a></code> package. The generic function <code>ipredbagg</code>
+implements methods for different responses. If <code>y</code> is a factor,
+classification trees are constructed. For numerical vectors
+<code>y</code>, regression trees are aggregated and if <code>y</code> is a survival 
+object, bagging survival trees (Hothorn et al, 2003) is performed. 
+The function <code>bagging</code> offers a formula based interface to
+<code>ipredbagg</code>.
+</p>
+<p><code>nbagg</code> bootstrap samples are drawn and a tree is constructed 
+for each of them. There is no general rule when to stop the tree 
+growing. The size of the
+trees can be controlled by <code>control</code> argument 
+or <code><a href="../../ipred/help/prune.classbagg.html">prune.classbagg</a></code>. By
+default, classification trees are as large as possible whereas regression
+trees and survival trees are build with the standard options of
+<code><a href="../../rpart/help/rpart.control.html">rpart.control</a></code>. If <code>nbagg=1</code>, one single tree is
+computed for the whole learning sample without bootstrapping.
+</p>
+<p>If <code>coob</code> is TRUE, the out-of-bag sample (Breiman,
+1996b) is used to estimate the prediction error 
+corresponding to <code>class(y)</code>. Alternatively, the out-of-bag sample can
+be used for model combination, an out-of-bag error rate estimator is not 
+available in this case. Double-bagging (Hothorn and Lausen,
+2003) computes a LDA on the out-of-bag sample and uses the discriminant
+variables as additional predictors for the classification trees. <code>comb</code>
+is an optional list of lists with two elements <code>model</code> and <code>predict</code>. 
+<code>model</code> is a function with arguments <code>formula</code> and <code>data</code>. 
+<code>predict</code> is a function with arguments <code>object, newdata</code> only. If
+the estimation of the covariance matrix in <code><a href="../../MASS/help/lda.html">lda</a></code> fails due to a
+limited out-of-bag sample size, one can use <code><a href="../../ipred/help/slda.html">slda</a></code> instead.
+See the example section for an example of double-bagging. The methodology is
+not limited to a combination with LDA: bundling (Hothorn and Lausen, 2002b) 
+can be used with arbitrary classifiers.
+</p>
+<p>NOTE: Up to ipred version 0.9-0, bagging was performed using a modified version 
+of the original rpart function. Due to interface changes in rpart 3.1-55, the
+bagging function had to be rewritten. Results of previous version are not 
+exactly reproducible.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The class of the object returned depends on <code>class(y)</code>:
+<code>classbagg, regbagg</code> and <code>survbagg</code>. Each is a list with elements
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>the vector of responses.</p>
+</td></tr>
+<tr valign="top"><td><code>X</code></td>
+<td>
+<p>the data frame of predictors.</p>
+</td></tr>
+<tr valign="top"><td><code>mtrees</code></td>
+<td>
+<p>multiple trees: a list of length <code>nbagg</code> containing the
+trees (and possibly additional objects) for each bootstrap sample.</p>
+</td></tr>
+<tr valign="top"><td><code>OOB</code></td>
+<td>
+<p>logical whether the out-of-bag estimate should be computed.</p>
+</td></tr>
+<tr valign="top"><td><code>err</code></td>
+<td>
+<p>if <code>OOB=TRUE</code>, the out-of-bag estimate of
+misclassification or root mean squared error or the Brier score for censored
+data.</p>
+</td></tr>
+<tr valign="top"><td><code>comb</code></td>
+<td>
+<p>logical whether a combination of models was requested.</p>
+</td></tr>
+</table>
+<p>For each class methods for the generics <code><a href="../../rpart/help/prune.rpart.html">prune.rpart</a></code>, 
+<code><a href="../../ipred/help/print.html">print</a></code>, <code><a href="../../base/html/summary.html">summary</a></code> and <code><a href="../../stats/html/predict.html">predict</a></code> are
+available for inspection of the results and prediction, for example:
+<code><a href="../../ipred/help/print.classbagg.html">print.classbagg</a></code>, <code><a href="../../ipred/help/summary.classbagg.html">summary.classbagg</a></code>, 
+<code><a href="../../ipred/help/predict.classbagg.html">predict.classbagg</a></code>  and <code><a href="../../ipred/help/prune.classbagg.html">prune.classbagg</a></code> for
+classification problems.
+</p>
+
+
+<h3>References</h3>
+
+ 
+<p>Leo Breiman (1996a), Bagging Predictors. <em>Machine Learning</em>
+<b>24</b>(2), 123&ndash;140.
+</p>
+<p>Leo Breiman (1996b), Out-Of-Bag Estimation. <em>Technical Report</em>
+<a href="https://www.stat.berkeley.edu/~breiman/OOBestimation.pdf">https://www.stat.berkeley.edu/~breiman/OOBestimation.pdf</a>.
+</p>
+<p>Leo Breiman (1998), Arcing Classifiers. <em>The Annals of Statistics</em>
+<b>26</b>(3), 801&ndash;824.
+</p>
+<p>Peter Buehlmann and Bin Yu (2002), Analyzing Bagging. <em>The Annals of
+Statistics</em> <b>30</b>(4), 927&ndash;961.
+</p>
+<p>Torsten Hothorn and Berthold Lausen (2003), Double-Bagging: Combining
+classifiers by bootstrap aggregation. <em>Pattern Recognition</em>,
+<b>36</b>(6), 1303&ndash;1309. 
+</p>
+<p>Torsten Hothorn and Berthold Lausen (2005), Bundling Classifiers by Bagging
+Trees. <em>Computational Statistics &amp; Data Analysis</em>, 49, 1068&ndash;1078.
+</p>
+<p>Torsten Hothorn, Berthold Lausen, Axel Benner and Martin
+Radespiel-Troeger (2004), Bagging Survival Trees.
+<em>Statistics in Medicine</em>, <b>23</b>(1), 77&ndash;91.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+library("MASS")
+library("survival")
+
+# Classification: Breast Cancer data
+
+data("BreastCancer", package = "mlbench")
+
+# Test set error bagging (nbagg = 50): 3.7% (Breiman, 1998, Table 5)
+
+mod &lt;- bagging(Class ~ Cl.thickness + Cell.size
+                + Cell.shape + Marg.adhesion   
+                + Epith.c.size + Bare.nuclei   
+                + Bl.cromatin + Normal.nucleoli
+                + Mitoses, data=BreastCancer, coob=TRUE)
+print(mod)
+
+# Test set error bagging (nbagg=50): 7.9% (Breiman, 1996a, Table 2)
+data("Ionosphere", package = "mlbench")
+Ionosphere$V2 &lt;- NULL # constant within groups
+
+bagging(Class ~ ., data=Ionosphere, coob=TRUE)
+
+# Double-Bagging: combine LDA and classification trees
+
+# predict returns the linear discriminant values, i.e. linear combinations
+# of the original predictors
+
+comb.lda &lt;- list(list(model=lda, predict=function(obj, newdata)
+                                 predict(obj, newdata)$x))
+
+# Note: out-of-bag estimator is not available in this situation, use
+# errorest
+
+mod &lt;- bagging(Class ~ ., data=Ionosphere, comb=comb.lda) 
+
+predict(mod, Ionosphere[1:10,])
+
+# Regression:
+
+data("BostonHousing", package = "mlbench")
+
+# Test set error (nbagg=25, trees pruned): 3.41 (Breiman, 1996a, Table 8)
+
+mod &lt;- bagging(medv ~ ., data=BostonHousing, coob=TRUE)
+print(mod)
+
+library("mlbench")
+learn &lt;- as.data.frame(mlbench.friedman1(200))
+
+# Test set error (nbagg=25, trees pruned): 2.47 (Breiman, 1996a, Table 8)
+
+mod &lt;- bagging(y ~ ., data=learn, coob=TRUE)
+print(mod)
+
+# Survival data
+
+# Brier score for censored data estimated by 
+# 10 times 10-fold cross-validation: 0.2 (Hothorn et al,
+# 2002)
+
+data("DLBCL", package = "ipred")
+mod &lt;- bagging(Surv(time,cens) ~ MGEc.1 + MGEc.2 + MGEc.3 + MGEc.4 + MGEc.5 +
+                                 MGEc.6 + MGEc.7 + MGEc.8 + MGEc.9 +
+                                 MGEc.10 + IPI, data=DLBCL, coob=TRUE)
+
+print(mod)
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ipred</em> version 0.9-15 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

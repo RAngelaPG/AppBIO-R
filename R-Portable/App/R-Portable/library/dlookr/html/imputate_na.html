@@ -1,0 +1,192 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Impute Missing Values</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for imputate_na {dlookr}"><tr><td>imputate_na {dlookr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Impute Missing Values</h2>
+
+<h3>Description</h3>
+
+<p>Missing values are imputed with some representative values and
+statistical methods.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+imputate_na(.data, xvar, yvar, method, seed, print_flag, no_attrs)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>.data</code></td>
+<td>
+<p>a data.frame or a <code><a href="../../tibble/help/tbl_df.html">tbl_df</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>xvar</code></td>
+<td>
+<p>variable name to replace missing value.</p>
+</td></tr>
+<tr valign="top"><td><code>yvar</code></td>
+<td>
+<p>target variable.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>method of missing values imputation.</p>
+</td></tr>
+<tr valign="top"><td><code>seed</code></td>
+<td>
+<p>integer. the random seed used in mice. only used &quot;mice&quot; method.</p>
+</td></tr>
+<tr valign="top"><td><code>print_flag</code></td>
+<td>
+<p>logical. If TRUE, mice will print running log on console.
+Use print_flag=FALSE for silent computation. Used only when method is &quot;mice&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>no_attrs</code></td>
+<td>
+<p>logical. If TRUE, return numerical variable or categorical variable. 
+else If FALSE, imputation class.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>imputate_na() creates an imputation class.
+The 'imputation' class includes missing value position, imputed value,
+and method of missing value imputation, etc.
+The 'imputation' class compares the imputed value with the original value
+to help determine whether the imputed value is used in the analysis.
+</p>
+<p>See vignette(&quot;transformation&quot;) for an introduction to these concepts.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of imputation class. or numerical variable or categorical variable. 
+if no_attrs is FALSE then return imputation class, else no_attrs is TRUE then return
+numerical vector or factor.
+Attributes of imputation class is as follows.
+</p>
+
+<ul>
+<li><p> var_type : the data type of predictor to replace missing value.
+</p>
+</li>
+<li><p> method : method of missing value imputation.
+</p>
+
+<ul>
+<li><p> predictor is numerical variable.
+</p>
+
+<ul>
+<li><p> &quot;mean&quot; : arithmetic mean.
+</p>
+</li>
+<li><p> &quot;median&quot; : median.
+</p>
+</li>
+<li><p> &quot;mode&quot; : mode.
+</p>
+</li>
+<li><p> &quot;knn&quot; : K-nearest neighbors.
+</p>
+</li>
+<li><p> &quot;rpart&quot; : Recursive Partitioning and Regression Trees.
+</p>
+</li>
+<li><p> &quot;mice&quot; : Multivariate Imputation by Chained Equations.
+</p>
+</li></ul>
+
+</li>
+<li><p> predictor is categorical variable.
+</p>
+
+<ul>
+<li><p> &quot;mode&quot; : mode.
+</p>
+</li>
+<li><p> &quot;rpart&quot; : Recursive Partitioning and Regression Trees.
+</p>
+</li>
+<li><p> &quot;mice&quot; : Multivariate Imputation by Chained Equations.
+</p>
+</li></ul>
+
+</li></ul>
+
+</li>
+<li><p> na_pos : position of missing value in predictor.
+</p>
+</li>
+<li><p> seed : the random seed used in mice. only used &quot;mice&quot; method.
+</p>
+</li>
+<li><p> type : &quot;missing values&quot;. type of imputation.
+</p>
+</li>
+<li><p> message : a message tells you if the result was successful.
+</p>
+</li>
+<li><p> success : Whether the imputation was successful.
+</p>
+</li></ul>
+
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../dlookr/help/imputate_outlier.html">imputate_outlier</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Generate data for the example
+heartfailure2 &lt;- heartfailure
+heartfailure2[sample(seq(NROW(heartfailure2)), 20), "platelets"] &lt;- NA
+heartfailure2[sample(seq(NROW(heartfailure2)), 5), "smoking"] &lt;- NA
+
+# Replace the missing value of the platelets variable with median
+imputate_na(heartfailure2, platelets, method = "median")
+
+# Replace the missing value of the platelets variable with rpart
+# The target variable is death_event.
+# Require rpart package
+imputate_na(heartfailure2, platelets, death_event, method = "rpart")
+
+# Replace the missing value of the smoking variable with mode
+imputate_na(heartfailure2, smoking, method = "mode")
+
+## using dplyr -------------------------------------
+library(dplyr)
+
+# The mean before and after the imputation of the platelets variable
+heartfailure2 %&gt;%
+  mutate(platelets_imp = imputate_na(heartfailure2, platelets, death_event, 
+                                     method = "knn", no_attrs = TRUE)) %&gt;%
+  group_by(death_event) %&gt;%
+  summarise(orig = mean(platelets, na.rm = TRUE),
+            imputation = mean(platelets_imp))
+
+# If the variable of interest is a numerical variable
+# Require rpart package
+platelets &lt;- imputate_na(heartfailure2, platelets, death_event, method = "rpart")
+platelets
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>dlookr</em> version 0.6.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Model-based Gradient Boosting</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mboost_fit {mboost}"><tr><td>mboost_fit {mboost}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Model-based Gradient Boosting </h2>
+
+<h3>Description</h3>
+
+<p>Work-horse for gradient boosting for optimizing arbitrary loss functions, 
+where component-wise models are utilized as base-learners. Usually, this function 
+is not called directly by the user.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+mboost_fit(blg, response, weights = rep(1, NROW(response)), offset = NULL,
+           family = Gaussian(), control = boost_control(), oobweights =
+           as.numeric(weights == 0))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>blg</code></td>
+<td>
+<p> a list of objects of elements of class <code>blg</code>, as returned by 
+all base-learners.</p>
+</td></tr>
+<tr valign="top"><td><code>response</code></td>
+<td>
+<p> the response variable.</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p> (optional) a numeric vector of weights to be used in 
+the fitting process.</p>
+</td></tr>
+<tr valign="top"><td><code>offset</code></td>
+<td>
+<p> a numeric vector to be used as offset (optional).</p>
+</td></tr>
+<tr valign="top"><td><code>family</code></td>
+<td>
+<p>a <code><a href="../../mboost/help/Family.html">Family</a></code> object.</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+<p> a list of parameters controlling the algorithm. For
+more details see <code><a href="../../mboost/help/boost_control.html">boost_control</a></code>. </p>
+</td></tr>
+<tr valign="top"><td><code>oobweights</code></td>
+<td>
+<p> an additional vector of out-of-bag weights, which is
+used for the out-of-bag risk (i.e., if <code>boost_control(risk =
+      "oobag")</code>). This argument is also used internally by
+<code>cvrisk</code>. </p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The function implements component-wise functional gradient boosting in
+a generic way. This function is the main work horse and used as back-end by
+all boosting algorithms in a unified way. Usually, this function is not
+called directly.  Note that the more convenient modelling interfaces 
+<code><a href="../../mboost/help/gamboost.html">gamboost</a></code>, <code><a href="../../mboost/help/glmboost.html">glmboost</a></code> and <code><a href="../../mboost/help/blackboost.html">blackboost</a></code> 
+all call <code>mboost_fit</code>.
+</p>
+<p>Basically, the algorithm is initialized with a function
+for computing the negative gradient of the loss function (via its
+<code>family</code> argument) and one or more base-learners (given as
+<code>blg</code>). Usually <code>blg</code> and <code>response</code> are computed in
+the functions <code><a href="../../mboost/help/gamboost.html">gamboost</a></code>, <code><a href="../../mboost/help/glmboost.html">glmboost</a></code>,
+<code><a href="../../mboost/help/blackboost.html">blackboost</a></code> or <code><a href="../../mboost/help/mboost.html">mboost</a></code>. See there for details 
+on the specification of base-learners.
+</p>
+<p>The algorithm minimized the in-sample empirical risk defined as
+the weighted sum (by <code>weights</code>) of the loss function (corresponding
+to the negative gradient) evaluated at the data.
+</p>
+<p>The structure of the model is determined by the structure
+of the base-learners. If more than one base-learner is given,
+the model is additive in these components.
+</p>
+<p>Base-learners can be specified via a formula interface
+(function <code>mboost</code>) or as a list of objects of class <code>bl</code>,
+see, e.g., <code><a href="../../mboost/help/bols.html">bols</a></code>.
+</p>
+<p><code>oobweights</code> is a vector used internally by <code>cvrisk</code>. When carrying
+out cross-validation to determine the optimal stopping iteration of a boosting
+model, the default value of <code>oobweights</code> (out-of-bag weights) assures
+that the cross-validated risk is computed using the same observation weights
+as those used for fitting the boosting model. It is strongly recommended to
+leave this argument unspecified.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>mboost</code> with <code><a href="../../base/html/print.html">print</a></code>,
+<code><a href="../../stats/html/AIC.html">AIC</a></code>, <code><a href="../../mboost/help/plot.html">plot</a></code> and <code><a href="../../stats/html/predict.html">predict</a></code>
+methods being available.
+</p>
+
+
+<h3>References</h3>
+
+<p>Peter Buehlmann and Bin Yu (2003),
+Boosting with the L2 loss: regression and classification.
+<em>Journal of the American Statistical Association</em>, <b>98</b>,
+324&ndash;339.
+</p>
+<p>Peter Buehlmann and Torsten Hothorn (2007),
+Boosting algorithms: regularization, prediction and model fitting.
+<em>Statistical Science</em>, <b>22</b>(4), 477&ndash;505.
+</p>
+<p>Torsten Hothorn, Peter Buehlmann, Thomas Kneib, Mattthias Schmid and
+Benjamin Hofner (2010), Model-based Boosting 2.0. <em>Journal of
+Machine Learning Research</em>, <b>11</b>, 2109&ndash;2113.
+</p>
+<p>Yoav Freund and Robert E. Schapire (1996),
+Experiments with a new boosting algorithm.
+In <em>Machine Learning: Proc. Thirteenth International Conference</em>,
+148&ndash;156.
+</p>
+<p>Jerome H. Friedman (2001),
+Greedy function approximation: A gradient boosting machine.
+<em>The Annals of Statistics</em>, <b>29</b>, 1189&ndash;1232.
+</p>
+<p>Benjamin Hofner, Andreas Mayr, Nikolay Robinzonov and Matthias Schmid
+(2014). Model-based Boosting in R: A Hands-on Tutorial Using the R
+Package mboost. <em>Computational Statistics</em>, <b>29</b>, 3&ndash;35.<br />
+doi: <a href="https://doi.org/10.1007/s00180-012-0382-5">10.1007/s00180-012-0382-5</a>
+</p>
+<p>Available as vignette via: <code>vignette(package = "mboost", "mboost_tutorial")</code>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../mboost/help/glmboost.html">glmboost</a></code> for boosted linear models and
+<code><a href="../../mboost/help/blackboost.html">blackboost</a></code> for boosted trees. See e.g. <code><a href="../../mboost/help/bbs.html">bbs</a></code>
+for possible base-learners. See <code><a href="../../mboost/help/cvrisk.html">cvrisk</a></code> for
+cross-validated stopping iteration. Furthermore see
+<code><a href="../../mboost/help/boost_control.html">boost_control</a></code>, <code><a href="../../mboost/help/Family.html">Family</a></code> and
+<code><a href="../help/methods.html">methods</a></code>. </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+  data("bodyfat", package = "TH.data")
+
+  ### formula interface: additive Gaussian model with
+  ### a non-linear step-function in `age', a linear function in `waistcirc'
+  ### and a smooth non-linear smooth function in `hipcirc'
+  mod &lt;- mboost(DEXfat ~ btree(age) + bols(waistcirc) + bbs(hipcirc),
+                data = bodyfat)
+  layout(matrix(1:6, nc = 3, byrow = TRUE))
+  plot(mod, main = "formula")
+
+  ### the same
+  with(bodyfat,
+       mod &lt;- mboost_fit(list(btree(age), bols(waistcirc), bbs(hipcirc)),
+                         response = DEXfat))
+  plot(mod, main = "base-learner")
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mboost</em> version 2.9-11 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

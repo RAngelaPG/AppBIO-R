@@ -1,0 +1,252 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: FARX(1) process simulation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for simul.farx {far}"><tr><td>simul.farx {far}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> FARX(1) process simulation</h2>
+
+<h3>Description</h3>
+
+<p>Simulation of functional data with exogenous variables using a
+Gram-Schmidt basis.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+simul.farx(m=12,n=100,base=base.simul.far(24,5),
+  base.exo=base.simul.far(24,5),
+  d.a=matrix(c(0.5,0),nrow=1,ncol=2),
+  alpha.conj=matrix(c(0.2,0),nrow=1,ncol=2),
+  d.rho=diag(c(0.45,0.90,0.34,0.45)),
+  alpha=diag(c(0.5,0.23,0.018)),
+  d.rho.exo=diag(c(0.45,0.90,0.34,0.45)),
+  cst1=0.05)
+theoretical.coef(m=12,base=base.simul.far(24,5),
+  base.exo=NULL,
+  d.rho=diag(c(0.45,0.90,0.34,0.45)),
+  d.a=NULL,
+  d.rho.exo=NULL,
+  alpha=diag(c(0.5,0.23,0.018)),
+  alpha.conj=NULL,
+  cst1=0.05)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>m</code></td>
+<td>
+<p> Integer. Number of discretization points. </p>
+</td></tr>
+<tr valign="top"><td><code>n</code></td>
+<td>
+<p> Integer. Number of observations. </p>
+</td></tr>
+<tr valign="top"><td><code>base</code></td>
+<td>
+<p> A functional basis expressed as a matrix, as the matrix
+created by <code><a href="../../far/help/base.simul.far.html">base.simul.far</a></code> or with
+<code><a href="../../far/help/orthonormalization.html">orthonormalization</a></code>.  </p>
+</td></tr>
+<tr valign="top"><td><code>base.exo</code></td>
+<td>
+<p> A functional basis expressed as a matrix, as the matrix
+created by <code><a href="../../far/help/base.simul.far.html">base.simul.far</a></code> or with
+<code><a href="../../far/help/orthonormalization.html">orthonormalization</a></code>.  </p>
+</td></tr>
+<tr valign="top"><td><code>d.rho</code></td>
+<td>
+<p> Numerical matrix. Part of the linear operator in the
+Gram-Schmidt basis (see details for more informations). </p>
+</td></tr>
+<tr valign="top"><td><code>d.a</code></td>
+<td>
+<p> Numerical matrix. Part of the linear operator in the
+Gram-Schmidt basis (see details for more informations). </p>
+</td></tr>
+<tr valign="top"><td><code>d.rho.exo</code></td>
+<td>
+<p> Numerical matrix. Part of the linear operator in the
+Gram-Schmidt basis (see details for more informations). </p>
+</td></tr>
+<tr valign="top"><td><code>alpha</code></td>
+<td>
+<p> Numerical matrix. Part of the linear operator in the
+Gram-Schmidt basis (see details for more informations). </p>
+</td></tr>
+<tr valign="top"><td><code>alpha.conj</code></td>
+<td>
+<p> Numerical matrix.  Part of the linear operator in the
+Gram-Schmidt basis (see details for more informations). </p>
+</td></tr>
+<tr valign="top"><td><code>cst1</code></td>
+<td>
+<p> Numeric. Perturbation coefficient on the linear
+operator. </p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The <code>simul.farx</code> function simulates a FARX(1) process with one
+endogeneous variable, one exogeneous variable and a strong white
+noise. To do so, the function uses the fact that a FARX(1) model can
+be seen as a FAR(1) model in a wider space. Therefore, the method is
+very similar to the one used by the function <code><a href="../../far/help/simul.far.html">simul.far</a></code>.
+</p>
+<p>The simulation is realized in two steps.
+</p>
+<p>First step, the function compute a FAR(1) process <i>Tn</i> in a
+functional space (that we call in the sequel H) using a simple
+equation and the given parameters. <i>Tn</i> is of the form
+<i>(T1n,T2n)</i> where <i>T1n</i> and
+<i>T2n</i> are respectively the endogeneous and the exogeneous
+parts of the process.
+</p>
+<p>Second step, the process <i>Tn</i> is projected in the canonical
+basis using the <code>base</code> and <code>base.exo</code> linear projectors to
+give the endogeneous (<i>Xn</i>) and the exogeneous
+(<i>Zn</i>) variables respectively. 
+</p>
+<p>Those two basis need to be orthonormal and wide enought. In the
+contrary, the function use the <code><a href="../../far/help/orthonormalization.html">orthonormalization</a></code>
+function to make it so. Notice that the size of this matrix
+corresponds to the dimension of the &quot;modelization space&quot; H (let's call
+it <i>m2=m12+m22</i>). Of course, the larger <code>m2</code>
+the better the functionnal approximation is. Whatever, keep in mind
+that <code>m2</code>=2<code>m</code> is a good compromise, in order to avoid the
+memory limits.
+</p>
+<p>In H, the linear operator <i>rho</i> is expressed as:
+</p>
+<p style="text-align: center;"><i>d.rho.mod \code{d.a} \cr
+    0 d.rho.exo.mod</i></p>
+
+<p>Where d.rho.mod and d.rho.exo.mod are modified version of the provided
+<code>d.rho</code> and <code>d.rho.exo</code> respectively to avoid 0 on their
+diagonal. More precisely, the 0 on their diaginals are replaced by:
+</p>
+<p style="text-align: center;"><i>(eps(k+1), eps(k+2), 
+    &hellip;, eps(\code{m2}))</i></p>
+
+<p>where
+</p>
+<p style="text-align: center;"><i>eps(i)=
+    \code{cst1}/(i^2)+(1-\code{cst1})/exp(i)</i></p>
+
+<p>and k is the position in the <code>d.rho</code> or <code>d.r.ho.exo</code>
+diagonal.
+</p>
+<p>In H, <i>CT</i>, the covariance operator of <i>Tn</i>, is
+defined by:
+</p>
+<p style="text-align: center;"><i>alpha.mod alpha.conj.mod \cr
+    t(alpha.conj.mod) alpha.exo</i></p>
+
+<p>Where alpha.mod and alpha.exo.mod are modified versions of
+<i>m12 * </i><code>alpha</code> and <i>m22 *
+  </i><code>alpha.conj</code> respectively to avoid 0 on their diagonal. More
+precisely, the 0 on their diaginals are replaced by:
+</p>
+<p style="text-align: center;"><i>(epsilon(k+1), epsilon(k+2), 
+    &hellip;, epsilon(\code{m2b}))</i></p>
+
+<p>where
+</p>
+<p style="text-align: center;"><i>epsilon(i)=
+    \code{cst1}/i</i></p>
+
+<p>alpha.exo is a matrix representation of the covariance operator of
+<i>T2n</i> and is obtained by inverting the following relation:
+</p>
+<p style="text-align: center;"><i>alpha.conj.mod = d.rho.exo.mod * alpha.conj.mod * t(d.rho.mod) +%
+    d.rho.exo.mod * mod.alpha * t(\code{d.a})</i></p>
+
+<p>The <code>theoretical.coef</code> function is provided to help the user
+making comparison. Calling this function with the same parameters that
+where used in a simulation (realized with <code>simul.farx</code> or
+<code>simul.far</code>), we obtain the parameters used internaly by the
+function to make the simulation. Those values can therefore be
+compared to those obtained with the estimation function <code>far</code>
+(examples are provided below).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>fdata</code> object containing two variables (&quot;X&quot; the endogeous
+variable, and &quot;Z&quot; the exogeneous variable) which is a FARX(1) process
+of length <code>n</code> with <code>p</code> discretization points.
+</p>
+
+
+<h3>Note</h3>
+
+<p>To simulate <i>Tn</i>, the function creates a white noise
+<i>En</i> having the following covariance operator:
+</p>
+<p style="text-align: center;"><i>CT - rho * CT t(CT)</i></p>
+
+<p>where t(.) is the transposition operator.
+<i>Tn</i> is the computed using the equation:
+</p>
+<p style="text-align: center;"><i>Tn+1 = rho * Tn + En</i></p>
+
+
+
+<h3>Author(s)</h3>
+
+<p> J. Damon, S. Guillas </p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../far/help/simul.far.sde.html">simul.far.sde</a></code>, <code><a href="../../far/help/simul.far.wiener.html">simul.far.wiener</a></code>,
+<code><a href="../../far/help/simul.far.html">simul.far</a></code>, <code><a href="../../far/help/simul.wiener.html">simul.wiener</a></code>.  </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+  # Simulation of a FARX process
+  data1 &lt;- simul.farx(m=10,n=400,base=base.simul.far(20,5),
+                base.exo=base.simul.far(20,5),
+                d.a=matrix(c(0.5,0),nrow=1,ncol=2),
+                alpha.conj=matrix(c(0.2,0),nrow=1,ncol=2),
+                d.rho=diag(c(0.45,0.90,0.34,0.45)),
+                alpha=diag(c(0.5,0.23,0.018)),
+                d.rho.exo=diag(c(0.45,0.90,0.34,0.45)),
+                cst1=0.0)
+
+  # Modelisation of the FARX process (joined and separate)
+  model1 &lt;- far(data1,k=4,joined=TRUE)
+  model2 &lt;- far(data1,k=c(3,1),joined=FALSE)
+
+  # Calculation of the theoretical coefficients
+  coef.theo &lt;- theoretical.coef(m=10,base=base.simul.far(20,5),
+                base.exo=base.simul.far(20,5),
+                d.a=matrix(c(0.5,0),nrow=1,ncol=2),
+                alpha.conj=matrix(c(0.2,0),nrow=1,ncol=2),
+                d.rho=diag(c(0.45,0.90,0.34,0.45)),
+                alpha=diag(c(0.5,0.23,0.018)),
+                d.rho.exo=diag(c(0.45,0.90,0.34,0.45)),
+                cst1=0.0)
+
+  # Joined coefficient
+  round(coef(model1),2)
+  coef.theo$rho.T
+
+  # Separate coefficient
+  round(coef(model2),2)
+  coef.theo$rho.X.Z
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>far</em> version 0.6-7 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

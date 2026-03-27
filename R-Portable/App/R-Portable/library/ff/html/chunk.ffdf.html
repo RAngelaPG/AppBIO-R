@@ -1,0 +1,107 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Chunk ff_vector and ffdf</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for chunk.ffdf {ff}"><tr><td>chunk.ffdf {ff}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Chunk ff_vector and ffdf
+</h2>
+
+<h3>Description</h3>
+
+<p>Chunking method for ff_vector and ffdf objects (row-wise) automatically considering RAM requirements from recordsize as calculated from <code><a href="../../base/html/sum.html">sum</a>(<a href="../../ff/help/.rambytes.html">.rambytes</a>[<a href="../../ff/help/vmode.html">vmode</a>])</code>
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'ff_vector'
+chunk(x
+, RECORDBYTES = .rambytes[vmode(x)], BATCHBYTES = getOption("ffbatchbytes"), ...)
+## S3 method for class 'ffdf'
+chunk(x
+, RECORDBYTES = sum(.rambytes[vmode(x)]), BATCHBYTES = getOption("ffbatchbytes"), ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p><code><a href="../../ff/help/ff.html">ff</a></code> or <code><a href="../../ff/help/ffdf.html">ffdf</a></code></p>
+</td></tr>
+<tr valign="top"><td><code>RECORDBYTES</code></td>
+<td>
+<p> optional integer scalar representing the bytes needed to process an element of the <code>ff_vector</code> a single row of the <code>ffdf</code> </p>
+</td></tr>
+<tr valign="top"><td><code>BATCHBYTES</code></td>
+<td>
+<p> integer scalar limiting the number of bytes to be processed in one chunk, default from <code>getOption("ffbatchbytes")</code>, see also <code><a href="../../ff/help/.rambytes.html">.rambytes</a></code> </p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>further arguments passed to <code><a href="../../bit/help/chunk.html">chunk</a></code></p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A list with <code><a href="../../bit/help/ri.html">ri</a></code> indexes each representing one chunk
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Jens Oehlschlägel
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../bit/help/chunk.html">chunk</a></code>, <code><a href="../../ff/help/ffdf.html">ffdf</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+  x &lt;- data.frame(x=as.double(1:26), y=factor(letters), z=ordered(LETTERS), stringsAsFactors = TRUE)
+  a &lt;- as.ffdf(x)
+  ceiling(26 / (300 %/% sum(.rambytes[vmode(a)])))
+  chunk(a, BATCHBYTES=300)
+  ceiling(13 / (100 %/% sum(.rambytes[vmode(a)])))
+  chunk(a, from=1, to = 13, BATCHBYTES=100)
+  rm(a); gc()
+
+  message("dummy example for linear regression with biglm on ffdf")
+  library(biglm)
+
+  message("NOTE that . in formula requires calculating terms manually
+    because . as a data-dependant term is not allowed in biglm")
+  form &lt;- Sepal.Length ~ Sepal.Width + Petal.Length + Petal.Width + Species
+
+  lmfit &lt;- lm(form, data=iris)
+
+  firis &lt;- as.ffdf(iris)
+  for (i in chunk(firis, by=50)){
+    if (i[1]==1){
+      message("first chunk is: ", i[[1]],":",i[[2]])
+      biglmfit &lt;- biglm(form, data=firis[i,,drop=FALSE])
+    }else{
+      message("next chunk is: ", i[[1]],":",i[[2]])
+      biglmfit &lt;- update(biglmfit, firis[i,,drop=FALSE])
+    }
+  }
+
+  summary(lmfit)
+  summary(biglmfit)
+  stopifnot(all.equal(coef(lmfit), coef(biglmfit)))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ff</em> version 4.5.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

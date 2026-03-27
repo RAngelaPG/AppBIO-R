@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Start an OpenTelemetry span.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for start_span {otel}"><tr><td>start_span {otel}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Start an OpenTelemetry span.</h2>
+
+<h3>Description</h3>
+
+<p>Creates a new OpenTelemetry span and starts it, without activating it.
+</p>
+<p>Usually you want <code><a href="../../otel/help/start_local_active_span.html">start_local_active_span()</a></code> instead of <code>start_span</code>.
+<code><a href="../../otel/help/start_local_active_span.html">start_local_active_span()</a></code> also activates the span for the caller frame,
+and ends the span when the caller frame exits.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+start_span(
+  name = NULL,
+  attributes = NULL,
+  links = NULL,
+  options = NULL,
+  ...,
+  tracer = NULL
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>name</code></td>
+<td>
+<p>Name of the span. If not specified it will be <code>"&lt;NA&gt;"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>attributes</code></td>
+<td>
+<p>Span attributes. OpenTelemetry supports the following
+R types as attributes: 'character, logical, double, integer.
+You may use <code><a href="../../otel/help/as_attributes.html">as_attributes()</a></code> to convert other R types to
+OpenTelemetry attributes.</p>
+</td></tr>
+<tr valign="top"><td><code>links</code></td>
+<td>
+<p>A named list of links to other spans. Every link must be an
+OpenTelemetry span (<a href="../../otel/help/otel_span.html">otel_span</a>) object, or a list with a span
+object as the first element and named span attributes as the rest.</p>
+</td></tr>
+<tr valign="top"><td><code>options</code></td>
+<td>
+<p>A named list of span options. May include: </p>
+
+<ul>
+<li> <p><code>start_system_time</code>: Start time in system time.
+</p>
+</li>
+<li> <p><code>start_steady_time</code>: Start time using a steady clock.
+</p>
+</li>
+<li> <p><code>parent</code>: A parent span or span context. If it is <code>NA</code>, then the
+span has no parent and it will be a root span. If it is <code>NULL</code>, then
+the current context is used, i.e. the active span, if any.
+</p>
+</li>
+<li> <p><code>kind</code>: Span kind, one of <a href="../../otel/help/span_kinds.html">span_kinds</a>:
+&quot;internal&quot;, &quot;server&quot;, &quot;client&quot;, &quot;producer&quot;, &quot;consumer&quot;.</p>
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Additional arguments are passed to the <code>start_span()</code> method
+of the tracer.</p>
+</td></tr>
+<tr valign="top"><td><code>tracer</code></td>
+<td>
+<p>A tracer object or the name of the tracer to use, see
+<code><a href="../../otel/help/get_tracer.html">get_tracer()</a></code>. If <code>NULL</code> then <code><a href="../../otel/help/default_tracer_name.html">default_tracer_name()</a></code> is used.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Only use <code>start_span()</code> is you need to manage the span's activation
+manually. Otherwise use <code><a href="../../otel/help/start_local_active_span.html">start_local_active_span()</a></code>.
+</p>
+<p>You must end the span by calling <code><a href="../../otel/help/end_span.html">end_span()</a></code>. Alternatively you
+can also end it with <code><a href="../../otel/help/local_active_span.html">local_active_span()</a></code> or <code><a href="../../otel/help/with_active_span.html">with_active_span()</a></code> by
+setting <code>end_on_exit = TRUE</code>.
+</p>
+<p>It is a good idea to end spans created with <code>start_span()</code> in an
+<code><a href="../../base/help/on.exit.html">base::on.exit()</a></code> call.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An OpenTelemetry span (<a href="../../otel/help/otel_span.html">otel_span</a>).
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other OpenTelemetry trace API: 
+<code><a href="../../otel/help/Zero+20Code+20Instrumentation.html">Zero Code Instrumentation</a></code>,
+<code><a href="../../otel/help/end_span.html">end_span</a>()</code>,
+<code><a href="../../otel/help/is_tracing_enabled.html">is_tracing_enabled</a>()</code>,
+<code><a href="../../otel/help/local_active_span.html">local_active_span</a>()</code>,
+<code><a href="../../otel/help/start_local_active_span.html">start_local_active_span</a>()</code>,
+<code><a href="../../otel/help/tracing-constants.html">tracing-constants</a></code>,
+<code><a href="../../otel/help/with_active_span.html">with_active_span</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+fun &lt;- function() {
+  # start span, do not activate
+  spn &lt;- otel::start_span("myfun")
+  # do not leak resources
+  on.exit(otel::end_span(spn), add = TRUE)
+  myfun &lt;- function() {
+     # activate span for this function
+     otel::local_active_span(spn)
+     # create child span
+     spn2 &lt;- otel::start_local_active_span("myfun/2")
+  }
+
+  myfun2 &lt;- function() {
+    # activate span for this function
+    otel::local_active_span(spn)
+    # create child span
+    spn3 &lt;- otel::start_local_active_span("myfun/3")
+  }
+  myfun()
+  myfun2()
+  end_span(spn)
+}
+fun()
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>otel</em> version 0.2.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

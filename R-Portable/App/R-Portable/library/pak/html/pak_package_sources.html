@@ -1,0 +1,718 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Install packages from CRAN, Bioconductor, GitHub, URLs, etc.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for Package sources {pak}"><tr><td>Package sources {pak}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Install packages from CRAN, Bioconductor, GitHub, URLs, etc.</h2>
+
+<h3>Description</h3>
+
+<p>Install packages from CRAN, Bioconductor, GitHub, URLs, etc.
+Learn how to tell pak which packages to install, and where those packages
+can be found.
+</p>
+<p>If you want a quick overview of package sources, see
+&quot;<a href="../../pak/help/Get+20started+20with+20pak.html">Get started with pak</a>&quot;.
+</p>
+
+
+<h3>Details</h3>
+
+
+
+<h4>Package references</h4>
+
+<p>Many pkgdepends and pak functions take package names as arguments.
+E.g. <code>pak::pkg_install()</code> takes the names of the packages to install and
+<code>pak::pkg_deps_tree()</code> takes the names of the packages to draw dependency
+trees for.
+
+Most of these functions can also take more generic <em>package references</em>
+instead of package names.
+A package reference also tells pak where to find the
+package source.
+
+To specify a package source, use its name as a prefix, with a <code>::</code>
+separator.
+E.g. <code>cran::mypkg</code> means the <code>mypkg</code> package from CRAN.
+
+A package name is a special package reference that implicitly specifies
+the configured CRAN(-like) repositories as the package source
+(we call this the <code>standard</code> package source).
+So <code>mypkg</code> is equivalent to <code>standard::mypkg</code> and pak
+looks for mypkg in any of the configured CRAN-like repositories.
+If you did not explicitly specify any CRAN-like repositories (e.g. with
+<code>options("repos")</code>), then pak uses the CRAN and
+Bioconductor repositories by default.
+
+This is the list of the currently supported package sources.
+We will discuss each in detail below.
+</p>
+
+<ul>
+<li> <p><code>cran</code>: a CRAN package.
+</p>
+</li>
+<li> <p><code>bioc</code>: a Bioconductor package.
+</p>
+</li>
+<li> <p><code>standard</code>: a package from a configured CRAN-like repository.
+</p>
+</li>
+<li> <p><code>github</code>: a package from GitHub.
+</p>
+</li>
+<li> <p><code>gitlab</code>: a package from GitLab.
+</p>
+</li>
+<li> <p><code>git</code>: a package in a Git repository.
+</p>
+</li>
+<li> <p><code>local</code>: a local package file or directory.
+</p>
+</li>
+<li> <p><code>url</code>: an URL that points to a package archive.
+</p>
+</li>
+<li> <p><code>installed</code>: an installed package.
+</p>
+</li>
+<li> <p><code>deps</code>: the dependencies of a local package file or directory.
+</p>
+</li>
+<li> <p><code>any</code>: a special reference type that accepts a package from any source.
+See below.
+</p>
+</li>
+<li> <p><code>param</code>: a special reference to change how other references are downloaded
+or installed. See &quot;Parameters&quot; below.
+</p>
+</li></ul>
+
+
+
+<h5>Shorthands</h5>
+
+
+<p>To save typing, you do not always need to fully specify the package source
+in a package reference.
+You have seen before that a package name implicitly has a <code>standard</code>
+package source.
+Here are the complete rules for such shorthands, in the order they are
+applied:
+
+If the package reference is
+</p>
+
+<ul>
+<li><p> a valid package name, or a package name with an <code>@</code>
+version specification, the <code>standard</code> package source is used. E.g. <code>pkg</code> is
+equivalent to <code>standard::pkg</code> and <code style="white-space: pre;">pkg@1.0</code> is equivalent to
+<code style="white-space: pre;">standard::pkg@1.0</code>.
+</p>
+</li>
+<li><p> a valid <code>github</code> ref type without the <code style="white-space: pre;">github::</code> prefix,
+then <code>github</code> is used. E.g. <code>user/repo</code> is equivalent to
+<code>github::user/repo</code> and <code>user/repo@tag</code> is equivalent to
+<code>github::user/repo@tag</code>, etc.
+</p>
+</li>
+<li><p> a GitHub URL (see below) without the <code style="white-space: pre;">github::</code> prefix,
+then <code>github</code> is used.
+</p>
+</li>
+<li><p> a path that starts with <code>.</code> or <code>/</code> or <code style="white-space: pre;">\</code> or <code>~</code>, then
+<code>local</code> is used. (pak does not check if the path
+exists.)
+</p>
+</li>
+<li><p> of the form <code style="white-space: pre;">&lt;package-name&gt;=?&lt;parameters&gt;</code>,
+then it will be the special <code>param</code> type. See &quot;Parameters&quot; below.
+</p>
+</li></ul>
+
+
+<p>If the package reference does not have an explicit package source,
+and the package source cannot be determined from these rules, then
+pak throws an error.
+</p>
+
+
+
+
+<h5>Package names</h5>
+
+
+<p>When pak is looking up the dependencies of a package,
+it needs to be able to determine the name of the dependency from the
+package reference.
+This is sometimes not easy for dependencies in <code>Remotes</code> (or similar) fields.
+</p>
+
+<ul>
+<li><p> For <code style="white-space: pre;">github::</code> and <code style="white-space: pre;">gitlab::</code> dependencies pak assumes
+that the package name is the same as the name of the repository. If this
+does not hold, then you need to specify the package name explicitly, using
+a <code style="white-space: pre;">&lt;package&gt;=</code> prefix. E.g. <code>pins=rstudio/pins-r</code>. To specify both the
+package source type and the package name at the same time, write it like this:
+<code>pins=github::rstudio/pins-r</code>.
+</p>
+</li>
+<li><p> For <code style="white-space: pre;">git::</code> dependencies, pak assumes that the package
+name is the same as the last component of the repository. If this does not
+hold, then you need to specify the package name explicitly, using a
+<code style="white-space: pre;">&lt;package&gt;=</code> prefix. E.g. <code style="white-space: pre;">pins=git::https://github.com/rstudio/pins-r</code>.
+</p>
+</li>
+<li><p> For <code style="white-space: pre;">local::</code> dependencies, you always need to specify the package name
+explicitly. E.g. <code style="white-space: pre;">pins=local::~/works/pins</code>.
+</p>
+</li>
+<li><p> For <code style="white-space: pre;">url::</code> dependencies, you always need to specify the package name
+explicitly. E.g. <code style="white-space: pre;">ggplot2=url::https://cloud.r-project.org/src/contrib/...</code>.
+</p>
+</li></ul>
+
+
+
+
+
+<h5>Parameters</h5>
+
+
+<p>Package references may have optional parameters, added after a question
+mark.
+Different parameters are separated by an ampersand (<code>&amp;</code>) character.
+(This is very similar to how HTTP URLs take query parameters.)
+
+Parameters may be flags that turn on some behavior, or they can have a
+string value, assigned with an equal sign (<code>=</code>).
+If no value is assigned, then a <code>true</code> value is assumed. For example,
+these two package references are equivalent:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>cran::testthat?source&amp;nocache
+cran::testthat?source=true&amp;nocache=true
+</pre></div>
+
+
+<h6>Parameters for downstream packages</h6>
+
+
+<p>pak allows specifying parameters for downstream packages,
+using the <code style="white-space: pre;">&lt;package&gt;=?&lt;params&gt;</code> special package reference, where <code>package</code> is
+the name of the package, and <code style="white-space: pre;">&lt;params&gt;</code> are the parameters, as above.
+This is useful if you want to add a parameter to a downstream dependency.
+
+For example, to install ggplot2, and always reinstall its cli package
+dependency, you could use the <code>ggplot2</code> and <code>cli=?reinstall</code> package
+references.
+The latter tells pak to always reinstall cli, even if
+it is already installed.
+</p>
+
+
+
+
+<h6>Currently supported parameters</h6>
+
+
+<ul>
+<li> <p><code>ignore</code> is a flag parameter. If specified, the package is ignored.
+This usually makes sense in the <code>packagename=?ignore</code> form, to ignore a
+downstream soft dependency. If all versions of a hard dependency are
+ignored that will lead to a solution error.
+</p>
+</li>
+<li> <p><code>ignore-before-r</code> is a version number parameter. The package will be
+ignored on R versions that are older than the specified one. E.g.
+<code style="white-space: pre;">Matrix=?ignore-before-r=4.1.2</code> will ignore the Matrix package on R versions
+that are older than 4.1.2. This parameter really only makes sense in the
+<code>packgename=?ignore-before-r</code> form.
+</p>
+</li>
+<li> <p><code>ignore-unavailable</code> is a flag. It can only be specified for soft
+dependencies. If specified and the package is not available, it will be
+ignored. This parameter really only makes sense in the
+<code>packagename=?ignore-unavailable</code> form.
+</p>
+</li>
+<li> <p><code>source</code> is a flag parameter. If specified, then a source R package
+is requested from a CRAN-like repository. For package installations,
+<code>source</code> always triggers a re-install. In other words, <code>source</code> implies the
+<code>reinstall</code> parameter. This parameter is supported for <code style="white-space: pre;">bioc::</code>, <code style="white-space: pre;">cran::</code>
+and <code style="white-space: pre;">standard::</code> remote types, and it is ignored for others.
+</p>
+</li>
+<li> <p><code>reinstall</code> requests a re-install for package installations. It is
+supported by the <code style="white-space: pre;">bioc::</code>, <code style="white-space: pre;">cran::</code>, <code style="white-space: pre;">git::</code>, <code style="white-space: pre;">github::</code>, <code style="white-space: pre;">gitlab::</code>,
+<code style="white-space: pre;">local::</code>, <code style="white-space: pre;">standard::</code>, and <code style="white-space: pre;">url::</code> remote types.
+</p>
+</li>
+<li> <p><code>nocache</code> will ignore the package cache. It will always download the
+package file, and it will not add the downloaded (and built) package(s)
+to the package cache. It is supported by the <code style="white-space: pre;">bioc::</code>, <code style="white-space: pre;">cran::</code>, <code style="white-space: pre;">git::</code>,
+<code style="white-space: pre;">github::</code>, <code style="white-space: pre;">gitlab::</code>, <code style="white-space: pre;">standard::</code> and <code style="white-space: pre;">url::</code> remote types.
+</p>
+</li></ul>
+
+
+
+
+
+
+
+<h5>Package source details</h5>
+
+
+
+<h6>CRAN packages (<code style="white-space: pre;">cran::</code>)</h6>
+
+
+<p>A package from CRAN. Full syntax:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>[cran::]&lt;package&gt;[@[&gt;=]&lt;version&gt; | @current | @last]
+</pre></div>
+
+<ul>
+<li> <p><code style="white-space: pre;">&lt;package&gt;</code> is a valid package name.
+</p>
+</li>
+<li> <p><code style="white-space: pre;">&lt;version&gt;</code> is a version or a version requirement.
+</p>
+</li></ul>
+
+
+<p>Examples:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>forecast
+forecast@8.8
+forecast@&gt;=8.8
+cran::forecast
+forecast@last
+forecast@current
+</pre></div>
+
+<p>Note: pak currently parses the version specification part
+(everything after <code>@</code>), but does not use it.
+</p>
+
+
+
+
+<h6>Bioconductor packages (<code style="white-space: pre;">bioc::</code>)</h6>
+
+
+<p>A package from Bioconductor. The syntax is the same as for CRAN packages,
+except for the prefix.
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>[bioc::]&lt;package&gt;[@[&gt;=]&lt;version&gt; | @current | @last]
+</pre></div>
+
+
+
+
+<h6>Standard packages (<code style="white-space: pre;">standard::</code>)</h6>
+
+
+<p>These are packages either from CRAN or Bioconductor, the full syntax
+is the same as for CRAN packages, except for the prefix:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>[standard::]&lt;package&gt;[@[&gt;=]&lt;version&gt; | current | last]
+</pre></div>
+
+
+
+
+<h6>GitHub packages (<code style="white-space: pre;">github::</code>)</h6>
+
+
+<p>Packages from a GitHub repository. Full syntax:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>[&lt;package&gt;=][github::]&lt;username&gt;/&lt;repository&gt;[/&lt;subdir&gt;][&lt;detail&gt;]
+</pre></div>
+
+<ul>
+<li> <p><code style="white-space: pre;">&lt;package&gt;</code> is the name of the package. If this is missing, then
+the name of the repository is used.
+</p>
+</li>
+<li> <p><code style="white-space: pre;">&lt;username&gt;</code> is a GitHub username or organization name.
+</p>
+</li>
+<li> <p><code style="white-space: pre;">&lt;repository&gt;</code> is the name of the repository.
+</p>
+</li>
+<li> <p><code style="white-space: pre;">&lt;subdir&gt;</code> specifies an optional subdirectory, if the package is within a
+subdirectory in the repository.
+</p>
+</li>
+<li> <p><code style="white-space: pre;">&lt;detail&gt;</code> specifies a certain version of the package, see below.
+</p>
+</li></ul>
+
+
+<p><code style="white-space: pre;">&lt;detail&gt;</code> may specify:
+</p>
+
+<ul>
+<li><p> a Git branch, tag or (prefix of) a commit hash: <code style="white-space: pre;">@&lt;commitish&gt;</code>;
+</p>
+</li>
+<li><p> a pull request: <code style="white-space: pre;">#&lt;pull-request&gt;</code>; or
+</p>
+</li>
+<li><p> the latest release: <code style="white-space: pre;">@*release</code>.
+</p>
+</li></ul>
+
+
+<p>If <code style="white-space: pre;">&lt;detail&gt;</code> is missing, then the latest commit of the <em>default</em>
+branch is used.
+
+Examples:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>r-lib/crayon
+github::r-lib/crayon
+r-lib/crayon@84be6207
+r-lib/crayon@branch
+r-lib/crayon#41
+r-lib/crayon@release
+</pre></div>
+
+<p>For convenience, GitHub HTTP URLs can also be used to specify a
+package from GitHub. Examples:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>https://github.com/r-lib/withr
+# A branch:
+https://github.com/r-lib/withr/tree/ghactions
+# A tag:
+https://github.com/r-lib/withr/tree/v2.1.1
+# A commit:
+https://github.com/r-lib/withr/commit/8fbcb548e316
+# A pull request:
+https://github.com/r-lib/withr/pull/76
+# A release:
+https://github.com/r-lib/withr/releases/tag/v2.1.0
+</pre></div>
+
+<p>A GitHub remote string can also be used instead of a URL, for example:
+<code>git@github.com:r-lib/pak.git</code>
+</p>
+
+
+
+
+<h6>GitLab packages (<code style="white-space: pre;">gitlab::</code>)</h6>
+
+
+<p>Packages from a GitLab repository. Full syntax:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>[&lt;package&gt;=][gitlab::]&lt;project-path&gt;/&lt;repository&gt;[/-/&lt;subdir&gt;][&lt;detail&gt;]
+</pre></div>
+
+<ul>
+<li> <p><code style="white-space: pre;">&lt;package&gt;</code> is the name of the package. If this is missing, then
+the name of the repository is used.
+</p>
+</li>
+<li> <p><code style="white-space: pre;">&lt;project-path&gt;</code> is typically the GitLab user or group name, but
+it may contain subgroups.
+</p>
+</li>
+<li> <p><code style="white-space: pre;">&lt;repository&gt;</code> is the name of the repository, or the project in GitLab
+terminology. GitLab
+<a href="https://docs.gitlab.com/ee/user/group/subgroups/">subgroups</a> are
+fully supported.
+</p>
+</li>
+<li> <p><code style="white-space: pre;">&lt;subdir&gt;</code> specifies an optional subdirectory, if the package is within a
+subdirectory in the repository. Note that for GitLab, this must come
+after a <code style="white-space: pre;">/-</code> prefix, to be able to distinguish it from subgroups.
+</p>
+</li>
+<li> <p><code style="white-space: pre;">&lt;detail&gt;</code> may specify a Git branch, tag or (prefix of) a commit hash.
+</p>
+</li></ul>
+
+
+<p>If <code style="white-space: pre;">&lt;detail&gt;</code> is missing, then the latest commit of the <em>default</em>
+branch is used.
+
+<code style="white-space: pre;">gitlab::</code> supports Git submodules, see the <code>git-submodules</code> configuration
+entry.
+
+Examples:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>gitlab::gaborcsardi/cli
+gitlab::r-hub/filelock@main
+gitlab::group/subgroup/subsubgroup/project/-/subdir@ref
+</pre></div>
+
+
+
+
+<h6>Packages in Git repositories (<code style="white-space: pre;">git::</code>)</h6>
+
+
+<p>Full syntax:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>[&lt;package&gt;=]git::https?://&lt;host&gt;[&lt;detail&gt;]
+</pre></div>
+
+<ul>
+<li> <p><code style="white-space: pre;">&lt;package&gt;</code> is the name of the package. If this is missing, then
+the last component of the <code style="white-space: pre;">&lt;host&gt;</code> is used.
+</p>
+</li>
+<li> <p><code style="white-space: pre;">&lt;host&gt;</code> is the host name and path of the Git repository. Some Git
+repositories need the <code>.git</code> suffix here, others are more forgiving.
+</p>
+</li>
+<li> <p><code style="white-space: pre;">&lt;detail&gt;</code> specifies a certain version of the package:
+a Git branch, tag or (prefix of) a commit hash: <code style="white-space: pre;">@&lt;commitish&gt;</code>.
+</p>
+</li></ul>
+
+
+<p>If <code style="white-space: pre;">&lt;detail&gt;</code> is missing, then the latest commit of the <em>default</em>
+branch is used.
+
+<code style="white-space: pre;">git::</code> supports Git submodules, see the <code>git-submodules</code> configuration
+entry.
+
+Examples:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>git::https://github.com/r-lib/crayon
+git::https://github.com/r-lib/crayon.git
+git::https://github.com/r-lib/crayon.git@84be6207
+git::https://github.com/r-lib/crayon.git@branch
+git::https://gitlab.com/gaborcsardi/cli.git
+</pre></div>
+
+<p>Note that pak has a built-in Git client, and does
+<strong>not</strong> require a system Git installation.
+
+If the system has Git installed, then pak will use the
+credentials stored in the configured Git credential store, automatically,
+via the gitcreds package.
+</p>
+
+
+
+
+<h6>Local packages (<code style="white-space: pre;">local::</code>)</h6>
+
+
+<p>A path that refers to a package file built with <code style="white-space: pre;">R CMD build</code>, or a
+directory that contains a package. Full syntax:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>local::&lt;path&gt;
+</pre></div>
+
+<p>For brevity, you can omit the <code style="white-space: pre;">local::</code> prefix, if you specify an
+absolute path, a path from the user's home directory, starting with <code>~</code>,
+or a relative path starting with <code style="white-space: pre;">./</code> or <code style="white-space: pre;">.\\</code>.
+
+A single dot (<code>"."</code>) is considered to be a local package in the current
+working directory.
+
+Examples:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>local::/foo/bar/package_1.0.0.tar.gz
+local::/foo/bar/pkg
+local::.
+/absolute/path/package_1.0.0.tar.gz
+~/path/from/home
+./relative/path
+.
+</pre></div>
+
+<p>If you specify a local package in a dependency (i.e. in <code>DESCRIPTION</code>), then
+you also need to specify the name of the package, see &quot;Package names&quot;
+above.
+</p>
+
+
+
+
+<h6>URLs (<code style="white-space: pre;">url::</code>)</h6>
+
+
+<p>You can use <code style="white-space: pre;">url::</code> to refer to URLs that hold R package archives
+(i.e. properly built with <code style="white-space: pre;">R CMD build</code>), or compressed directories
+of package trees (i.e. not built with <code style="white-space: pre;">R CMD build</code>). pak will
+figure out if it needs to run <code style="white-space: pre;">R CMD build</code> on the package first.
+
+This remote type supports <code>.tar.gz</code> and <code>.zip</code> files.
+
+Note that URLs are not ideal remote types, because pak needs to
+download the package file to resolve its dependencies. When this happens,
+it puts the package file in the cache, so no further downloads are
+needed when installing the package later.
+
+Examples:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>url::https://cloud.r-project.org/src/contrib/Archive/cli/cli_1.0.0.tar.gz
+url::https://github.com/tidyverse/stringr/archive/HEAD.zip
+</pre></div>
+
+<p>If you specify a package from a URL in a dependency (i.e. in <code>DESCRIPTION</code>),
+then you also need to specify the name of the package, see &quot;Package names&quot;
+above.
+</p>
+
+
+
+
+<h6>Installed packages (<code style="white-space: pre;">installed::</code>)</h6>
+
+
+<p>This is usually used internally, but can also be used directly.
+Full syntax:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>installed::&lt;path&gt;/&lt;package&gt;
+</pre></div>
+
+<ul>
+<li> <p><code style="white-space: pre;">&lt;path&gt;</code> is the library the package is installed to.
+</p>
+</li>
+<li> <p><code style="white-space: pre;">&lt;package&gt;</code> is the package name.
+</p>
+</li></ul>
+
+
+<p>Example:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>installed::~/R/3.6/crayon
+</pre></div>
+
+
+
+
+<h6>Package dependencies (<code style="white-space: pre;">deps::</code>)</h6>
+
+
+<p>Usually used internally, it specifies the dependencies of a local
+package. It can be used to download or install the dependencies of a
+package, without downloading or installing the package itself.
+Full syntax:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>deps::&lt;path&gt;
+</pre></div>
+
+<p>Examples:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>deps::/foo/bar/package_1.0.0.tar.gz
+deps::/foo/bar/pkg
+deps::.
+</pre></div>
+
+
+
+
+<h6><code style="white-space: pre;">any::</code> packages</h6>
+
+
+<p>Sometimes you need to install additional packages, but you don't mind
+where they are installed from. Here is an example. You want to install
+cli from GitHub, from <code>r-lib/cli</code>. You also want to install glue, and
+you don't mind which version of glue is installed, as long as it is
+compatible with the requested cli version. If cli specifies the
+development version of glue, then that is fine. If cli is fine with the
+CRAN version of glue, that's OK, too. If a future version of cli does
+not depend on glue, you still want glue installed, from CRAN. The <code style="white-space: pre;">any::</code>
+reference type does exactly this.
+
+In our example you might write
+
+<div class="sourceCode r"><p>&nbsp;</p>
+<pre>pak::pkg_install(c("glue", "r-lib/cli"))
+</pre></div>
+
+<p>first, but this will fail if <code>rlib/cli</code> requests (say) <code>tidyverse/glue</code>,
+because in <code>pkg_install()</code> <code>"glue"</code> is interpreted as <code>"standard::glue"</code>,
+creating a conflict with <code>tidyverse/glue</code>. On the other hand
+
+<div class="sourceCode r"><p>&nbsp;</p>
+<pre>pak::pkg_install(c("any::glue", "r-lib/cli"))
+</pre></div>
+
+<p>works, independently of which glue version is requested by cli.
+</p>
+
+
+
+
+<h6>Parameter refs (<code style="white-space: pre;">param::</code>)</h6>
+
+
+<p>See &quot;Parameters&quot; above.
+</p>
+
+
+
+
+
+
+<h5>The <code>Remotes</code> field</h5>
+
+
+<p>In the <code>DESCRIPTION</code> file of an R package you can mark any regular
+dependency defined in the <code>Depends</code>, <code>Imports</code>, <code>Suggests</code> or <code>Enhances</code>
+fields as being installed from a non-standard package source by adding
+a package reference to a <code>Remotes</code> entry.
+pak will download and install the package from the
+specified location, instead of a CRAN-like repository.
+
+The remote dependencies specified in <code>Remotes</code> are a comma separated
+list of package sources:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>Remotes: &lt;pkg-source-1&gt;, &lt;pkg-source-2&gt;, [ ... ]
+</pre></div>
+
+<p>Note that you will still need to add the package to one of the regular
+dependency fields, i.e. <code>Imports</code>, <code>Suggests</code>, etc. Here is a concrete
+example that specifies the <code>r-lib/glue</code> package:
+
+<div class="sourceCode"><p>&nbsp; </p>
+<pre>Imports: glue
+Remotes: r-lib/glue,
+  r-lib/httr@v0.4,
+  klutometis/roxygen#142,
+  r-lib/testthat@c67018fa4970
+</pre></div>
+
+<p>The CRAN and Bioconductor repositories do not support the <code>Remotes</code>
+field, so you need to remove this field, before submitting your package
+to either of them.
+</p>
+
+
+
+
+<hr /><div style="text-align: center;">[Package <em>pak</em> version 0.9.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

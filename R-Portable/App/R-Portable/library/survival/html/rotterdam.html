@@ -11,7 +11,7 @@
 <h3>Description</h3>
 
 <p>The <code>rotterdam</code> data set includes 2982 primary breast cancers patients
-whose records were included in the Rotterdam tumor bank.
+whose data whose records were included in the Rotterdam tumor bank.
 </p>
 
 
@@ -75,15 +75,13 @@ time is greater than the censoring time for recurrence.
 A common way that this happens is that a death date is updated in the
 health record sometime after the research study ended, and said value
 is then picked up when a study data set is created.
-Vital status information can come from many sources: a patient visit for
-another condition, correspondence, financial transactions, or social media.
-But this raises serious questions about censoring.
+But it raises serious questions about censoring.
 For instance subject 40 is censored for recurrence at 4.2 years and died
 at 6.6 years; when creating the endpoint of recurrence free survival
 (earlier of recurrence or death), treating them as a death at 6.6 years
 implicitly assumes that they were recurrence free just before death.
 For this to be true we would have to assume that if they had progressed in
-the 2.4 year interval before death (while off study),
+the 2.4 year interval before death (off study),
 that this information would also have been noted
 in their general medical record, and would also be captured in
 the study data set.
@@ -110,23 +108,13 @@ model: principles and methods.  BMC Medical Research Methodology 2013, 13:33
 <h3>Examples</h3>
 
 <pre>
-# liberal definition of rfs (count later deaths)
-rfs  &lt;- pmax(rotterdam$recur, rotterdam$death)
+status  &lt;- pmax(rotterdam$recur, rotterdam$death)
 rfstime &lt;- with(rotterdam, ifelse(recur==1, rtime, dtime))
-fit1 &lt;- coxph(Surv(rfstime, rfs) ~ pspline(age) + meno + size + 
-        pspline(nodes) + er,  data = rotterdam)
-
-# conservative (no deaths after last fu for recurrence)
-ignore &lt;- with(rotterdam, recur ==0 &amp; death==1 &amp; rtime &lt; dtime)
-table(ignore)
-rfs2 &lt;- with(rotterdam, ifelse(recur==1 | ignore, recur, death))
-rfstime2 &lt;- with(rotterdam, ifelse(recur==1 | ignore, rtime, dtime))
-fit2 &lt;- coxph(Surv(rfstime2, rfs2) ~ pspline(age) + meno + size + 
-        pspline(nodes) + er,  data = rotterdam)
-
-# Note: Both age and nodes show non-linear effects.
+fit1 &lt;- coxph(Surv(rfstime, status) ~ pspline(age) + meno + size + 
+        pspline(nodes) + er,
+     data=rotterdam, subset = (nodes &gt; 0))
 # Royston and Altman used fractional polynomials for the nonlinear terms
 </pre>
 
-<hr /><div style="text-align: center;">[Package <em>survival</em> version 3.7-0 <a href="00Index.html">Index</a>]</div>
+<hr /><div style="text-align: center;">[Package <em>survival</em> version 3.2-13 <a href="00Index.html">Index</a>]</div>
 </div></body></html>

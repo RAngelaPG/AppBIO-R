@@ -1,0 +1,215 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Cholesky Factorization for Sparse Matrices</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for chol {spam}"><tr><td>chol {spam}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Cholesky Factorization for Sparse Matrices</h2>
+
+<h3>Description</h3>
+
+<p><code>chol</code> performs a Cholesky
+decomposition of a symmetric positive definite sparse matrix <code>x</code>
+of class <code>spam</code>.</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+# chol(x, \dots)
+
+## S4 method for signature 'spam'
+chol(x, pivot = "MMD", method = "NgPeyton",
+       memory = list(), eps = getOption("spam.eps"), Rstruct=NULL,
+       ..., verbose=FALSE)
+
+
+# update.spam.chol.NgPeyton(object, x,...)
+## S4 method for signature 'spam.chol.NgPeyton'
+update(object, x,...)
+
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>symmetric positive definite matrix of class <code>spam</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>pivot</code></td>
+<td>
+<p>should the matrix be permuted, and if, with what
+algorithm, see &lsquo;Details&rsquo; below.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>Currently, only <code>NgPeyton</code> is implemented.</p>
+</td></tr>
+<tr valign="top"><td><code>memory</code></td>
+<td>
+<p>Parameters specific to the method, see &lsquo;Details&rsquo; below.</p>
+</td></tr>
+<tr valign="top"><td><code>eps</code></td>
+<td>
+<p>threshold to test symmetry. Defaults to <code>getOption("spam.eps")</code>.</p>
+</td></tr>
+</table>
+
+
+
+<table summary="R argblock">
+<tr valign="top"><td><code>Rstruct</code></td>
+<td>
+<p>sparsity structure  of the factor, see &lsquo;Details&rsquo; below.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>further arguments passed to or from other methods.</p>
+</td></tr>
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>an object from a previous call to <code>chol</code>, i.e.,
+sparsity structure of the factor.</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>provides more details about the decomposition. Useful
+when working with  huge matrices.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>chol</code> performs a Cholesky decomposition of a symmetric
+positive definite sparse matrix <code>x</code> of class
+<code>spam</code>. Currently, there is only the block sparse Cholesky
+algorithm of Ng and Peyton (1993) implemented (<code>method="NgPeyton"</code>).
+</p>
+<p>To pivot/permute the matrix, you can choose between the multiple minimum
+degree (<code>pivot="MMD"</code>) or reverse Cuthill-Mckee (<code>pivot="RCM"</code>)
+from George and Lui (1981). It is also possible to furnish a specific
+permutation in which case <code>pivot</code> is a vector. For compatibility
+reasons, <code>pivot</code> can also take a logical in which for <code>FALSE</code>
+no permutation is done and for <code>TRUE</code> is equivalent to
+<code>MMD</code>.<br />
+</p>
+<p>Often the sparsity structure is fixed and does not change, but the
+entries do. In those cases, we can update the Cholesky factor with
+<code>update.spam.chol.NgPeyton</code> by suppling a Cholesky factor and the
+updated matrix. For <code>U &lt;- chol(A)</code>,  <code>update(U,
+  Anew)</code> and <code>chol(Anew, Rstruct=U)</code> are equivalent.
+</p>
+<p>The option <code>cholupdatesingular</code> determines how singular matrices
+are handled by <code>update</code>. The function hands back an error
+(<code>"error"</code>), a warning (<code>"warning"</code>) or the value <code>NULL</code>
+(<code>"null"</code>).<br />
+</p>
+<p>The Cholesky decompositions requires parameters, linked to memory
+allocation.  If the default values are too small the Fortran routine
+returns an error to <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>, which allocates more space and calls the Fortran
+routine again. The user can also pass better estimates of the allocation
+sizes to <code>chol</code> with the argument <code>memory=list(nnzR=...,
+  nnzcolindices=...)</code>. The minimal sizes for a fixed sparsity
+structure can be obtained from a <code>summary</code> call, see &lsquo;Examples&rsquo;.<br />
+</p>
+<p>The output of <code>chol</code> can be used with <code>forwardsolve</code> and
+<code>backsolve</code> to solve a system of linear equations.<br />
+</p>
+<p>Notice that the Cholesky factorization of the package <code>SparseM</code> is also
+based on the algorithm of Ng and Peyton (1993).  Whereas the Cholesky
+routine of the package <code>Matrix</code> are based on
+<code>CHOLMOD</code> by Timothy A. Davis (<code>C</code> code).
+</p>
+
+
+<h3>Value</h3>
+
+<p>The function returns the Cholesky factor in an object of class
+<code>spam.chol.</code><em>method</em>. Recall that the latter is the Cholesky
+factor of a reordered matrix <code>x</code>, see also <code><a href="../../spam/help/ordering.html">ordering</a></code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Although the symmetric structure of <code>x</code> is needed, only the upper
+diagonal entries are used. By default, the code does check for
+symmetry (contrarily to <code>base:::chol</code>). However,
+depending on the matrix size, this is a time consuming test.
+A test is ignored if
+<code>options("spam.cholsymmetrycheck")</code> is set to <code>FALSE</code>.
+</p>
+<p>If a permutation is supplied with <code>pivot</code>,
+<code>options("spam.cholpivotcheck")</code> determines if the permutation is
+tested for validity (defaults to <code>TRUE</code>).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Reinhard Furrer, based on Ng and Peyton (1993) Fortran routines</p>
+
+
+<h3>References</h3>
+
+<p>Ng, E. G. and Peyton, B. W.  (1993) Block sparse Cholesky algorithms on
+advanced uniprocessor computers, <em>SIAM J. Sci. Comput.</em>, <b>14</b>,
+1034&ndash;1056.
+</p>
+<p>Gilbert, J. R., Ng, E. G. and Peyton, B. W. (1994) An efficient
+algorithm to compute row and column counts for sparse Cholesky
+factorization, <em>SIAM J. Matrix Anal. Appl.</em>, <b>15</b>,
+1075&ndash;1091.
+</p>
+<p>George, A. and  Liu, J. (1981)
+<em>Computer Solution of Large Sparse Positive Definite Systems</em>,
+Prentice Hall.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../spam/help/det.spam.html">det.spam</a></code>, <code><a href="../../spam/help/solve.spam.html">solve.spam</a></code>,
+<code><a href="../../spam/help/forwardsolve.spam.html">forwardsolve.spam</a></code>, <code><a href="../../spam/help/backsolve.spam.html">backsolve.spam</a></code> and <code><a href="../../spam/help/ordering.html">ordering</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# generate multivariate normals:
+set.seed(13)
+n &lt;- 25    # dimension
+N &lt;- 1000  # sample size
+Sigma &lt;- .25^abs(outer(1:n,1:n,"-"))
+Sigma &lt;- as.spam( Sigma, eps=1e-4)
+
+cholS &lt;- chol( Sigma)
+# cholS is the upper triangular part of the permutated matrix Sigma
+iord &lt;- ordering(cholS, inv=TRUE)
+
+R &lt;- as.spam(cholS)
+mvsample &lt;- ( array(rnorm(N*n),c(N,n)) %*% R)[,iord]
+# It is often better to order the sample than the matrix
+# R itself.
+
+# 'mvsample' is of class 'spam'. We need to transform it to a
+# regular matrix, as there is no method 'var' for 'spam' (should there?).
+norm( var( as.matrix( mvsample)) - Sigma, type='m')
+norm( t(R) %*% R - Sigma)
+
+
+# To speed up factorizations, memory allocations can be optimized:
+opt &lt;- summary(cholS)
+# here, some elements of Sigma may be changed...
+cholS &lt;- chol( Sigma, memory=list(nnzR=opt$nnzR,nnzcolindices=opt$nnzc))
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>spam</em> version 2.11-3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

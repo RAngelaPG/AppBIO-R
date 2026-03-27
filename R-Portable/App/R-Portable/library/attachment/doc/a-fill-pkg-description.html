@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Sébastien Rochette" />
+
+<meta name="date" content="2025-03-14" />
+
+<title>a-Help during package development</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">a-Help during package development</h1>
+<h4 class="author">Sébastien Rochette</h4>
+<h4 class="date">2025-03-14</h4>
+
+
+
+<script type="text/javascript">
+$(document).ready(function () {
+  window.initializeCodeFolding("show" === "show");
+});
+</script>
+<div id="load-package-attachment" class="section level2">
+<h2>Load package {attachment}</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(attachment)</span></code></pre></div>
+</div>
+<div id="use-devdev_history.r" class="section level2">
+<h2>Use “dev/dev_history.R”</h2>
+<p>When building your package, create a file called “dev_history.R” in a
+“dev/” directory. You will store all “manual” calls to
+<code>devtools::xxx</code> and <code>usethis::xxx</code> in this
+script.<br />
+Its first line should be :</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_build_ignore</span>(<span class="st">&quot;dev&quot;</span>)</span></code></pre></div>
+<p>You can then call {attachment} in this file to help you build your
+description file.</p>
+</div>
+<div id="fill-your-description-file" class="section level2">
+<h2>Fill your DESCRIPTION file</h2>
+<p>What you really want is to fill and update your description file
+along with the modifications of your documentation. Indeed, only this
+function will really be called in your “dev/dev_history.R”.<br />
+Run <code>attachment::att_amend_desc()</code> each time before
+<code>devtools::check()</code>, this will save you some warnings and
+errors !</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">att_amend_desc</span>()</span></code></pre></div>
+</div>
+<div id="change-default-parameters" class="section level2">
+<h2>Change default parameters</h2>
+<p>We recommend to store the {attachment} command in a
+“dev/dev_history.R” file in your package, so that you can update the
+parameters if not using the default ones.</p>
+<div id="use-the-configuration-file" class="section level3">
+<h3>Use the configuration file</h3>
+<p>If you run <code>att_amend_desc()</code> directly in the console, it
+will use the last set of parameters run the last time you updated the
+configuration file.<br />
+Hence, you can change the command in your “dev/dev_history.R” with
+<code>update.config = TRUE</code>, so that next time, you can run
+<code>attachment::att_amend_desc()</code> directly in the console using
+these updated parameters.</p>
+</div>
+<div id="ignore-some-of-the-dependencies-automatically-detected" class="section level3">
+<h3>Ignore some of the dependencies automatically detected</h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">att_amend_desc</span>(<span class="at">pkg_ignore =</span> <span class="fu">c</span>(<span class="st">&quot;fakepackage.to_ignore&quot;</span>, <span class="st">&quot;other.package&quot;</span>), <span class="at">update.config =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+</div>
+<div id="add-extra-suggests-dependencies" class="section level3">
+<h3>Add extra <code>Suggests</code> dependencies</h3>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">att_amend_desc</span>(<span class="at">extra.suggests =</span> <span class="fu">c</span>(<span class="st">&quot;suggested.package.not.detected&quot;</span>), <span class="at">update.config =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+</div>
+<div id="move-detected-dependencies-from-imports-to-suggests" class="section level3">
+<h3>Move detected dependencies from <code>Imports</code> to
+<code>Suggests</code></h3>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">att_amend_desc</span>(<span class="at">pkg_ignore =</span> <span class="fu">c</span>(<span class="st">&quot;package.to.move&quot;</span>), <span class="at">extra.suggests =</span> <span class="fu">c</span>(<span class="st">&quot;package.to.move&quot;</span>), <span class="at">update.config =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<p>Next time, you can run <code>attachment::att_amend_desc()</code>
+without any parameters, it will use the config file.</p>
+</div>
+</div>
+<div id="a-package-was-not-detected-by-att_amend_desc" class="section level2">
+<h2>A package was not detected by <code>att_amend_desc</code></h2>
+<div id="i-have-a-rmarkdown-file-quarto-file-in-my-inst-directory" class="section level3">
+<h3>I have a Rmarkdown file / Quarto file in my “inst/” directory</h3>
+<p>In your package, you can have a wrapper around
+<code>knitr::knit()</code> with a specific template that you store in
+“inst/”. In this case, {attachment} will not detect if there are
+important dependencies that you used inside your notebook file that are
+necessary for your package to work properly. Indeed, we can not
+anticipate if dependencies listed in files in “inst/” need to be in
+“Imports”, “Suggests”, or not listed, depending on your use of these
+files.</p>
+<p>For instance, I have a notebook file “inst/my_template.Rmd” as
+follows, with {bookdown} being used only there in my package:</p>
+<pre><code>---
+title: &quot;My Super template&quot;
+author: &quot;John Doe&quot;
+date: &quot;2025-03-14&quot;
+output: bookdown::html_document2
+---
+
+# First title
+
+My text here.</code></pre>
+<p><em>Suggests</em> - If I want to present this template in an example
+only, {bookdown} should be listed in “Suggests”. Then I can run this
+once:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">att_amend_desc</span>(<span class="at">extra.suggests =</span> <span class="fu">c</span>(<span class="st">&quot;bookdown&quot;</span>), <span class="at">update.config =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<p><em>Imports</em> - If I want to knit it inside a major function of my
+package, it is recommended to declare the dependency in the ‘roxygen’
+documentation of this function.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co">#&#39; Knit my internal template</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="co">#&#39;</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co">#&#39; @importFrom bookdown html_document2</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&#39; @export</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="co">#&#39;</span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>my_knit <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>  rmarkdown<span class="sc">::</span><span class="fu">render</span>(<span class="fu">system.file</span>(<span class="st">&quot;my_template.Rmd&quot;</span>, <span class="at">package =</span> <span class="st">&quot;my.package&quot;</span>))</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>}</span></code></pre></div>
+<p>Then I can directly run <code>att_amend_desc()</code>.</p>
+<p>In the <em>Imports</em> case, if for any reason I decide to delete
+this <code>my_knit()</code> function, then the {bookdown} dependency
+won’t be needed anymore, and {attachment} will automatically remove it
+with the next <code>att_amend_desc()</code></p>
+</div>
+</div>
+<div id="example-on-a-fake-package" class="section level2">
+<h2>Example on a fake package</h2>
+<p>If you are running this inside a Rmd like here, you may need
+parameter <code>inside_rmd = TRUE</code>.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># Copy package in a temporary directory</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>tmpdir <span class="ot">&lt;-</span> <span class="fu">tempfile</span>(<span class="at">pattern =</span> <span class="st">&quot;insidermd&quot;</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="fu">dir.create</span>(tmpdir)</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="fu">file.copy</span>(<span class="fu">system.file</span>(<span class="st">&quot;dummypackage&quot;</span>,<span class="at">package =</span> <span class="st">&quot;attachment&quot;</span>), tmpdir, <span class="at">recursive =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>dummypackage <span class="ot">&lt;-</span> <span class="fu">file.path</span>(tmpdir, <span class="st">&quot;dummypackage&quot;</span>)</span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co"># browseURL(dummypackage)</span></span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="fu">att_amend_desc</span>(<span class="at">path =</span> dummypackage, <span class="at">inside_rmd =</span> <span class="cn">TRUE</span>, <span class="at">update.config =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co">#&gt; &#39;update.config&#39; was set to TRUE, hence, &#39;use.config&#39; was forced to FALSE</span></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt; Saving attachment parameters to yaml config file</span></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co">#&gt; Updating dummypackage documentation</span></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="co">#&gt; Setting `RoxygenNote` to &quot;7.3.2&quot;</span></span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="co">#&gt; Writing &#39;NAMESPACE&#39;</span></span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a><span class="co">#&gt; ℹ Loading dummypackage</span></span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="co">#&gt; Writing &#39;NAMESPACE&#39;</span></span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="co">#&gt; ℹ Loading dummypackage</span></span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a><span class="co">#&gt; Package(s) Rcpp is(are) in category &#39;LinkingTo&#39;. Check your Description file to be sure it is really what you want.</span></span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a></span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a><span class="co"># Clean temp files after this example</span></span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a><span class="fu">unlink</span>(tmpdir, <span class="at">recursive =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+</div>
+<div id="propose-content-for-remotes-field" class="section level2">
+<h2>Propose content for “Remotes” field</h2>
+<p><code>set_remotes_to_desc()</code> adds packages that were installed
+from other source than CRAN to <code>Remotes:</code> field in
+DESCRIPTION.</p>
+<p>For instance:</p>
+<ul>
+<li>For GitHub: <code>Remotes: thinkr-open/attachment</code></li>
+<li>For GitLab: <code>Remotes: gitlab::jimhester/covr</code></li>
+<li>For Git:
+<code>Remotes: git::https://theurl/package_git.git</code></li>
+<li>For local package: <code>Remotes: local::c:\mylocalpackage</code> or
+<code>Remotes: local::subdir/mylocalpackage</code></li>
+<li>For Bioconductor: <code>Remotes: bioc::3.3/package_bioc</code></li>
+<li>For r-universe: Show a message to inform how to use r-universe with
+<code>options</code>, like
+<code>r-universe: need to set options to repos=&quot;https://thinkr-open.r-universe.dev&quot;</code></li>
+</ul>
+<p>You may want to run it after <code>att_amend_desc()</code>.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">att_amend_desc</span>(dummypackage) <span class="sc">%&gt;%</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>  <span class="fu">set_remotes_to_desc</span>()</span></code></pre></div>
+<p>If you only want to find if packages were installed from other source
+than CRAN, without amending DESCRIPTION, you can use
+<code>find_remotes()</code>.</p>
+<p>You can use it on a vector of packages names</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">find_remotes</span>(<span class="at">pkg =</span> <span class="fu">c</span>(<span class="st">&quot;attachment&quot;</span>, <span class="st">&quot;desc&quot;</span>, <span class="st">&quot;glue&quot;</span>))</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="co">#&gt; $attachment</span></span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="co">#&gt; local maybe ? </span></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a><span class="co">#&gt;            NA</span></span></code></pre></div>
+<p>You may also want to combine it to
+<code>att_from_description()</code></p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">att_from_description</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>  <span class="fu">find_remotes</span>()</span></code></pre></div>
+<p>If you want to get the complete list of packages installed on your
+computer with non-CRAN repositories:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="fu">find_remotes</span>(<span class="fu">list.dirs</span>(<span class="fu">.libPaths</span>(), <span class="at">full.names =</span> <span class="cn">FALSE</span>, <span class="at">recursive =</span> <span class="cn">FALSE</span>))</span></code></pre></div>
+<p>You can test it if you install {fusen} from GitHub or r-universe:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="co"># From GitHub</span></span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">&quot;ThinkR-open/fusen&quot;</span>,</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>                        <span class="at">quiet =</span> <span class="cn">TRUE</span>, <span class="at">upgrade =</span> <span class="st">&quot;never&quot;</span>)</span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>attachment<span class="sc">::</span><span class="fu">find_remotes</span>(<span class="st">&quot;fusen&quot;</span>)</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="co">#&gt; $fusen</span></span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="co">#&gt; [1] &quot;ThinkR-open/fusen&quot;</span></span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a></span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a><span class="co"># From r-universe as default repos</span></span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">&quot;fusen&quot;</span>, <span class="at">repos =</span> <span class="st">&quot;https://thinkr-open.r-universe.dev&quot;</span>)</span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a>attachment<span class="sc">::</span><span class="fu">find_remotes</span>(<span class="st">&quot;fusen&quot;</span>)</span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a><span class="co">#&gt; r-universe: need to set options to repos=&quot;https://thinkr-open.r-universe.dev&quot; </span></span></code></pre></div>
+</div>
+<div id="create-a-file-for-package-installation" class="section level2">
+<h2>Create a file for package installation</h2>
+<p>Once your package is finished. Well, is a package ever finished ?
+Let’s say, once you want to release a version of your package, you may
+want to deliver the list of dependencies your users will have to
+install. A little script like
+<code>install.packages(c(...all dep...))</code> would be so nice :</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="fu">create_dependencies_file</span>()</span></code></pre></div>
+<p>This file will be placed in <code>inst/dependencies.R</code> and
+contains :</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="co"># No Remotes ----</span></span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a><span class="co"># remotes::install_github(&quot;ThinkR-open/fcuk&quot;)</span></span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a><span class="co"># Attachments ----</span></span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a>to_install <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;covr&quot;</span>, <span class="st">&quot;desc&quot;</span>, <span class="st">&quot;devtools&quot;</span>, <span class="st">&quot;glue&quot;</span>, <span class="st">&quot;knitr&quot;</span>, <span class="st">&quot;magrittr&quot;</span>, <span class="st">&quot;rmarkdown&quot;</span>, <span class="st">&quot;stats&quot;</span>, <span class="st">&quot;stringr&quot;</span>, <span class="st">&quot;testthat&quot;</span>, <span class="st">&quot;utils&quot;</span>)</span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> to_install) {</span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a>  <span class="fu">message</span>(<span class="fu">paste</span>(<span class="st">&quot;looking for &quot;</span>, i))</span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(i)) {</span>
+<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a>    <span class="fu">message</span>(<span class="fu">paste</span>(<span class="st">&quot;     installing&quot;</span>, i))</span>
+<span id="cb17-9"><a href="#cb17-9" tabindex="-1"></a>    <span class="fu">install.packages</span>(i)</span>
+<span id="cb17-10"><a href="#cb17-10" tabindex="-1"></a>  }</span>
+<span id="cb17-11"><a href="#cb17-11" tabindex="-1"></a>}</span></code></pre></div>
+</div>
+<div id="other-possibilities" class="section level2">
+<h2>Other possibilities</h2>
+<p>Of course, you can also use {attachment} out of a package to list all
+package dependencies of R scripts using
+<code>att_from_rscripts()</code>, Rmd files using
+<code>att_from_rmds()</code> or examples from R scripts using
+<code>att_from_examples()</code>.</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a>dummypackage <span class="ot">&lt;-</span> <span class="fu">system.file</span>(<span class="st">&quot;dummypackage&quot;</span>, <span class="at">package =</span> <span class="st">&quot;attachment&quot;</span>)</span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a><span class="fu">att_from_rscripts</span>(<span class="at">path =</span> <span class="fu">file.path</span>(dummypackage, <span class="st">&quot;R&quot;</span>))</span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a><span class="co">#&gt; [1] &quot;stats&quot;</span></span>
+<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a><span class="fu">att_from_rmds</span>(<span class="at">path =</span> <span class="fu">file.path</span>(dummypackage, <span class="st">&quot;vignettes&quot;</span>), <span class="at">inside_rmd =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a><span class="co">#&gt; [1] &quot;knitr&quot;     &quot;rmarkdown&quot; &quot;glue&quot;</span></span>
+<span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a><span class="fu">att_from_examples</span>(<span class="at">dir.r =</span> <span class="fu">file.path</span>(dummypackage, <span class="st">&quot;R&quot;</span>))</span>
+<span id="cb18-8"><a href="#cb18-8" tabindex="-1"></a><span class="co">#&gt; [1] &quot;utils&quot;   &quot;stringr&quot;</span></span></code></pre></div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

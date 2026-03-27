@@ -1,0 +1,92 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Post-hoc comparisons to a control or reference group.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for posthoc_vsRef {grafify}"><tr><td>posthoc_vsRef {grafify}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Post-hoc comparisons to a control or reference group.</h2>
+
+<h3>Description</h3>
+
+<p>This function is a wrapper based on <code><a href="../../emmeans/help/emmeans.html">emmeans</a></code>, and needs a ordinary linear model produced by <code><a href="../../grafify/help/simple_model.html">simple_model</a></code> or a mixed effects model produced by <code><a href="../../grafify/help/mixed_model.html">mixed_model</a></code> or <code><a href="../../grafify/help/mixed_model_slopes.html">mixed_model_slopes</a></code> (or generated directly with <code>lm</code>,  <code>lme4</code> or <code>lmerTest</code> calls). It also needs to know the fixed factor(s), which should match those in the model and data table.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+posthoc_vsRef(Model, Fixed_Factor, Ref_Level = 1, P_Adj = "fdr", Factor, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>Model</code></td>
+<td>
+<p>a model object fit using <code><a href="../../grafify/help/simple_model.html">simple_model</a></code> or <code><a href="../../grafify/help/mixed_model.html">mixed_model</a></code> or related.</p>
+</td></tr>
+<tr valign="top"><td><code>Fixed_Factor</code></td>
+<td>
+<p>Fixed_Factor one or  more categorical variables, provided as a vector (e.g., c(&quot;A&quot;, &quot;B&quot;)), whose levels you wish to compare pairwise. Names of Fixed_Factor should match Fixed_Factor used to fit the model. When more than one factor is provided e.g. <code>Fixed_factor = c("A", "B")</code>, this function passes this on as <code>specs = A|B</code> (note the vertical | between the two Fixed_Factor) to <code><a href="../../emmeans/help/emmeans.html">emmeans</a></code>. The specification internally is set to <code>specs = trt.vs.ctrl, Ref_Level = 1</code> to compare each group in A to the reference first group in A, separately at each level of B.</p>
+</td></tr>
+<tr valign="top"><td><code>Ref_Level</code></td>
+<td>
+<p>the level within that factor to be considered the reference or control to compare other levels to (to be provided as a number - by default R orders levels alphabetically); default <code>Ref_Level = 1</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>P_Adj</code></td>
+<td>
+<p>method for correcting P values for multiple comparisons. Default is set to false discovery rate (&quot;fdr&quot;), can be changed to &quot;none&quot;, &quot;tukey&quot;, &quot;bonferroni&quot;, &quot;sidak&quot; (in quotes). See Interaction analysis in emmeans in the <a href="https://CRAN.R-project.org/package=emmeans">manual</a> for <code>emmeans</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>Factor</code></td>
+<td>
+<p>old argument name for <code>Fixed_Factor</code>; retained for backward compatibility.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>additional arguments for <code><a href="../../emmeans/help/emmeans.html">emmeans</a></code> such as <code>lmer.df</code> or others. See help for sophisticated models in <a href="https://CRAN.R-project.org/package=emmeans">emmeans</a>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The function will generate <a href="https://CRAN.R-project.org/package=emmeans">treatment vs control type of comparisons</a> (as described in Comparisons and contrasts in emmeans), i.e. comparison of each level of a factor to a reference level, which is set by default to the first level in the factor (<code>Ref_Level = 1</code>).
+By default, P values are corrected by the FDR method (which can be changed). If the model was fit by transforming the quantitative response variable using &quot;log&quot;, &quot;logit&quot;, &quot;sqrt&quot; etc., results will still be on the original scale, i.e. <code>type = "response"</code> is the default; data will be back-transformed (check results to confirm this), and for log or logit see Transformations and link functions in emmeans, <a href="https://CRAN.R-project.org/package=emmeans">ratios will be compared</a>.
+The first part of the <code><a href="../../emmeans/help/emmeans.html">emmeans</a></code> results has the estimated marginal means, SE and CI (<code>$emmeans</code>), which are generated from the fitted model, and <strong>not</strong> the original data table. The second part has the results of the comparisons (<code>$contrasts</code>).
+</p>
+
+
+<h3>Value</h3>
+
+<p>returns an &quot;emm_list&quot; object containing contrasts and emmeans through  <code><a href="../../emmeans/help/emmeans.html">emmeans</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+#make linear models first
+DoublMod &lt;- simple_model(data = data_doubling_time,
+Y_value =  "Doubling_time", 
+Fixed_Factor =  "Student") 
+
+CholMod &lt;- mixed_model(data = data_cholesterol, 
+Y_value =  "Cholesterol", 
+Fixed_Factor = c("Hospital", "Treatment"),
+Random_Factor = "Subject") 
+
+#to compare all students with student #9
+posthoc_vsRef(Model = DoublMod, 
+Fixed_Factor = "Student", Ref_Level = 9)
+
+#for comparison between hospital_a to every other hospital, separately at levels of Treatment
+posthoc_vsRef(Model = CholMod, 
+Fixed_Factor = c("Hospital", "Treatment"), Ref_Level = 1)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>grafify</em> version 5.1.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

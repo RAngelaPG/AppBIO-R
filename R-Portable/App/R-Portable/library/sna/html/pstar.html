@@ -1,0 +1,201 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Fit a p*/ERG Model Using a Logistic Approximation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for pstar {sna}"><tr><td>pstar {sna}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Fit a p*/ERG Model Using a Logistic Approximation </h2>
+
+<h3>Description</h3>
+
+<p>Fits a p*/ERG model to the graph in <code>dat</code> containing the effects listed in <code>effects</code>.  The result is returned as a <code><a href="../../stats/html/glm.html">glm</a></code> object.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+pstar(dat, effects=c("choice", "mutuality", "density", "reciprocity",
+    "stransitivity", "wtransitivity", "stranstri",  "wtranstri", 
+    "outdegree", "indegree", "betweenness", "closeness", 
+    "degcentralization", "betcentralization", "clocentralization",
+    "connectedness", "hierarchy", "lubness", "efficiency"), 
+    attr=NULL, memb=NULL, diag=FALSE, mode="digraph")
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>dat</code></td>
+<td>
+<p> a single graph </p>
+</td></tr>
+<tr valign="top"><td><code>effects</code></td>
+<td>
+<p> a vector of strings indicating which effects should be fit. </p>
+</td></tr>
+<tr valign="top"><td><code>attr</code></td>
+<td>
+<p> a matrix whose columns contain individual attributes (one row per vertex) whose differences should be used as supplemental predictors. </p>
+</td></tr>
+<tr valign="top"><td><code>memb</code></td>
+<td>
+<p> a matrix whose columns contain group memberships whose categorical similarities (same group/not same group) should be used as supplemental predictors.</p>
+</td></tr>
+<tr valign="top"><td><code>diag</code></td>
+<td>
+<p> a boolean indicating whether or not diagonal entries (loops) should be counted as meaningful data. </p>
+</td></tr>
+<tr valign="top"><td><code>mode</code></td>
+<td>
+ <p><code>"digraph"</code> if <code>dat</code> is directed, else <code>"graph"</code> </p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The Exponential Family-Random Graph Model (ERGM) family, referred to as &ldquo;p*&rdquo; in older literature, is an exponential family specification for network data.  In this specification, it is assumed that 
+</p>
+<p style="text-align: center;"><i>
+p(G=g) propto exp(beta_0 gamma_0(g) + beta_1 gamma_1(g) + &hellip;)</i></p>
+
+<p>for all g, where the betas represent real coefficients and the gammas represent functions of g.  Unfortunately, the unknown normalizing factor in the above expression makes evaluation difficult in the general case.  One solution to this problem is to operate instead on the edgewise log odds; in this case, the ERGM/p* MLE can be approximated by a logistic regression of each edge on the <em>differences</em> in the gamma scores induced by the presence and absence of said edge in the graph (conditional on all other edges).  It is this approximation (known as autologistic regression, or maximum pseudo-likelihood estimation) that is employed here.  
+</p>
+<p>Note that ERGM modeling is considerably more advanced than it was when this function was created, and estimation by MPLE is now used only in special cases.  Guidelines for model specification and assessment have also evolved.  The <code>ergm</code> package within the <code>statnet</code> library reflects the current state of the art, and use of the <code>ergm()</code> function in said library is highly recommended.  This function is retained primarily as a legacy tool, for users who are nostalgic for 2000-vintage ERGM (&ldquo;p*&rdquo;) modeling experience.  Caveat emptor.
+</p>
+<p>Using the <code>effects</code> argument, a range of different potential parameters can be estimated.  The network measure associated with each is, in turn, the edge-perturbed difference in:
+</p>
+
+<ol>
+<li> <p><code>choice</code>: the number of edges in the graph (acts as a constant)
+</p>
+</li>
+<li> <p><code>mutuality</code>: the number of reciprocated dyads in the graph
+</p>
+</li>
+<li> <p><code>density</code>: the density of the graph
+</p>
+</li>
+<li> <p><code>reciprocity</code>: the edgewise reciprocity of the graph
+</p>
+</li>
+<li> <p><code>stransitivity</code>: the strong transitivity of the graph
+</p>
+</li>
+<li> <p><code>wtransitivity</code>: the weak transitivity of the graph
+</p>
+</li>
+<li> <p><code>stranstri</code>: the number of strongly transitive triads in the graph
+</p>
+</li>
+<li> <p><code>wtranstri</code>: the number of weakly transitive triads in the graph
+</p>
+</li>
+<li> <p><code>outdegree</code>: the outdegree of each actor (|V| parameters)
+</p>
+</li>
+<li> <p><code>indegree</code>: the indegree of each actor (|V| parameters)
+</p>
+</li>
+<li> <p><code>betweenness</code>: the betweenness of each actor (|V| parameters)
+</p>
+</li>
+<li> <p><code>closeness</code>: the closeness of each actor (|V| parameters)
+</p>
+</li>
+<li> <p><code>degcentralization</code>: the Freeman degree centralization of the graph
+</p>
+</li>
+<li> <p><code>betcentralization</code>: the betweenness centralization of the graph
+</p>
+</li>
+<li> <p><code>clocentralization</code>: the closeness centralization of the graph
+</p>
+</li>
+<li> <p><code>connectedness</code>: the Krackhardt connectedness of the graph
+</p>
+</li>
+<li> <p><code>hierarchy</code>: the Krackhardt hierarchy of the graph
+</p>
+</li>
+<li> <p><code>efficiency</code>: the Krackhardt efficiency of the graph
+</p>
+</li>
+<li> <p><code>lubness</code>: the Krackhardt LUBness of the graph
+</p>
+</li></ol>
+
+<p>(Note that some of these do differ somewhat from the common specifications employed in the older p* literature, e.g. quantities such as density and reciprocity are computed as per the <code><a href="../../sna/help/gden.html">gden</a></code> and <code><a href="../../sna/help/grecip.html">grecip</a></code> functions rather than via the unnormalized &quot;choice&quot; and &quot;mutual&quot; quantities that were generally used.)  <em>Please do not attempt to use all effects simultaneously!!!</em>  In addition to the above, the user may specify a matrix of individual attributes whose absolute dyadic differences are to be used as predictors, as well as a matrix of individual memberships whose dyadic categorical similarities (same/different) are used in the same manner.
+</p>
+<p>Although the ERGM framework is quite versatile in its ability to accommodate a range of structural predictors, it should be noted that the <em>substantial</em> collinearity of many of the terms provided here can lead to very unstable model fits.  Measurement and specification errors compound this problem, as does the use of the MPLE; thus, it is somewhat risky to use <code>pstar</code> in an exploratory capacity (i.e., when there is little prior knowledge to constrain choice of parameters).  While raw instability due to multicollinearity should decline with graph size, improper specification will still result in biased coefficient estimates so long as an omitted predictor correlates with an included predictor.  Moreover, many models created using these effects are at risk of degeneracy, which is difficult to assess without simulation-based model assessment.  Caution is advised - or, better, use of the <code>ergm</code> package.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code><a href="../../stats/html/glm.html">glm</a></code> object
+</p>
+
+
+<h3>WARNING </h3>
+
+<p>Estimation of p* models by maximum pseudo-likelihood is now known to be a dangerous practice.  Use at your own risk.</p>
+
+
+<h3>Note</h3>
+
+<p> This is a legacy function - use of the <code>ergm</code> package is now strongly advised.</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Carter T. Butts <a href="mailto:buttsc@uci.edu">buttsc@uci.edu</a> </p>
+
+
+<h3>References</h3>
+
+<p> Anderson, C.; Wasserman, S.; and Crouch, B. (1999).  &ldquo;A p* Primer:  Logit Models for Social Networks.  <em>Social Networks,</em> 21,37-66.
+</p>
+<p>Holland, P.W., and Leinhardt, S. (1981).  &ldquo;An Exponential Family of Probability Distributions for Directed Graphs.&rdquo; <em>Journal of the American statistical Association</em>, 81, 51-67.
+</p>
+<p>Wasserman, S., and Pattison, P. (1996).  &ldquo;Logit Models and Logistic Regressions for Social Networks:  I.  An introduction to Markov Graphs and p*.&rdquo;  <em>Psychometrika,</em> 60, 401-426.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../sna/help/eval.edgeperturbation.html">eval.edgeperturbation</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+#Create a graph with expansiveness and popularity effects
+in.str&lt;-rnorm(20,0,3)
+out.str&lt;-rnorm(20,0,3)
+tie.str&lt;-outer(out.str,in.str,"+")
+tie.p&lt;-apply(tie.str,c(1,2),function(a){1/(1+exp(-a))})
+g&lt;-rgraph(20,tprob=tie.p)
+
+#Fit a model with expansiveness only
+p1&lt;-pstar(g,effects="outdegree")
+#Fit a model with expansiveness and popularity
+p2&lt;-pstar(g,effects=c("outdegree","indegree"))
+#Fit a model with expansiveness, popularity, and mutuality
+p3&lt;-pstar(g,effects=c("outdegree","indegree","mutuality"))
+
+#Compare the model AICs -- use ONLY as heuristics!!!
+extractAIC(p1)
+extractAIC(p2)
+extractAIC(p3)
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sna</em> version 2.8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

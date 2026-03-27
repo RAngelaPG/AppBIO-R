@@ -1,0 +1,201 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Calculate imputation rules</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for snp.imputation {snpStats}"><tr><td>snp.imputation {snpStats}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Calculate imputation rules</h2>
+
+<h3>Description</h3>
+
+<p>Given two set of SNPs typed in the same subjects, this function
+calculates rules which can be used to impute one set
+from the other in a subsequent sample. The function can also calculate
+rules for imputing each SNP in a single dataset from other SNPs in the
+same dataset
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+snp.imputation(X, Y, pos.X, pos.Y, phase=FALSE, try=50, stopping=c(0.95, 4, 0.05),
+               use.hap=c(1.0, 0.0), em.cntrl=c(50,0.01,10,0.01), minA=5)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>X</code></td>
+<td>
+<p>An object of class <code>"SnpMatrix"</code> or
+<code>"XSnpMatrix"</code> containing observations
+of the SNPs to be used for imputation (&quot;predictor SNPs&quot;)</p>
+</td></tr>
+<tr valign="top"><td><code>Y</code></td>
+<td>
+<p>An object of same class as <code>X</code> containing observations
+of the SNPs to be imputed in a future sample (&quot;target SNPs&quot;). If this
+argument is missing, then target SNPs are also drawn from <code>X</code></p>
+</td></tr>
+<tr valign="top"><td><code>pos.X</code></td>
+<td>
+<p>The positions of the  predictor SNPs. Can be missing if
+there is no <code>Y</code> argument and the columns of <code>X</code> are in
+genome position order</p>
+</td></tr>
+<tr valign="top"><td><code>pos.Y</code></td>
+<td>
+<p>The positions of the target SNPs. Only required when
+a <code>Y</code> argument is present</p>
+</td></tr>
+<tr valign="top"><td><code>phase</code></td>
+<td>
+<p>See &quot;Details&quot; below</p>
+</td></tr>
+<tr valign="top"><td><code>try</code></td>
+<td>
+<p>The number of potential predictor SNPs to be
+considered in the stepwise regression procedure around each target
+SNP . The nearest <code>try</code> predictor SNPs to each target SNP
+will be considered</p>
+</td></tr>
+<tr valign="top"><td><code>stopping</code></td>
+<td>
+<p>Parameters of the stopping rule for the stepwise
+regression (see below)</p>
+</td></tr>
+<tr valign="top"><td><code>use.hap</code></td>
+<td>
+<p>Parameters to control use of the haplotype imputation
+method (see below)</p>
+</td></tr>
+<tr valign="top"><td><code>em.cntrl</code></td>
+<td>
+<p>Parameters to control test for convergence of EM
+algorithm for fitting phased haplotypes (see below)</p>
+</td></tr>
+<tr valign="top"><td><code>minA</code></td>
+<td>
+<p>A minimum data quantity measure for estimating pairwise
+linkage disequilibrium (see below)</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The routine first carries out a series of step-wise least-square
+regression analyses in
+which each Y SNP is regressed on the nearest <code>try</code> predictor (X)
+SNPs. If
+<code>phase</code> is <code>TRUE</code>, the regressions will be calculated at the
+chromosome (haplotype) level, variances being simply  <i>p(1-p)</i> and
+covariances estimated from the estimated two-locus haplotypes (this option is
+not yet implemented). Otherwise, the
+analysis is carried out at the genotype level based on  
+conventional variance and covariance estimates using the
+<code>"pairwise.complete.obs"</code> missing value treatment
+(see <code><a href="../../stats/html/cor.html">cov</a></code>). New
+SNPs are added to the regression until either (a) the value of
+<i>R^2</i> exceeds the first parameter of <code>stopping</code>, (b) the
+number of &quot;tag&quot; SNPs has reached the maximum set in the second parameter of
+<code>stopping</code>, or (c) the change in <i>R^2</i> does not achieve the
+target set by the third parameter of <code>stopping</code>. If the third
+parameter of <code>stopping</code> is <code>NA</code>, this last test is replaced
+by a test for improvement in the Akaike information criterion
+(AIC).
+</p>
+<p>After choosing the set of &quot;tag&quot; SNPs in this way, a prediction
+rule is generated either by calculating phased haplotype frequencies,
+either (a) under a log-linear model for linkage disequilibrium with
+only first order association terms fitted, or (b) under the
+&quot;saturated&quot; model.  
+These methods do not differ if there is only
+one tag SNP but, otherwise,  choice between  methods is controlled
+by the  <code>use.hap</code> parameters. 
+If the prediction,  as measure by  <i>R^2</i> achieved with the
+log-linear smoothing model exceeds a
+threshold (the first parameter of <code>use.hap</code>)
+then this method is used. Otherwise, if the gain in <i>R^2</i>
+achieved by using the second method exceeds the second parameter of
+<code>use.hap</code>, then the second method is used.
+Current experience is that, the log-linear method is rarely
+preferred with reasonable choices for <code>use.hap</code>, and imputation
+is much faster when the second  method only is considered. 
+The current default ensures that this second method is used,
+but the other possibility might be considered if imputing
+from very small samples; however this code is not extensively tested
+and should be regarded as experimental.
+</p>
+<p>The argument <code>em.cntrl</code> controls convergence
+testing for the EM algorithm for fitting haplotype frequencies and the
+IPF algorithm for fitting the log-linear model. The
+first parameter is the maximum number of EM iterations, and the second
+parameter is the threshold for the change in log likelihood
+below which the iteration is judged to have converged. The third and
+fourth parameters give the maximum number of IPF iterations and the
+convergence tolerance. There should be no need to change the default
+values. 
+</p>
+<p>All SNPs selected for imputation must have sufficient data for
+estimating pairwise linkage disequilibrium with each other and with
+the target SNP. The statistic chosen is based on the four-fold tables
+of two-locus haplotype frequencies. If the frequencies in such a table
+are labelled <i>a, b, c</i> and <i>d</i> then, if <i>ad&gt;bc</i> then
+<i>t = min(a,d)</i> and, otherwise,  <i>t = min(b,c)</i>. The cell
+frequencies <i>t</i> must exceed <code>minA</code> for all pairwise
+comparisons.  
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class
+<code>"ImputationRules"</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>The <code>phase=TRUE</code> option is not yet implemented</p>
+
+
+<h3>Author(s)</h3>
+
+<p>David Clayton <a href="mailto:dc208@cam.ac.uk">dc208@cam.ac.uk</a></p>
+
+
+<h3>References</h3>
+
+<p>Chapman J.M., Cooper J.D., Todd J.A. and Clayton D.G. (2003)
+<em>Human Heredity</em>, <b>56</b>:18-31.
+</p>
+<p>Wallace, C. et al. (2010) <em>Nature Genetics</em>, <b>42</b>:68-71
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../snpStats/help/ImputationRules-class.html">ImputationRules-class</a></code>,
+<code><a href="../../snpStats/help/imputation.maf.html">imputation.maf</a></code>, <code><a href="../../snpStats/help/imputation.r2.html">imputation.r2</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Remove 5 SNPs from a datset and derive imputation rules for them
+data(for.exercise)
+sel &lt;- c(20, 1000, 2000, 3000, 5000)
+to.impute &lt;- snps.10[,sel]
+impute.from &lt;- snps.10[,-sel]
+pos.to &lt;- snp.support$position[sel]
+pos.fr &lt;- snp.support$position[-sel]
+imp &lt;- snp.imputation(impute.from, to.impute, pos.fr, pos.to)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>snpStats</em> version 1.44.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

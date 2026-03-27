@@ -1,0 +1,285 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: General case conversion</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for to_any_case {snakecase}"><tr><td>to_any_case {snakecase}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>General case conversion</h2>
+
+<h3>Description</h3>
+
+<p>Function to convert strings to any case
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+to_any_case(string, case = c("snake", "small_camel", "big_camel",
+  "screaming_snake", "parsed", "mixed", "lower_upper", "upper_lower",
+  "swap", "all_caps", "lower_camel", "upper_camel", "internal_parsing",
+  "none", "flip", "sentence", "random", "title"), abbreviations = NULL,
+  sep_in = "[^[:alnum:]]", parsing_option = 1,
+  transliterations = NULL, numerals = c("middle", "left", "right",
+  "asis", "tight"), sep_out = NULL, unique_sep = NULL,
+  empty_fill = NULL, prefix = "", postfix = "")
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>string</code></td>
+<td>
+<p>A string (for example names of a data frame).</p>
+</td></tr>
+<tr valign="top"><td><code>case</code></td>
+<td>
+<p>The desired target case, provided as one of the following:
+</p>
+
+<ul>
+<li><p>snake_case: <code>"snake"</code>
+</p>
+</li>
+<li><p>lowerCamel: <code>"lower_camel"</code> or <code>"small_camel"</code>
+</p>
+</li>
+<li><p>UpperCamel: <code>"upper_camel"</code> or <code>"big_camel"</code>
+</p>
+</li>
+<li><p>ALL_CAPS: <code>"all_caps"</code> or <code>"screaming_snake"</code>
+</p>
+</li>
+<li><p>lowerUPPER: <code>"lower_upper"</code>
+</p>
+</li>
+<li><p>UPPERlower: <code>"upper_lower"</code>
+</p>
+</li>
+<li><p>Sentence case: <code>"sentence"</code>
+</p>
+</li>
+<li><p>Title Case: <code>"title"</code> - This one is basically the same as sentence case, but in addition it is wrapped into <code>tools::toTitleCase</code> and any <code>abbreviations</code> are always turned into upper case.
+</p>
+</li></ul>
+
+<p>There are five &quot;special&quot; cases available:
+</p>
+
+<ul>
+<li><p><code>"parsed"</code>: This case is underlying all other cases. 
+Every substring a string consists
+of becomes surrounded by an underscore (depending on the <code>parsing_option</code>).
+Underscores at the start and end are trimmed. No lower or 
+upper case pattern from the input string are changed.
+</p>
+</li>
+<li><p><code>"mixed"</code>: Almost the same as <code>case = "parsed"</code>. Every letter which is not at the start
+or behind an underscore is turned into lowercase. If a substring is set as an abbreviation, it will be turned into upper case.
+</p>
+</li>
+<li><p><code>"swap"</code>: Upper case letters will be turned into lower case and vice versa. Also <code>case = "flip"</code> will work.
+Doesn't work with any of the other arguments except <code>unique_sep</code>, <code>empty_fill</code>, <code>prefix</code> and <code>postfix</code>.
+</p>
+</li>
+<li><p><code>"random"</code>: Each letter will be randomly turned into lower or upper case. Doesn't work with any of the other arguments except <code>unique_sep</code>, <code>empty_fill</code>, <code>prefix</code> and <code>postfix</code>.
+</p>
+</li>
+<li><p><code>"none"</code>: Neither parsing nor case conversion occur. This case might be helpful, when
+one wants to call the function for the quick usage of the other parameters.
+To suppress replacement of spaces to underscores set <code>sep_in = NULL</code>.
+Works with <code>sep_in</code>, <code>transliterations</code>, <code>sep_out</code>, <code>prefix</code>,
+<code>postfix</code>,
+<code>empty_fill</code> and <code>unique_sep</code>.
+</p>
+</li>
+<li><p><code>"internal_parsing"</code>: This case is returning the internal parsing
+(suppressing the internal protection mechanism), which means that alphanumeric characters will be surrounded by underscores.
+It should only be used in very rare use cases and is mainly implemented to showcase the internal workings of <code>to_any_case()</code>
+</p>
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>abbreviations</code></td>
+<td>
+<p>character. (Case insensitive) matched abbreviations are surrounded by underscores. In this way, they can get recognized by the parser. This is useful when e.g. <code>parsing_option</code> 1 is needed for the use case, but some abbreviations but some substrings would require <code>parsing_option</code> 2. Furthermore, this argument also specifies the formatting of abbreviations in the output for the cases title, mixed, lower and upper camel. E.g. for upper camel the first letter is always in upper case, but when the abbreviation is supplied in upper case, this will also be visible in the output.
+</p>
+<p>Use this feature with care: One letter abbreviations and abbreviations next to each other are hard to read and also not easy to parse for further processing.</p>
+</td></tr>
+<tr valign="top"><td><code>sep_in</code></td>
+<td>
+<p>(short for separator input) if character, is interpreted as a
+regular expression (wrapped internally into <code>stringr::regex()</code>). 
+The default value is a regular expression that matches any sequence of
+non-alphanumeric values. All matches will be replaced by underscores 
+(additionally to <code>"_"</code> and <code>" "</code>, for which this is always true, even
+if <code>NULL</code> is supplied). These underscores are used internally to split
+the strings into substrings and specify the word boundaries.</p>
+</td></tr>
+<tr valign="top"><td><code>parsing_option</code></td>
+<td>
+<p>An integer that will determine the parsing_option.
+</p>
+
+<ul>
+<li><p>1: <code>"RRRStudio" -&gt; "RRR_Studio"</code>
+</p>
+</li>
+<li><p>2: <code>"RRRStudio" -&gt; "RRRS_tudio"</code>
+</p>
+</li>
+<li><p>3: <code>"RRRStudio" -&gt; "RRRSStudio"</code>. This will become for example <code>"Rrrstudio"</code> when we convert to lower camel case.
+</p>
+</li>
+<li><p>-1, -2, -3: These <code>parsing_options</code>'s will suppress the conversion after non-alphanumeric values.
+</p>
+</li>
+<li><p>0: no parsing
+</p>
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>transliterations</code></td>
+<td>
+<p>A character vector (if not <code>NULL</code>). The entries of this argument
+need to be elements of <code>stringi::stri_trans_list()</code> (like &quot;Latin-ASCII&quot;, which is often useful) or names of lookup tables (currently only &quot;german&quot; is supported). In the order of the entries the letters of the input
+string will be transliterated via <code>stringi::stri_trans_general()</code> or replaced via the 
+matches of the lookup table. When named character elements are supplied as part of 'transliterations', anything that matches the names is replaced by the corresponding value.
+You should use this feature with care in case of <code>case = "parsed"</code>, <code>case = "internal_parsing"</code> and 
+<code>case = "none"</code>, since for upper case letters, which have transliterations/replacements
+of length 2, the second letter will be transliterated to lowercase, for example Oe, Ae, Ss, which
+might not always be what is intended. In this case you can make usage of the option to supply named elements and specify the transliterations yourself.</p>
+</td></tr>
+<tr valign="top"><td><code>numerals</code></td>
+<td>
+<p>A character specifying the alignment of numerals (<code>"middle"</code>, <code>left</code>, <code>right</code>, <code>asis</code> or <code>tight</code>). I.e. <code>numerals = "left"</code> ensures that no output separator is in front of a digit.</p>
+</td></tr>
+<tr valign="top"><td><code>sep_out</code></td>
+<td>
+<p>(short for separator output) String that will be used as separator. The defaults are <code>"_"</code> 
+and <code>""</code>, regarding the specified <code>case</code>. When <code>length(sep_out) &gt; 1</code>, the last element of <code>sep_out</code> gets recycled and separators are incorporated per string according to their order.</p>
+</td></tr>
+<tr valign="top"><td><code>unique_sep</code></td>
+<td>
+<p>A string. If not <code>NULL</code>, then duplicated names will get 
+a suffix integer
+in the order of their appearance. The suffix is separated by the supplied string
+to this argument.</p>
+</td></tr>
+<tr valign="top"><td><code>empty_fill</code></td>
+<td>
+<p>A string. If it is supplied, then each entry that matches &quot;&quot; will be replaced
+by the supplied string to this argument.</p>
+</td></tr>
+<tr valign="top"><td><code>prefix</code></td>
+<td>
+<p>prefix (string).</p>
+</td></tr>
+<tr valign="top"><td><code>postfix</code></td>
+<td>
+<p>postfix (string).</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A character vector according the specified parameters above.
+</p>
+
+
+<h3>Note</h3>
+
+<p><code>to_any_case()</code> is vectorised over <code>string</code>, <code>sep_in</code>, <code>sep_out</code>,
+<code>empty_fill</code>, <code>prefix</code> and <code>postfix</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Malte Grosser, <a href="mailto:malte.grosser@gmail.com">malte.grosser@gmail.com</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><a href="https://github.com/Tazinho/snakecase">snakecase on github</a> or 
+<code><a href="../../snakecase/help/caseconverter.html">caseconverter</a></code> for some handy shortcuts.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+### abbreviations
+to_snake_case(c("HHcity", "newUSElections"), abbreviations = c("HH", "US"))
+to_upper_camel_case("succesfullGMBH", abbreviations = "GmbH")
+to_title_case("succesfullGMBH", abbreviations = "GmbH")
+
+### sep_in (input separator)
+string &lt;- "R.St\u00FCdio: v.1.0.143"
+to_any_case(string)
+to_any_case(string, sep_in = ":|\\.")
+to_any_case(string, sep_in = ":|(?&lt;!\\d)\\.")
+            
+### parsing_option
+# the default option makes no sense in this setting
+to_parsed_case("HAMBURGcity", parsing_option = 1)
+# so the second parsing option is the way to address this example
+to_parsed_case("HAMBURGcity", parsing_option = 2)
+# By default (option 1) characters are converted after non alpha numeric characters.
+# To suppress this behaviour add a minus to the parsing_option
+to_upper_camel_case("lookBehindThe.dot", parsing_option = -1)
+# For some exotic cases parsing option 3 might be of interest
+to_parsed_case("PARSingOption3", parsing_option = 3)
+# There may be reasons to suppress the parsing
+to_any_case("HAMBURGcity", parsing_option = 0)
+
+### transliterations
+to_any_case("\u00E4ngstlicher Has\u00EA", transliterations = c("german", "Latin-ASCII"))
+
+### case
+strings &lt;- c("this Is a Strange_string", "AND THIS ANOTHER_One")
+to_any_case(strings, case = "snake")
+to_any_case(strings, case = "lower_camel") # same as "small_camel"
+to_any_case(strings, case = "upper_camel") # same as "big_camel"
+to_any_case(strings, case = "all_caps") # same as "screaming_snake"
+to_any_case(strings, case = "lower_upper")
+to_any_case(strings, case = "upper_lower")
+to_any_case(strings, case = "sentence")
+to_any_case(strings, case = "title")
+to_any_case(strings, case = "parsed")
+to_any_case(strings, case = "mixed")
+to_any_case(strings, case = "swap")
+to_any_case(strings, case = "random")
+to_any_case(strings, case = "none")
+to_any_case(strings, case = "internal_parsing")
+
+### numerals
+to_snake_case("species42value 23month 7-8", numerals = "asis")
+to_snake_case("species42value 23month 7-8", numerals = "left")
+to_snake_case("species42value 23month 7-8", numerals = "right")
+to_snake_case("species42value 23month 7-8", numerals = "middle")
+to_snake_case("species42value 23month 7-8", numerals = "tight")
+
+### sep_out (output separator)
+string &lt;- c("lowerCamelCase", "ALL_CAPS", "I-DontKNOWWhat_thisCASE_is")
+to_snake_case(string, sep_out = ".")
+to_mixed_case(string, sep_out = " ")
+to_screaming_snake_case(string, sep_out = "=")
+
+### empty_fill
+to_any_case(c("","",""), empty_fill = c("empty", "empty", "also empty"))
+
+### unique_sep
+to_any_case(c("same", "same", "same", "other"), unique_sep = c("&gt;"))
+
+### prefix and postfix
+to_upper_camel_case("some_path", sep_out = "//", 
+  prefix = "USER://", postfix = ".exe")
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>snakecase</em> version 0.11.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Metropolis-Hastings Algorithm for Mixtures of Regressions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for regmixMH {mixtools}"><tr><td>regmixMH {mixtools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Metropolis-Hastings Algorithm for Mixtures of Regressions</h2>
+
+<h3>Description</h3>
+
+<p>Return Metropolis-Hastings (M-H) algorithm output for mixtures of multiple regressions with
+arbitrarily many components.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+regmixMH(y, x, lambda = NULL, beta = NULL, s = NULL, k = 2,
+         addintercept = TRUE, mu = NULL, sig = NULL, lam.hyp = NULL,
+         sampsize = 1000, omega = 0.01, thin = 1)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>An n-vector of response values.</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>An nxp matrix of predictors.  See <code>addintercept</code> below.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>Initial value of mixing proportions.  Entries should sum to
+1.  This determines number of components.  If NULL, then <code>lambda</code> is
+random from uniform Dirichlet and number of
+components is determined by <code>beta</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>beta</code></td>
+<td>
+<p>Initial value of <code>beta</code> parameters.  Should be a pxk matrix,
+where p is the number of columns of x and k is number of components.
+If NULL, then <code>beta</code> has uniform standard normal entries.  If both
+<code>lambda</code> and <code>beta</code> are NULL, then number of components is determined by <code>s</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>s</code></td>
+<td>
+<p>k-vector of standard deviations.  If NULL, then <i>1/\code{s}^2</i> has
+random standard exponential entries.  If <code>lambda</code>, <code>beta</code>, and <code>s</code> are
+NULL, then number of components determined by <code>k</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>k</code></td>
+<td>
+<p>Number of components.  Ignored unless all of <code>lambda</code>, <code>beta</code>,
+and <code>s</code> are NULL.</p>
+</td></tr>
+<tr valign="top"><td><code>addintercept</code></td>
+<td>
+<p>If TRUE, a column of ones is appended to the x
+matrix before the value of p is calculated.</p>
+</td></tr>
+<tr valign="top"><td><code>mu</code></td>
+<td>
+<p>The prior hyperparameter of same size as <code>beta</code>;
+the means of <code>beta</code> components.  If NULL,
+these are set to zero.</p>
+</td></tr>
+<tr valign="top"><td><code>sig</code></td>
+<td>
+<p>The prior hyperparameter of same size as <code>beta</code>;
+the standard deviations of <code>beta</code> components.  If NULL, these are 
+all set to five times the overall standard deviation of y.</p>
+</td></tr>
+<tr valign="top"><td><code>lam.hyp</code></td>
+<td>
+<p>The prior hyperparameter of length <code>k</code> for the mixing proportions (i.e.,
+these are hyperparameters for the Dirichlet distribution).  If NULL, these are generated from a standard uniform
+distribution and then scaled to sum to 1.</p>
+</td></tr>
+<tr valign="top"><td><code>sampsize</code></td>
+<td>
+<p>Size of posterior sample returned.</p>
+</td></tr>
+<tr valign="top"><td><code>omega</code></td>
+<td>
+<p>Multiplier of step size to control M-H acceptance rate.
+Values closer to zero result in higher acceptance rates, generally.</p>
+</td></tr>
+<tr valign="top"><td><code>thin</code></td>
+<td>
+<p>Lag between parameter vectors that will be kept.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p><code>regmixMH</code> returns a list of class <code>mixMCMC</code> with items:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A nxp matrix of the predictors.</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>A vector of the responses.</p>
+</td></tr>
+<tr valign="top"><td><code>theta</code></td>
+<td>
+<p>A (<code>sampsize</code>/<code>thin</code>) x q matrix of MCMC-sampled
+q-vectors, where q is the total number of parameters in <code>beta</code>, <code>s</code>, and
+<code>lambda</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>k</code></td>
+<td>
+<p>The number of components.</p>
+</td></tr>
+</table>
+
+
+<h3>References</h3>
+
+<p>Hurn, M., Justel, A. and Robert, C. P. (2003) Estimating Mixtures of Regressions, <em>Journal 
+of Computational and Graphical Statistics</em> <b>12(1)</b>, 55&ndash;79.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../mixtools/help/regcr.html">regcr</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## M-H algorithm for NOdata with acceptance rate about 40%.
+
+data(NOdata)
+attach(NOdata)
+set.seed(100)
+beta &lt;- matrix(c(1.3, -0.1, 0.6, 0.1), 2, 2)
+sigma &lt;- c(.02, .05)
+MH.out &lt;- regmixMH(Equivalence, NO, beta = beta, s = sigma, 
+                   sampsize = 2500, omega = .0013)
+MH.out$theta[2400:2499,]
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mixtools</em> version 2.0.0.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

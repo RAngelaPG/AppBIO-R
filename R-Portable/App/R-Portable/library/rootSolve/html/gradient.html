@@ -1,0 +1,194 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Estimates the gradient matrix for a simple function</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for gradient {rootSolve}"><tr><td>gradient {rootSolve}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Estimates the gradient matrix for a simple function
+</h2>
+
+<h3>Description</h3>
+
+<p>Given a vector of variables (x), and a function (f) that estimates one
+function value or a set of function values (<i>f(x)</i>), estimates the
+gradient matrix, containing, on rows i and columns j
+</p>
+<p style="text-align: center;"><i>d(f(x)_i)/d(x_j)</i></p>
+
+<p>The gradient matrix is not necessarily square.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+gradient(f, x, centered = FALSE, pert = 1e-8, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>f </code></td>
+<td>
+<p>function returning one function value, or a vector of function
+values.
+</p>
+</td></tr>
+<tr valign="top"><td><code>x </code></td>
+<td>
+<p>either one value or a vector containing the x-value(s) at which
+the gradient matrix should be estimated.
+</p>
+</td></tr>
+<tr valign="top"><td><code>centered </code></td>
+<td>
+<p>if <code>TRUE</code>, uses a centered difference approximation,
+else a forward difference approximation.
+</p>
+</td></tr>
+<tr valign="top"><td><code>pert </code></td>
+<td>
+<p>numerical perturbation factor; increase depending on precision
+of model solution.
+</p>
+</td></tr>
+<tr valign="top"><td><code>... </code></td>
+<td>
+<p>other arguments passed to function <code>f</code>.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>the function <code>f</code> that estimates the function values will be called as
+f(x, ...). If <code>x</code> is a vector, then the first argument passed to
+<code>f</code> should also be a vector. 
+</p>
+<p>The gradient is estimated numerically, by perturbing the x-values.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The gradient matrix where the number of rows equals the length of <code>f</code>
+and the number of columns equals the length of <code>x</code>.
+</p>
+<p>the elements on i-th row and j-th column contain: <i>d((f(x))_i)/d(x_j)</i>
+</p>
+
+
+<h3>Note</h3>
+
+<p><code>gradient</code> can be used to calculate so-called <code>sensitivity functions</code>,
+that estimate the effect of parameters on output variables.</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Karline Soetaert &lt;karline.soetaert@nioz.nl&gt;</p>
+
+
+<h3>References</h3>
+
+<p>Soetaert, K. and P.M.J. Herman (2008). A practical guide to ecological modelling -
+using R as a simulation platform. Springer.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../rootSolve/help/jacobian.full.html">jacobian.full</a></code>, for generating a full and <b>square</b>
+gradient (jacobian) matrix and where the function call is more complex
+</p>
+<p><code><a href="../../rootSolve/help/hessian.html">hessian</a></code>, for generating the Hessian matrix
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## =======================================================================
+## 1. Sensitivity analysis of the logistic differential equation
+## dN/dt = r*(1-N/K)*N  , N(t0)=N0.
+## =======================================================================
+
+# analytical solution of the logistic equation:
+logistic &lt;- function (x, times) {
+
+ with (as.list(x),
+ {
+  N &lt;- K / (1+(K-N0)/N0*exp(-r*times))
+  return(c(N = N))
+  })
+}
+
+# parameters for the US population from 1900
+x &lt;- c(N0 = 76.1, r = 0.02, K = 500)
+
+# Sensitivity function: SF: dfi/dxj at
+# output intervals from 1900 to 1950
+SF &lt;- gradient(f = logistic, x, times = 0:50)
+
+# sensitivity, scaled for the value of the parameter:
+# [dfi/(dxj/xj)]= SF*x (columnise multiplication)
+sSF &lt;- (t(t(SF)*x))
+matplot(sSF, xlab = "time", ylab = "relative sensitivity ",
+        main = "logistic equation", pch = 1:3)
+legend("topleft", names(x), pch = 1:3, col = 1:3)
+
+# mean scaled sensitivity
+colMeans(sSF)
+
+## =======================================================================
+## 2. Stability of the budworm model, as a function of its
+## rate of increase.
+##
+## Example from the book of Soetaert and Herman(2009)
+## A practical guide to ecological modelling,
+## using R as a simulation platform. Springer
+## code and theory are explained in this book
+## =======================================================================
+
+r   &lt;- 0.05
+K   &lt;- 10
+bet &lt;- 0.1
+alf &lt;- 1
+
+# density-dependent growth and sigmoid-type mortality rate
+rate &lt;- function(x, r = 0.05) r*x*(1-x/K) - bet*x^2/(x^2+alf^2)
+
+# Stability of a root ~ sign of eigenvalue of Jacobian 
+stability &lt;- function (r)  {
+  Eq &lt;- uniroot.all(rate, c(0, 10), r = r)
+  eig  &lt;- vector()
+  for (i in 1:length(Eq)) 
+      eig[i] &lt;- sign (gradient(rate, Eq[i], r = r))
+  return(list(Eq = Eq, Eigen = eig))
+}
+
+# bifurcation diagram
+rseq &lt;- seq(0.01, 0.07, by = 0.0001)
+
+plot(0, xlim = range(rseq), ylim = c(0, 10), type = "n",
+     xlab = "r", ylab = "B*", main = "Budworm model, bifurcation",
+     sub = "Example from Soetaert and Herman, 2009")
+
+for (r in rseq) {
+  st &lt;- stability(r) 
+  points(rep(r, length(st$Eq)), st$Eq, pch = 22,
+         col = c("darkblue", "black", "lightblue")[st$Eigen+2],
+         bg = c("darkblue", "black", "lightblue")[st$Eigen+2]) 
+}
+
+legend("topleft", pch = 22, pt.cex = 2, c("stable", "unstable"),
+        col = c("darkblue","lightblue"), 
+        pt.bg = c("darkblue", "lightblue"))</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rootSolve</em> version 1.8.2.4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

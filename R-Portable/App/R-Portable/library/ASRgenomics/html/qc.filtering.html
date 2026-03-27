@@ -1,0 +1,246 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Quality control filtering of molecular matrix M for...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for qc.filtering {ASRgenomics}"><tr><td>qc.filtering {ASRgenomics}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Quality control filtering of molecular matrix M for downstream analyses</h2>
+
+<h3>Description</h3>
+
+<p>Reads molecular data in the format 0, 1, 2 and performs some basic quality control
+filters and simple imputation.
+Matrix provided is of the full form (<i>n \times p</i>), with <i>n</i> individuals and <i>p</i> markers.
+Individual and marker names are assigned to <code>rownames</code> and <code>colnames</code>,
+respectively. Filtering can be done with the some of the following options by
+specifying thresholds for:
+missing values on individuals, missing values on markers, minor allele frequency,
+inbreeding Fis value (of markers), and observed heterozygosity (of markers).
+String used for identifying missing values can be specified.
+If requested, missing values will be imputed based on the mean of each SNP.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+qc.filtering(
+  M = NULL,
+  base = FALSE,
+  na.string = NA,
+  map = NULL,
+  marker = NULL,
+  chrom = NULL,
+  pos = NULL,
+  ref = NULL,
+  marker.callrate = 1,
+  ind.callrate = 1,
+  maf = 0,
+  heterozygosity = 1,
+  Fis = 1,
+  impute = FALSE,
+  Mrecode = FALSE,
+  plots = TRUE,
+  digits = 2,
+  message = TRUE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>M</code></td>
+<td>
+<p>A matrix with SNP data of full form (<i>n \times p</i>), with <i>n</i> individuals and <i>p</i> markers
+Individual and marker names are assigned to <code>rownames</code> and <code>colnames</code>, respectively.
+Data in matrix is coded as 0, 1, 2 (integer or numeric) (default = <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>base</code></td>
+<td>
+<p>If <code>TRUE</code> matrix <i>\boldsymbol{M}</i> is considered as bi-allele SNP data format (character)
+and the SNPs are recoded to numerical values before performing the quality control filters
+(default = <code>FALSE</code>) (currently deprecated).</p>
+</td></tr>
+<tr valign="top"><td><code>na.string</code></td>
+<td>
+<p>A character that will be interpreted as <code>NA</code> values (default = <code>"NA"</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>map</code></td>
+<td>
+<p>(Optional) A data frame with the map information with <i>p</i> rows (default = <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>marker</code></td>
+<td>
+<p>A character indicating the name of the column in data frame <code>map</code> with the identification
+of markers. This is mandatory if <code>map</code> is provided (default = <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>chrom</code></td>
+<td>
+<p>A character indicating the name of the column in data frame <code>map</code> with the identification
+of chromosomes (default = <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>pos</code></td>
+<td>
+<p>A character indicating the name of the column in data frame <code>map</code> with the identification
+of marker positions (default = <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>ref</code></td>
+<td>
+<p>A character indicating the name of the column in the map containing the reference allele for
+recoding. If absent, then conversion will be based on the major allele (most frequent).
+The marker information of a given individuals with two of the specified major alleles
+in <code>ref</code> will be coded as 2 (default = <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>marker.callrate</code></td>
+<td>
+<p>A numerical value between 0 and 1 used to remove SNPs with a rate
+of missing values equal or larger than this value (default = 1, <em>i.e.</em> no removing).</p>
+</td></tr>
+<tr valign="top"><td><code>ind.callrate</code></td>
+<td>
+<p>A numerical value between 0 and 1 used to remove individuals with a
+rate of missing values equal or larger than this value (default = 1, <em>i.e.</em> no removing).</p>
+</td></tr>
+<tr valign="top"><td><code>maf</code></td>
+<td>
+<p>A numerical value between 0 and 1 used to remove SNPs with a Minor Allele Frequency
+(MAF) below this value (default = 0, <em>i.e.</em> no removing).</p>
+</td></tr>
+<tr valign="top"><td><code>heterozygosity</code></td>
+<td>
+<p>A numeric value indicating the maximum value of accepted observed heterozygosity (Ho)
+(default = 1, <em>i.e.</em> no removing).</p>
+</td></tr>
+<tr valign="top"><td><code>Fis</code></td>
+<td>
+<p>A numeric value indicating the maximum value of accepted inbreeding (Fis) following
+the equation <i>|1 - (Ho/He)|</i> (default = 1, <em>i.e.</em> no removing).</p>
+</td></tr>
+<tr valign="top"><td><code>impute</code></td>
+<td>
+<p>If <code>TRUE</code> imputation of missing values is done using the mean of each SNP
+(default = <code>FALSE</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>Mrecode</code></td>
+<td>
+<p>If <code>TRUE</code> it provides the recoded <i>\boldsymbol{M}</i> matrix from the bi-allelic to numeric SNP
+(default = <code>FALSE</code>) (currently deprecated).</p>
+</td></tr>
+<tr valign="top"><td><code>plots</code></td>
+<td>
+<p>If <code>TRUE</code> generates graphical output of the quality control based on the
+original input matrix (default = <code>TRUE</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>digits</code></td>
+<td>
+<p>Set up the number of digits used to round the output matrix (default = 2).</p>
+</td></tr>
+<tr valign="top"><td><code>message</code></td>
+<td>
+<p>If <code>TRUE</code> diagnostic messages are printed on screen (default = <code>TRUE</code>).</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><strong>Warning</strong>: The arguments <code>base</code>, <code>ref</code>, and <code>Mrecode</code>
+currently are deprecated and will
+be removed on the next version of <code>ASRgenomics</code>.
+Use function <a href="../../ASRgenomics/help/snp.recode.html">snp.recode</a> to recode the matrix prior to using <code>qc.filtering</code>.
+</p>
+<p>The filtering process is carried out as expressed in the following simplified pseudo-code
+that consists on a loop repeated twice:
+</p>
+<p><strong>for i in 1 to 2</strong>
+</p>
+<p>    Filter markers based on call rate.
+</p>
+<p>    Filter individuals based on call rate.
+</p>
+<p>    Filter markers based on minor allele frequency.
+</p>
+<p>    Filter markers based on observed heterozygosity.
+</p>
+<p>    Filter markers based on inbreeding.
+</p>
+<p><strong>end for</strong>
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with the following elements:
+</p>
+
+<ul>
+<li><p><code>M.clean</code>: the cleaned <i>\boldsymbol{M}</i> matrix after the quality control filters have been applied.
+</p>
+</li>
+<li><p><code>map</code>: if provided, a cleaned <code>map</code> data frame after the quality control filters have been applied.
+</p>
+</li>
+<li><p><code>plot.missing.ind</code>: a plot of missing data per individual (original marker matrix).
+</p>
+</li>
+<li><p><code>plot.missing.SNP</code>: a plot of missing data per SNP (original marker matrix).
+</p>
+</li>
+<li><p><code>plot.heteroz</code>: a plot of observed heterozygocity per SNP (original marker matrix).
+</p>
+</li>
+<li><p><code>plot.Fis</code>: a plot of Fis per SNP (original marker matrix).
+</p>
+</li>
+<li><p><code>plot.maf</code>: a plot of the minor allele frequency (original marker matrix).
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+# Example: Pine dataset from ASRgenomics (coded as 0,1,2 with missing as -9).
+
+M.clean &lt;- qc.filtering(
+ M = geno.pine926,
+ maf = 0.05,
+ marker.callrate = 0.9, ind.callrate = 0.9,
+ heterozygosity = 0.9, Fis = 0.6,
+ na.string = "-9")
+ls(M.clean)
+M.clean$M.clean[1:5, 1:5]
+dim(M.clean$M.clean)
+head(M.clean$map)
+M.clean$plot.maf
+M.clean$plot.missing.ind
+M.clean$plot.missing.SNP
+M.clean$plot.heteroz
+M.clean$plot.Fis
+
+
+# Example: Salmon dataset (coded as 0,1,2 with missing as NA).
+
+M.clean &lt;- qc.filtering(
+ M = geno.salmon,
+ maf = 0.02,
+ marker.callrate = 0.10, ind.callrate = 0.20,
+ heterozygosity = 0.9, Fis = 0.4)
+M.clean$M.clean[1:5, 1:5]
+dim(M.clean$M.clean)
+head(M.clean$map)
+M.clean$plot.maf
+M.clean$plot.missing.ind
+M.clean$plot.missing.SNP
+M.clean$plot.heteroz
+M.clean$plot.Fis
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ASRgenomics</em> version 1.1.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

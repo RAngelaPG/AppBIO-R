@@ -1,0 +1,240 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Evaluate Power for Survival Design</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for eval_design_survival_mc {skpr}"><tr><td>eval_design_survival_mc {skpr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Evaluate Power for Survival Design</h2>
+
+<h3>Description</h3>
+
+<p>Evaluates power for an experimental design in which the response variable may be
+right- or left-censored. Power is evaluated with a Monte Carlo simulation,
+using the <code>survival</code> package and <code>survreg</code> to fit the data. Split-plot designs are not supported.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+eval_design_survival_mc(
+  design,
+  model = NULL,
+  alpha = 0.05,
+  nsim = 1000,
+  distribution = "gaussian",
+  censorpoint = NA,
+  censortype = "right",
+  rfunctionsurv = NULL,
+  anticoef = NULL,
+  effectsize = 2,
+  contrasts = contr.sum,
+  parallel = FALSE,
+  detailedoutput = FALSE,
+  progress = TRUE,
+  advancedoptions = NULL,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>design</code></td>
+<td>
+<p>The experimental design. Internally, all numeric columns will be rescaled to -1 to 1.</p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>The model used in evaluating the design. If this is missing and the design
+was generated with skpr, the generating model will be used. It can be a subset of the model used to
+generate the design, or include higher order effects not in the original design generation. It cannot include
+factors that are not present in the experimental design.</p>
+</td></tr>
+<tr valign="top"><td><code>alpha</code></td>
+<td>
+<p>Default <code>0.05</code>. The type-I error. p-values less than this will be counted as significant.</p>
+</td></tr>
+<tr valign="top"><td><code>nsim</code></td>
+<td>
+<p>The number of simulations. Default 1000.</p>
+</td></tr>
+<tr valign="top"><td><code>distribution</code></td>
+<td>
+<p>Distribution of survival function to use when fitting the data. Valid choices are described
+in the documentation for <code>survreg</code>. <em>Supported</em> options are
+&quot;exponential&quot;, &quot;lognormal&quot;, or &quot;gaussian&quot;. Default &quot;gaussian&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>censorpoint</code></td>
+<td>
+<p>The point after/before (for right-censored or left-censored data, respectively)
+which data should be labelled as censored. Default NA for no censoring. This argument is
+used only by the internal random number generators; if you supply your own function to
+the <code>rfunctionsurv</code> parameter, then this parameter will be ignored.</p>
+</td></tr>
+<tr valign="top"><td><code>censortype</code></td>
+<td>
+<p>The type of censoring (either &quot;left&quot; or &quot;right&quot;). Default &quot;right&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>rfunctionsurv</code></td>
+<td>
+<p>Random number generator function. Should be a function of the form f(X, b), where X is the
+model matrix and b are the anticipated coefficients. This function should return a <code>Surv</code> object from
+the <code>survival</code> package. You do not need to provide this argument if <code>distribution</code> is one of
+the supported choices and you are satisfied with the default behavior described below.</p>
+</td></tr>
+<tr valign="top"><td><code>anticoef</code></td>
+<td>
+<p>The anticipated coefficients for calculating the power. If missing, coefficients
+will be automatically generated based on the <code>effectsize</code> argument.</p>
+</td></tr>
+<tr valign="top"><td><code>effectsize</code></td>
+<td>
+<p>Helper argument to generate anticipated coefficients. See details for more info.
+If you specify <code>anticoef</code>, <code>effectsize</code> will be ignored.</p>
+</td></tr>
+<tr valign="top"><td><code>contrasts</code></td>
+<td>
+<p>Default <code>contr.sum</code>. Function used to encode categorical variables in the model matrix. If the user has specified their own contrasts
+for a categorical factor using the contrasts function, those will be used. Otherwise, skpr will use contr.sum.</p>
+</td></tr>
+<tr valign="top"><td><code>parallel</code></td>
+<td>
+<p>Default <code>FALSE</code>. If <code>TRUE</code>, the power simulation will use all but one of the available cores.
+If the user wants to set the number of cores manually, they can do this by setting <code>options("cores")</code> to the desired number (e.g. <code>options("cores" = parallel::detectCores())</code>).
+NOTE: If you have installed BLAS libraries that include multicore support (e.g. Intel MKL that comes with Microsoft R Open), turning on parallel could result in reduced performance.</p>
+</td></tr>
+<tr valign="top"><td><code>detailedoutput</code></td>
+<td>
+<p>Default <code>FALSE</code>. If <code>TRUE</code>, return additional information about evaluation in results.</p>
+</td></tr>
+<tr valign="top"><td><code>progress</code></td>
+<td>
+<p>Default <code>TRUE</code>. Whether to include a progress bar.</p>
+</td></tr>
+<tr valign="top"><td><code>advancedoptions</code></td>
+<td>
+<p>Default <code>NULL</code>. Named list of advanced options. Pass <code>progressBarUpdater</code> to include function called in non-parallel simulations that can be used to update external progress bar.
+<code>advancedoptions$ci_error_conf</code> will set the confidence level for power intervals, which are printed when <code>detailedoutput = TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Any additional arguments to be passed into the <code>survreg</code> function during fitting.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Evaluates the power of a design with Monte Carlo simulation. Data is simulated and then fit
+with a survival model (<code>survival::survreg</code>), and the fraction of simulations in which a parameter
+is significant
+(its p-value is less than the specified <code>alpha</code>)
+is the estimate of power for that parameter.
+</p>
+<p>If not supplied by the user, <code>rfunctionsurv</code> will be generated based on the <code>distribution</code>
+argument as follows:
+</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: left;">
+<b>distribution</b>  </td><td style="text-align: right;"> <b>generating function</b> </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+"gaussian"                  </td><td style="text-align: right;"> <code>rnorm(mean = X %*% b, sd = 1)</code>           </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+"exponential"               </td><td style="text-align: right;"> <code>rexp(rate = exp(-X %*% b))</code>           </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+"lognormal"                 </td><td style="text-align: right;"> <code>rlnorm(meanlog = X %*% b, sdlog = 1)</code>           </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+</td>
+</tr>
+
+</table>
+
+<p>In each case, if a simulated data point is past the censorpoint (greater than for right-censored, less than for
+left-censored) it is marked as censored. See the examples below for how to construct your own function.
+</p>
+<p>Power is dependent on the anticipated coefficients. You can specify those directly with the <code>anticoef</code>
+argument, or you can use the <code>effectsize</code> argument to specify an effect size and <code>skpr</code> will auto-generate them.
+You can provide either a length-1 or length-2 vector. If you provide a length-1 vector, the anticipated
+coefficients will be half of <code>effectsize</code>; this is equivalent to saying that the <em>linear predictor</em>
+(for a gaussian model, the mean response; for an exponential model or lognormal model,
+the log of the mean value)
+changes by <code>effectsize</code> when a continuous factor goes from its lowest level to its highest level. If you provide a
+length-2 vector, the anticipated coefficients will be set such that the <em>mean response</em> changes from
+<code>effectsize[1]</code> to <code>effectsize[2]</code> when a factor goes from its lowest level to its highest level, assuming
+that the other factors are inactive (their x-values are zero).
+</p>
+<p>The effect of a length-2 <code>effectsize</code> depends on the <code>distribution</code> argument as follows:
+</p>
+<p>For <code>distribution = 'gaussian'</code>, the coefficients are set to <code>(effectsize[2] - effectsize[1]) / 2</code>.
+</p>
+<p>For <code>distribution = 'exponential'</code> or <code>'lognormal'</code>,
+the intercept will be
+<code>1 / 2 * (log(effectsize[2]) + log(effectsize[1]))</code>,
+and the other coefficients will be
+<code>1 / 2 * (log(effectsize[2]) - log(effectsize[1]))</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data frame consisting of the parameters and their powers. The parameter estimates from the simulations are
+stored in the 'estimates' attribute. The 'modelmatrix' attribute contains the model matrix and the encoding used for
+categorical factors. If you manually specify anticipated coefficients, do so in the order of the model matrix.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+#These examples focus on the survival analysis case and assume familiarity
+#with the basic functionality of eval_design_mc.
+
+#We first generate a simple 2-level design using expand.grid:
+basicdesign = expand.grid(a = c(-1, 1))
+design = gen_design(candidateset = basicdesign, model = ~a, trials = 15)
+
+#We can then evaluate the power of the design in the same way as eval_design_mc,
+#now including the type of censoring (either right or left) and the point at which
+#the data should be censored:
+
+eval_design_survival_mc(design = design, model = ~a, alpha = 0.05,
+                        nsim = 100, distribution = "exponential",
+                        censorpoint = 5, censortype = "right")
+
+#Built-in Monte Carlo random generating functions are included for the gaussian, exponential,
+#and lognormal distributions.
+
+#We can also evaluate different censored distributions by specifying a custom
+#random generating function and changing the distribution argument.
+
+rlognorm = function(X, b) {
+  Y = rlnorm(n = nrow(X), meanlog = X %*% b, sdlog = 0.4)
+  censored = Y &gt; 1.2
+  Y[censored] = 1.2
+  return(survival::Surv(time = Y, event = !censored, type = "right"))
+}
+
+#Any additional arguments are passed into the survreg function call.  As an example, you
+#might want to fix the "scale" argument to survreg, when fitting a lognormal:
+
+eval_design_survival_mc(design = design, model = ~a, alpha = 0.2, nsim = 100,
+                        distribution = "lognormal", rfunctionsurv = rlognorm,
+                        anticoef = c(0.184, 0.101), scale = 0.4)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>skpr</em> version 1.9.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Compute the Betweenness Centrality Scores of Network...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for betweenness {sna}"><tr><td>betweenness {sna}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Compute the Betweenness Centrality Scores of Network Positions </h2>
+
+<h3>Description</h3>
+
+<p><code>betweenness</code> takes one or more graphs (<code>dat</code>) and returns the betweenness centralities of positions (selected by <code>nodes</code>) within the graphs indicated by <code>g</code>.  Depending on the specified mode, betweenness on directed or undirected geodesics will be returned; this function is compatible with <code><a href="../../sna/help/centralization.html">centralization</a></code>, and will return the theoretical maximum absolute deviation (from maximum) conditional on size (which is used by <code><a href="../../sna/help/centralization.html">centralization</a></code> to normalize the observed centralization score).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+betweenness(dat, g=1, nodes=NULL, gmode="digraph", diag=FALSE,
+    tmaxdev=FALSE, cmode="directed", geodist.precomp=NULL, 
+    rescale=FALSE, ignore.eval=TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>dat</code></td>
+<td>
+<p> one or more input graphs. </p>
+</td></tr>
+<tr valign="top"><td><code>g</code></td>
+<td>
+<p> integer indicating the index of the graph for which centralities are to be calculated (or a vector thereof).  By default, <code>g</code>=1. </p>
+</td></tr>
+<tr valign="top"><td><code>nodes</code></td>
+<td>
+<p> vector indicating which nodes are to be included in the calculation.  By default, all nodes are included. </p>
+</td></tr>
+<tr valign="top"><td><code>gmode</code></td>
+<td>
+<p> string indicating the type of graph being evaluated.  &quot;digraph&quot; indicates that edges should be interpreted as directed; &quot;graph&quot; indicates that edges are undirected.  <code>gmode</code> is set to &quot;digraph&quot; by default. </p>
+</td></tr>
+<tr valign="top"><td><code>diag</code></td>
+<td>
+<p> boolean indicating whether or not the diagonal should be treated as valid data.  Set this true if and only if the data can contain loops.  <code>diag</code> is <code>FALSE</code> by default. </p>
+</td></tr>
+<tr valign="top"><td><code>tmaxdev</code></td>
+<td>
+<p> boolean indicating whether or not the theoretical maximum absolute deviation from the maximum nodal centrality should be returned.  By default, <code>tmaxdev</code>==<code>FALSE</code>. </p>
+</td></tr>
+<tr valign="top"><td><code>cmode</code></td>
+<td>
+<p> string indicating the type of betweenness centrality being computed (directed or undirected geodesics, or a variant form &ndash; see below). </p>
+</td></tr>
+<tr valign="top"><td><code>geodist.precomp</code></td>
+<td>
+<p> A <code><a href="../../sna/help/geodist.html">geodist</a></code> object precomputed for the graph to be analyzed (optional) </p>
+</td></tr>
+<tr valign="top"><td><code>rescale</code></td>
+<td>
+<p> if true, centrality scores are rescaled such that they sum to 1. </p>
+</td></tr>
+<tr valign="top"><td><code>ignore.eval</code></td>
+<td>
+<p> logical; ignore edge values when computing shortest paths?</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The shortest-path betweenness of a vertex, <i>v</i>, is given by
+</p>
+<p style="text-align: center;"><i>
+C_B(v) = sum( g_ivj / g_ij, i,j: i!=j,i!=v,j!=v )</i></p>
+
+<p>where <i>g_ijk</i> is the number of geodesics from <i>i</i> to <i>k</i> through <i>j</i>.  Conceptually, high-betweenness vertices lie on a large number of non-redundant shortest paths between other vertices; they can thus be thought of as &ldquo;bridges&rdquo; or &ldquo;boundary spanners.&rdquo;         
+</p>
+<p>Several variant forms of shortest-path betweenness exist, and can be selected using the <code>cmode</code> argument.  Supported options are as follows:
+</p>
+
+<dl>
+<dt><code>directed</code></dt><dd><p> Standard betweenness (see above), calculated on directed pairs.  (This is the default option.)</p>
+</dd>
+<dt><code>undirected</code></dt><dd><p> Standard betweenness (as above), calculated on undirected pairs (undirected graphs only).</p>
+</dd>
+<dt><code>endpoints</code></dt><dd><p> Standard betweenness, with direct connections counted towards ego's score.  This expresses the intuition that individuals' control over their own direct contacts should be considered in their total score (e.g., when betweenness is interpreted as a measure of information control).</p>
+</dd>
+<dt><code>proximalsrc</code></dt><dd><p> Borgatti's <em>proximal source betweenness,</em> given by
+</p>
+<p style="text-align: center;"><i>
+C_B(v) = sum( g_ivj / g_ij, i,j: i!=v,i!=j,j-&gt;v ).</i></p>
+
+<p>This variant allows betweenness to accumulate only for the last intermediating vertex in each incoming geodesic; this expresses the notion that, by serving as the &ldquo;proximal source&rdquo; for the target, this particular intermediary will in some settings have greater influence or control than other intervening parties. 
+</p>
+</dd>
+<dt><code>proximaltar</code></dt><dd><p> Borgatti's <em>proximal target betweenness,</em> given by
+</p>
+<p style="text-align: center;"><i>
+C_B(v) = sum( g_ivj / g_ij, i,j: i!=j,i-&gt;v,j!=v ).</i></p>
+
+<p>This counterpart to proximal source betweenness (above) allows betweenness to accumulate only for the first intermediating vertex in each outgoing geodesic; this expresses the notion that, by serving as the &ldquo;proximal target&rdquo; for the source, this particular intermediary will in some settings have greater influence or control than other intervening parties. </p>
+</dd>
+<dt><code>proximalsum</code></dt><dd><p>The sum of Borgatti's proximal source and proximal target betweenness scores (above); this may be used when either role is regarded as relevant to the betweenness calculation.</p>
+</dd>
+<dt><code>lengthscaled</code></dt><dd><p>Borgetti and Everett's <em>length-scaled betweenness</em>, given by
+</p>
+<p style="text-align: center;"><i>
+C_B(v) = sum( (1/d_ij)*(g_ivj / g_ij), i,j: i!=j,i!=v,j!=v ),</i></p>
+
+<p>where <i>d_ij</i> is the geodesic distance from <i>i</i> to <i>j</i>.  This measure adjusts the standard betweenness score by downweighting long paths (e.g., as appropriate in circumstances for which such paths are less-often used).
+</p>
+</dd>
+<dt><code>linearscaled</code></dt><dd><p>Geisberger et al.'s <em>linearly-scaled betweenness</em>:
+</p>
+<p style="text-align: center;"><i>
+C_B(v) = sum( (d_iv/d_ij)*(g_ivj / g_ij), i,j: i!=j,i!=v,j!=v ).</i></p>
+
+<p>This variant modifies the standard betweenness score by giving more weight to intermediaries which are closer to their targets (much like proximal source betweenness, above).  This may be of use when those near the end of a path have greater direct control over the flow of influence or resources than those near its source.
+</p>
+</dd>
+</dl>
+
+<p>See Brandes (2008) for details and additional references.  Geodesics for all of the above can be calculated using valued edges by setting <code>ignore.eval=TRUE</code>.  Edge values are interpreted as distances for this purpose; proximity data should be transformed accordingly before invoking this routine.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A vector, matrix, or list containing the betweenness scores (depending on the number and size of the input graphs).
+</p>
+
+
+<h3>Warning </h3>
+
+<p>Rescale may cause unexpected results if all actors have zero betweenness.</p>
+
+
+<h3>Note</h3>
+
+<p> Judicious use of <code>geodist.precomp</code> can save a great deal of time when computing multiple path-based indices on the same network. </p>
+
+
+<h3>Author(s)</h3>
+
+<p> Carter T. Butts <a href="mailto:buttsc@uci.edu">buttsc@uci.edu</a> </p>
+
+
+<h3>References</h3>
+
+ 
+<p>Borgatti, S.P. and Everett, M.G.  (2006).  &ldquo;A Graph-Theoretic Perspective on Centrality.&rdquo;  <em>Social Networks</em>, 28, 466-484.
+</p>
+<p>Brandes, U.  (2008).  &ldquo;On Variants of Shortest-Path Betweenness Centrality and their Generic Computation.&rdquo;  <em>Social Networks</em>, 30, 136&ndash;145.
+</p>
+<p>Freeman, L.C.  (1979).  &ldquo;Centrality in Social Networks I: Conceptual Clarification.&rdquo; <em>Social Networks</em>, 1, 215-239.
+</p>
+<p>Geisberger, R., Sanders, P., and Schultes, D.  (2008).  &ldquo;Better Approximation of Betweenness Centrality.&rdquo;  In <em>Proceedings of the 10th Workshop on Algorithm Engineering and Experimentation (ALENEX'08)</em>, 90-100.  SIAM.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../sna/help/centralization.html">centralization</a></code>, <code><a href="../../sna/help/stresscent.html">stresscent</a></code>, <code><a href="../../sna/help/geodist.html">geodist</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+g&lt;-rgraph(10)     #Draw a random graph with 10 members
+betweenness(g)    #Compute betweenness scores
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sna</em> version 2.8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

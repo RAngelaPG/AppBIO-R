@@ -1,0 +1,171 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Ensure that 'data' contains required column names</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for validate_column_names {hardhat}"><tr><td>validate_column_names {hardhat}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Ensure that <code>data</code> contains required column names</h2>
+
+<h3>Description</h3>
+
+<p>validate - asserts the following:
+</p>
+
+<ul>
+<li><p> The column names of <code>data</code> must contain all <code>original_names</code>.
+</p>
+</li></ul>
+
+<p>check - returns the following:
+</p>
+
+<ul>
+<li> <p><code>ok</code> A logical. Does the check pass?
+</p>
+</li>
+<li> <p><code>missing_names</code> A character vector. The missing column names.
+</p>
+</li></ul>
+
+
+
+<h3>Usage</h3>
+
+<pre>
+validate_column_names(data, original_names, ..., call = current_env())
+
+check_column_names(data, original_names)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A data frame to check.</p>
+</td></tr>
+<tr valign="top"><td><code>original_names</code></td>
+<td>
+<p>A character vector. The original column names.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>These dots are for future extensions and must be empty.</p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>The call used for errors and warnings.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>A special error is thrown if the missing column is named <code>".outcome"</code>. This
+only happens in the case where <code><a href="../../hardhat/help/mold.html">mold()</a></code> is called using the xy-method, and
+a <em>vector</em> <code>y</code> value is supplied rather than a data frame or matrix. In that
+case, <code>y</code> is coerced to a data frame, and the automatic name <code>".outcome"</code> is
+added, and this is what is looked for in <code><a href="../../hardhat/help/forge.html">forge()</a></code>. If this happens, and the
+user tries to request outcomes using <code>forge(..., outcomes = TRUE)</code> but
+the supplied <code>new_data</code> does not contain the required <code>".outcome"</code> column,
+a special error is thrown telling them what to do. See the examples!
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>validate_column_names()</code> returns <code>data</code> invisibly.
+</p>
+<p><code>check_column_names()</code> returns a named list of two components,
+<code>ok</code>, and <code>missing_names</code>.
+</p>
+
+
+<h3>Validation</h3>
+
+<p>hardhat provides validation functions at two levels.
+</p>
+
+<ul>
+<li> <p><code style="white-space: pre;">check_*()</code>:  <em>check a condition, and return a list</em>. The list
+always contains at least one element, <code>ok</code>, a logical that specifies if the
+check passed. Each check also has check specific elements in the returned
+list that can be used to construct meaningful error messages.
+</p>
+</li>
+<li> <p><code style="white-space: pre;">validate_*()</code>: <em>check a condition, and error if it does not pass</em>. These
+functions call their corresponding check function, and
+then provide a default error message. If you, as a developer, want a
+different error message, then call the <code style="white-space: pre;">check_*()</code> function yourself,
+and provide your own validation function.
+</p>
+</li></ul>
+
+
+
+<h3>See Also</h3>
+
+<p>Other validation functions: 
+<code><a href="../../hardhat/help/validate_no_formula_duplication.html">validate_no_formula_duplication</a>()</code>,
+<code><a href="../../hardhat/help/validate_outcomes_are_binary.html">validate_outcomes_are_binary</a>()</code>,
+<code><a href="../../hardhat/help/validate_outcomes_are_factors.html">validate_outcomes_are_factors</a>()</code>,
+<code><a href="../../hardhat/help/validate_outcomes_are_numeric.html">validate_outcomes_are_numeric</a>()</code>,
+<code><a href="../../hardhat/help/validate_outcomes_are_univariate.html">validate_outcomes_are_univariate</a>()</code>,
+<code><a href="../../hardhat/help/validate_prediction_size.html">validate_prediction_size</a>()</code>,
+<code><a href="../../hardhat/help/validate_predictors_are_numeric.html">validate_predictors_are_numeric</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# ---------------------------------------------------------------------------
+
+original_names &lt;- colnames(mtcars)
+
+test &lt;- mtcars
+bad_test &lt;- test[, -c(3, 4)]
+
+# All good
+check_column_names(test, original_names)
+
+# Missing 2 columns
+check_column_names(bad_test, original_names)
+
+# Will error
+try(validate_column_names(bad_test, original_names))
+
+# ---------------------------------------------------------------------------
+# Special error when `.outcome` is missing
+
+train &lt;- iris[1:100, ]
+test &lt;- iris[101:150, ]
+
+train_x &lt;- subset(train, select = -Species)
+train_y &lt;- train$Species
+
+# Here, y is a vector
+processed &lt;- mold(train_x, train_y)
+
+# So the default column name is `".outcome"`
+processed$outcomes
+
+# It doesn't affect forge() normally
+forge(test, processed$blueprint)
+
+# But if the outcome is requested, and `".outcome"`
+# is not present in `new_data`, an error is thrown
+# with very specific instructions
+try(forge(test, processed$blueprint, outcomes = TRUE))
+
+# To get this to work, just create an .outcome column in new_data
+test$.outcome &lt;- test$Species
+
+forge(test, processed$blueprint, outcomes = TRUE)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>hardhat</em> version 1.4.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

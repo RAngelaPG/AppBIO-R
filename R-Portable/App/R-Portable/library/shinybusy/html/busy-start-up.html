@@ -1,0 +1,198 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Busy indicator at start up</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for busy-start-up {shinybusy}"><tr><td>busy-start-up {shinybusy}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Busy indicator at start up</h2>
+
+<h3>Description</h3>
+
+<p>Show a full-page busy indicator when application is initialized,
+then removed it after timeout, automatically or manually from server.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+busy_start_up(
+  loader,
+  text = NULL,
+  mode = c("timeout", "auto", "manual"),
+  timeout = 500,
+  color = "#112446",
+  background = "#f0f0f0"
+)
+
+remove_start_up(timeout = 100, session = shiny::getDefaultReactiveDomain())
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>loader</code></td>
+<td>
+<p>A spinner created with <code><a href="../../shinybusy/help/spin_epic.html">spin_epic</a></code> or <code><a href="../../shinybusy/help/spin_kit.html">spin_kit</a></code>
+or a simple HTML tag, to include a GIF (see examples).</p>
+</td></tr>
+<tr valign="top"><td><code>text</code></td>
+<td>
+<p>Optional text to be displayed under the loading animation.</p>
+</td></tr>
+<tr valign="top"><td><code>mode</code></td>
+<td>
+<p>How to remove the start-up page: <code>"timeout"</code>, <code>"auto"</code> or <code>"manual"</code>, see below for details.</p>
+</td></tr>
+<tr valign="top"><td><code>timeout</code></td>
+<td>
+<p>Time (in milliseconds) to wait before removing the start-up page.</p>
+</td></tr>
+<tr valign="top"><td><code>color</code></td>
+<td>
+<p>Color of text.</p>
+</td></tr>
+<tr valign="top"><td><code>background</code></td>
+<td>
+<p>Background color.</p>
+</td></tr>
+<tr valign="top"><td><code>session</code></td>
+<td>
+<p>Shiny session.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Behavior according to <code>mode</code> argument:
+</p>
+
+<ul>
+<li> <p><strong>timeout</strong>: Busy indicator will be removed after the time (in milliseconds) specified in <code>timeout</code>.
+</p>
+</li>
+<li> <p><strong>manual</strong>: Busy indicator will be removed with <code>remove_start_up</code> from server,
+timeout from <code>busy_start_up</code> is ignored in favor of that of <code>remove_start_up</code>.
+</p>
+</li>
+<li> <p><strong>auto</strong>: Busy indicator is removed after JavaScript <code>shiny:idle</code> is triggered
+for the first time, <code>timeout</code> is taken into account.
+</p>
+</li></ul>
+
+<p>When using <code>timeout</code> or <code>auto</code>, you can still remove the busy indicator with <code>remove_start_up</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>HTML tag that can be included in UI definition.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# with timeout ------------------------------------------------------------
+
+library(shiny)
+library(shinybusy)
+
+ui &lt;- fluidPage(
+
+  busy_start_up(
+    loader = spin_epic("orbit", color = "#FFF"),
+    text = "Loading...",
+    timeout = 1500,
+    color = "#FFF",
+    background = "#112446"
+  ),
+
+  tags$h1("Ready to play!", class = "text-center")
+
+)
+
+server &lt;- function(input, output, session) {
+
+}
+
+if (interactive())
+  shinyApp(ui, server)
+
+# manual ------------------------------------------------------------------
+
+library(shiny)
+library(shinybusy)
+
+ui &lt;- fluidPage(
+
+  busy_start_up(
+    loader = spin_kit(
+      spin = "cube-grid",
+      color = "#FFF",
+      style = "width:50px; height:50px;"
+    ),
+    text = "Loading...",
+    mode = "manual",
+    color = "#FFF",
+    background = "#112446"
+  ),
+
+  tags$h1("Ready to play!", class = "text-center")
+
+)
+
+server &lt;- function(input, output, session) {
+
+  # Remove after 3 seconds (+timeout)
+  observe({
+    Sys.sleep(3)
+    remove_start_up(timeout = 200)
+  })
+
+}
+
+if (interactive())
+  shinyApp(ui, server)
+
+
+# auto &amp; GIF --------------------------------------------------------------
+
+library(shiny)
+library(shinybusy)
+
+ui &lt;- fluidPage(
+
+  busy_start_up(
+    loader = tags$img(
+      src = "https://jeroen.github.io/images/banana.gif",
+      width = 100
+    ),
+    text = "Loading...",
+    mode = "auto"
+  ),
+
+  tags$h1("Ready to play!", class = "text-center"),
+  plotOutput(outputId = "plot")
+
+)
+
+server &lt;- function(input, output, session) {
+
+  output$plot &lt;- renderPlot({
+    Sys.sleep(2)
+    plot(rnorm(100))
+  })
+
+}
+
+if (interactive())
+  shinyApp(ui, server)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>shinybusy</em> version 0.3.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

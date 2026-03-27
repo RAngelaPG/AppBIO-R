@@ -1,0 +1,130 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Parse and extend formula input from a model and return the...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for fparse {psych}"><tr><td>fparse {psych}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Parse and extend  formula input from a model and return the DV(s), IV(s), and associated terms.
+</h2>
+
+<h3>Description</h3>
+
+<p>Formula input from e.g., lm,  may be extended to include mediators,  quadratic and partial terms using a standard syntax. This is used by (e.g.,) <code><a href="../../psych/help/lmCor.html">lmCor</a></code>, <code><a href="../../psych/help/mediate.html">mediate</a></code>, and  <code><a href="../../psych/help/error.bars.by.html">error.bars.by</a></code>.   <code><a href="../../psych/help/lavParse.html">lavParse</a></code> will take a limited number of lavaan syntax commands and return as a model matrix for <code><a href="../../psych/help/CFA.html">CFA</a></code>,  <code><a href="../../psych/help/CFA.bifactor.html">CFA.bifactor</a></code>, <code><a href="../../psych/help/sim.html">sim</a></code>, and <code><a href="../../psych/help/sim.structure.html">sim.structure</a></code>
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+fparse(expr)
+lavParse(model, phi=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>expr</code></td>
+<td>
+<p>A legitimate expression in the form y ~ x1 ,  etc. (see details)</p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>A lavaan style factor specification. (see examples)</p>
+</td></tr>
+<tr valign="top"><td><code>phi</code></td>
+<td>
+<p>If TRUE, the model can include the factor correlations. </p>
+</td></tr> 
+</table>
+
+
+<h3>Details</h3>
+
+<p>The basic formula input given as DV1 + DV2 ~ IV1 + IV2 + (IV3) + I(IV4^2) - IV5 will be parsed to return 2 DVs (1 and 2), two normal IVs (1 and 2), a mediator (IV3) a quadratic (IV4) and a variable to be partialed (IV5). See the various examples in <code><a href="../../psych/help/lmCor.html">lmCor</a></code> and <code><a href="../../psych/help/mediate.html">mediate</a></code>.
+</p>
+<p>To allow rapid comparisons with sem and cfa output from lavaan, it is convenient to use  lavaan style syntax.  
+</p>
+<p><code><a href="../../psych/help/CFA.html">CFA</a></code> and<code><a href="../../psych/help/CFA.html">CFA</a></code> can specify the model using lavaan syntax as well as the item keys format.  
+</p>
+
+
+<h3>Value</h3>
+
+<table summary="R valueblock">
+<tr valign="top"><td><code>v.mat</code></td>
+<td>
+<p>A matrix of variable weights for each factor</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>A list of elements from the left side of the formula</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A list of elements from the right side of the formula</p>
+</td></tr>
+<tr valign="top"><td><code>m</code></td>
+<td>
+<p>A list of those elements of the formula included in ()</p>
+</td></tr>
+<tr valign="top"><td><code>prod</code></td>
+<td>
+<p>A list of elements separated by a * sign</p>
+</td></tr>
+<tr valign="top"><td><code>ex</code></td>
+<td>
+<p>A list of elements marked by I() </p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>A matrix with cols for the factors, rows for the variable, values specified</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>William Revelle</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+fparse(DV  ~ IV1 + IV2 * IV2*IV3 + (IV4) + I(IV5^2) )
+#somewhat more complicated
+fparse(DV1 + DV2 ~ IV1 + IV2 + IV3*IV4 + I(IV5^2) + I(Iv6^2) + (IV7) + (IV8) - IV9)
+
+
+model &lt;- '	F1 =~ .9*V1 + .8*V2 + .7*V3 
+         	F2 =~ .8 * V4 + .7*V5 + .6*V6
+        	F3 =~ .9*V7 + .7*V8 + .5*V9
+       		F1 ~ .3 * F2 + .6* F3
+        	F2 ~ .5*F3'
+lavParse(model,phi=TRUE)   #will return a 9 x 3 matrix loadings and 3x3 phi matrix for sim 
+ 
+#by specifying the coefficients, we can run sim more readily
+sim.data &lt;-sim(model,n=500)
+cx &lt;- CFA(model,sim.data$observed) 
+
+#The CFA function will not use the coefficients nor the phi matrix, just the path model
+#So we can use the same model for simulations and CFA
+#But, lavaan needs to drop the coefficients
+modelg &lt;- 'g =~ .4*V1 +.4*V2+.4*V3 +.4*V4+.4*V5+.4*V6 +.4*V7+.4*V8+.4*V9
+F1 =~ .9*V1 + .8*V2 + .7*V3 
+         	F2 =~ .8 * V4 + .7*V5 + .6*V6
+        	F3 =~ .9*V7 + .7*V8 + .5*V9   '
+  
+modelg &lt;- 'g=~V1 + V2 + V3 + V4 + V5 + V6 + V7 + V8 +V9
+    	F1 =~  V1 + V2 + V3 
+     	F2 =~  V4 + V5 + V6
+        F3 =~ V7 + V8 + V9'
+lavParse(modelg)
+#model without coefficients to run in lavaan
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>psych</em> version 2.6.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

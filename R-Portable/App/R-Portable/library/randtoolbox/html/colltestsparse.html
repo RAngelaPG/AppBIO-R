@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: the Collision test</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for coll.test.sparse {randtoolbox}"><tr><td>coll.test.sparse {randtoolbox}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>the Collision test</h2>
+
+<h3>Description</h3>
+
+<p>The Collision test for testing random number generators.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+coll.test.sparse(rand, lenSample = 2^14, segments = 2^10, tdim = 2, 
+nbSample = 10, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>rand</code></td>
+<td>
+<p>a function generating random numbers. its first argument must be
+the 'number of observation' argument as in <code>runif</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>lenSample</code></td>
+<td>
+<p>numeric for the length of generated samples.</p>
+</td></tr>
+<tr valign="top"><td><code>segments</code></td>
+<td>
+<p>numeric for the number of segments to which the interval <code>[0, 1]</code> is split.</p>
+</td></tr>
+<tr valign="top"><td><code>tdim</code></td>
+<td>
+<p>numeric for the length of the disjoint t-tuples.</p>
+</td></tr>
+<tr valign="top"><td><code>nbSample</code></td>
+<td>
+<p>numeric for the number of repetitions of the test.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>further arguments to pass to function rand</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>We consider outputs of multiple calls to a random number generator <code>rand</code>.  
+Let us denote by <i>n</i> the length of samples (i.e. <code>lenSample</code> argument),
+<i>k</i> the number of cells (i.e. <code>nbCell</code> argument).
+</p>
+<p>A collision is defined as
+when a random number falls in a cell where there are
+already random numbers. Let us note <i>C</i> the number of collisions
+</p>
+<p>The distribution of collision number <i>C</i> is given by 
+</p>
+<p style="text-align: center;"><i>
+            P(C = c) = &prod;_{i=0}^{n-c-1} (k-i)/k *1/(k^c) 2S_n^{n-c}, 
+        </i></p>
+
+<p>where <i>2S_n^{n-c}</i> denotes the Stirling number of the second kind
+and <i>c=0,..., n-1</i>.
+</p>
+<p>This formula cannot be used for large <i>n</i> since the Stirling number
+need <i>O(n log(n))</i> time to be computed. We use
+a Poisson approximation if <i>n/k &lt; 1/32</i> and
+the exact formula otherwise.
+</p>
+<p>The test is repeated <code>nbSample</code> times and the result of each
+repetition forms a row in the output table. 
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data frame with <code>nbSample</code> rows and the following columns.
+</p>
+<p><code>observed</code>	 the observed counts.
+</p>
+<p><code>p.value</code>   the p-value of the test.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Christophe Dutang, Petr Savicky.
+</p>
+
+
+<h3>References</h3>
+
+<p>P. L'Ecuyer, R. Simard, S. Wegenkittl, Sparse serial tests
+of uniformity for random number generators.
+SIAM Journal on Scientific Computing, 24, 2 (2002), 652-668. 
+doi: <a href="https://doi.org/10.1137/S1064827598349033">10.1137/S1064827598349033</a>
+</p>
+<p>L'Ecuyer P. (2007), Test U01: a C library for empirical testing of 
+random number generators. ACM Trans. on Mathematical 
+Software 33(4), 22. doi: <a href="https://doi.org/10.1145/1268776.1268777">10.1145/1268776.1268777</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>other tests of this package <code><a href="../../randtoolbox/help/coll.test.html">coll.test</a></code>, <code><a href="../../randtoolbox/help/freq.test.html">freq.test</a></code>, <code><a href="../../randtoolbox/help/serial.test.html">serial.test</a></code>, <code><a href="../../randtoolbox/help/poker.test.html">poker.test</a></code>,
+<code><a href="../../randtoolbox/help/order.test.html">order.test</a></code> and <code><a href="../../randtoolbox/help/gap.test.html">gap.test</a></code>
+</p>
+<p><code><a href="../../stats/html/ks.test.html">ks.test</a></code> for the Kolmogorov Smirnov test and <code><a href="../../stats/html/acf.html">acf</a></code> for
+the autocorrelation function.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# (1) poisson approximation
+#
+coll.test.sparse(runif)
+
+# (2) exact distribution
+#
+coll.test.sparse(SFMT, lenSample=2^7, segments=2^5, tdim=2, nbSample=10)
+
+## Not run: 
+#A generator with too uniform distribution (too small number of collisions)
+#produces p-values close to 1
+set.generator(name="congruRand", mod="2147483647", mult="742938285", incr="0", seed=1)
+coll.test.sparse(runif, lenSample=300000, segments=50000, tdim=2)
+
+#Park-Miller generator has too many collisions and produces small p-values
+set.generator(name="congruRand", mod="2147483647", mult="16807", incr="0", seed=1)
+coll.test.sparse(runif, lenSample=300000, segments=50000, tdim=2)
+
+## End(Not run)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>randtoolbox</em> version 2.0.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

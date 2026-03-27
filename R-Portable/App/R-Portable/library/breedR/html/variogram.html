@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Empirical variograms of residuals</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body>
+
+<table width="100%" summary="page for variogram {breedR}"><tr><td>variogram {breedR}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Empirical variograms of residuals</h2>
+
+<h3>Description</h3>
+
+<p>Computes isotropic and anisotropic empirical variograms from the residuals of
+a breedR model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+variogram(
+  x,
+  plot = c("all", "isotropic", "anisotropic", "perspective", "heat", "none"),
+  R,
+  coord,
+  z
+)
+
+## S3 method for class 'breedR.variogram'
+print(x, minN = 30, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>a <code>breedR</code> result.</p>
+</td></tr>
+<tr valign="top"><td><code>plot</code></td>
+<td>
+<p>character. What type of variogram is to be plotted. The default 
+is 'all'. Other options are 'isotropic', 'heat', 'perspective' and 
+'anisotropic'. See Details.</p>
+</td></tr>
+<tr valign="top"><td><code>R</code></td>
+<td>
+<p>numeric. Radius of the variogram</p>
+</td></tr>
+<tr valign="top"><td><code>coord</code></td>
+<td>
+<p>(optional) a two-column matrix with coordinates of observations</p>
+</td></tr>
+<tr valign="top"><td><code>z</code></td>
+<td>
+<p>(optional) a numeric vector of values to be represented spatially</p>
+</td></tr>
+<tr valign="top"><td><code>minN</code></td>
+<td>
+<p>numeric. Variogram values computed with less than <code>minN</code> 
+pairs of observations are considered <em>unstable</em> and therefore are not 
+plotted. Default: 30.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>not used.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>An empirical variogram computes the mean squared differences between 
+observations separated by a vector <code>h</code>, for all possible <code>h</code>. An 
+<code>isotropic</code> variogram assumes that the underlying process depends only 
+on the (euclidean) <em>distance</em> between points, but not on the orientation
+or direction of <code>h</code>. At the other end, an <code>anisotropic</code> variogram 
+assumes that the process might depend on the orientation, but not on the 
+direction. Finally, <code>heat</code> and <code>perspective</code> are different 
+representations of a variogram which assumes that the process depends only on
+the absolute distance between rows and columns.
+</p>
+<p>Unless <code>coord</code> or <code>z</code> are specified by the user, <code>variogram</code> 
+builds the variogram with the residuals of the model fit in <code>x</code>. If 
+<code>coord</code> or <code>z</code> are specified, then the spatial coordinates or the 
+residuals are respectively overridden.
+</p>
+<p>This function assumes that there is at most one observation per spatial 
+location. Otherwise, are observations measured at different times? should a 
+spatial-temporal variogram be fitted?
+</p>
+
+
+<h3>Methods (by generic)</h3>
+
+
+<ul>
+<li> <p><code>print</code>: Print a breedR variogram
+</p>
+</li></ul>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../fields/html/vgram.matrix.html">vgram.matrix</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(globulus)
+
+# No spatial effect
+res &lt;- remlf90(fixed  = phe_X ~ 1,
+               random = ~ gg,
+               genetic = list(model = 'add_animal',
+                              pedigree = globulus[, 1:3],
+                              id = 'self'),
+               data   = globulus)
+
+Zd &lt;- model.matrix(res)$genetic
+PBV &lt;- Zd %*% ranef(res)$genetic
+
+# variogram() needs coordinates to compute distances
+# either you use the \code{coord} argument, or you do:
+coordinates(res) &lt;- globulus[, c('x', 'y')]
+
+# there is residual autocorrelation
+# there is also spatial structure in the Breeding Values
+variogram(res)  
+variogram(res, z = PBV)  
+
+# Autoregressive spatial effect
+# eliminates the residual autocorrelation
+res.sp&lt;- remlf90(fixed  = phe_X ~ 1,
+                 spatial = list(model = 'AR', 
+                                coord = globulus[, c('x', 'y')],
+                                rho = c(.9, .9)),
+                 genetic = list(model = 'add_animal',
+                                pedigree = globulus[, 1:3],
+                                id = 'self'),
+                 data   = globulus)
+
+Zd &lt;- model.matrix(res.sp)$genetic
+PBV &lt;- Zd %*% ranef(res.sp)$genetic
+
+variogram(res.sp)
+variogram(res.sp, z = PBV)
+
+  
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>breedR</em> version 0.12-5 <a href="00Index.html">Index</a>]</div>
+</body></html>

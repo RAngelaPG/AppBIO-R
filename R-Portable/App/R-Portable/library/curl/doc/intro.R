@@ -36,22 +36,24 @@ close(con)
 cat(out, sep = "\n")
 
 ## ----eval=FALSE-------------------------------------------------------------------------------------------------------
-#  # This httpbin mirror doesn't cache
-#  con <- curl("https://nghttp2.org/httpbin/drip?duration=1&numbytes=50")
-#  open(con, "rb", blocking = FALSE)
-#  while(isIncomplete(con)){
-#    buf <- readBin(con, raw(), 1024)
-#    if(length(buf))
-#      cat("received: ", rawToChar(buf), "\n")
-#  }
-#  close(con)
+# # This httpbin mirror doesn't cache
+# con <- curl("https://nghttp2.org/httpbin/drip?duration=1&numbytes=50")
+# open(con, "rb", blocking = FALSE)
+# while(isIncomplete(con)){
+#   buf <- readBin(con, raw(), 1024)
+#   if(length(buf))
+#     cat("received: ", rawToChar(buf), "\n")
+# }
+# close(con)
 
 ## ---------------------------------------------------------------------------------------------------------------------
 pool <- new_pool()
-cb <- function(req){cat("done:", req$url, ": HTTP:", req$status, "\n")}
-curl_fetch_multi('https://www.google.com', done = cb, pool = pool)
-curl_fetch_multi('https://cloud.r-project.org', done = cb, pool = pool)
-curl_fetch_multi('https://hb.cran.dev/blabla', done = cb, pool = pool)
+success <- function(req){cat("success:", req$url, ": HTTP:", req$status, "\n")}
+failure <- function(err){cat("failure:", err, "\n")}
+curl_fetch_multi('https://www.google.com', done = success, fail = failure, pool = pool)
+curl_fetch_multi('https://cloud.r-project.org', done = success, fail = failure, pool = pool)
+curl_fetch_multi('https://hb.cran.dev/blabla', done = success, fail = failure, pool = pool)
+curl_fetch_multi('https://doesnotexit.xyz', done = success, fail = failure, pool = pool)
 
 ## ---------------------------------------------------------------------------------------------------------------------
 # This actually performs requests:
@@ -63,6 +65,14 @@ print(out)
 curl_download('https://cloud.r-project.org/CRAN_mirrors.csv', 'mirrors.csv')
 mirros <- read.csv('mirrors.csv')
 unlink('mirrors.csv')
+
+## ----error=TRUE-------------------------------------------------------------------------------------------------------
+try({
+# Oops! A typo in the URL!
+curl_download('https://cloud.r-project.org/CRAN_mirrorZ.csv', 'mirrors.csv')
+con <- curl('https://cloud.r-project.org/CRAN_mirrorZ.csv')
+open(con)
+})
 
 ## ----echo = FALSE, message = FALSE, warning=FALSE---------------------------------------------------------------------
 close(con)
@@ -81,6 +91,12 @@ print(req$status_code)
 head(readLines('mirrors.csv'))
 unlink('mirrors.csv')
 
+## ----error=TRUE-------------------------------------------------------------------------------------------------------
+try({
+h <- new_handle(failonerror = TRUE)
+curl_fetch_memory('https://cloud.r-project.org/CRAN_mirrorZ.csv', handle = h)
+})
+
 ## ---------------------------------------------------------------------------------------------------------------------
 h <- new_handle()
 handle_setopt(h, copypostfields = "moo=moomooo");
@@ -94,11 +110,13 @@ handle_setheaders(h,
 handle <- new_handle(verbose = TRUE)
 
 ## ----error = TRUE-----------------------------------------------------------------------------------------------------
+try({
 # URLOPT_MASFILESIZE must be a number
 handle_setopt(handle, maxfilesize = "foo")
 
 # CURLOPT_USERAGENT must be a string
 handle_setopt(handle, useragent = 12345)
+})
 
 ## ---------------------------------------------------------------------------------------------------------------------
 curl::curl_symbols("CURLUSESSL")

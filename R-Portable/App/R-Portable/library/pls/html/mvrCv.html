@@ -1,0 +1,238 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Cross-validation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mvrCv {pls}"><tr><td>mvrCv {pls}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Cross-validation</h2>
+
+<h3>Description</h3>
+
+<p>Performs the cross-validation calculations for <code>mvr</code>.
+</p>
+<p>This function is not meant to be called directly, but through the generic
+functions <code>pcr</code>, <code>plsr</code>, <code>cppls</code> or <code>mvr</code> with the
+argument <code>validation</code> set to <code>"CV"</code> or <code>"LOO"</code>.  All
+arguments to <code>mvrCv</code> can be specified in the generic function call.
+</p>
+<p>If <code>segments</code> is a list, the arguments <code>segment.type</code> and
+<code>length.seg</code> are ignored.  The elements of the list should be integer
+vectors specifying the indices of the segments.  See
+<code><a href="../../pls/help/cvsegments.html">cvsegments</a></code> for details.
+</p>
+<p>Otherwise, segments of type <code>segment.type</code> are generated.  How many
+segments to generate is selected by specifying the number of segments in
+<code>segments</code>, or giving the segment length in <code>length.seg</code>.  If both
+are specified, <code>segments</code> is ignored.
+</p>
+<p>If <code>jackknife</code> is <code>TRUE</code>, jackknifed regression coefficients are
+returned, which can be used for for variance estimation
+(<code><a href="../../pls/help/var.jack.html">var.jack</a></code>) or hypothesis testing (<code><a href="../../pls/help/jack.test.html">jack.test</a></code>).
+</p>
+<p><code>X</code> and <code>Y</code> do not need to be centered.
+</p>
+<p>Note that this function cannot be used in situations where <i>X</i> needs to
+be recalculated for each segment (except for scaling by the standard
+deviation), for instance with <code>msc</code> or other preprocessing.  For such
+models, use the more general (but slower) function <code><a href="../../pls/help/crossval.html">crossval</a></code>.
+</p>
+<p>Also note that if needed, the function will silently(!) reduce <code>ncomp</code>
+to the maximal number of components that can be cross-validated, which is
+<i>n - l - 1</i>, where <i>n</i> is the number of observations and <i>l</i> is
+the length of the longest segment.  The (possibly reduced) number of
+components is returned as the component <code>ncomp</code>.
+</p>
+<p>By default, the cross-validation will be performed serially.  However, it
+can be done in parallel using functionality in the <code><a href="../../lattice/html/splom.html">parallel</a></code>
+package by setting the option <code>parallel</code> in <code><a href="../../pls/help/pls.options.html">pls.options</a></code>.
+See <code><a href="../../pls/help/pls.options.html">pls.options</a></code> for the different ways to specify the
+parallelism.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+mvrCv(
+  X,
+  Y,
+  ncomp,
+  Y.add = NULL,
+  weights = NULL,
+  method = pls.options()$mvralg,
+  scale = FALSE,
+  segments = 10,
+  segment.type = c("random", "consecutive", "interleaved"),
+  length.seg,
+  jackknife = FALSE,
+  trace = FALSE,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>X</code></td>
+<td>
+<p>a matrix of observations.  <code>NA</code>s and <code>Inf</code>s are not
+allowed.</p>
+</td></tr>
+<tr valign="top"><td><code>Y</code></td>
+<td>
+<p>a vector or matrix of responses.  <code>NA</code>s and <code>Inf</code>s are
+not allowed.</p>
+</td></tr>
+<tr valign="top"><td><code>ncomp</code></td>
+<td>
+<p>the number of components to be used in the modelling.</p>
+</td></tr>
+<tr valign="top"><td><code>Y.add</code></td>
+<td>
+<p>a vector or matrix of additional responses containing relevant
+information about the observations.  Only used for <code>cppls</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>a vector of individual weights for the observations.  Only
+used for <code>cppls</code>.  (Optional)</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>the multivariate regression method to be used.</p>
+</td></tr>
+<tr valign="top"><td><code>scale</code></td>
+<td>
+<p>logical.  If <code>TRUE</code>, the learning <i>X</i> data for each
+segment is scaled by dividing each variable by its sample standard
+deviation.  The prediction data is scaled by the same amount.</p>
+</td></tr>
+<tr valign="top"><td><code>segments</code></td>
+<td>
+<p>the number of segments to use, or a list with segments (see
+below).</p>
+</td></tr>
+<tr valign="top"><td><code>segment.type</code></td>
+<td>
+<p>the type of segments to use.  Ignored if <code>segments</code>
+is a list.</p>
+</td></tr>
+<tr valign="top"><td><code>length.seg</code></td>
+<td>
+<p>Positive integer.  The length of the segments to use.  If
+specified, it overrides <code>segments</code> unless <code>segments</code> is a list.</p>
+</td></tr>
+<tr valign="top"><td><code>jackknife</code></td>
+<td>
+<p>logical.  Whether jackknifing of regression coefficients
+should be performed.</p>
+</td></tr>
+<tr valign="top"><td><code>trace</code></td>
+<td>
+<p>logical; if <code>TRUE</code>, the segment number is printed for each
+segment.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>additional arguments, sent to the underlying fit function.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A list with the following components: </p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>equals
+<code>"CV"</code> for cross-validation.</p>
+</td></tr> <tr valign="top"><td><code>pred</code></td>
+<td>
+<p>an array with the
+cross-validated predictions.</p>
+</td></tr> <tr valign="top"><td><code>coefficients</code></td>
+<td>
+<p>(only if <code>jackknife</code>
+is <code>TRUE</code>) an array with the jackknifed regression coefficients.  The
+dimensions correspond to the predictors, responses, number of components,
+and segments, respectively.</p>
+</td></tr> <tr valign="top"><td><code>PRESS0</code></td>
+<td>
+<p>a vector of PRESS values (one for
+each response variable) for a model with zero components, i.e., only the
+intercept.</p>
+</td></tr> <tr valign="top"><td><code>PRESS</code></td>
+<td>
+<p>a matrix of PRESS values for models with 1,
+..., <code>ncomp</code> components.  Each row corresponds to one response
+variable.</p>
+</td></tr> <tr valign="top"><td><code>adj</code></td>
+<td>
+<p>a matrix of adjustment values for calculating bias
+corrected MSEP.  <code>MSEP</code> uses this.</p>
+</td></tr> <tr valign="top"><td><code>segments</code></td>
+<td>
+<p>the list of
+segments used in the cross-validation.</p>
+</td></tr> <tr valign="top"><td><code>ncomp</code></td>
+<td>
+<p>the actual number of
+components used.</p>
+</td></tr> <tr valign="top"><td><code>gamma</code></td>
+<td>
+<p>if method <code>cppls</code> is used, gamma values
+for the powers of each CV segment are returned.</p>
+</td></tr>
+</table>
+
+
+<h3>Note</h3>
+
+<p>The <code>PRESS0</code> is always cross-validated using leave-one-out
+cross-validation.  This usually makes little difference in practice, but
+should be fixed for correctness.
+</p>
+<p>The current implementation of the jackknife stores all jackknife-replicates
+of the regression coefficients, which can be very costly for large matrices.
+This might change in a future version.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Ron Wehrens and Bjørn-Helge Mevik
+</p>
+
+
+<h3>References</h3>
+
+<p>Mevik, B.-H., Cederkvist, H. R. (2004) Mean Squared Error of
+Prediction (MSEP) Estimates for Principal Component Regression (PCR) and
+Partial Least Squares Regression (PLSR).  <em>Journal of Chemometrics</em>,
+<b>18</b>(9), 422&ndash;429.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../pls/help/mvr.html">mvr</a></code> <code><a href="../../pls/help/crossval.html">crossval</a></code> <code><a href="../../pls/help/cvsegments.html">cvsegments</a></code>
+<code><a href="../../pls/help/MSEP.html">MSEP</a></code> <code><a href="../../pls/help/var.jack.html">var.jack</a></code> <code><a href="../../pls/help/jack.test.html">jack.test</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+data(yarn)
+yarn.pcr &lt;- pcr(density ~ NIR, 6, data = yarn, validation = "CV", segments = 10)
+## Not run: plot(MSEP(yarn.pcr))
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>pls</em> version 2.9-0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

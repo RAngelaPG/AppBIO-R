@@ -1,0 +1,156 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Fast EM Algorithm for 2-Component Mixtures of Univariate...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for normalmixEM2comp {mixtools}"><tr><td>normalmixEM2comp {mixtools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Fast EM Algorithm for 2-Component Mixtures of Univariate Normals</h2>
+
+<h3>Description</h3>
+
+<p>Return EM algorithm output for mixtures of univariate normal distributions 
+for the special case of 2 components, exploiting the simple structure of the
+problem to speed up the code.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+normalmixEM2comp(x, lambda, mu, sigsqrd, eps= 1e-8, maxit = 1000, verb=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A vector of length <i>n</i> consisting of the data.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>Initial value of first-component mixing proportion.</p>
+</td></tr>
+<tr valign="top"><td><code>mu</code></td>
+<td>
+<p>A 2-vector of initial values for the mean parameters.</p>
+</td></tr>
+<tr valign="top"><td><code>sigsqrd</code></td>
+<td>
+<p>Either a scalar or a 2-vector with initial value(s) for
+the variance parameters.  If a scalar, the algorithm assumes that the
+two components have equal variances; if a 2-vector, it assumes that the
+two components do not have equal variances.</p>
+</td></tr>
+<tr valign="top"><td><code>eps</code></td>
+<td>
+<p>The convergence criterion.  Convergence is declared when the change in 
+the observed data log-likelihood increases by less than epsilon.</p>
+</td></tr>
+<tr valign="top"><td><code>maxit</code></td>
+<td>
+<p>The maximum possible number of iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>verb</code></td>
+<td>
+<p>If TRUE, then various updates are printed during each iteration of the algorithm.</p>
+</td></tr> 
+</table>
+
+
+<h3>Details</h3>
+
+<p>This code is written to be very fast, sometimes more than an order of magnitude
+faster than <code><a href="../../mixtools/help/normalmixEM.html">normalmixEM</a></code> for the same problem.  It is less numerically
+stable that <code><a href="../../mixtools/help/normalmixEM.html">normalmixEM</a></code> in the sense that it does not safeguard 
+against underflow as carefully.
+</p>
+<p>Note that when the two components are assumed to have unequal variances,
+the loglikelihood is unbounded.  However, in practice this is rarely a problem
+and quite often the algorithm converges to a &quot;nice&quot; local maximum.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>normalmixEM2comp</code> returns a list of class <code>mixEM</code> with items:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>The raw data.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>The final mixing proportions (lambda and 1-lambda).</p>
+</td></tr>
+<tr valign="top"><td><code>mu</code></td>
+<td>
+<p>The final two mean parameters.</p>
+</td></tr>
+<tr valign="top"><td><code>sigma</code></td>
+<td>
+<p>The final one or two standard deviations. </p>
+</td></tr>
+<tr valign="top"><td><code>loglik</code></td>
+<td>
+<p>The final log-likelihood.</p>
+</td></tr>
+<tr valign="top"><td><code>posterior</code></td>
+<td>
+<p>An nx2 matrix of posterior probabilities for
+observations.</p>
+</td></tr>
+<tr valign="top"><td><code>all.loglik</code></td>
+<td>
+<p>A vector of each iteration's log-likelihood.  This vector
+includes both the initial and the final values; thus, the number of iterations 
+is one less than its length.</p>
+</td></tr>
+<tr valign="top"><td><code>restarts</code></td>
+<td>
+<p>The number of times the algorithm restarted due to 
+unacceptable choice of initial values (always zero).</p>
+</td></tr>
+<tr valign="top"><td><code>ft</code></td>
+<td>
+<p>A character vector giving the name of the function.</p>
+</td></tr>
+</table>
+
+
+<h3>References</h3>
+
+<p>McLachlan, G. J. and Peel, D. (2000) <em>Finite Mixture Models</em>, John Wiley and Sons, Inc.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../mixtools/help/mvnormalmixEM.html">mvnormalmixEM</a></code>, <code><a href="../../mixtools/help/normalmixEM.html">normalmixEM</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+##Analyzing the Old Faithful geyser data with a 2-component mixture of normals.
+
+data(faithful)
+attach(faithful)
+set.seed(100)
+system.time(out &lt;- normalmixEM2comp(waiting, lambda=.5, 
+            mu=c(50,80), sigsqrd=100))
+out$all.loglik # Note:  must be monotone increasing
+
+# Compare elapsed time with more general version
+system.time(out2 &lt;- normalmixEM(waiting, lambda=c(.5,.5), 
+            mu=c(50,80), sigma=c(10,10), arbvar=FALSE))
+out2$all.loglik # Values should be identical to above
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mixtools</em> version 2.0.0.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

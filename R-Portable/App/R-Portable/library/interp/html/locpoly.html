@@ -1,0 +1,351 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Local polynomial fit.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for locpoly {interp}"><tr><td>locpoly {interp}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Local polynomial fit.
+</h2>
+
+<h3>Description</h3>
+
+<p>This function performs a local polynomial fit of up to order 3 to
+bivariate data. It returns estimated values of the regression function
+as well as estimated partial derivatives up to order 3. This access to the 
+partial derivatives was the main intent for writing this code as there already
+many other local polynomial regression implementations in R.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+locpoly(x, y, z, xo = seq(min(x), max(x), length = nx), yo = seq(min(y),
+ max(y), length = ny), nx = 40, ny = 40, input = "points", output = "grid",
+ h = 0, kernel = "gaussian", solver = "QR", degree = 3, pd = "")
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+
+<p>vector of <i>x</i>-coordinates of data points.
+</p>
+<p>Missing values are not accepted.
+</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+
+<p>vector of <i>y</i>-coordinates of data points.
+</p>
+<p>Missing values are not accepted.
+</p>
+</td></tr>
+<tr valign="top"><td><code>z</code></td>
+<td>
+
+<p>vector of <i>z</i>-values at data points.
+</p>
+<p>Missing values are not accepted.
+</p>
+<p><code>x</code>, <code>y</code>, and <code>z</code> must be the same length
+</p>
+</td></tr>
+<tr valign="top"><td><code>xo</code></td>
+<td>
+
+<p>If <code>output="grid"</code> (default): sequence of <i>x</i> locations for
+rectangular output grid, defaults to <code>nx</code> points between
+<code>min(x)</code> and <code>max(x)</code>.
+</p>
+<p>If <code>output="points"</code>: vector of <i>x</i> locations for output points.
+</p>
+</td></tr>
+<tr valign="top"><td><code>yo</code></td>
+<td>
+
+<p>If <code>output="grid"</code> (default): sequence of <i>y</i> locations for
+rectangular output grid, defaults to <code>ny</code> points between
+<code>min(y)</code> and <code>max(y)</code>.
+</p>
+<p>If <code>output="points"</code>: vector of <i>y</i> locations for output
+points. In this case it has to be same length as <code>xo</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>input</code></td>
+<td>
+
+<p>text, possible values are <code>"grid"</code> (not yet implemented) and
+<code>"points"</code> (default).
+</p>
+<p>This is used to distinguish between regular and irregular gridded data.
+</p>
+</td></tr>
+<tr valign="top"><td><code>output</code></td>
+<td>
+
+<p>text, possible values are <code>"grid"</code> (=default) and
+<code>"points"</code>.
+</p>
+<p>If <code>"grid"</code> is choosen then <code>xo</code> and <code>yo</code> are
+interpreted as vectors spanning a rectangular grid of points
+<i>(xo[i],yo[j])</i>, <i>i=1,...,nx</i>, <i>j=1,...,ny</i>. This
+default behaviour matches how <code>akima::interp</code> works.
+</p>
+<p>In the case of <code>"points"</code>  <code>xo</code> and <code>yo</code> have to be
+of same lenght and are taken as possibly irregular spaced output
+points <i>(xo[i],yo[i])</i>, <i>i=1,...,no</i> with
+<code>no=length(xo)</code>. <code>nx</code> and <code>ny</code> are ignored in this
+case. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>nx</code></td>
+<td>
+
+<p>dimension of output grid in x direction
+</p>
+</td></tr>
+<tr valign="top"><td><code>ny</code></td>
+<td>
+
+<p>dimension of output grid in y direction
+</p>
+</td></tr>
+<tr valign="top"><td><code>h</code></td>
+<td>
+
+<p>bandwidth parameter, between 0 and 1.
+If a scalar is given it is interpreted as ratio applied to the dataset size 
+to determine a local search neighbourhood, if set to 0 a minimum useful 
+search neighbourhood is choosen (e.g. 10 points for a cubic trend function 
+to determine all 10 parameters).
+</p>
+<p>If a vector of length 2 is given both components are interpreted as
+ratio of the <i>x</i>- and <i>y</i>-range and taken as global
+bandwidth. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>kernel</code></td>
+<td>
+
+<p>Text value, implemented kernels are <code>uniform</code>, <code>triangle</code>,
+<code>epanechnikov</code>, <code>biweight</code>, <code>tricube</code>,
+<code>triweight</code>, <code>cosine</code>  and <code>gaussian</code> (default).
+</p>
+</td></tr>
+<tr valign="top"><td><code>solver</code></td>
+<td>
+
+<p>Text value, determines used solver in fastLM algorithm used by this 
+code 
+</p>
+<p>Possible values are <code>LLt</code>, <code>QR</code> (default), <code>SVD</code>,
+<code>Eigen</code> and
+<code>CPivQR</code> (compare <code><a href="../../RcppEigen/help/fastLm.html">fastLm</a></code>).
+
+</p>
+</td></tr>
+<tr valign="top"><td><code>degree</code></td>
+<td>
+
+<p>Integer value, degree of polynomial trend, maximum allowed value is 3.
+</p>
+</td></tr>
+<tr valign="top"><td><code>pd</code></td>
+<td>
+
+<p>Text value, determines which partial derivative should be returned,
+possible values are  <code>""</code> (default, the polynomial itself),
+<code>"x"</code>, <code>"y"</code>, <code>"xx"</code>, <code>"xy"</code>, <code>"yy"</code>, 
+<code>"xxx"</code>, <code>"xxy"</code>, <code>"xyy"</code>, <code>"yyy"</code> or <code>"all"</code>.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+
+
+<p>If <code>pd="all"</code>:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>x </code></td>
+<td>
+<p><i>x</i> coordinates</p>
+</td></tr>
+<tr valign="top"><td><code>y </code></td>
+<td>
+<p><i>y</i> coordinates</p>
+</td></tr>
+<tr valign="top"><td><code>z </code></td>
+<td>
+<p>estimates of <i>z</i></p>
+</td></tr>
+<tr valign="top"><td><code>zx </code></td>
+<td>
+<p>estimates of <i>dz/dx</i></p>
+</td></tr>
+<tr valign="top"><td><code>zy </code></td>
+<td>
+<p>estimates of <i>dz/dy</i></p>
+</td></tr>
+<tr valign="top"><td><code>zxx </code></td>
+<td>
+<p>estimates of <i>d^2z/dx^2</i></p>
+</td></tr>
+<tr valign="top"><td><code>zxy </code></td>
+<td>
+<p>estimates of <i>d^2z/dxdy</i></p>
+</td></tr>
+<tr valign="top"><td><code>zyy </code></td>
+<td>
+<p>estimates of <i>d^2z/dy^2</i></p>
+</td></tr>
+<tr valign="top"><td><code>zxxx </code></td>
+<td>
+<p>estimates of <i>d^3z/dx^3</i></p>
+</td></tr>
+<tr valign="top"><td><code>zxxy </code></td>
+<td>
+<p>estimates of <i>d^3z/dx^2dy</i></p>
+</td></tr>
+<tr valign="top"><td><code>zxyy </code></td>
+<td>
+<p>estimates of <i>d^3z/dxdy^2</i></p>
+</td></tr>
+<tr valign="top"><td><code>zyyy </code></td>
+<td>
+<p>estimates of <i>d^3z/dy^3</i></p>
+</td></tr>
+</table>
+<p>If <code>pd!="all"</code> only the elements <code>x</code>, <code>y</code> and the desired
+derivative will be returned, e.g. <code>zxy</code> for <code>pd="xy"</code>. 
+</p>
+
+
+<h3>Note</h3>
+
+<p>Function <code><a href="../../KernSmooth/help/locpoly.html">locpoly</a></code> of package
+<code>KernSmooth</code> performs a similar task for univariate data.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Albrecht Gebhardt &lt;albrecht.gebhardt@aau.at&gt;,
+Roger Bivand &lt;roger.bivand@nhh.no&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Douglas Bates, Dirk Eddelbuettel (2013). Fast and Elegant Numerical
+Linear Algebra Using the RcppEigen Package. Journal of Statistical
+Software, 52(5), 1-24. URL http://www.jstatsoft.org/v52/i05/.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../KernSmooth/help/locpoly.html">locpoly</a></code>, <code><a href="../../RcppEigen/help/fastLm.html">fastLm</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## choose a kernel
+knl &lt;- "gaussian"
+
+## choose global and local bandwidth 
+bwg &lt;- 0.25 # *100% means: percentage of x- y-range used
+bwl &lt;- 0.1  # *100% means: percentage of data set (nearest neighbours) used
+
+## a bivariate polynomial of degree 5:
+f &lt;- function(x,y) 0.1+ 0.2*x-0.3*y+0.1*x*y+0.3*x^2*y-0.5*y^2*x+y^3*x^2+0.1*y^5
+
+## degree of model
+dg=3 
+
+## part 1:
+## regular gridded data:
+ng&lt;- 11 # x/y size of a square data grid
+
+## build and fill the grid with the theoretical values:
+
+xg&lt;-seq(0,1,length=ng)
+yg&lt;-seq(0,1,length=ng)
+
+# xg and yg as matrix matching fg
+nx &lt;- length(xg)
+ny &lt;- length(yg)
+xx &lt;- t(matrix(rep(xg,ny),nx,ny))
+yy &lt;- matrix(rep(yg,nx),ny,nx)
+
+fg   &lt;- outer(xg,yg,f)
+
+## local polynomial estimate
+## global bw:
+ttg &lt;- system.time(pdg &lt;- locpoly(xg,yg,fg,
+  input="grid", pd="all", h=c(bwg,bwg), solver="QR", degree=dg, kernel=knl))
+## time used:
+ttg
+
+## local bw:
+ttl &lt;- system.time(pdl &lt;- locpoly(xg,yg,fg,
+  input="grid", pd="all", h=bwl, solver="QR", degree=dg, kernel=knl))
+## time used:
+ttl
+
+image(pdl$x,pdl$y,pdl$z,main="f and its estimated first partial derivatives",
+      sub="colors: f, dotted: df/dx, dashed: df/dy")
+contour(pdl$x,pdl$y,pdl$zx,add=TRUE,lty="dotted")
+contour(pdl$x,pdl$y,pdl$zy,add=TRUE,lty="dashed")
+points(xx,yy,pch=".")
+
+
+## part 2:
+## irregular data,
+## results will not be as good as with the regular 21*21=231 points.
+
+nd&lt;- 121 # size of data set
+
+## random irregular data
+oldseed &lt;- set.seed(42)
+x&lt;-runif(ng)
+y&lt;-runif(ng)
+set.seed(oldseed)
+
+z &lt;- f(x,y)
+
+## global bw:
+ttg &lt;- system.time(pdg &lt;- interp::locpoly(x,y,z, xg,yg, pd="all",
+  h=c(bwg,bwg), solver="QR", degree=dg,kernel=knl))
+
+ttg
+
+## local bw:
+ttl &lt;- system.time(pdl &lt;- interp::locpoly(x,y,z, xg,yg, pd="all",
+  h=bwl, solver="QR", degree=dg,kernel=knl))
+
+ttl
+
+image(pdl$x,pdl$y,pdl$z,main="f and its estimated first partial derivatives",
+      sub="colors: f, dotted: df/dx, dashed: df/dy")
+contour(pdl$x,pdl$y,pdl$zx,add=TRUE,lty="dotted")
+contour(pdl$x,pdl$y,pdl$zy,add=TRUE,lty="dashed")
+points(x,y,pch=".")
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>interp</em> version 1.1-6 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

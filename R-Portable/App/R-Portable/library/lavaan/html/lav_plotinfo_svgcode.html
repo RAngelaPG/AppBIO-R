@@ -1,0 +1,164 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Creates code to show a diagram in svg format.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for lav_plotinfo_svgcode {lavaan}"><tr><td>lav_plotinfo_svgcode {lavaan}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Creates code to show a diagram in svg format.</h2>
+
+<h3>Description</h3>
+
+<p>Create svg code to show a diagram of the model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+lav_plotinfo_svgcode(plotinfo,
+                     outfile = "",
+                     sloped.labels = TRUE,
+                     standalone = FALSE,
+                     stroke.width = 2L,
+                     font.size = 20L,
+                     idx.font.size = 15L,
+                     dy = 5L,
+                     mlovcolors = c("lightgreen", "lightblue"),
+                     lightness= 1,
+                     font.family = "Latin Modern Math, arial, Aerial, sans",
+                     italic = TRUE,
+                     auto.subscript = TRUE
+                     )
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>plotinfo</code></td>
+<td>
+<p>A plotinfo structure as returned from <code>lav_plotinfo_positions</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>outfile</code></td>
+<td>
+<p>A connection or a character string, the file to store the code.</p>
+</td></tr>
+<tr valign="top"><td><code>sloped.labels</code></td>
+<td>
+<p>logical, sloped labels for the edges.</p>
+</td></tr>
+<tr valign="top"><td><code>standalone</code></td>
+<td>
+<p>logical, add code to make a html file with svg in it? If
+FALSE (default) the outfile - if specified - must have a file extension
+'svg', if TRUE the file extension must be 'htm' or 'html'.</p>
+</td></tr>
+<tr valign="top"><td><code>stroke.width</code></td>
+<td>
+<p>Value for stroke-width parameter in svg.</p>
+</td></tr>
+<tr valign="top"><td><code>font.size</code></td>
+<td>
+<p>An integer specifying normal font size to use.</p>
+</td></tr>
+<tr valign="top"><td><code>idx.font.size</code></td>
+<td>
+<p>An integer specifying font size to use for a subscript.</p>
+</td></tr>
+<tr valign="top"><td><code>dy</code></td>
+<td>
+<p>An integer specifying the distance to move the baseline of the subscript.</p>
+</td></tr>
+<tr valign="top"><td><code>mlovcolors</code></td>
+<td>
+<p>Array of two colors for distinguishing ov nodes with same name
+between the levels in a  multilevel model.</p>
+</td></tr>
+<tr valign="top"><td><code>lightness</code></td>
+<td>
+<p>A scalar factor to modify the distances between nodes.</p>
+</td></tr>
+<tr valign="top"><td><code>font.family</code></td>
+<td>
+<p>Fonts to be tried for rendering the labels. The first one,
+Latin Modern Math, is close to the default font used in tikz for mathematical
+expressions and can be downloaded from
+<a href="https://ctan.org/tex-archive/fonts/lm-math">CTAN</a>.</p>
+</td></tr>
+<tr valign="top"><td><code>italic</code></td>
+<td>
+<p>Are labels to be in italic font? If FALSE the labels will be
+shown in mathrm font.</p>
+</td></tr>
+<tr valign="top"><td><code>auto.subscript</code></td>
+<td>
+<p>Logical, see <code><a href="../../lavaan/help/lav_label_code.html">lav_label_code</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>NULL (invisible)</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../lavaan/help/lav_plotinfo_positions.html">lav_plotinfo_positions</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+model &lt;- 'alpha  =~ x1 + x2 + x3       # latent variable
+          beta &lt;~ x4 + x5 + x6         # composite
+          gamma =~ x7 + x8 + x9        # latent variable
+          Xi =~ x10 + x11 + x12 + x13  # latent variable
+          # regressions
+          Xi ~ v * alpha + t * beta + 1
+          alpha ~ yy * Theta1 + tt * beta + ss * gamma
+          '
+test &lt;- lav_model_plotinfo(model)
+test &lt;- lav_plotinfo_positions(test)
+lav_plotinfo_svgcode(test) # no file given, so output to R console
+modelml &lt;- '
+        level: 1
+        fw =~ 1*y_1 + y_2 + y_3 + y_5
+        level: 2
+        fb =~ 1*y_1 + y_2 + y_3 + y_4
+        y_2 ~~ cv24 * y_4
+  '
+testml &lt;- lav_model_plotinfo(modelml)
+testml &lt;- lav_plotinfo_positions(testml)
+# in the line hereunder no file is given, so output to R console
+lav_plotinfo_svgcode(testml, sloped.labels = FALSE, standalone = TRUE,
+            auto.subscript = FALSE)
+## Not run: 
+# example creating html file with the above diagrams
+zz &lt;- file("demosvg.html", open="w")
+writeLines(c(
+  '&lt;!DOCTYPE html&gt;',
+  '&lt;html&gt;',
+  '&lt;body&gt;',
+  '&lt;h2&gt;SVG diagrams created by lav_plot R package&lt;/h2&gt;'),
+  zz)
+lav_plotinfo_svgcode(test, outfile = "temp.svg")
+tmp &lt;- readLines("tmp.svg")
+writeLines(tmp, zz)
+writeLines("&lt;br /&gt;", zz)
+lav_plotinfo_svgcode(testml, outfile = "temp.svg", sloped.labels = FALSE,
+             standalone = TRUE)
+tmp &lt;- readLines("tmp.svg")
+writeLines(tmp, zz)
+writeLines(c("&lt;/body&gt;", "&lt;/html&gt;"), zz)
+close(zz)
+browseURL("demosvg.html")
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>lavaan</em> version 0.6-21 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

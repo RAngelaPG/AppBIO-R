@@ -105,10 +105,10 @@ par(oldpar)
 ### code chunk number 5: mgus2
 ###################################################
 getOption("SweaveHooks")[["fig"]]()
-mgus2$etime <- with(mgus2, ifelse(pstat==0, futime, ptime))
+etime <- with(mgus2, ifelse(pstat==0, futime, ptime))
 event <- with(mgus2, ifelse(pstat==0, 2*death, 1))
-mgus2$event <- factor(event, 0:2, labels=c("censor", "pcm", "death"))
-table(mgus2$event)
+event <- factor(event, 0:2, labels=c("censor", "pcm", "death"))
+table(event)
 
 mfit2 <- survfit(Surv(etime, event) ~ sex, data=mgus2)
 print(mfit2, rmean=240, scale=12)
@@ -252,10 +252,10 @@ dim(mgus2)
 ###################################################
 # The PCM curves of the multi-state model
 pfit2 <- survfit(Surv(fgstart, fgstop, fgstatus) ~ sex,
-                data=pcmdat, weights=fgwt)
+                data=pcmdat, weight=fgwt)
 # The death curves of the multi-state model
 dfit2 <- survfit(Surv(fgstart, fgstop, fgstatus) ~ sex, 
-                  data=deathdat, weights=fgwt)
+                  data=deathdat, weight=fgwt)
 
 
 ###################################################
@@ -263,10 +263,10 @@ dfit2 <- survfit(Surv(fgstart, fgstop, fgstatus) ~ sex,
 ###################################################
 getOption("SweaveHooks")[["fig"]]()
 fgfit1 <- coxph(Surv(fgstart, fgstop, fgstatus) ~ sex, data=pcmdat,
-               weights= fgwt)
+               weight= fgwt)
 summary(fgfit1)
 fgfit2 <- coxph(Surv(fgstart, fgstop, fgstatus) ~ sex, data=deathdat,
-               weights= fgwt)
+               weight= fgwt)
 fgfit2
 
 mfit2 <- survfit(Surv(etime, event) ~ sex, data=mgus2) #reprise the AJ
@@ -291,10 +291,10 @@ rcurve <- survfit(cfitr, newdata=ndata)
 ### code chunk number 18: fg3
 ###################################################
 fgfit2a <- coxph(Surv(fgstart, fgstop, fgstatus) ~ age + sex + mspike,
-                 data=pcmdat, weights=fgwt)
+                 data=pcmdat, weight=fgwt)
 
 fgfit2b <-  coxph(Surv(fgstart, fgstop, fgstatus) ~ age + sex + mspike,
-                 data=deathdat, weights=fgwt)
+                 data=deathdat, weight=fgwt)
 round(rbind(PCM= coef(fgfit2a), death=coef(fgfit2b)), 3)
 
 

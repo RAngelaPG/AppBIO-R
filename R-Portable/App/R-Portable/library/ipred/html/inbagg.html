@@ -1,0 +1,175 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Indirect Bagging</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for inbagg {ipred}"><tr><td>inbagg {ipred}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Indirect Bagging</h2>
+
+<h3>Description</h3>
+
+<p>Function to perform the indirect bagging and subagging.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'data.frame'
+inbagg(formula, data, pFUN=NULL, 
+  cFUN=list(model = NULL, predict = NULL, training.set = NULL), 
+  nbagg = 25, ns = 0.5, replace = FALSE, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>formula. A <code>formula</code> specified as <code>y~w1+w2+w3~x1+x2+x3</code> describes how to model the intermediate variables <code>w1, w2, w3</code> and the response variable <code>y</code>, if no other formula is specified by the elements of <code>pFUN</code> or in <code>cFUN</code></p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>data frame of explanatory, intermediate and response variables.</p>
+</td></tr>
+<tr valign="top"><td><code>pFUN</code></td>
+<td>
+<p>list of lists, which describe models for the intermediate variables, details are given below.</p>
+</td></tr>
+<tr valign="top"><td><code>cFUN</code></td>
+<td>
+<p>either a fixed function with argument <code>newdata</code> and returning the class membership by default, or a list specifying a classifying model, similar to one element of <code>pFUN</code>. Details are given below.</p>
+</td></tr>
+<tr valign="top"><td><code>nbagg</code></td>
+<td>
+<p>number of bootstrap samples.</p>
+</td></tr>
+<tr valign="top"><td><code>ns</code></td>
+<td>
+<p>proportion of sample to be drawn from the learning
+sample. By default, subagging with 50% is performed, i.e. draw
+0.5*n out of n without replacement.</p>
+</td></tr>
+<tr valign="top"><td><code>replace</code></td>
+<td>
+<p>logical. Draw with or without replacement.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>additional arguments (e.g. <code>subset</code>).</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>A given data set is subdivided into three types of variables: explanatory, intermediate and response variables.<br />
+</p>
+<p>Here, each specified intermediate variable is modelled separately
+following <code>pFUN</code>, a list of lists with elements specifying an
+arbitrary number of models for the intermediate variables and an
+optional element <code>training.set = c("oob", "bag", "all")</code>. The
+element <code>training.set</code> determines whether, predictive models for
+the intermediate are calculated based on the out-of-bag sample
+(<code>"oob"</code>), the default, on the bag sample (<code>"bag"</code>) or on all
+available observations (<code>"all"</code>). The elements of <code>pFUN</code>,
+specifying the models for the intermediate variables are lists as
+described in <code><a href="../../ipred/help/inclass.html">inclass</a></code>.
+Note that, if no formula is given in these elements, the functional
+relationship of <code>formula</code> is used.<br />
+</p>
+<p>The response variable is modelled following <code>cFUN</code>.
+This can either be a fixed classifying function as described in Peters
+et al. (2003) or a list,
+which specifies the  modelling technique to be applied. The list
+contains the arguments <code>model</code> (which model to be fitted),
+<code>predict</code> (optional, how to predict), <code>formula</code> (optional, of
+type <code>y~w1+w2+w3+x1+x2</code> determines the variables the classifying
+function is based on) and the optional argument <code>training.set =
+  c("fitted.bag", "original", "fitted.subset")</code>
+specifying whether the classifying function is trained on the predicted
+observations of the bag sample (<code>"fitted.bag"</code>),
+on the original observations (<code>"original"</code>) or on the
+predicted observations not included in a defined subset
+(<code>"fitted.subset"</code>). Per default the formula specified in
+<code>formula</code> determines the variables, the classifying function is
+based on.<br />
+</p>
+<p>Note that the default of <code>cFUN = list(model = NULL, training.set = "fitted.bag")</code>
+uses the function <code><a href="../../rpart/help/rpart.html">rpart</a></code> and
+the predict function <code>predict(object, newdata, type = "class")</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>"inbagg"</code>, that is a list with elements
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>mtrees</code></td>
+<td>
+<p>a list of length <code>nbagg</code>, describing the prediction
+models corresponding
+to each bootstrap sample. Each element of <code>mtrees</code>
+is a list with elements <code>bindx</code> (observations of bag sample),
+<code>btree</code> (classifying function of bag sample) and <code>bfct</code> (predictive models for intermediates of bag sample).</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>vector of response values.</p>
+</td></tr>
+<tr valign="top"><td><code>W</code></td>
+<td>
+<p>data frame of intermediate variables.</p>
+</td></tr>
+<tr valign="top"><td><code>X</code></td>
+<td>
+<p>data frame of explanatory variables.</p>
+</td></tr>
+</table>
+
+
+<h3>References</h3>
+
+<p>David J. Hand, Hua Gui Li, Niall M. Adams (2001),
+Supervised classification with structured class definitions.
+<em>Computational Statistics &amp; Data Analysis</em> <b>36</b>,
+209&ndash;225.
+</p>
+<p>Andrea Peters, Berthold Lausen, Georg Michelson and Olaf Gefeller (2003),
+Diagnosis of glaucoma by indirect classifiers.
+<em>Methods of Information in Medicine</em> <b>1</b>, 99-103.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../rpart/help/rpart.html">rpart</a></code>, <code><a href="../../ipred/help/bagging.html">bagging</a></code>,
+<code><a href="../../stats/html/lm.html">lm</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+library("MASS")
+library("rpart")
+y &lt;- as.factor(sample(1:2, 100, replace = TRUE))
+W &lt;- mvrnorm(n = 200, mu = rep(0, 3), Sigma = diag(3))
+X &lt;- mvrnorm(n = 200, mu = rep(2, 3), Sigma = diag(3))
+colnames(W) &lt;- c("w1", "w2", "w3") 
+colnames(X) &lt;- c("x1", "x2", "x3") 
+DATA &lt;- data.frame(y, W, X)
+
+
+pFUN &lt;- list(list(formula = w1~x1+x2, model = lm, predict = mypredict.lm),
+list(model = rpart))
+
+inbagg(y~w1+w2+w3~x1+x2+x3, data = DATA, pFUN = pFUN)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ipred</em> version 0.9-15 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

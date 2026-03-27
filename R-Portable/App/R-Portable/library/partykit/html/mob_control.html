@@ -1,0 +1,231 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Control Parameters for Model-Based Partitioning</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mob_control {partykit}"><tr><td>mob_control {partykit}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Control Parameters for Model-Based Partitioning</h2>
+
+<h3>Description</h3>
+
+<p>Various parameters that control aspects the fitting algorithm
+for recursively partitioned <code><a href="../../partykit/help/mob.html">mob</a></code> models.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+mob_control(alpha = 0.05, bonferroni = TRUE, minsize = NULL, maxdepth = Inf,
+  mtry = Inf, trim = 0.1, breakties = FALSE, parm = NULL, dfsplit = TRUE, prune = NULL,
+  restart = TRUE, verbose = FALSE, caseweights = TRUE, ytype = "vector", xtype = "matrix",
+  terminal = "object", inner = terminal, model = TRUE, numsplit = "left",
+  catsplit = "binary", vcov = "opg", ordinal = "chisq", nrep = 10000,
+  minsplit = minsize, minbucket = minsize, applyfun = NULL, cores = NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>alpha</code></td>
+<td>
+<p>numeric significance level. A node is splitted when
+the (possibly Bonferroni-corrected) <i>p</i> value for any parameter
+stability test in that node falls below <code>alpha</code> (and the stopping
+criteria <code>minsize</code> and <code>maxdepth</code> are not fulfilled).</p>
+</td></tr>
+<tr valign="top"><td><code>bonferroni</code></td>
+<td>
+<p>logical. Should <i>p</i> values be Bonferroni corrected?</p>
+</td></tr>
+<tr valign="top"><td><code>minsize, minsplit, minbucket</code></td>
+<td>
+<p>integer. The minimum number of observations in a node.
+If <code>NULL</code>, the default is to use 10 times the number of parameters
+to be estimated (divided by the number of responses per observation
+if that is greater than 1). <code>minsize</code> is the recommended name and
+<code>minsplit</code>/<code>minbucket</code> are only included for backward compatibility with previous
+versions of <code>mob</code> and compatibility with <code>ctree</code>, respectively.</p>
+</td></tr>
+<tr valign="top"><td><code>maxdepth</code></td>
+<td>
+<p>integer. The maximum depth of the tree.</p>
+</td></tr>
+<tr valign="top"><td><code>mtry</code></td>
+<td>
+<p>integer. The number of partitioning variables randomly sampled
+as candidates in each node for forest-style algorithms. If <code>mtry</code>
+is greater than the number of partitioning variables, no random selection
+is performed. (Thus, by default all available partitioning variables are considered.)</p>
+</td></tr>
+<tr valign="top"><td><code>trim</code></td>
+<td>
+<p>numeric. This specifies the trimming in the parameter instability
+test for the numerical variables. If smaller than 1, it is interpreted
+as the fraction relative to the current node size.</p>
+</td></tr>
+<tr valign="top"><td><code>breakties</code></td>
+<td>
+<p>logical. Should ties in numeric variables be broken
+randomly for computing the associated parameter instability test?</p>
+</td></tr>
+<tr valign="top"><td><code>parm</code></td>
+<td>
+<p>numeric or character. Number or name of model parameters
+included in the parameter instability tests (by default all parameters
+are included).</p>
+</td></tr>
+<tr valign="top"><td><code>dfsplit</code></td>
+<td>
+<p>logical or numeric. <code>as.integer(dfsplit)</code> is the degrees of freedom
+per selected split employed when computing information criteria etc.</p>
+</td></tr>
+<tr valign="top"><td><code>prune</code></td>
+<td>
+<p>character, numeric, or function for specifying post-pruning rule.
+If <code>prune</code> is <code>NULL</code> (the default), no post-pruning is performed.
+For likelihood-based <code>mob()</code> trees, <code>prune</code> can be set to
+<code>"AIC"</code> or <code>"BIC"</code> for post-pruning based on the corresponding
+information criteria. More general rules (also in scenarios that are
+not likelihood-based), can be specified by function arguments to
+<code>prune</code>, for details see below.</p>
+</td></tr>
+<tr valign="top"><td><code>restart</code></td>
+<td>
+<p>logical. When determining the optimal split point in a numerical
+variable: Should model estimation be restarted with <code>NULL</code> starting
+values for each split? The default is <code>TRUE</code>. If <code>FALSE</code>, then
+the parameter estimates from the previous split point are used as starting
+values for the next split point (because in practice the difference are
+often not huge). (Note that in that case a <code>for</code> loop is used
+instead of the <code>applyfun</code> for fitting models across sample splits.)</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>logical. Should information about the fitting process
+of <code><a href="../../partykit/help/mob.html">mob</a></code> (such as test statistics, <i>p</i> values, selected
+splitting variables and split points) be printed to the screen?</p>
+</td></tr>
+<tr valign="top"><td><code>caseweights</code></td>
+<td>
+<p>logical. Should weights be interpreted as case weights?
+If <code>TRUE</code>, the number of observations is <code>sum(weights)</code>,
+otherwise it is <code>sum(weights &gt; 0)</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>ytype, xtype</code></td>
+<td>
+<p>character. Specification of how <code>mob</code> should
+preprocess <code>y</code> and <code>x</code> variables. Possible choice are:
+<code>"vector"</code> (for <code>y</code> only), i.e., only one variable;
+<code>"matrix"</code>, i.e., the model matrix of all variables;
+<code>"data.frame"</code>, i.e., a data frame of all variables.</p>
+</td></tr>
+<tr valign="top"><td><code>terminal, inner</code></td>
+<td>
+<p>character. Specification of which additional
+information (<code>"estfun"</code>, <code>"object"</code>, or both) should be
+stored in each node. If <code>NULL</code>, no additional information is
+stored.</p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>logical. Should the full model frame be stored in the
+resulting object?</p>
+</td></tr>
+<tr valign="top"><td><code>numsplit</code></td>
+<td>
+<p>character indicating how splits for numeric variables
+should be justified. Because any splitpoint in the interval between
+the last observation from the left child segment and the first observation
+from the right child segment leads to the same observed split, two
+options are available in <code>mob_control</code>:
+Either, the split is <code>"left"</code>-justified (the default for
+backward compatibility) or <code>"center"</code>-justified using the
+midpoint of the possible interval.</p>
+</td></tr>
+<tr valign="top"><td><code>catsplit</code></td>
+<td>
+<p>character indicating how (unordered) categorical variables
+should be splitted. By default the best <code>"binary"</code> split is
+searched (by minimizing the objective function). Alternatively,
+if set to <code>"multiway"</code>, the node is simply splitted into all
+levels of the categorical variable.</p>
+</td></tr>
+<tr valign="top"><td><code>vcov</code></td>
+<td>
+<p>character indicating which type of covariance matrix
+estimator should be employed in the parameter instability tests.
+The default is the outer product of gradients (<code>"opg"</code>).
+Alternatively, <code>vcov = "info"</code> employs the information matrix
+and <code>vcov = "sandwich"</code> the sandwich matrix (both of which are
+only sensible for maximum likelihood estimation).</p>
+</td></tr>
+<tr valign="top"><td><code>ordinal</code></td>
+<td>
+<p>character indicating which type of parameter instability
+test should be employed for ordinal partitioning variables (i.e.,
+ordered factors). This can be <code>"chisq"</code>, <code>"max"</code>, or <code>"L2"</code>.
+If <code>"chisq"</code> then the variable is treated as unordered and a
+chi-squared test is performed. If <code>"L2"</code>, then a maxLM-type
+test as for numeric variables is carried out but correcting for ties.
+This requires simulation of p-values via <code><a href="../../strucchange/help/catL2BB.html">catL2BB</a></code>
+and requires some computation time. For <code>"max"</code> a weighted
+double maximum test is used that computes p-values via
+<code><a href="../../mvtnorm/help/pmvnorm.html">pmvnorm</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>nrep</code></td>
+<td>
+<p>numeric. Number of replications in the simulation of
+p-values for the ordinal <code>"L2"</code> statistic (if used).</p>
+</td></tr>
+<tr valign="top"><td><code>applyfun</code></td>
+<td>
+<p>an optional <code><a href="../../base/help/lapply.html">lapply</a></code>-style function with arguments
+<code>function(X, FUN, ...)</code>. It is used for refitting the model across
+potential sample splits. The default is to use the basic <code>lapply</code>
+function unless the <code>cores</code> argument is specified (see below).</p>
+</td></tr>
+<tr valign="top"><td><code>cores</code></td>
+<td>
+<p>numeric. If set to an integer the <code>applyfun</code> is set to
+<code><a href="../../parallel/help/mclapply.html">mclapply</a></code> with the desired number of <code>cores</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>See <code><a href="../../partykit/help/mob.html">mob</a></code> for more details and references.
+</p>
+<p>For post-pruning, <code>prune</code> can be set to a <code>function(objfun, df, nobs)</code>
+which either returns <code>TRUE</code> to signal that a current node can be pruned
+or <code>FALSE</code>. All supplied arguments are of length two: <code>objfun</code> is the sum of objective
+function values in the current node and its child nodes, respectively.
+<code>df</code> is the degrees of freedom in the current node and its child nodes,
+respectively. <code>nobs</code> is vector with the number of observations in the
+current node and the total number of observations in the dataset, respectively.  
+</p>
+<p>If the objective function employed in the <code>mob()</code> call is the negative
+log-likelihood, then a suitable function is set up on the fly by comparing  
+<code>(2 * objfun + penalty * df)</code> in the current and the daughter nodes.
+The penalty can then be set via a numeric or character value for <code>prune</code>:
+AIC is used if <code>prune = "AIC"</code> or <code>prune = 2</code> and
+BIC if <code>prune = "BIC"</code> or <code>prune = log(n)</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of class <code>mob_control</code> containing the control parameters.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../partykit/help/mob.html">mob</a></code></p>
+
+<hr /><div style="text-align: center;">[Package <em>partykit</em> version 1.2-27 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

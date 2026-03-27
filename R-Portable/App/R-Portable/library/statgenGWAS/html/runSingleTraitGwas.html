@@ -1,0 +1,355 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Perform single-trait GWAS</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for runSingleTraitGwas {statgenGWAS}"><tr><td>runSingleTraitGwas {statgenGWAS}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Perform single-trait GWAS</h2>
+
+<h3>Description</h3>
+
+<p><code>runSingleTraitGwas</code> performs a single-trait Genome Wide Association
+Study (GWAS) on phenotypic and genotypic data contained in a <code>gData</code>
+object. A covariance matrix is computed using the EMMA algorithm (Kang et
+al., 2008), the Newton-Raphson algorithm (Tunnicliffe, 1989) in the
+<code>sommer</code> package, or the modified Henderson algorithm in the
+<code>LMMsolver</code> package. Then a Generalized Least Squares (GLS)
+method is used for estimating the marker effects and corresponding p-values.
+This is done using either one kinship matrix for all chromosomes or different
+chromosome-specific kinship matrices for each chromosome. Significant SNPs
+are selected based on a user defined threshold.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+runSingleTraitGwas(
+  gData,
+  traits = NULL,
+  trials = NULL,
+  covar = NULL,
+  snpCov = NULL,
+  kin = NULL,
+  kinshipMethod = c("astle", "IBS", "vanRaden"),
+  remlAlgo = c("EMMA", "NR", "Hend"),
+  GLSMethod = c("single", "multi"),
+  useMAF = TRUE,
+  MAF = 0.01,
+  MAC = 10,
+  genomicControl = FALSE,
+  thrType = c("bonf", "fixed", "small", "fdr"),
+  alpha = 0.05,
+  LODThr = 4,
+  nSnpLOD = 10,
+  pThr = 0.05,
+  rho = 0.5,
+  sizeInclRegion = 0,
+  minR2 = 0.5,
+  nCores = NULL
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>gData</code></td>
+<td>
+<p>An object of class <code>gData</code> containing at least <code>map</code>,
+<code>markers</code> and <code>pheno</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>traits</code></td>
+<td>
+<p>A vector of traits on which to run GWAS. These can be either
+numeric indices or character names of columns in <code>pheno</code>. If <code>NULL</code>,
+GWAS is run on all traits.</p>
+</td></tr>
+<tr valign="top"><td><code>trials</code></td>
+<td>
+<p>A vector of trials on which to run GWAS. These can
+be either numeric indices or character names of list items in <code>pheno</code>.
+If <code>NULL</code>, GWAS is run for all trials. GWAS is run for the
+selected trials in sequential order.</p>
+</td></tr>
+<tr valign="top"><td><code>covar</code></td>
+<td>
+<p>An optional vector of covariates taken into account when
+running GWAS. These can be either numeric indices or character names of
+columns in <code>covar</code> in <code>gData</code>. If <code>NULL</code> no covariates are
+used.</p>
+</td></tr>
+<tr valign="top"><td><code>snpCov</code></td>
+<td>
+<p>An optional character vector of snps to be included as
+covariates.</p>
+</td></tr>
+<tr valign="top"><td><code>kin</code></td>
+<td>
+<p>An optional kinship matrix or list of kinship matrices. These
+matrices can be from the <code>matrix</code> class as defined in the base package
+or from the <code>dsyMatrix</code> class, the class of symmetric matrices in the
+Matrix package.<br />
+If <code>GLSMethod</code> = &quot;single&quot; then one matrix should be provided, if
+<code>GLSMethod</code> = &quot;multi&quot;, a list of chromosome specific matrices of length
+equal to the number of chromosomes in <code>map</code> in <code>gData</code>.<br />
+If <code>NULL</code> then matrix <code>kinship</code> in <code>gData</code> is used. <br />
+If both <code>kin</code> is provided and <code>gData</code> contains a matrix
+<code>kinship</code> then <code>kin</code> is used.</p>
+</td></tr>
+<tr valign="top"><td><code>kinshipMethod</code></td>
+<td>
+<p>An optional character indicating the method used for
+calculating the kinship matrix(ces). Currently &quot;astle&quot; (Astle and Balding,
+2009), &quot;IBS&quot; and &quot;vanRaden&quot; (VanRaden, 2008) are supported. If a
+kinship matrix is supplied either in <code>gData</code> or in parameter <code>kin</code>,
+<code>kinshipMethod</code> is ignored.</p>
+</td></tr>
+<tr valign="top"><td><code>remlAlgo</code></td>
+<td>
+<p>A character string indicating the algorithm used to estimate
+the variance components. Either <code>EMMA</code>, for the EMMA algorithm,
+<code>NR</code>, for the Newton-Raphson algorithm (using
+<a href="../../sommer/help/mmes.html">sommer::mmes</a>), or <code>Hend</code> for the modified Henderson algorithm
+(using <a href="../../LMMsolver/help/LMMsolve.html">LMMsolver::LMMsolve</a>).</p>
+</td></tr>
+<tr valign="top"><td><code>GLSMethod</code></td>
+<td>
+<p>A character string indicating the method used to estimate
+the marker effects. Either <code>single</code> for using a single kinship matrix,
+or <code>multi</code> for using chromosome specific kinship matrices.</p>
+</td></tr>
+<tr valign="top"><td><code>useMAF</code></td>
+<td>
+<p>Should the minor allele frequency be used for selecting SNPs
+for the analysis. If <code>FALSE</code>, the minor allele count is used instead.</p>
+</td></tr>
+<tr valign="top"><td><code>MAF</code></td>
+<td>
+<p>The minor allele frequency (MAF) threshold used in GWAS. A
+numerical value between 0 and 1. SNPs with MAF below this value are not taken
+into account in the analysis, i.e. p-values and effect sizes are put to
+missing (<code>NA</code>). Ignored if <code>useMAF</code> is <code>FALSE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>MAC</code></td>
+<td>
+<p>A numerical value. SNPs with minor allele count below this value
+are not taken into account for the analysis, i.e. p-values and effect sizes
+are set to missing (<code>NA</code>). Ignored if <code>useMAF</code> is <code>TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>genomicControl</code></td>
+<td>
+<p>Should genomic control correction as in Devlin and
+Roeder (1999) be applied?</p>
+</td></tr>
+<tr valign="top"><td><code>thrType</code></td>
+<td>
+<p>A character string indicating the type of threshold used for
+the selection of candidate loci. See Details.</p>
+</td></tr>
+<tr valign="top"><td><code>alpha</code></td>
+<td>
+<p>A numerical value used for calculating the LOD-threshold for
+<code>thrType</code> = &quot;bonf&quot; and the significant p-Values for <code>thrType</code> =
+&quot;fdr&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>LODThr</code></td>
+<td>
+<p>A numerical value used as a LOD-threshold when
+<code>thrType</code> = &quot;fixed&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>nSnpLOD</code></td>
+<td>
+<p>A numerical value indicating the number of SNPs with the
+smallest p-values that are selected when <code>thrType</code> = &quot;small&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>pThr</code></td>
+<td>
+<p>A numerical value just as the cut off value for p-Values for
+<code>thrType</code> = &quot;fdr&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>rho</code></td>
+<td>
+<p>A numerical value used a the minimum value for SNPs to be
+considered correlated when using <code>thrType</code> = &quot;fdr&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>sizeInclRegion</code></td>
+<td>
+<p>An integer. Should the results for SNPs close to
+significant SNPs be included? If so, the size of the region in centimorgan
+or base pairs. Otherwise 0.</p>
+</td></tr>
+<tr valign="top"><td><code>minR2</code></td>
+<td>
+<p>A numerical value between 0 and 1. Restricts the SNPs included
+in the region close to significant SNPs to only those SNPs that are in
+sufficient Linkage Disequilibrium (LD) with the significant snp, where LD
+is measured in terms of <i>R^2</i>. If for example <code>sizeInclRegion</code> =
+200000 and <code>minR2</code> = 0.5, then for every significant SNP also those SNPs
+whose LD (<i>R^2</i>) with the significant SNP is at least 0.5 AND which are
+at most 200000 away from this significant snp are included. Ignored if
+<code>sizeInclRegion</code> = 0.</p>
+</td></tr>
+<tr valign="top"><td><code>nCores</code></td>
+<td>
+<p>A numerical value indicating the number of cores to be used by
+the parallel part of the algorithm. If <code>NULL</code> the number of cores used
+will be equal to the number of cores available on the machine - 1.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>GWAS</code>.
+</p>
+
+
+<h3>Threshold types for the selection of candidate loci</h3>
+
+<p>For the selection of candidate loci from the GWAS output four different
+methods can be used. The method used can be specified in the function
+parameter <code>thrType</code>. Further parameters can be used to fine tune the
+method.
+</p>
+
+<dl>
+<dt>bonf</dt><dd><p>The Bonferroni threshold, a LOD-threshold of
+<i>-log10(alpha / m)</i>, where m is the number of SNPs and alpha can be
+specified by the function parameter <code>alpha</code></p>
+</dd>
+<dt>fixed</dt><dd><p>A fixed LOD-threshold, specified by the function parameter
+<code>LODThr</code></p>
+</dd>
+<dt>small</dt><dd><p>The n SNPs with with the smallest p-Values are selected. n can
+be specified in <code>nSnpLOD</code>
+</p>
+</dd>
+<dt>fdr</dt><dd><p>Following the algorithm proposed by Brzyski D. et al. (2017),
+SNPs are selected in such a way that the False Discovery Rate (fdr) is
+minimized. To do this, first the SNPs are restricted to the SNPs with a
+p-Value below <code>pThr</code>. Then clusters of SNPs are created using a
+two step iterative process in which first the SNP with the lowest p-Value is
+selected as cluster representative. This SNP and all SNPs that have a
+correlation with this SNP of <i>&rho;</i> or higher will form a cluster.
+<i>&rho;</i> can be specified as an argument in the function and has a default
+value of 0.5, which is a recommended starting value in practice.
+The selected SNPs are removed from the list and the procedure repeated until
+no SNPs are left. Finally to determine the number of significant clusters
+the first cluster is determined for which the p-Value of the cluster
+representative is not smaller than <i>cluster_{number} * &alpha; / m</i> where
+m is the number of SNPs and alpha can be specified by the function parameter
+<code>alpha</code>. All previous clusters are selected as significant.</p>
+</dd>
+</dl>
+
+
+
+<h3>References</h3>
+
+<p>Astle, William, and David J. Balding. 2009. Population Structure
+and Cryptic Relatedness in Genetic Association Studies. Statistical Science
+24 (4): 451–71. doi: <a href="https://doi.org/10.1214/09-sts307">10.1214/09-sts307</a>.
+</p>
+<p>Brzyski D. et al. (2017) Controlling the Rate of GWAS False
+Discoveries. Genetics 205 (1): 61-75.
+doi: <a href="https://doi.org/10.1534/genetics.116.193987">10.1534/genetics.116.193987</a>
+</p>
+<p>Devlin, B., and Kathryn Roeder. 1999. Genomic Control for
+Association Studies. Biometrics 55 (4): 997–1004.
+doi: <a href="https://doi.org/10.1111/j.0006-341x.1999.00997.x">10.1111/j.0006-341x.1999.00997.x</a>.
+</p>
+<p>Kang et al. (2008) Efficient Control of Population Structure in
+Model Organism Association Mapping. Genetics 178 (3): 1709–23.
+doi: <a href="https://doi.org/10.1534/genetics.107.080101">10.1534/genetics.107.080101</a>.
+</p>
+<p>Millet, E. J., Pommier, C., et al. (2019). A multi-site
+experiment in a network of European fields for assessing the maize yield
+response to environmental scenarios - Data set.
+doi: <a href="https://doi.org/10.15454/IASSTN">10.15454/IASSTN</a>
+</p>
+<p>Rincent et al. (2014) Recovering power in association mapping
+panels with variable levels of linkage disequilibrium. Genetics 197 (1):
+375–87. doi: <a href="https://doi.org/10.1534/genetics.113.159731">10.1534/genetics.113.159731</a>.
+</p>
+<p>Segura et al. (2012) An efficient multi-locus mixed-model
+approach for genome-wide association studies in structured populations.
+Nature Genetics 44 (7): 825–30. doi: <a href="https://doi.org/10.1038/ng.2314">10.1038/ng.2314</a>.
+</p>
+<p>Sun et al. (2010) Variation explained in mixed-model association
+mapping. Heredity 105 (4): 333–40. doi: <a href="https://doi.org/10.1038/hdy.2010.11">10.1038/hdy.2010.11</a>.
+</p>
+<p>Tunnicliffe W. (1989) On the use of marginal likelihood in time
+series model estimation. JRSS 51 (1): 15–27.
+</p>
+<p>VanRaden P.M. (2008) Efficient methods to compute genomic
+predictions. Journal of Dairy Science 91 (11): 4414–23.
+doi: <a href="https://doi.org/10.3168/jds.2007-0980">10.3168/jds.2007-0980</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><a href="../../statgenGWAS/help/summary.GWAS.html">summary.GWAS</a>, <a href="../../statgenGWAS/help/plot.GWAS.html">plot.GWAS</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Create a gData object Using the data from the DROPS project.
+## See the included vignette for a more extensive description on the steps.
+data(dropsMarkers)
+data(dropsMap)
+data(dropsPheno)
+
+## Add genotypes as row names of dropsMarkers and drop Ind column.
+rownames(dropsMarkers) &lt;- dropsMarkers[["Ind"]]
+dropsMarkers &lt;- dropsMarkers[colnames(dropsMarkers) != "Ind"]
+
+## Add genotypes as row names of dropsMap.
+rownames(dropsMap) &lt;- dropsMap[["SNP.names"]]
+
+## Rename Chomosome and Position columns.
+colnames(dropsMap)[match(c("Chromosome", "Position"), 
+                   colnames(dropsMap))] &lt;- c("chr", "pos")
+                   
+## Convert phenotypic data to a list.
+dropsPhenoList &lt;- split(x = dropsPheno, f = dropsPheno[["Experiment"]])
+
+## Rename Variety_ID to genotype and select relevant columns.
+dropsPhenoList &lt;- lapply(X = dropsPhenoList, FUN = function(trial) {
+  colnames(trial)[colnames(trial) == "Variety_ID"] &lt;- "genotype"
+  trial &lt;- trial[c("genotype", "grain.yield", "grain.number", "seed.size",
+                 "anthesis", "silking", "plant.height", "tassel.height",
+                 "ear.height")]
+return(trial)
+}) 
+
+## Create gData object.
+gDataDrops &lt;- createGData(geno = dropsMarkers, map = dropsMap, 
+                          pheno = dropsPhenoList)
+                          
+## Run single trait GWAS for trait 'grain.yield' for trial Mur13W.
+
+GWASDrops &lt;- runSingleTraitGwas(gData = gDataDrops,
+                               trials = "Mur13W",
+                               traits = "grain.yield")
+
+                               
+## Run single trait GWAS for trait 'grain.yield' for trial Mur13W.
+## Use chromosome specific kinship matrices calculated using vanRaden method.
+
+GWASDropsMult &lt;- runSingleTraitGwas(gData = gDataDrops,
+                                    trials = "Mur13W",
+                                    traits = "grain.yield",
+                                    kinshipMethod = "vanRaden",
+                                    GLSMethod = "multi")  
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>statgenGWAS</em> version 1.0.13 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

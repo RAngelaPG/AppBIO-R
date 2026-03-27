@@ -1,0 +1,133 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Convert an object from one type to another</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for convert {S7}"><tr><td>convert {S7}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Convert an object from one type to another</h2>
+
+<h3>Description</h3>
+
+<p><code>convert(from, to)</code> is a built-in generic for converting an object from
+one type to another. It is special in three ways:
+</p>
+
+<ul>
+<li><p> It uses double-dispatch, because conversion depends on both <code>from</code> and
+<code>to</code>.
+</p>
+</li>
+<li><p> It uses non-standard dispatch because <code>to</code> is a class, not an object.
+</p>
+</li>
+<li><p> It doesn't use inheritance for the <code>to</code> argument. To understand
+why, imagine you have written methods to objects of various types to
+<code>classParent</code>. If you then create a new <code>classChild</code> that inherits from
+<code>classParent</code>, you can't expect the methods written for <code>classParent</code>
+to work because those methods will return <code>classParent</code> objects, not
+<code>classChild</code> objects.
+</p>
+</li></ul>
+
+<p><code>convert()</code> provides two default implementations:
+</p>
+
+<ol>
+<li><p> When <code>from</code> inherits from <code>to</code>, it strips any properties that <code>from</code>
+possesses that <code>to</code> does not (downcasting).
+</p>
+</li>
+<li><p> When <code>to</code> is a subclass of <code>from</code>'s class, it creates a new object of
+class <code>to</code>, copying over existing properties from <code>from</code> and initializing
+new properties of <code>to</code> (upcasting).
+</p>
+</li></ol>
+
+<p>If you are converting an object solely for the purposes of accessing a method
+on a superclass, you probably want <code><a href="../../S7/help/super.html">super()</a></code> instead. See its docs for more
+details.
+</p>
+
+
+<h4>S3 &amp; S4</h4>
+
+<p><code>convert()</code> plays a similar role to the convention of defining <code>as.foo()</code>
+functions/generics in S3, and to <code>as()</code>/<code>setAs()</code> in S4.
+</p>
+
+
+
+<h3>Usage</h3>
+
+<pre>
+convert(from, to, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>from</code></td>
+<td>
+<p>An S7 object to convert.</p>
+</td></tr>
+<tr valign="top"><td><code>to</code></td>
+<td>
+<p>An S7 class specification, passed to <code><a href="../../S7/help/as_class.html">as_class()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Other arguments passed to custom <code>convert()</code> methods. For upcasting,
+these can be used to override existing properties or set new ones.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>Either <code>from</code> coerced to class <code>to</code>, or an error if the coercion
+is not possible.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+Foo1 &lt;- new_class("Foo1", properties = list(x = class_integer))
+Foo2 &lt;- new_class("Foo2", Foo1, properties = list(y = class_double))
+
+# Downcasting: S7 provides a default implementation for coercing an object
+# to one of its parent classes:
+convert(Foo2(x = 1L, y = 2), to = Foo1)
+
+# Upcasting: S7 also provides a default implementation for coercing an object
+# to one of its child classes:
+convert(Foo1(x = 1L), to = Foo2)
+convert(Foo1(x = 1L), to = Foo2, y = 2.5)  # Set new property
+convert(Foo1(x = 1L), to = Foo2, x = 2L, y = 2.5)  # Override existing and set new
+
+# For all other cases, you'll need to provide your own.
+try(convert(Foo1(x = 1L), to = class_integer))
+
+method(convert, list(Foo1, class_integer)) &lt;- function(from, to) {
+  from@x
+}
+convert(Foo1(x = 1L), to = class_integer)
+
+# Note that conversion does not respect inheritance so if we define a
+# convert method for integer to foo1
+method(convert, list(class_integer, Foo1)) &lt;- function(from, to) {
+  Foo1(x = from)
+}
+convert(1L, to = Foo1)
+
+# Converting to Foo2 will still error
+try(convert(1L, to = Foo2))
+# This is probably not surprising because foo2 also needs some value
+# for `@y`, but it definitely makes dispatch for convert() special
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>S7</em> version 0.2.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

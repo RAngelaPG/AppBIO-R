@@ -1,0 +1,129 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Add nested data</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for nesting {echarts4r}"><tr><td>nesting {echarts4r}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Add nested data</h2>
+
+<h3>Description</h3>
+
+<p>Utility function to add data where the original JavaScript library expects nested data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+e_add(e, param, ..., .serie = NULL, .data = NULL)
+
+e_add_nested(e, param, ..., .serie = NULL, .data = NULL)
+
+e_add_unnested(e, param, value, .serie = NULL, .data = NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>e</code></td>
+<td>
+<p>An <code>echarts4r</code> object as returned by <code><a href="../../echarts4r/help/e_charts.html">e_charts</a></code> or
+a proxy as returned by <code><a href="../../echarts4r/help/echarts4rProxy.html">echarts4rProxy</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>param</code></td>
+<td>
+<p>The nested parameter to add data to.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Any other option to pass, check See Also section.</p>
+</td></tr>
+<tr valign="top"><td><code>.serie</code></td>
+<td>
+<p>Serie's index to add the data to, if
+'NULL' then it is added to all.</p>
+</td></tr>
+<tr valign="top"><td><code>.data</code></td>
+<td>
+<p>A dataset to use, if none are specified than
+the original dataset passed to 'e_charts' is used.</p>
+</td></tr>
+<tr valign="top"><td><code>value</code></td>
+<td>
+<p>The column to map to the parameter.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>For instance, <code><a href="../../echarts4r/help/e_funnel.html">e_funnel</a></code> lets you pass <code>values</code> and <code>labels</code>
+(from your initial data.frame) which corresponds to <code>name</code> and <code>value</code> in the
+<a href="https://echarts.apache.org/en/option.html#series-heatmap.data">original library</a>.
+However the latter also takes, <code>label</code>, <code>itemStyle</code>, and <code>emphasis</code> but being JSON arrays
+they translate to lists in R and dealing with nested data.frames is not ideal. <code>e_add</code> remedies to that.
+It allows adding those nested data points, see the examples below.
+</p>
+
+
+<h3>Functions</h3>
+
+<p>- 'e_add_nested': Adds nested data, e.g.:
+'e_add_nested(&quot;itemStyle&quot;, color, fontBold)' creates
+&lsquo;{itemStyle: {color: &rsquo;red', fontBold: 'bold'}}'.
+- 'e_add_unnested': Adds unnested data, e.g.:
+'e_add_unnested(&quot;symbolSize&quot;, size)' creates
+'{symbolSize: 4}'.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# funnel can take nested itemStyle
+# https://echarts.apache.org/en/option.html#series-funnel.data
+funnel &lt;- data.frame(
+  stage = c("View", "Click", "Purchase"),
+  value = c(80, 30, 20),
+  color = c("blue", "red", "green")
+)
+
+funnel |&gt;
+  e_charts() |&gt;
+  e_funnel(value, stage) |&gt;
+  e_add_nested("itemStyle", color)
+
+# Heatmap can take nested label
+# https://echarts.apache.org/en/option.html#series-heatmap.data
+v &lt;- LETTERS[1:10]
+matrix &lt;- data.frame(
+  x = sample(v, 300, replace = TRUE),
+  y = sample(v, 300, replace = TRUE),
+  z = rnorm(300, 10, 1),
+  stringsAsFactors = FALSE
+) |&gt;
+  dplyr::group_by(x, y) |&gt;
+  dplyr::summarise(z = sum(z)) |&gt;
+  dplyr::ungroup() |&gt;
+  dplyr::mutate(
+    show = TRUE,
+    fontStyle = round(runif(dplyr::n(), 5, 12))
+  )
+
+matrix |&gt;
+  e_charts(x) |&gt;
+  e_heatmap(y, z) |&gt;
+  e_visual_map(z) |&gt;
+  e_add_nested(
+    "label",
+    show,
+    fontStyle
+  )
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>echarts4r</em> version 0.5.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Transition probability matrix from a fully-parametric,...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for pmatrix.simfs {flexsurv}"><tr><td>pmatrix.simfs {flexsurv}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Transition probability matrix from a fully-parametric, semi-Markov
+multi-state model</h2>
+
+<h3>Description</h3>
+
+<p>The transition probability matrix for semi-Markov multi-state models fitted
+to time-to-event data with <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>.  This has <i>r,s</i>
+entry giving the probability that an individual is in state <i>s</i> at time
+<i>t</i>, given they are in state <i>r</i> at time <i>0</i>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+pmatrix.simfs(
+  x,
+  trans,
+  t = 1,
+  newdata = NULL,
+  ci = FALSE,
+  tvar = "trans",
+  tcovs = NULL,
+  M = 1e+05,
+  B = 1000,
+  cl = 0.95,
+  cores = NULL,
+  tidy = FALSE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A model fitted with <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>.  See
+<code><a href="../../flexsurv/help/msfit.flexsurvreg.html">msfit.flexsurvreg</a></code> for the required form of the model and the
+data.  Additionally this should be semi-Markov, so that the time variable
+represents the time since the last transition.  In other words the response
+should be of the form <code>Surv(time,status)</code>. See the package vignette
+for further explanation.
+</p>
+<p><code>x</code> can also be a list of <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code> models,
+with one component for each permitted transition, as illustrated
+in <code><a href="../../flexsurv/help/msfit.flexsurvreg.html">msfit.flexsurvreg</a></code>.  This can be constructed by
+<code><a href="../../flexsurv/help/fmsm.html">fmsm</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>trans</code></td>
+<td>
+<p>Matrix indicating allowed transitions.  See
+<code><a href="../../flexsurv/help/msfit.flexsurvreg.html">msfit.flexsurvreg</a></code>.  This is not required if <code>x</code> 
+is a list constructed by <code><a href="../../flexsurv/help/fmsm.html">fmsm</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>t</code></td>
+<td>
+<p>Time to predict state occupancy probabilities for.  This can 
+be a single number or a vector of different numbers.</p>
+</td></tr>
+<tr valign="top"><td><code>newdata</code></td>
+<td>
+<p>A data frame specifying the values of covariates in the
+fitted model, other than the transition number.  See
+<code><a href="../../flexsurv/help/msfit.flexsurvreg.html">msfit.flexsurvreg</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>ci</code></td>
+<td>
+<p>Return a confidence interval calculated by simulating from the
+asymptotic normal distribution of the maximum likelihood estimates.  This
+is turned off by default, since two levels of simulation are required.  If
+turned on, users should adjust <code>B</code> and/or <code>M</code> until the results
+reach the desired precision.  The simulation over <code>M</code> is generally
+vectorised, therefore increasing <code>B</code> is usually more expensive than
+increasing <code>M</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>tvar</code></td>
+<td>
+<p>Variable in the data representing the transition type. Not
+required if <code>x</code> is a list of models.</p>
+</td></tr>
+<tr valign="top"><td><code>tcovs</code></td>
+<td>
+<p>Predictable time-dependent covariates such as age, see
+<code><a href="../../flexsurv/help/sim.fmsm.html">sim.fmsm</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>M</code></td>
+<td>
+<p>Number of individuals to simulate in order to approximate the
+transition probabilities.  Users should adjust this to obtain the required
+precision.</p>
+</td></tr>
+<tr valign="top"><td><code>B</code></td>
+<td>
+<p>Number of simulations from the normal asymptotic distribution used
+to calculate confidence limits.  Decrease for greater speed at the expense of
+accuracy.</p>
+</td></tr>
+<tr valign="top"><td><code>cl</code></td>
+<td>
+<p>Width of symmetric confidence intervals, relative to 1.</p>
+</td></tr>
+<tr valign="top"><td><code>cores</code></td>
+<td>
+<p>Number of processor cores used when calculating confidence 
+limits by repeated simulation.  The default uses single-core processing.</p>
+</td></tr>
+<tr valign="top"><td><code>tidy</code></td>
+<td>
+<p>If <code>TRUE</code> then the results are returned as a tidy data frame with 
+columns for the estimate and confidence limits, and rows per state transition and 
+time interval.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This is computed by simulating a large number of individuals <code>M</code> using
+the maximum likelihood estimates of the fitted model and the function
+<code><a href="../../flexsurv/help/sim.fmsm.html">sim.fmsm</a></code>.  Therefore this requires a random sampling function
+for the parametric survival model to be available: see the &quot;Details&quot;
+section of <code><a href="../../flexsurv/help/sim.fmsm.html">sim.fmsm</a></code>.  This will be available for all built-in
+distributions, though users may need to write this for custom models.
+</p>
+<p>Note the random sampling method for <code>flexsurvspline</code> models is
+currently very inefficient, so that looping over the <code>M</code> individuals
+will be very slow.
+</p>
+<p><code><a href="../../flexsurv/help/pmatrix.fs.html">pmatrix.fs</a></code> is a more efficient method based on solving the
+Kolmogorov forward equation numerically, which requires the multi-state
+model to be Markov.  No error or warning is given if running
+<code><a href="../../flexsurv/help/pmatrix.simfs.html">pmatrix.simfs</a></code> with a Markov model, but this is still invalid.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The transition probability matrix.  If <code>ci=TRUE</code>, there are
+attributes <code>"lower"</code> and <code>"upper"</code> giving matrices of the
+corresponding confidence limits.  These are formatted for printing but may
+be extracted using <code>attr()</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Christopher Jackson <a href="mailto:chris.jackson@mrc-bsu.cam.ac.uk">chris.jackson@mrc-bsu.cam.ac.uk</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../flexsurv/help/pmatrix.fs.html">pmatrix.fs</a></code>,<code><a href="../../flexsurv/help/sim.fmsm.html">sim.fmsm</a></code>,<code><a href="../../flexsurv/help/totlos.simfs.html">totlos.simfs</a></code>,
+<code><a href="../../flexsurv/help/msfit.flexsurvreg.html">msfit.flexsurvreg</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# BOS example in vignette, and in msfit.flexsurvreg
+
+bexp &lt;- flexsurvreg(Surv(years, status) ~ trans, data=bosms3, dist="exp")
+tmat &lt;- rbind(c(NA,1,2),c(NA,NA,3),c(NA,NA,NA))
+
+# more likely to be dead (state 3) as time moves on, or if start with
+# BOS (state 2)
+
+pmatrix.simfs(bexp, t=5, trans=tmat)
+pmatrix.simfs(bexp, t=10, trans=tmat)
+
+# these results should converge to those in help(pmatrix.fs), as M
+# increases here and ODE solving precision increases there, since with
+# an exponential distribution, the semi-Markov model is the same as the
+# Markov model.
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>flexsurv</em> version 2.3.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

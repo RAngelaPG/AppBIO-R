@@ -1,0 +1,143 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Detect outliers for series of observations</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for detectSerieOut {statgenHTP}"><tr><td>detectSerieOut {statgenHTP}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Detect outliers for series of observations</h2>
+
+<h3>Description</h3>
+
+<p>Function for detecting strange time courses. The function uses the estimates
+for the spline coefficients per time course (typically per plant).
+Correlations between those coefficient vectors are calculated to identify
+outlying time courses, i.e., plants. An outlying time course will have low
+correlation to the majority of time courses. To support the analysis by
+correlations, a principal component analysis is done on the plant
+(time course) by spline coefficient matrix. A PCA plot of the plant scores
+will show the outlying plants. Finally the pairwise-ratios of the slopes of
+a linear model fitted through the spline coefficients are computed. Plants
+are tagged when the average pairwise-ratio is lower the a given threshold
+(<code>thrSlope</code>).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+detectSerieOut(
+  corrDat,
+  predDat,
+  coefDat,
+  trait,
+  genotypes = NULL,
+  geno.decomp = NULL,
+  thrCor = 0.9,
+  thrPca = 30,
+  thrSlope = 0.7
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>corrDat</code></td>
+<td>
+<p>A data.frame with corrected spatial data.</p>
+</td></tr>
+<tr valign="top"><td><code>predDat</code></td>
+<td>
+<p>A data.frame with predicted data from a fitted spline.</p>
+</td></tr>
+<tr valign="top"><td><code>coefDat</code></td>
+<td>
+<p>A data.frame with coefficients from a fitted spline.</p>
+</td></tr>
+<tr valign="top"><td><code>trait</code></td>
+<td>
+<p>A character string indicating the trait for which to detect
+outliers.</p>
+</td></tr>
+<tr valign="top"><td><code>genotypes</code></td>
+<td>
+<p>A character vector indicating the genotypes for which to
+detect outliers. If <code>NULL</code>, outlier detection will be done for all
+genotypes.</p>
+</td></tr>
+<tr valign="top"><td><code>geno.decomp</code></td>
+<td>
+<p>A character vector indicating the variables to use to
+group the genotypic variance in the model.</p>
+</td></tr>
+<tr valign="top"><td><code>thrCor</code></td>
+<td>
+<p>A numerical value used as threshold for determining outliers
+based on correlation between plots.</p>
+</td></tr>
+<tr valign="top"><td><code>thrPca</code></td>
+<td>
+<p>A numerical value used as threshold for determining outliers
+based on angles (in degrees) between PCA scores.</p>
+</td></tr>
+<tr valign="top"><td><code>thrSlope</code></td>
+<td>
+<p>A numerical value used as threshold for determining outliers
+based on slopes.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>serieOut</code>, a <code>data.frame</code> with outlying
+series of observations.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other functions for detecting outliers for series of observations: 
+<code><a href="../../statgenHTP/help/plot.serieOut.html">plot.serieOut</a>()</code>,
+<code><a href="../../statgenHTP/help/removeSerieOut.html">removeSerieOut</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## The data from the Phenovator platform have been corrected for spatial
+## trends and outliers for single observations have been removed.
+
+## Fit P-splines on a subset of genotypes
+subGenoVator &lt;- c("G160", "G151")
+fit.spline &lt;- fitSpline(inDat = spatCorrectedVator,
+                        trait = "EffpsII_corr",
+                        genotypes = subGenoVator,
+                        knots = 50)
+
+## Extract the data.frames with predicted values and P-Spline coefficients.
+predDat &lt;- fit.spline$predDat
+coefDat &lt;- fit.spline$coefDat
+
+## The coefficients are then used to tag suspect time courses.
+outVator &lt;- detectSerieOut(corrDat = spatCorrectedVator,
+                           predDat = predDat,
+                           coefDat = coefDat,
+                           trait = "EffpsII_corr",
+                           genotypes = subGenoVator,
+                           thrCor = 0.9,
+                           thrPca = 30,
+                           thrSlope = 0.7)
+
+## The `outVator` can be visualized for selected genotypes.
+plot(outVator, genotypes = "G151")
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>statgenHTP</em> version 1.0.9.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

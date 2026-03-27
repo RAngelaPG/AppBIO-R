@@ -1,0 +1,160 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Predict Methods for Item Response Models</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for predict.pcmodel {psychotools}"><tr><td>predict.pcmodel {psychotools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Predict Methods for Item Response Models</h2>
+
+<h3>Description</h3>
+
+<p>Prediction of (cumulated) response probabilities and responses based on fitted
+item response models.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'pcmodel'
+predict(object, newdata = NULL, type = c("probability",
+  "cumprobability", "mode", "median", "mean", "category-information",
+  "item-information", "test-information"), ref = NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>a fitted model object whose item parameters should be used for
+prediction.</p>
+</td></tr>
+<tr valign="top"><td><code>newdata</code></td>
+<td>
+<p>an optional (possibly named) vector of person parameters
+used for prediction. If <code>NULL</code> (the default), the person parameters of
+the subjects used to fit the model in <code>object</code> are used.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>character of length one which determines the type of
+prediction (see details below).</p>
+</td></tr>
+<tr valign="top"><td><code>ref</code></td>
+<td>
+<p>arguments passed over to internal calls of <code>itempar</code> or
+<code>threshpar</code>. Not used for models estimated via MML.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>further arguments which are currently not used.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Depending on the value of <code>type</code> either probabilities, responses or
+some form of information under the model specified in <code>object</code> are
+returned:
+</p>
+<p>If <code>type</code> is <code>"probability"</code>, the category response probabilities
+are returned.
+</p>
+<p>If <code>type</code> is <code>"cumprobability"</code>, the cumulated category response
+probabilities are returned, i.e., <i>P(X_{ij} &ge;q k)</i> with <i>k</i>
+corresponding to the categories of item <i>j</i>.
+</p>
+<p>If <code>type</code> is <code>"mode"</code>, the most probable category response for a
+given subject and item is returned.
+</p>
+<p>If <code>type</code> is <code>"median"</code>, the first category <i>k</i> where
+<i>P(X_{ij} = k) &ge;q 0.5</i> is returned.
+</p>
+<p>If <code>type</code> is <code>"mean"</code>, the rounded expected category response,
+i.e., <i>E(X_{ij}|&theta;_{i})</i>, is returned.
+</p>
+<p>If <code>type</code> is <code>"category-information"</code>, the item-category
+information as suggested by Bock (1972) is returned.
+</p>
+<p>If <code>type</code> is <code>"item-information"</code>, the item information as
+suggested by Samejima (1974) is returned.
+</p>
+<p>If <code>type</code> is <code>"test-information"</code>, the sum over the individual
+item information values is returned.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A (possibly named) numeric matrix with rows corresponding to subjects and
+columns corresponding to the whole test, the single items or categories. The
+exact content depends on the value of <code>type</code> (see details above).
+</p>
+
+
+<h3>References</h3>
+
+<p>Bock RD (1972).
+Estimating Item Parameters and Latent Ability When Responses Are Scored in
+Two or More Nominal Categories.
+<em>Psychometrika</em>, <b>37</b>(1), 29&ndash;51.
+</p>
+<p>Samejima F (1974).
+Normal Ogive Model on the Continuous Response Level in the Multidimensional
+Latent Space.
+<em>Psychometrika</em>, <b>39</b>(1), 111&ndash;121.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>The help page of the generic function <code><a href="../../stats/html/predict.html">predict</a></code> and other
+predict methods (e.g., <code><a href="../../stats/html/predict.lm.html">predict.lm</a></code>, <code><a href="../../stats/html/predict.glm.html">predict.glm</a></code>,
+...)
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+o &lt;- options(digits = 4)
+
+## load verbal aggression data
+data("VerbalAggression", package = "psychotools")
+
+## fit a partial credit model to first ten items
+pcmod &lt;- pcmodel(VerbalAggression$resp[, 1:10])
+
+## predicted response probabilities for each subject and category (the default)
+head(predict(pcmod), 3)
+
+## predicted mode (most probable category) for certain subjects whose person
+## parameters are given via argument "newdata"
+predict(pcmod, type = "mode",
+  newdata = c("Sarah" = 1.2, "Michael" = 0.1, "Arnd" = -0.8))
+
+## rounded expected category value for the same subjects
+predict(pcmod, type = "mean",
+  newdata = c("Sarah" = 1.2, "Michael" = 0.1, "Arnd" = -0.8))
+
+## in the Rasch model mode, mean and median are the same
+raschmod &lt;- raschmodel(VerbalAggression$resp2[, 1:10])
+med &lt;- predict(raschmod, type = "median")
+mn &lt;- predict(raschmod, type = "mean")
+mod &lt;- predict(raschmod, type = "mode")
+
+head(med, 3)
+
+all.equal(med, mn)
+all.equal(mod, mn)
+
+options(digits = o$digits)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>psychotools</em> version 0.7-6 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

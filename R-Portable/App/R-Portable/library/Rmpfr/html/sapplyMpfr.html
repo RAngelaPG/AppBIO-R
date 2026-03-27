@@ -1,0 +1,138 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Apply a Function over a &quot;mpfr&quot; Vector</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for sapplyMpfr {Rmpfr}"><tr><td>sapplyMpfr {Rmpfr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Apply a Function over a &quot;mpfr&quot; Vector</h2>
+
+<h3>Description</h3>
+
+<p>Users may be disappointed to note that <code><a href="../../base/html/lapply.html">sapply</a>()</code> or
+<code><a href="../../base/html/lapply.html">vapply</a>()</code> typically do not work with <code>"mpfr"</code>
+numbers.
+</p>
+<p>This is a simple (but strong) approach to work around the problem,
+based on <code><a href="../../base/html/lapply.html">lapply</a>()</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+sapplyMpfr(X, FUN, ..., drop_1_ = TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>X</code></td>
+<td>
+<p>a vector, possibly of class <code>"<a href="../../Rmpfr/help/mpfr-class.html">mpfr</a>"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>FUN</code></td>
+<td>
+<p>a <code><a href="../../base/html/function.html">function</a></code> returning an <code>"<a href="../../Rmpfr/help/mpfr-class.html">mpfr</a>"</code>
+vector or even an <code>"<a href="../../Rmpfr/help/mpfrArray-class.html">mpfrArray</a>"</code>.  May also be a
+function returning a <code><a href="../../base/html/numeric.html">numeric</a></code> vector or array for numeric
+<code>X</code>, <em>and</em> which returns <code>"mpfr(Array)"</code> for an <code>X</code>
+argument inheriting from <code>"<a href="../../Rmpfr/help/mpfr-class.html">mpfr</a>"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>further arguments passed to <code><a href="../../base/html/lapply.html">lapply</a></code>,
+typically further arguments to <code>FUN</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>drop_1_</code></td>
+<td>
+<p>logical (with unusual name on purpose!) indicating if
+1-column matrices (<code>"mpfrMatrix"</code>) should be &ldquo;dropped&rdquo; to
+vectors (<code>"mpfr"</code>), the same as in base <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>'s own <code><a href="../../base/html/lapply.html">sapply</a></code>.
+This has been implicitly <code>FALSE</code> in <span class="pkg">Rmpfr</span> versions 0.8-5 to
+0.8-9 (Oct 2021 to June 2022), accidentally.
+Since <span class="pkg">Rmpfr</span> 0.9-0, this has been made an argument with default
+<code>TRUE</code> to be compatible by default with <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>'s <code><a href="../../base/html/lapply.html">sapply</a></code>.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>In the case <code>FUN(&lt;length-1&gt;)</code> returns an <code><a href="../../base/html/array.html">array</a></code> or <code>"mpfrArray"</code>, i.e.,
+with two or more dimensions, <code>sapplyMpfr()</code> returns an
+<code>"mpfrArray"</code>; this is analogous to <code><a href="../../base/html/lapply.html">sapply</a>(X, FUN, simplify = "array")</code>
+(rather than the default <code>sapply()</code> behaviour which returns a
+<code>matrix</code> also when a higher array would be more &ldquo;logical&rdquo;.)
+</p>
+
+
+<h3>Value</h3>
+
+<p>an  <code>"<a href="../../Rmpfr/help/mpfr-class.html">mpfr</a>"</code> vector, typically of the same length
+as <code>X</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>This may still not always work as well as <code><a href="../../base/html/lapply.html">sapply</a>()</code> does for
+atomic vectors.  The examples seem to indicate that it typically does
+work as desired, since <span class="pkg">Rmpfr</span> version 0.9-0.
+</p>
+<p>If you want to transform back to regular numbers anyway, it maybe simpler
+and more efficient to use </p>
+<pre>
+    res &lt;- lapply(....)
+    sapply(res, asNumeric, simplify = "array")
+  </pre>
+<p>instead of <code>sapplyMpfr()</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Martin Maechler</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../base/html/lapply.html">sapply</a></code>, <code><a href="../../base/html/lapply.html">lapply</a></code>, etc.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+sapplyMpfr0 &lt;- ## Originally, the function was simply defined as
+  function (X, FUN, ...) new("mpfr", unlist(lapply(X, FUN, ...), recursive = FALSE))
+
+(m1 &lt;- sapply    (     3,      function(k) (1:3)^k)) # 3 x 1  matrix (numeric)
+(p1 &lt;- sapplyMpfr(mpfr(3, 64), function(k) (1:3)^k))
+stopifnot(m1 == p1, is(p1, "mpfrMatrix"), dim(p1) == c(3,1), dim(p1) == dim(m1))
+k.s &lt;- c(2, 5, 10, 20)
+(mk &lt;- sapply    (     k.s,      function(k) (1:3)^k)) # 3 x 4    "       "
+(pm &lt;- sapplyMpfr(mpfr(k.s, 64), function(k) (1:3)^k))
+stopifnot(mk == pm, is(pm, "mpfrMatrix"), dim(pm) == 3:4, 3:4 == dim(mk))
+## was *wrongly* 4x3  in Rmpfr 0.8-x
+f5k  &lt;- function(k) outer(1:5, k+0:2, `^`)# matrix-valued
+(mk5 &lt;- sapply    (     k.s,      f5k))  # sapply()'s default; not "ideal"
+(ak5 &lt;- sapply    (     k.s,      f5k, simplify = "array")) # what we want
+(pm5 &lt;- sapplyMpfr(mpfr(k.s, 64), f5k))
+stopifnot(c(mk5) == c(ak5), ak5 == pm5, is(pm5, "mpfrArray"), is.array(ak5),
+          dim(pm5) == dim(ak5), dim(pm5) == c(5,3, 4))
+if(require("Bessel")) { # here X, is simple
+  bI1 &lt;- function(k) besselI.nuAsym(mpfr(1.31e9, 128), 10, expon.scaled=TRUE, k.max=k)
+  bImp1 &lt;- sapplyMpfr (0:4, bI1, drop_1_ = FALSE) # 1x5 mpfrMatrix -- as in DPQ 0.8-8
+  bImp  &lt;- sapplyMpfr (0:4, bI1, drop_1_ = TRUE ) # 5 "mpfr" vector {by default}
+  bImp0 &lt;- sapplyMpfr0(0:4, bI1) # 5-vector
+  stopifnot(identical(bImp, bImp0), bImp == bImp1,
+            is(bImp, "mpfr"), is(bImp1, "mpfrMatrix"), dim(bImp1) == c(1, 5))
+}# {Bessel}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>Rmpfr</em> version 1.1-2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Get the state of a reactable instance</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for getReactableState {reactable}"><tr><td>getReactableState {reactable}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Get the state of a reactable instance</h2>
+
+<h3>Description</h3>
+
+<p><code>getReactableState()</code> gets the state of a reactable instance within a Shiny application.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+getReactableState(outputId, name = NULL, session = NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>outputId</code></td>
+<td>
+<p>The Shiny output ID of the <code>reactable</code> instance.</p>
+</td></tr>
+<tr valign="top"><td><code>name</code></td>
+<td>
+<p>Character vector of state value(s) to get. Values must be one of <code>"page"</code>,
+<code>"pageSize"</code>, <code>"pages"</code>, <code>sorted</code>, or <code>"selected"</code>. If unspecified, all values will
+be returned.</p>
+</td></tr>
+<tr valign="top"><td><code>session</code></td>
+<td>
+<p>The Shiny session object. Defaults to the current Shiny session.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>If <code>name</code> is specified, one of the following values:
+</p>
+
+<ul>
+<li> <p><code>page</code>: the current page
+</p>
+</li>
+<li> <p><code>pageSize</code>: the page size
+</p>
+</li>
+<li> <p><code>pages</code>: the number of pages
+</p>
+</li>
+<li> <p><code>sorted</code>: the sorted columns - a named list of columns with values of <code>"asc"</code> for
+ascending order or <code>"desc"</code> for descending order, or <code>NULL</code> if no columns are sorted
+</p>
+</li>
+<li> <p><code>selected</code>: the selected rows - a numeric vector of row indices, or <code>NULL</code> if no rows are selected
+</p>
+</li></ul>
+
+<p>If <code>name</code> contains more than one value, <code>getReactableState()</code> returns a named list of
+the specified values.
+</p>
+<p>If <code>name</code> is unspecified, <code>getReactableState()</code> returns a named list containing all values.
+</p>
+<p>If the table has not been rendered yet, <code>getReactableState()</code> returns <code>NULL</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Run in an interactive R session
+if (interactive()) {
+
+library(shiny)
+library(reactable)
+library(htmltools)
+
+ui &lt;- fluidPage(
+  actionButton("prev_page_btn", "Previous page"),
+  actionButton("next_page_btn", "Next page"),
+  reactableOutput("table"),
+  verbatimTextOutput("table_state"),
+  uiOutput("selected_row_details")
+)
+
+server &lt;- function(input, output) {
+  output$table &lt;- renderReactable({
+    reactable(
+      MASS::Cars93[, 1:5],
+      showPageSizeOptions = TRUE,
+      selection = "multiple",
+      onClick = "select"
+    )
+  })
+
+  output$table_state &lt;- renderPrint({
+    state &lt;- req(getReactableState("table"))
+    print(state)
+  })
+
+  observeEvent(input$prev_page_btn, {
+    # Change to the previous page
+    page &lt;- getReactableState("table", "page")
+    if (page &gt; 1) {
+      updateReactable("table", page = page - 1)
+    }
+  })
+
+  observeEvent(input$next_page_btn, {
+    # Change to the next page
+    state &lt;- getReactableState("table")
+    if (state$page &lt; state$pages) {
+      updateReactable("table", page = state$page + 1)
+    }
+  })
+
+  output$selected_row_details &lt;- renderUI({
+    selected &lt;- getReactableState("table", "selected")
+    req(selected)
+    details &lt;- MASS::Cars93[selected, -c(1:5)]
+    tagList(
+      h2("Selected row details"),
+      tags$pre(
+        paste(capture.output(print(details, width = 1200)), collapse = "\n")
+      )
+    )
+  })
+}
+
+shinyApp(ui, server)
+}
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>reactable</em> version 0.4.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

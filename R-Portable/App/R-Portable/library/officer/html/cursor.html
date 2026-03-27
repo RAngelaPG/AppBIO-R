@@ -1,0 +1,181 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Set cursor in a 'Word' document</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for cursor_begin {officer}"><tr><td>cursor_begin {officer}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Set cursor in a 'Word' document</h2>
+
+<h3>Description</h3>
+
+<p>A set of functions is available to manipulate
+the position of a virtual cursor. This cursor will be used when
+inserting, deleting or updating elements in the document.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+cursor_begin(x)
+
+cursor_bookmark(x, id)
+
+cursor_end(x)
+
+cursor_reach_index(x, index)
+
+cursor_reach(x, keyword, fixed = FALSE)
+
+cursor_reach_test(x, keyword)
+
+cursor_forward(x)
+
+cursor_backward(x)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>a docx device</p>
+</td></tr>
+<tr valign="top"><td><code>id</code></td>
+<td>
+<p>bookmark id</p>
+</td></tr>
+<tr valign="top"><td><code>index</code></td>
+<td>
+<p>element index in the document</p>
+</td></tr>
+<tr valign="top"><td><code>keyword</code></td>
+<td>
+<p>keyword to look for as a regular expression</p>
+</td></tr>
+<tr valign="top"><td><code>fixed</code></td>
+<td>
+<p>logical. If TRUE, pattern is a string to be matched as is.</p>
+</td></tr>
+</table>
+
+
+<h3>cursor_begin</h3>
+
+<p>Set the cursor at the beginning of the document, on the first element
+of the document (usually a paragraph or a table).
+</p>
+
+
+<h3>cursor_bookmark</h3>
+
+<p>Set the cursor at a bookmark that has previously been set.
+</p>
+
+
+<h3>cursor_end</h3>
+
+<p>Set the cursor at the end of the document, on the last element
+of the document.
+</p>
+
+
+<h3>cursor_reach_index</h3>
+
+<p>Set the cursor at a specific index position in the document.
+</p>
+
+
+<h3>cursor_reach</h3>
+
+<p>Set the cursor on the first element of the document
+that contains text specified in argument <code>keyword</code>.
+The argument <code>keyword</code> is a regexpr pattern.
+</p>
+
+
+<h3>cursor_reach_test</h3>
+
+<p>Test if an expression has a match in the document
+that contains text specified in argument <code>keyword</code>.
+The argument <code>keyword</code> is a regexpr pattern.
+</p>
+
+
+<h3>cursor_forward</h3>
+
+<p>Move the cursor forward, it increments the cursor in the document.
+</p>
+
+
+<h3>cursor_backward</h3>
+
+<p>Move the cursor backward, it decrements the cursor in the document.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(officer)
+
+# create a template ----
+doc &lt;- read_docx()
+doc &lt;- body_add_par(doc, "blah blah blah")
+doc &lt;- body_add_par(doc, "blah blah blah")
+doc &lt;- body_add_par(doc, "blah blah blah")
+doc &lt;- body_add_par(doc, "Hello text to replace")
+doc &lt;- body_add_par(doc, "blah blah blah")
+doc &lt;- body_add_par(doc, "blah blah blah")
+doc &lt;- body_add_par(doc, "blah blah blah")
+doc &lt;- body_add_par(doc, "Hello text to replace")
+doc &lt;- body_add_par(doc, "blah blah blah")
+template_file &lt;- print(
+  x = doc,
+  target = tempfile(fileext = ".docx")
+)
+
+# replace all pars containing "to replace" ----
+doc &lt;- read_docx(path = template_file)
+while (cursor_reach_test(doc, "to replace")) {
+  doc &lt;- cursor_reach(doc, "to replace")
+
+  doc &lt;- body_add_fpar(
+    x = doc,
+    pos = "on",
+    value = fpar(
+      "Here is a link: ",
+      hyperlink_ftext(
+        text = "yopyop",
+        href = "https://cran.r-project.org/"
+      )
+    )
+  )
+}
+
+doc &lt;- cursor_end(doc)
+doc &lt;- body_add_par(doc, "Yap yap yap yap...")
+
+result_file &lt;- print(
+  x = doc,
+  target = tempfile(fileext = ".docx")
+)
+
+# cursor_bookmark ----
+
+doc &lt;- read_docx()
+doc &lt;- body_add_par(doc, "centered text", style = "centered")
+doc &lt;- body_bookmark(doc, "text_to_replace")
+doc &lt;- body_add_par(doc, "A title", style = "heading 1")
+doc &lt;- body_add_par(doc, "Hello world!", style = "Normal")
+doc &lt;- cursor_bookmark(doc, "text_to_replace")
+doc &lt;- body_add_table(doc, value = iris, style = "table_template")
+
+print(doc, target = tempfile(fileext = ".docx"))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>officer</em> version 0.7.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

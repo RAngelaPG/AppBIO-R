@@ -1,0 +1,179 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Fit a lavaan model using 2-Stage Maximum Likelihood (TSML)...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for twostage {semTools}"><tr><td>twostage {semTools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Fit a lavaan model using 2-Stage Maximum Likelihood (TSML) estimation for
+missing data.</h2>
+
+<h3>Description</h3>
+
+<p>This function automates 2-Stage Maximum Likelihood (TSML) estimation,
+optionally with auxiliary variables.  Step 1 involves fitting a saturated
+model to the partially observed data set (to variables in the hypothesized
+model as well as auxiliary variables related to missingness).  Step 2
+involves fitting the hypothesized model to the model-implied means and
+covariance matrix (also called the &quot;EM&quot; means and covariance matrix) as if
+they were complete data.  Step 3 involves correcting the Step-2 standard
+errors (<em>SE</em>s) and chi-squared statistic to account for additional
+uncertainty due to missing data (using information from Step 1; see
+References section for sources with formulas).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+twostage(..., aux, fun, baseline.model = NULL)
+
+lavaan.2stage(..., aux = NULL, baseline.model = NULL)
+
+cfa.2stage(..., aux = NULL, baseline.model = NULL)
+
+sem.2stage(..., aux = NULL, baseline.model = NULL)
+
+growth.2stage(..., aux = NULL, baseline.model = NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Arguments passed to the <code><a href="../../lavaan/help/lavaan.html">lavaan::lavaan()</a></code> function
+specified in the <code>fun</code> argument.  See also
+<code><a href="../../lavaan/help/lavOptions.html">lavaan::lavOptions()</a></code>.  At a minimum, the user must supply the
+first two named arguments to <code><a href="../../lavaan/help/lavaan.html">lavaan::lavaan()</a></code> (i.e.,
+<code>model</code> and <code>data</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>aux</code></td>
+<td>
+<p>An optional character vector naming auxiliary variable(s) in
+<code>data</code></p>
+</td></tr>
+<tr valign="top"><td><code>fun</code></td>
+<td>
+<p>The character string naming the lavaan function used to fit the
+Step-2 hypothesized model (<code>"cfa"</code>, <code>"sem"</code>, <code>"growth"</code>, or
+<code>"lavaan"</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>baseline.model</code></td>
+<td>
+<p>An optional character string, specifying the lavaan
+<code><a href="../../lavaan/help/model.syntax.html">lavaan::model.syntax()</a></code> for a user-specified baseline model.
+Interested users can use the fitted baseline model to calculate incremental
+fit indices (e.g., CFI and TLI) using the corrected chi-squared values (see
+the <code>anova</code> method in <a href="../../semTools/help/twostage-class.html">twostage</a>).  If <code>NULL</code>,
+the default &quot;independence model&quot; (i.e., freely estimated means and
+variances, but all covariances constrained to zero) will be specified
+internally.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>All variables (including auxiliary variables) are treated as endogenous
+varaibles in the Step-1 saturated model (<code>fixed.x = FALSE</code>), so data
+are assumed continuous, although not necessarily multivariate normal
+(dummy-coded auxiliary variables may be included in Step 1, but categorical
+endogenous variables in the Step-2 hypothesized model are not allowed).  To
+avoid assuming multivariate normality, request <code>se = "robust.huber.white"</code>.  CAUTION: In addition to setting <code>fixed.x = FALSE</code> and <code>conditional.x = FALSE</code> in <code><a href="../../lavaan/help/lavaan.html">lavaan::lavaan()</a></code>,
+this function will automatically set <code>meanstructure = TRUE</code>,
+<code>estimator = "ML"</code>, <code>missing = "fiml"</code>, and <code>test = "standard"</code>.  <code><a href="../../lavaan/help/lavaan.html">lavaan::lavaan()</a></code>'s <code>se</code> option can only be
+set to <code>"standard"</code> to assume multivariate normality or to
+<code>"robust.huber.white"</code> to relax that assumption.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The <a href="../../semTools/help/twostage-class.html">twostage</a> object contains 3 fitted lavaan
+models (saturated, target/hypothesized, and baseline) as well as the names
+of auxiliary variables.  None of the individual models provide the correct
+model results (except the point estimates in the target model are unbiased).
+Use the methods in <a href="../../semTools/help/twostage-class.html">twostage</a> to extract corrected
+<em>SE</em>s and test statistics.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Terrence D. Jorgensen (University of Amsterdam; <a href="mailto:TJorgensen314@gmail.com">TJorgensen314@gmail.com</a>)
+</p>
+
+
+<h3>References</h3>
+
+<p>Savalei, V., &amp; Bentler, P. M. (2009). A two-stage approach to missing data:
+Theory and application to auxiliary variables.
+<em>Structural Equation Modeling, 16</em>(3), 477&ndash;497.
+doi: <a href="https://doi.org/10.1080/10705510903008238">10.1080/10705510903008238</a>
+</p>
+<p>Savalei, V., &amp; Falk, C. F. (2014). Robust two-stage approach outperforms
+robust full information maximum likelihood with incomplete nonnormal data.
+<em>Structural Equation Modeling, 21</em>(2), 280&ndash;302.
+doi: <a href="https://doi.org/10.1080/10705511.2014.882692">10.1080/10705511.2014.882692</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><a href="../../semTools/help/twostage-class.html">twostage</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## impose missing data for example
+HSMiss &lt;- HolzingerSwineford1939[ , c(paste("x", 1:9, sep = ""),
+                                      "ageyr","agemo","school")]
+set.seed(12345)
+HSMiss$x5 &lt;- ifelse(HSMiss$x5 &lt;= quantile(HSMiss$x5, .3), NA, HSMiss$x5)
+age &lt;- HSMiss$ageyr + HSMiss$agemo/12
+HSMiss$x9 &lt;- ifelse(age &lt;= quantile(age, .3), NA, HSMiss$x9)
+
+## specify CFA model from lavaan's ?cfa help page
+HS.model &lt;- '
+  visual  =~ x1 + x2 + x3
+  textual =~ x4 + x5 + x6
+  speed   =~ x7 + x8 + x9
+'
+
+## use ageyr and agemo as auxiliary variables
+out &lt;- cfa.2stage(model = HS.model, data = HSMiss, aux = c("ageyr","agemo"))
+
+## two versions of a corrected chi-squared test results are shown
+out
+## see Savalei &amp; Bentler (2009) and Savalei &amp; Falk (2014) for details
+
+## the summary additionally provides the parameter estimates with corrected
+## standard errors, test statistics, and confidence intervals, along with
+## any other options that can be passed to parameterEstimates()
+summary(out, standardized = TRUE)
+
+
+
+## use parameter labels to fit a more constrained model
+modc &lt;- '
+  visual  =~ x1 + x2 + x3
+  textual =~ x4 + x5 + x6
+  speed   =~ x7 + a*x8 + a*x9
+'
+outc &lt;- cfa.2stage(model = modc, data = HSMiss, aux = c("ageyr","agemo"))
+
+
+## use the anova() method to test this constraint
+anova(out, outc)
+## like for a single model, two corrected statistics are provided
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>semTools</em> version 0.5-8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

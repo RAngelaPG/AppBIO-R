@@ -1,0 +1,146 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Rice lines dataset</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for DT_rice {enhancer}"><tr><td>DT_rice {enhancer}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Rice lines dataset</h2>
+
+<h3>Description</h3>
+
+<p>Information from a collection of 413 rice lines.  The DT_rice data set is from 
+Rice Diversity Org. Program. The lines are genotyped with 36,901 SNP markers and phenotyped for more than 30 traits. This data set was included in the package to play with it. If using it for your research make sure you cite the original publication from Zhao et al.(2011).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+  data(DT_rice)
+</pre>
+
+
+<h3>Format</h3>
+
+<p>RicePheno contains the phenotypes
+RiceGeno contains genotypes letter code
+RiceGenoN contains the genotypes in numerical code using atcg1234 converter function
+</p>
+
+
+<h3>Source</h3>
+
+<p>Rice Diversity Organization
+http://www.ricediversity.org/data/index.cfm.
+</p>
+
+
+<h3>References</h3>
+
+<p>Keyan Zhao, Chih-Wei Tung, Georgia C. Eizenga, Mark H. Wright, M. Liakat Ali, Adam H. Price, Gareth J. Norton, M. Rafiqul Islam, Andy Reynolds, Jason Mezey, Anna M. McClung, Carlos D. Bustamante &amp; Susan R. McCouch (2011). Genome-wide association mapping reveals a rich genetic architecture of complex traits in Oryza sativa. Nat Comm 2:467 DOI: 10.1038/ncomms1467, Published Online 13 Sep 2011.
+</p>
+<p>Covarrubias-Pazaran G (2016) Genome assisted prediction of quantitative traits using the R package sommer. PLoS ONE 11(6): doi:10.1371/journal.pone.0156744 
+</p>
+<p>Giovanny Covarrubias-Pazaran (2024).  lme4breeding: enabling genetic evaluation in the age of genomic data. To be submitted to Bioinformatics.
+</p>
+<p>Douglas Bates, Martin Maechler, Ben Bolker, Steve Walker (2015). Fitting Linear Mixed-Effects Models Using lme4. Journal of Statistical Software, 67(1), 1-48.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+data(DT_rice)
+DT &lt;- DT_rice
+GT &lt;- GT_rice
+GTn &lt;- GTn_rice
+head(DT)
+M &lt;- atcg1234(GT)
+
+
+
+##############################################
+############### sommer.      #################
+##############################################
+if(requireNamespace("sommer")){
+library(sommer)
+A &lt;- A.mat(M$M)
+mix &lt;- mmes(Protein.content~1,
+            random = ~vsm(ism(geno), Gu=A) + geno,
+            rcov=~units,
+            data=DT)
+summary(mix)$varcomp
+# if using henderson=TRUE provide Gu as inverse
+Ai &lt;- solve(A + diag(1e-6,ncol(A),ncol(A)))
+Ai &lt;- as(as(as( Ai,  "dMatrix"), "generalMatrix"), "CsparseMatrix")
+attr(Ai, 'inverse')=TRUE
+
+
+
+## MULTI-TRAIT MODEL
+## reshape in long format the dataset
+traits &lt;- c("Protein.content","Flag.leaf.length")
+DTL &lt;- reshape(DT[,c("geno", traits)], idvar = "geno", varying = traits,
+        v.names = "value", direction = "long",
+        timevar = "trait", times = traits )
+DTL &lt;- DTL[with(DTL, order(trait)), ]
+head(DTL)
+
+M &lt;- DTLM &lt;- atcg1234(GT)
+A &lt;- A.mat(M$M)
+mix &lt;- mmes(value~trait,
+            random = ~vsm(usm(trait),ism(geno), Gu=A) ,
+            rcov=~vsm(dsm(trait), ism(units)),
+            data=DTL)
+summary(mix)$varcomp
+cov2cor(mix$theta$`vsm(usm(trait), ism(geno), Gu = A`)
+
+}
+
+##############################################
+############### lme4breeding #################
+##############################################
+if(requireNamespace("lme4breeding")){
+library(lme4breeding)
+### univariate model
+A &lt;- A.matr(M$M)
+A &lt;- A + diag(1e-4, ncol(A), ncol(A))
+mix &lt;- lmeb(Protein.content ~ (1|geno),
+                relmat = list(geno=A),
+                data=DT)
+vc &lt;- VarCorr(mix); print(vc,comp=c("Variance"))
+sigma(mix)^2 # error variance
+
+### multi-trait model
+traits &lt;- c("Flowering.time.at.Arkansas" ,"Seed.volume", "Protein.content")
+for(iTrait in traits){DT[,iTrait] &lt;- scale(DT[,iTrait])}
+DTL &lt;- reshape(DT[,c("geno", traits)], idvar = "geno", varying = traits,
+        v.names = "value", direction = "long",
+        timevar = "trait", times = traits )
+DTL &lt;- DTL[with(DTL, order(trait, geno)), ]
+head(DTL)
+
+system.time(
+  mix &lt;- lmeb(value ~ (0+trait|geno),
+                  relmat = list(geno=A),
+                  rotation = TRUE,
+                  data=DTL)
+)
+vc &lt;- VarCorr(mix); print(vc,comp=c("Variance"))
+vc$geno
+sigma(mix)^2 # error variance
+
+BLUP &lt;- ranef(mix, condVar=TRUE)
+condVAR &lt;- lapply(BLUP, function(x){attr(x, which="postVar")}) # take sqrt() for SEs
+
+}
+
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>enhancer</em> version 1.1.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Cancel a future</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for cancel {future}"><tr><td>cancel {future}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Cancel a future</h2>
+
+<h3>Description</h3>
+
+<p>Cancels futures, with the option to interrupt running ones.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+cancel(x, interrupt = TRUE, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A Future.</p>
+</td></tr>
+<tr valign="top"><td><code>interrupt</code></td>
+<td>
+<p>If TRUE, running futures are interrupted, if the
+future backend supports it.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>All arguments used by the S3 methods.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p><code>cancel()</code> returns (invisibly) the canceled <a href="../../future/help/Future.html">Future</a>s after
+flagging them as &quot;canceled&quot; and possibly interrupting them as well.
+</p>
+<p>Canceling a lazy or a finished future has no effect.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>A canceled future can be <code><a href="../../future/help/reset.html">reset()</a></code> to a lazy, vanilla future
+such that it can be relaunched, possibly on another future backend.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## Set up two parallel workers
+plan(multisession, workers = 2)
+
+## Launch two long running futures
+fs &lt;- lapply(c(1, 2), function(duration) {
+  future({
+    Sys.sleep(duration)
+    42
+  })
+})
+
+## Wait until at least one of the futures is resolved
+while (!any(resolved(fs))) Sys.sleep(0.1)
+
+## Cancel the future that is not yet resolved
+r &lt;- resolved(fs)
+cancel(fs[!r])
+
+## Get the value of the resolved future
+f &lt;- fs[r]
+v &lt;- value(f)
+message("Result: ", v)
+
+## The value of the canceled future is an error
+try(v &lt;- value(fs[!r]))
+
+## Shut down parallel workers
+plan(sequential)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>future</em> version 1.70.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

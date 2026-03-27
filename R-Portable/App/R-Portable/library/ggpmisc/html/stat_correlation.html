@@ -1,0 +1,429 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Annotate plot with correlation test</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for stat_correlation {ggpmisc}"><tr><td>stat_correlation {ggpmisc}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Annotate plot with correlation test</h2>
+
+<h3>Description</h3>
+
+<p><code>stat_correlation()</code> applies <code>stats::cor.test()</code>
+respecting grouping with <code>method = "pearson"</code> default but
+alternatively using <code>"kendall"</code> or <code>"spearman"</code> methods. It
+generates labels for correlation coefficients and p-value, coefficient of
+determination (R^2) for method &quot;pearson&quot; and number of observations.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+stat_correlation(
+  mapping = NULL,
+  data = NULL,
+  geom = "text_npc",
+  position = "identity",
+  ...,
+  method = "pearson",
+  n.min = 2L,
+  alternative = "two.sided",
+  exact = NULL,
+  r.conf.level = ifelse(method == "pearson", 0.95, NA),
+  continuity = FALSE,
+  fit.seed = NA,
+  small.r = getOption("ggpmisc.small.r", default = FALSE),
+  small.p = getOption("ggpmisc.small.p", default = FALSE),
+  coef.keep.zeros = TRUE,
+  r.digits = 2,
+  t.digits = 3,
+  p.digits = 3,
+  CI.brackets = c("[", "]"),
+  label.x = "left",
+  label.y = "top",
+  hstep = 0,
+  vstep = NULL,
+  output.type = NULL,
+  boot.R = ifelse(method == "pearson", 0, 999),
+  na.rm = FALSE,
+  parse = NULL,
+  show.legend = FALSE,
+  inherit.aes = TRUE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>mapping</code></td>
+<td>
+<p>The aesthetic mapping, usually constructed with
+<code><a href="../../ggplot2/help/aes.html">aes</a></code>. Only needs to be
+set at the layer level if you are overriding the plot defaults.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A layer specific dataset, only needed if you want to override the
+plot defaults.</p>
+</td></tr>
+<tr valign="top"><td><code>geom</code></td>
+<td>
+<p>The geometric object to use display the data</p>
+</td></tr>
+<tr valign="top"><td><code>position</code></td>
+<td>
+<p>The position adjustment to use for overlapping points on this
+layer</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>other arguments passed on to <code><a href="../../ggplot2/help/layer.html">layer</a></code>. This
+can include aesthetics whose values you want to set, not map. See
+<code><a href="../../ggplot2/help/layer.html">layer</a></code> for more details.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>character One of &quot;pearson&quot;, &quot;kendall&quot; or &quot;spearman&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>n.min</code></td>
+<td>
+<p>integer Minimum number of distinct values in the variables for
+fitting to the attempted.</p>
+</td></tr>
+<tr valign="top"><td><code>alternative</code></td>
+<td>
+<p>character One of &quot;two.sided&quot;, &quot;less&quot; or &quot;greater&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>exact</code></td>
+<td>
+<p>logical Whether an exact p-value should be computed. Used for
+Kendall's tau and Spearman's rho.</p>
+</td></tr>
+<tr valign="top"><td><code>r.conf.level</code></td>
+<td>
+<p>numeric Confidence level for the returned confidence
+interval. If set to <code>NA</code> computation of CI is skipped.</p>
+</td></tr>
+<tr valign="top"><td><code>continuity</code></td>
+<td>
+<p>logical If TRUE , a continuity correction is used for
+Kendall's tau and Spearman's rho when not computed exactly.</p>
+</td></tr>
+<tr valign="top"><td><code>fit.seed</code></td>
+<td>
+<p>RNG seed argument passed to <code><a href="../../base/help/Random.html">set.seed</a>()</code>.
+Defaults to <code>NA</code>, which means that <code>set.seed()</code> will not be
+called.</p>
+</td></tr>
+<tr valign="top"><td><code>small.r, small.p</code></td>
+<td>
+<p>logical Flags to switch use of lower case r and p for
+coefficient of correlation (only for <code>method = "pearson"</code>) and
+p-value.</p>
+</td></tr>
+<tr valign="top"><td><code>coef.keep.zeros</code></td>
+<td>
+<p>logical Keep or drop trailing zeros when formatting
+the correlation coefficients and t-value, z-value or S-value (see note
+below).</p>
+</td></tr>
+<tr valign="top"><td><code>r.digits, t.digits, p.digits</code></td>
+<td>
+<p>integer Number of digits after the decimal
+point to use for R, r.squared, tau or rho and P-value in labels. If
+<code>Inf</code>, use exponential notation with three decimal places.</p>
+</td></tr>
+<tr valign="top"><td><code>CI.brackets</code></td>
+<td>
+<p>character vector of length 2. The opening and closing
+brackets used for the CI label.</p>
+</td></tr>
+<tr valign="top"><td><code>label.x, label.y</code></td>
+<td>
+<p><code>numeric</code> with range 0..1 &quot;normalized parent
+coordinates&quot; (npc units) or character if using <code>geom_text_npc()</code> or
+<code>geom_label_npc()</code>. If using <code>geom_text()</code> or <code>geom_label()</code>
+numeric in native data units. If too short they will be recycled.</p>
+</td></tr>
+<tr valign="top"><td><code>hstep, vstep</code></td>
+<td>
+<p>numeric in npc units, the horizontal and vertical
+displacement step-size used between labels for different groups.</p>
+</td></tr>
+<tr valign="top"><td><code>output.type</code></td>
+<td>
+<p>character One of &quot;expression&quot;, &quot;LaTeX&quot;, &quot;text&quot;, &quot;markdown&quot;
+or &quot;numeric&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>boot.R</code></td>
+<td>
+<p>interger The number of bootstrap resamples. Set to zero for no
+bootstrap estimates for the CI.</p>
+</td></tr>
+<tr valign="top"><td><code>na.rm</code></td>
+<td>
+<p>a logical indicating whether NA values should be stripped before
+the computation proceeds.</p>
+</td></tr>
+<tr valign="top"><td><code>parse</code></td>
+<td>
+<p>logical Passed to the geom. If <code>TRUE</code>, the labels will be
+parsed into expressions and displayed as described in <code>?plotmath</code>.
+Default is <code>TRUE</code> if <code>output.type = "expression"</code> and
+<code>FALSE</code> otherwise.</p>
+</td></tr>
+<tr valign="top"><td><code>show.legend</code></td>
+<td>
+<p>logical. Should this layer be included in the legends?
+<code>NA</code>, the default, includes if any aesthetics are mapped. <code>FALSE</code>
+never includes, and <code>TRUE</code> always includes.</p>
+</td></tr>
+<tr valign="top"><td><code>inherit.aes</code></td>
+<td>
+<p>If <code>FALSE</code>, overrides the default aesthetics, rather
+than combining with them. This is most useful for helper functions that
+define both data and aesthetics and shouldn't inherit behaviour from the
+default plot specification, e.g. <code><a href="../../ggplot2/help/borders.html">borders</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This statistic can be used to annotate a plot with the correlation
+coefficient and the outcome of its test of significance. It supports
+Pearson, Kendall and Spearman methods to compute correlation. This
+statistic generates labels as R expressions by default but LaTeX (use TikZ
+device), markdown (use package 'ggtext') and plain text are also supported,
+as well as numeric values for user-generated text labels. The character
+labels include the symbol describing the quantity together with the numeric
+value. For the confidence interval (CI) the default is to follow the APA
+recommendation of using square brackets. As the CI is computed by
+bootstrapping, <code>fit.seed</code> if different to <code>NA</code> immediately before
+this computation.
+</p>
+<p>The value of <code>parse</code> is set automatically based on <code>output-type</code>,
+but if you assemble labels that need parsing from <code>numeric</code> output,
+the default needs to be overridden. By default the value of
+<code>output.type</code> is guessed from the name of the geometry.
+</p>
+<p>A ggplot statistic receives as <code>data</code> a data frame that is not the one
+passed as argument by the user, but instead a data frame with the variables
+mapped to aesthetics. <code>cor.test()</code> is always applied to the variables
+mapped to the <code>x</code> and <code>y</code> aesthetics, so the scales used for
+<code>x</code> and <code>y</code> should both be continuous scales rather than
+discrete.
+</p>
+
+
+<h3>Aesthetics</h3>
+
+<p><code>stat_correaltion()</code> requires <code>x</code> and
+<code>y</code>. In addition, the aesthetics understood by the geom
+(<code>"text"</code> is the default) are understood and grouping respected.
+</p>
+
+
+<h3>Computed variables</h3>
+
+<p>If output.type is <code>"numeric"</code> the returned
+tibble contains the columns listed below with variations depending on the
+<code>method</code>. If the model fit function used does not return a value, the
+variable is set to <code>NA_real_</code>.
+</p>
+
+<dl>
+<dt>x,npcx</dt><dd><p>x position</p>
+</dd>
+<dt>y,npcy</dt><dd><p>y position</p>
+</dd>
+<dt>r, and cor, tau or rho</dt><dd><p>numeric values for correlation coefficient estimates</p>
+</dd>
+<dt>t.value and its df, z.value or S.value </dt><dd><p>numeric values for statistic estimates</p>
+</dd>
+<dt>p.value, n</dt><dd><p>numeric values.</p>
+</dd>
+<dt>r.conf.level</dt><dd><p>numeric value, as fraction of one.</p>
+</dd>
+<dt>r.confint.low</dt><dd><p>Confidence interval limit for <code>r</code>.</p>
+</dd>
+<dt>r.confint.high</dt><dd><p>Confidence interval limit for <code>r</code>.</p>
+</dd>
+<dt>grp.label</dt><dd><p>Set according to mapping in <code>aes</code>.</p>
+</dd>
+<dt>method.label</dt><dd><p>Set according <code>method</code> used.</p>
+</dd>
+<dt>method, test</dt><dd><p>character values</p>
+</dd></dl>
+
+<p>If output.type different from <code>"numeric"</code> the returned tibble contains
+in addition to the columns listed above those listed below. If the numeric
+value is missing the label is set to <code>character(0L)</code>.
+</p>
+
+<dl>
+<dt>r.label, and cor.label, tau.label or rho.label</dt><dd><p>Correlation coefficient as a character string.</p>
+</dd>
+<dt>t.value.label, z.value.label or S.value.label</dt><dd><p>t-value and degrees of freedom, z-value or S-value as a character string.</p>
+</dd>
+<dt>p.value.label</dt><dd><p>P-value for test against zero, as a character string.</p>
+</dd>
+<dt>r.confint.label, and cor.conint.label, tau.confint.label or rho.confint.label</dt><dd><p>Confidence interval for <code>r</code> (only with <code>method = "pearson"</code>).</p>
+</dd>
+<dt>n.label</dt><dd><p>Number of observations used in the fit, as a character string.</p>
+</dd>
+<dt>grp.label</dt><dd><p>Set according to mapping in <code>aes</code>, as a character string.</p>
+</dd></dl>
+
+<p>To explore the computed values returned for a given input we suggest the use
+of <code><a href="../../gginnards/help/geom_debug.html">geom_debug</a></code> as shown in the last examples below.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Currently <code>coef.keep.zeros</code> is ignored, with trailing zeros always
+retained in the labels but not protected from being dropped by R when
+character strings are parsed into expressions.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../stats/help/cor.test.html">cor.test</a></code> for details on the computations.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# generate artificial data
+set.seed(4321)
+x &lt;- (1:100) / 10
+y &lt;- x + rnorm(length(x))
+my.data &lt;- data.frame(x = x,
+                      y = y,
+                      y.desc = - y,
+                      group = c("A", "B"))
+
+# by default only R is displayed
+ggplot(my.data, aes(x, y)) +
+  geom_point() +
+  stat_correlation()
+
+ggplot(my.data, aes(x, y)) +
+  geom_point() +
+  stat_correlation(small.r = TRUE)
+
+ggplot(my.data, aes(x, y.desc)) +
+  geom_point() +
+  stat_correlation(label.x = "right")
+
+# non-default methods
+ggplot(my.data, aes(x, y)) +
+  geom_point() +
+  stat_correlation(method = "kendall")
+
+ggplot(my.data, aes(x, y)) +
+  geom_point() +
+  stat_correlation(method = "spearman")
+
+# use_label() can map a user selected label
+ggplot(my.data, aes(x, y)) +
+  geom_point() +
+  stat_correlation(use_label("R2"))
+
+# use_label() can assemble and map a combined label
+ggplot(my.data, aes(x, y)) +
+  geom_point() +
+  stat_correlation(use_label("R", "P", "n", "method"))
+
+ggplot(my.data, aes(x, y)) +
+  geom_point() +
+  stat_correlation(use_label("R", "R.CI"))
+
+ggplot(my.data, aes(x, y)) +
+  geom_point() +
+  stat_correlation(use_label("R", "R.CI"),
+                   r.conf.level = 0.95)
+
+ggplot(my.data, aes(x, y)) +
+  geom_point() +
+  stat_correlation(use_label("R", "R.CI"),
+                   method = "kendall",
+                   r.conf.level = 0.95)
+
+ggplot(my.data, aes(x, y)) +
+  geom_point() +
+  stat_correlation(use_label("R", "R.CI"),
+                   method = "spearman",
+                   r.conf.level = 0.95)
+
+# manually assemble and map a specific label using paste() and aes()
+ggplot(my.data, aes(x, y)) +
+  geom_point() +
+  stat_correlation(aes(label = paste(after_stat(r.label),
+                                     after_stat(p.value.label),
+                                     after_stat(n.label),
+                                     sep = "*\", \"*")))
+
+# manually format and map a specific label using sprintf() and aes()
+ggplot(my.data, aes(x, y)) +
+  geom_point() +
+  stat_correlation(aes(label = sprintf("%s*\" with \"*%s*\" for \"*%s",
+                                       after_stat(r.label),
+                                       after_stat(p.value.label),
+                                       after_stat(t.value.label))))
+
+# Inspecting the returned data using geom_debug()
+# This provides a quick way of finding out the names of the variables that
+# are available for mapping to aesthetics with after_stat().
+
+gginnards.installed &lt;- requireNamespace("gginnards", quietly = TRUE)
+
+if (gginnards.installed)
+  library(gginnards)
+
+# the whole of computed data
+if (gginnards.installed)
+  ggplot(my.data, aes(x, y)) +
+    geom_point() +
+    stat_correlation(geom = "debug")
+
+if (gginnards.installed)
+  ggplot(my.data, aes(x, y)) +
+    geom_point() +
+    stat_correlation(geom = "debug", method = "pearson")
+
+if (gginnards.installed)
+  ggplot(my.data, aes(x, y)) +
+    geom_point() +
+    stat_correlation(geom = "debug", method = "kendall")
+
+if (gginnards.installed)
+  ggplot(my.data, aes(x, y)) +
+    geom_point() +
+    stat_correlation(geom = "debug", method = "spearman")
+
+if (gginnards.installed)
+  ggplot(my.data, aes(x, y)) +
+    geom_point() +
+    stat_correlation(geom = "debug", output.type = "numeric")
+
+if (gginnards.installed)
+  ggplot(my.data, aes(x, y)) +
+    geom_point() +
+    stat_correlation(geom = "debug", output.type = "markdown")
+
+if (gginnards.installed)
+  ggplot(my.data, aes(x, y)) +
+    geom_point() +
+    stat_correlation(geom = "debug", output.type = "LaTeX")
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ggpmisc</em> version 0.6.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

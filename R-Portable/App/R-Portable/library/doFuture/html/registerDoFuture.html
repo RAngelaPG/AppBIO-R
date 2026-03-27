@@ -1,0 +1,304 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Use the Foreach %dopar% Adapter with Futures</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for registerDoFuture {doFuture}"><tr><td>registerDoFuture {doFuture}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Use the Foreach <code style="white-space: pre;">%dopar%</code> Adapter with Futures</h2>
+
+<h3>Description</h3>
+
+<p>The <code>registerDoFuture()</code> function makes the
+<code><a href="../../foreach/help/+25dopar+25.html">%dopar%</a></code> operator of the
+<span class="pkg">foreach</span> package to process foreach iterations via any of
+the future backends supported by the <span class="pkg">future</span> package, which
+includes various parallel and distributed backends.
+In other words, <em>if a computational backend is supported via
+the Future API, it'll be automatically available for all functions
+and packages making use of the <span class="pkg">foreach</span> framework.</em>
+Neither the developer nor the end user has to change any code.
+</p>
+<p><em><strong>Recommendation</strong>: If you have the option, use <code><a href="../../doFuture/help/+25dofuture+25.html">%dofuture%</a></code> instead
+of <code style="white-space: pre;">%dopar%</code>, for all the benefits explained in its help page.</em>
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+registerDoFuture(flavor = c("%dopar%", "%dofuture%"))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>flavor</code></td>
+<td>
+<p>Control how the adapter should behave.
+If <code>"%dopar%"</code>, it behaves as a classical foreach adapter.
+If <code>"%dofuture%"</code>, it behaves as if <code><a href="../../doFuture/help/+25dofuture+25.html">%dofuture%</a></code> would have
+been used instead of <code style="white-space: pre;">%dopar%</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p><code>registerDoFuture()</code> returns, invisibly, the previously registered
+foreach <code style="white-space: pre;">%dopar%</code> backend.
+</p>
+
+
+<h3>Parallel backends</h3>
+
+<p>To use futures with the <span class="pkg">foreach</span> package and its
+<code><a href="../../foreach/help/+25dopar+25.html">%dopar%</a></code> operator, use
+<code>doFuture::registerDoFuture()</code> to register <span class="pkg">doFuture</span> to be
+used as a <code style="white-space: pre;">%dopar%</code> adapter.  After this, <code style="white-space: pre;">%dopar%</code> will
+parallelize with whatever <span class="pkg">future</span> backend is set by
+<code><a href="../../future/help/plan.html">future::plan()</a></code>.
+</p>
+<p>The built-in <span class="pkg">future</span> backends are always available, e.g.
+<a href="../../future/help/sequential.html">sequential</a> (sequential processing),
+<a href="../../future/help/multicore.html">multicore</a> (forked processes),
+<a href="../../future/help/multisession.html">multisession</a> (background R sessions),
+and <a href="../../future/help/cluster.html">cluster</a> (background R sessions on
+local and remote machines).
+For example, <code>plan(multisession)</code> will make <code style="white-space: pre;">%dopar%</code>
+parallelize via R processes running in the background on the
+local machine, and
+<code>plan(cluster, workers = c("n1", "n2", "n2", "n3"))</code> will
+parallelize via R processes running on external machines.
+</p>
+<p>Additional backends are provided by other future-compliant
+packages.  For example, the <span class="pkg">future.batchtools</span> package
+provides support for high-performance compute (HPC) cluster
+schedulers such as SGE, Slurm, and TORQUE / PBS.
+As an illustration, <code>plan(batchtools_slurm)</code> will parallelize
+by submitting the foreach iterations as tasks to the Slurm
+scheduler, which in turn will distribute the tasks to one
+or more compute nodes.
+</p>
+
+
+<h3>Global variables and packages</h3>
+
+<p>Unless running locally in the global environment (= at the <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> prompt),
+the <span class="pkg">foreach</span> package requires you to specify what global variables
+and packages need to be available and attached in order for the
+&quot;foreach&quot; expression to be evaluated properly.  It is not uncommon to
+get errors on one or more missing variables when moving from running a
+<code>res &lt;- foreach() %dopar% { ... }</code> statement on the local machine
+to, say, another machine on the same network.  The solution to the
+problem is to explicitly export those variables by specifying them in
+the <code>.export</code> argument to <code><a href="../../foreach/help/foreach.html">foreach::foreach()</a></code>,
+e.g. <code>foreach(..., .export = c("mu", "sigma"))</code>.  Likewise, if the
+expression needs specific packages to be attached, they can be listed
+in argument <code>.packages</code> of <code>foreach()</code>.
+</p>
+<p>When using <code>registerDoFuture()</code>, the above becomes less
+critical, because by default the Future API identifies all globals and
+all packages automatically (via static code inspection).  This is done
+exactly the same way regardless of future backend.
+This automatic identification of globals and packages is illustrated
+by the below example, which does <em>not</em> have to specify
+<code>.export = c("my_stat")</code>.  This works because the future framework
+detects that function <code>my_stat()</code> is needed and makes sure it is
+exported.  If you would use, say, <code>cl &lt;- parallel::makeCluster(2)</code>
+and <code>doParallel::registerDoParallel(cl)</code>, you would get a run-time
+error on <code>Error in { : task 1 failed - \"could not find function
+"my_stat" ...</code>.
+</p>
+<p>Having said this, note that, in order for your &quot;foreach&quot; code to work
+everywhere and with other types of foreach adapters as well, you may
+want to make sure that you always specify arguments <code>.export</code>
+and <code>.packages</code>.
+</p>
+
+
+<h3>Load balancing (&quot;chunking&quot;)</h3>
+
+<p>Whether load balancing (&quot;chunking&quot;) should take place or not can be
+controlled by specifying either argument
+<code style="white-space: pre;">.options.future = list(scheduling = &lt;ratio&gt;)</code> or
+<code style="white-space: pre;">.options.future = list(chunk.size = &lt;count&gt;)</code> to <code>foreach()</code>.
+</p>
+<p>The value <code>chunk.size</code> specifies the average number of elements
+processed per future (&quot;chunks&quot;).
+If <code>+Inf</code>, then all elements are processed in a single future (one worker).
+If <code>NULL</code>, then argument <code>future.scheduling</code> is used.
+</p>
+<p>The value <code>scheduling</code> specifies the average number of futures
+(&quot;chunks&quot;) that each worker processes.
+If <code>0.0</code>, then a single future is used to process all iterations;
+none of the other workers are used.
+If <code>1.0</code> or <code>TRUE</code>, then one future per worker is used.
+If <code>2.0</code>, then each worker will process two futures (if there are
+enough iterations).
+If <code>+Inf</code> or <code>FALSE</code>, then one future per iteration is used.
+The default value is <code>scheduling = 1.0</code>.
+</p>
+<p>The name of <code>foreach()</code> argument <code>.options.future</code> follows the naming
+conventions of the <span class="pkg">doMC</span>, <span class="pkg">doSNOW</span>, and <span class="pkg">doParallel</span> packages,
+<em>This argument should not be mistaken for the <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>
+<a href="../../future/help/future.options.html">options of the future package</a></em>.
+</p>
+<p>For backward-compatibility reasons with existing foreach code, one may
+also use arguments <code style="white-space: pre;">.options.multicore = list(preschedule = &lt;logical&gt;)</code> and
+<code style="white-space: pre;">.options.snow = list(preschedule = &lt;logical&gt;)</code> when using <span class="pkg">doFuture</span>.
+<code>.options.multicore = list(preschedule = TRUE)</code> is equivalent to
+<code>.options.future = list(scheduling = 1.0)</code> and
+<code>.options.multicore = list(preschedule = FALSE)</code> is equivalent to
+<code>.options.future = list(scheduling = +Inf)</code>.
+and analogously for <code>.options.snow</code>.
+Argument <code>.options.future</code> takes precedence over argument
+<code>.option.multicore</code> which takes precedence over argument <code>.option.snow</code>,
+when it comes to chunking.
+</p>
+
+
+<h3>Random Number Generation (RNG)</h3>
+
+<p>The doFuture adapter registered by <code>registerDoFuture()</code> does <em>not</em> itself
+provide a framework for generating proper random numbers in parallel.
+This is a deliberate design choice based on how the foreach ecosystem is
+set up and to align it with other foreach adapters, e.g. <strong>doParallel</strong>.
+To generate statistically sound parallel RNG, it is recommended to use
+the <span class="pkg">doRNG</span> package, where the <code><a href="../../doRNG/help/+25dorng+25.html">%dorng%</a></code>
+operator is used in place of <code><a href="../../foreach/help/+25dopar+25.html">%dopar%</a></code>.
+For example,
+</p>
+<div class="sourceCode r"><pre>y &lt;- foreach(i = 1:3) %dorng% {
+  rnorm(1)
+}
+</pre></div>
+<p>This works because <span class="pkg">doRNG</span> is designed to work with any type of foreach
+<code style="white-space: pre;">%dopar%</code> adapter including the one provided by <span class="pkg">doFuture</span>.
+</p>
+<p>If you forget to use <code style="white-space: pre;">%dorng%</code> instead of <code style="white-space: pre;">%dopar%</code> when the foreach
+iteration generates random numbers, <span class="pkg">doFuture</span> will detect the
+mistake and produce an informative warning.
+</p>
+
+
+<h3>For package developers</h3>
+
+<p>Please refrain from modifying the foreach backend inside your package or
+functions, i.e. do not call any <code>registerNnn()</code> in your code.  Instead,
+leave the control on what backend to use to the end user.  This idea is
+part of the core philosophy of the <span class="pkg">foreach</span> framework.
+</p>
+<p>However, if you think it necessary to register the <span class="pkg">doFuture</span> backend
+in a function, please make sure to undo your changes when exiting the
+function. This can be achieved by:
+</p>
+<pre>
+  with(registerDoFuture(), local = TRUE)
+  ...
+</pre>
+<p>This is important, because the end-user might have already registered a
+foreach backend elsewhere for other purposes and will most likely not know
+that calling your function will break their setup.
+<em>Remember, your package and its functions might be used in a greater
+context where multiple packages and functions are involved and those might
+also rely on the foreach framework, so it is important to avoid stepping on
+others' toes.</em>
+</p>
+
+
+<h3>Reporting on progress</h3>
+
+<p>How to report on progress is a frequently asked question, especially
+in long-running tasks and parallel processing.  The <strong>foreach</strong>
+framework does <em>not</em> have a built-in mechanism for progress
+reporting(*).
+</p>
+<p>When using <strong>doFuture</strong>, and the Futureverse in general, for
+processing, the <strong>progressr</strong> package can be used to signal progress
+updates in a near-live fashion.  There is no special argument related to
+<code>foreach()</code> or <strong>doFuture</strong> to achieve this. Instead, one calls a,
+so called, &quot;progressor&quot; function within each iteration.  See
+the <a href="https://cran.r-project.org/package=progressr"><strong>progressr</strong></a>
+package and its <code>vignette(package = "progressr")</code> for examples.
+</p>
+<p>(*) The legacy <strong>doSNOW</strong> package uses a special <code>foreach()</code> argument
+<code>.options.doSNOW$progress</code> that can be used to make a progress update
+each time results from a parallel worker are returned. This approach
+is limited by how chunking works, requires the developer to set that
+argument, and the code becomes incompatible with foreach adaptors
+registered by other <strong>doNnn</strong> packages.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+library(iterators)  # iter()
+registerDoFuture()  # (a) tell %dopar% to use the future framework
+plan(multisession)  # (b) parallelize futures on the local machine
+
+
+## Example 1
+A &lt;- matrix(rnorm(100^2), nrow = 100)
+B &lt;- t(A)
+
+y1 &lt;- apply(B, MARGIN = 2L, FUN = function(b) {
+  A %*% b
+})
+
+y2 &lt;- foreach(b = iter(B, by = "col"), .combine = cbind) %dopar% {
+  A %*% b
+}
+stopifnot(all.equal(y2, y1))
+
+
+
+## Example 2 - Chunking (4 elements per future [= worker])
+y3 &lt;- foreach(b = iter(B, by = "col"), .combine = cbind,
+              .options.future = list(chunk.size = 10)) %dopar% {
+  A %*% b
+}
+stopifnot(all.equal(y3, y1))
+
+
+## Example 3 - Simulation with parallel RNG
+library(doRNG)
+
+my_stat &lt;- function(x) {
+  median(x)
+}
+
+my_experiment &lt;- function(n, mu = 0.0, sigma = 1.0) {
+  ## Important: use %dorng% whenever random numbers
+  ##            are involved in parallel evaluation
+  foreach(i = 1:n) %dorng% {
+    x &lt;- rnorm(i, mean = mu, sd = sigma)
+    list(mu = mean(x), sigma = sd(x), own = my_stat(x))
+  }
+}
+
+## Reproducible results when using the same RNG seed
+set.seed(0xBEEF)
+y1 &lt;- my_experiment(n = 3)
+
+set.seed(0xBEEF)
+y2 &lt;- my_experiment(n = 3)
+
+stopifnot(identical(y2, y1))
+
+## But only then
+y3 &lt;- my_experiment(n = 3)
+str(y3)
+stopifnot(!identical(y3, y1))
+
+
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>doFuture</em> version 1.2.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

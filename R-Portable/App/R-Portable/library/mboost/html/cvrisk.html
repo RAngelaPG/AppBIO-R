@@ -1,0 +1,275 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Cross-Validation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for cvrisk {mboost}"><tr><td>cvrisk {mboost}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Cross-Validation </h2>
+
+<h3>Description</h3>
+
+<p>Cross-validated estimation of the empirical risk for hyper-parameter selection.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'mboost'
+cvrisk(object, folds = cv(model.weights(object)),
+       grid = 0:mstop(object),
+       papply = mclapply,
+       fun = NULL, mc.preschedule = FALSE, ...)
+cv(weights, type = c("bootstrap", "kfold", "subsampling"),
+   B = ifelse(type == "kfold", 10, 25), prob = 0.5, strata = NULL)
+
+## Plot cross-valiation results   
+## S3 method for class 'cvrisk'
+plot(x, 
+     xlab = "Number of boosting iterations", ylab = attr(x, "risk"),
+     ylim = range(x), main = attr(x, "type"), ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p> an object of class <code>mboost</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>folds</code></td>
+<td>
+<p> a weight matrix with number of rows equal to the number
+of observations. The number of columns corresponds to
+the number of cross-validation runs. Can be computed
+using function <code>cv</code> and defaults to 25 bootstrap samples.</p>
+</td></tr>
+<tr valign="top"><td><code>grid</code></td>
+<td>
+<p> a vector of stopping parameters the empirical risk
+is to be evaluated for. </p>
+</td></tr>
+<tr valign="top"><td><code>papply</code></td>
+<td>
+
+<p>(parallel) apply function, defaults to  <code><a href="../../parallel/help/mclapply.html">mclapply</a></code>.
+Alternatively, <code><a href="../../parallel/help/parLapply.html">parLapply</a></code> can be used. In the
+latter case, usually more setup is needed (see example for some
+details). To run <code>cvrisk</code> sequentially (i.e. not in parallel),
+one can use <code><a href="../../base/html/lapply.html">lapply</a></code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>fun</code></td>
+<td>
+<p> if <code>fun</code> is NULL, the out-of-sample risk is returned. <code>fun</code>,
+as a function of <code>object</code>, may extract any other characteristic
+of the cross-validated models. These are returned as is.</p>
+</td></tr>
+<tr valign="top"><td><code>mc.preschedule</code></td>
+<td>
+
+<p>preschedule tasks if are parallelized using <code><a href="../../parallel/html/mcdummies.html">mclapply</a></code>
+(default: <code>FALSE</code>)? For details see <code><a href="../../parallel/html/mcdummies.html">mclapply</a></code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p> a numeric vector of weights for the model to be cross-validated.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p> character argument for specifying the cross-validation
+method. Currently (stratified) bootstrap, k-fold cross-validation
+and subsampling are implemented.</p>
+</td></tr>
+<tr valign="top"><td><code>B</code></td>
+<td>
+<p> number of folds, per default 25 for <code>bootstrap</code> and
+<code>subsampling</code> and 10 for <code>kfold</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>prob</code></td>
+<td>
+<p> percentage of observations to be included in the learning samples
+for subsampling.</p>
+</td></tr>
+<tr valign="top"><td><code>strata</code></td>
+<td>
+<p> a factor of the same length as <code>weights</code> for stratification.</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p> an object of class <code>cvrisk</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>xlab, ylab</code></td>
+<td>
+<p>axis labels.</p>
+</td></tr>
+<tr valign="top"><td><code>ylim</code></td>
+<td>
+<p>limits of y-axis.</p>
+</td></tr>
+<tr valign="top"><td><code>main</code></td>
+<td>
+<p>main title of graphic.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>additional arguments passed to <code><a href="../../parallel/help/mclapply.html">mclapply</a></code> or 
+<code><a href="../../mboost/help/plot.html">plot</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The number of boosting iterations is a hyper-parameter of the
+boosting algorithms implemented in this package. Honest,
+i.e., cross-validated, estimates of the empirical risk
+for different stopping parameters <code>mstop</code> are computed by
+this function which can be utilized to choose an appropriate
+number of boosting iterations to be applied.
+</p>
+<p>Different forms of cross-validation can be applied, for example
+10-fold cross-validation or bootstrapping. The weights (zero weights
+correspond to test cases) are defined via the <code>folds</code> matrix.
+</p>
+<p><code>cvrisk</code> runs in parallel on OSes where forking is possible
+(i.e., not on Windows) and multiple cores/processors are available.
+The scheduling
+can be changed by the corresponding arguments of
+<code><a href="../../parallel/help/mclapply.html">mclapply</a></code> (via the dot arguments).
+</p>
+<p>The function <code>cv</code> can be used to build an appropriate
+weight matrix to be used with <code>cvrisk</code>. If <code>strata</code> is defined
+sampling is performed in each stratum separately thus preserving
+the distribution of the <code>strata</code> variable in each fold.
+</p>
+<p>There exist various functions to display and work with 
+cross-validation results. One can <code>print</code> and <code>plot</code> (see above)
+results and extract the optimal iteration via <code><a href="../../mboost/help/mstop.html">mstop</a></code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>cvrisk</code> (when <code>fun</code> wasn't specified), basically a matrix
+containing estimates of the empirical risk for a varying number
+of bootstrap iterations. <code>plot</code> and <code>print</code> methods
+are available as well as a <code>mstop</code> method.
+</p>
+
+
+<h3>References</h3>
+
+<p>Torsten Hothorn, Friedrich Leisch, Achim Zeileis and Kurt Hornik (2006),
+The design and analysis of benchmark experiments.
+<em>Journal of Computational and Graphical Statistics</em>, <b>14</b>(3),
+675&ndash;699.
+</p>
+<p>Andreas Mayr, Benjamin Hofner, and Matthias Schmid (2012). The
+importance of knowing when to stop - a sequential stopping rule for
+component-wise gradient boosting. <em>Methods of Information in
+Medicine</em>, <b>51</b>, 178&ndash;186. <br />
+DOI: doi: <a href="https://doi.org/10.3414/ME11-02-0030">10.3414/ME11-02-0030</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../mboost/help/AIC.mboost.html">AIC.mboost</a></code> for
+<code>AIC</code> based selection of the stopping iteration. Use <code>mstop</code>
+to extract the optimal stopping iteration from <code>cvrisk</code>
+object.</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+  data("bodyfat", package = "TH.data")
+
+  ### fit linear model to data
+  model &lt;- glmboost(DEXfat ~ ., data = bodyfat, center = TRUE)
+
+  ### AIC-based selection of number of boosting iterations
+  maic &lt;- AIC(model)
+  maic
+
+  ### inspect coefficient path and AIC-based stopping criterion
+  par(mai = par("mai") * c(1, 1, 1, 1.8))
+  plot(model)
+  abline(v = mstop(maic), col = "lightgray")
+
+  ### 10-fold cross-validation
+  cv10f &lt;- cv(model.weights(model), type = "kfold")
+  cvm &lt;- cvrisk(model, folds = cv10f, papply = lapply)
+  print(cvm)
+  mstop(cvm)
+  plot(cvm)
+
+  ### 25 bootstrap iterations (manually)
+  set.seed(290875)
+  n &lt;- nrow(bodyfat)
+  bs25 &lt;- rmultinom(25, n, rep(1, n)/n)
+  cvm &lt;- cvrisk(model, folds = bs25, papply = lapply)
+  print(cvm)
+  mstop(cvm)
+  plot(cvm)
+
+  ### same by default
+  set.seed(290875)
+  cvrisk(model, papply = lapply)
+
+  ### 25 bootstrap iterations (using cv)
+  set.seed(290875)
+  bs25_2 &lt;- cv(model.weights(model), type="bootstrap")
+  all(bs25 == bs25_2)
+
+## Not run: 
+############################################################
+## Do not run this example automatically as it takes
+## some time (~ 5 seconds depending on the system)
+
+  ### trees
+  blackbox &lt;- blackboost(DEXfat ~ ., data = bodyfat)
+  cvtree &lt;- cvrisk(blackbox, papply = lapply)
+  plot(cvtree)
+  
+## End(Not run this automatically)  
+
+## End(Not run)
+
+
+### cvrisk in parallel modes:
+
+## Not run: 
+## at least not automatically
+
+## parallel::mclapply() which is used here for parallelization only runs 
+## on unix systems (here we use 2 cores)
+
+    cvrisk(model, mc.cores = 2)
+
+## infrastructure needs to be set up in advance
+
+    cl &lt;- makeCluster(25) # e.g. to run cvrisk on 25 nodes via PVM
+    myApply &lt;- function(X, FUN, ...) {
+      myFun &lt;- function(...) {
+          library("mboost") # load mboost on nodes
+          FUN(...)
+      }
+      ## further set up steps as required
+      parLapply(cl = cl, X, myFun, ...)
+    }
+    cvrisk(model, papply = myApply)
+    stopCluster(cl)
+
+## End(Not run)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mboost</em> version 2.9-11 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

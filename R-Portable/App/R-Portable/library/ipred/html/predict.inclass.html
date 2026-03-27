@@ -1,0 +1,157 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Predictions from an Inclass Object</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for predict.inclass {ipred}"><tr><td>predict.inclass {ipred}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Predictions from an Inclass Object</h2>
+
+<h3>Description</h3>
+
+<p>Predicts the class membership of new observations through indirect
+classification.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'inclass'
+predict(object, newdata, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p> object of class <code>inclass</code>, see <code><a href="../../ipred/help/inclass.html">inclass</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>newdata</code></td>
+<td>
+<p>data frame to be classified.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>additional arguments corresponding to the predictive models 
+specified in <code><a href="../../ipred/help/inclass.html">inclass</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Predictions of class memberships are calculated. i.e. values of the
+intermediate variables are predicted and classified following <code>cFUN</code>,
+see <code><a href="../../ipred/help/inclass.html">inclass</a></code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The vector of predicted classes is returned.
+</p>
+
+
+<h3>References</h3>
+
+<p>David J. Hand, Hua Gui Li, Niall M. Adams (2001),
+Supervised classification with structured class definitions.
+<em>Computational Statistics &amp; Data Analysis</em> <b>36</b>,
+209&ndash;225.
+</p>
+<p>Andrea Peters, Berthold Lausen, Georg Michelson and Olaf Gefeller (2003),
+Diagnosis of glaucoma by indirect classifiers.
+<em>Methods of Information in Medicine</em> <b>1</b>, 99-103.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../ipred/help/inclass.html">inclass</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+# Simulation model, classification rule following Hand et al. (2001)
+
+theta90 &lt;- varset(N = 1000, sigma = 0.1, theta = 90, threshold = 0)
+
+dataset &lt;- as.data.frame(cbind(theta90$explanatory, theta90$intermediate))
+names(dataset) &lt;- c(colnames(theta90$explanatory),
+colnames(theta90$intermediate))
+
+classify &lt;- function(Y, threshold = 0) {
+  Y &lt;- Y[,c("y1", "y2")]
+  z &lt;- (Y &gt; threshold)
+  resp &lt;- as.factor(ifelse((z[,1] + z[,2]) &gt; 1, 1, 0))
+  return(resp)
+}
+
+formula &lt;- response~y1+y2~x1+x2
+
+fit &lt;- inclass(formula, data = dataset, pFUN = list(list(model = lm)), 
+ cFUN = classify)
+
+predict(object = fit, newdata = dataset)
+
+
+data("Smoking", package = "ipred")
+
+# explanatory variables are: TarY, NicY, COY, Sex, Age
+# intermediate variables are: TVPS, BPNL, COHB
+# reponse is defined by:
+
+classify &lt;- function(data){
+  data &lt;- data[,c("TVPS", "BPNL", "COHB")]
+  res &lt;- t(t(data) &gt; c(4438, 232.5, 58))
+  res &lt;- as.factor(ifelse(apply(res, 1, sum) &gt; 2, 1, 0))
+  res
+}
+
+response &lt;- classify(Smoking[ ,c("TVPS", "BPNL", "COHB")])
+smoking &lt;- cbind(Smoking, response)
+
+formula &lt;- response~TVPS+BPNL+COHB~TarY+NicY+COY+Sex+Age
+
+fit &lt;- inclass(formula, data = smoking, 
+  pFUN = list(list(model = lm)), cFUN = classify)
+
+
+predict(object = fit, newdata = smoking)
+
+## End(Not run)
+
+data("GlaucomaMVF", package = "ipred")
+library("rpart")
+glaucoma &lt;- GlaucomaMVF[,(names(GlaucomaMVF) != "tension")]
+# explanatory variables are derived by laser scanning image and intra occular pressure
+# intermediate variables are: clv, cs, lora
+# response is defined by
+
+classify &lt;- function (data) {
+  attach(data) 
+  res &lt;- ifelse((!is.na(clv) &amp; !is.na(lora) &amp; clv &gt;= 5.1 &amp; lora &gt;= 
+        49.23372) | (!is.na(clv) &amp; !is.na(lora) &amp; !is.na(cs) &amp; 
+        clv &lt; 5.1 &amp; lora &gt;= 58.55409 &amp; cs &lt; 1.405) | (is.na(clv) &amp; 
+        !is.na(lora) &amp; !is.na(cs) &amp; lora &gt;= 58.55409 &amp; cs &lt; 1.405) | 
+        (!is.na(clv) &amp; is.na(lora) &amp; cs &lt; 1.405), 0, 1)
+  detach(data)
+  factor (res, labels = c("glaucoma", "normal"))
+}
+
+fit &lt;- inclass(Class~clv+lora+cs~., data = glaucoma, 
+             pFUN = list(list(model = rpart)), cFUN = classify)
+
+data("GlaucomaM", package = "TH.data")
+predict(object = fit, newdata = GlaucomaM)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ipred</em> version 0.9-15 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

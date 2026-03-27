@@ -1,0 +1,222 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Update calendar pro from server</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for updateCalendarPro {shinyWidgets}"><tr><td>updateCalendarPro {shinyWidgets}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Update calendar pro from server</h2>
+
+<h3>Description</h3>
+
+<p>Update a <code><a href="../../shinyWidgets/help/calendarProInput.html">calendarProInput()</a></code> from the server.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+updateCalendarPro(
+  inputId,
+  label = NULL,
+  value = NULL,
+  mode = NULL,
+  ...,
+  session = shiny::getDefaultReactiveDomain()
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>inputId</code></td>
+<td>
+<p>The <code>input</code> slot that will be used to access the value.</p>
+</td></tr>
+<tr valign="top"><td><code>label</code></td>
+<td>
+<p>Display label for the control, or <code>NULL</code> for no label.</p>
+</td></tr>
+<tr valign="top"><td><code>value</code></td>
+<td>
+<p>Initial value.</p>
+</td></tr>
+<tr valign="top"><td><code>mode</code></td>
+<td>
+<p>This parameter determines whether selecting one or multiple days is allowed, or if date selection is completely disabled.
+Possible values are: 'single' | 'multiple' | 'multiple-ranged' | false.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Other settings passed to Calendar Pro JavaScript method, see <a href="https://vanilla-calendar.pro/docs/reference/settings">online documentation</a> for reference.</p>
+</td></tr>
+<tr valign="top"><td><code>session</code></td>
+<td>
+<p>The <code>session</code> object passed to function given to
+<code>shinyServer</code>. Default is <code>getDefaultReactiveDomain()</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>No value.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../shinyWidgets/help/calendarProInput.html">calendarProInput()</a></code> for creating a widget in the UI.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+library(shiny)
+library(shinyWidgets)
+
+ui &lt;- fluidPage(
+  theme = bslib::bs_theme(5),
+  tags$h2("Calendar Pro Input: update from server"),
+  fluidRow(
+    column(
+      width = 4,
+      calendarProInput(
+        inputId = "calendar",
+        label = "Select a date:",
+        placeholder = "Select a date",
+        width = "100%"
+      ),
+      verbatimTextOutput("res1"),
+      textInput(
+        inputId = "label",
+        label = "Update label:"
+      ),
+      actionButton(
+        inputId = "today",
+        label = "Set value as today"
+      ),
+      actionButton(
+        inputId = "today3",
+        label = "Set value as today + 3"
+      ),
+      radioButtons(
+        inputId = "mode",
+        label = "Update mode:",
+        choices = c("single", "multiple", "multiple-ranged"),
+        inline = TRUE
+      )
+    ),
+    column(
+      width = 4,
+      calendarProInput(
+        inputId = "time",
+        label = "Select date and time:",
+        placeholder = "Select date and time:",
+        selectionTimeMode = 24,
+        format = "%Y/%m/%d %H:%M",
+        width = "100%"
+      ),
+      verbatimTextOutput("res2"),
+      actionButton(
+        inputId = "set_time_1",
+        label = "Set yesterday 11am"
+      ),
+      actionButton(
+        inputId = "set_time_2",
+        label = "Set now"
+      )
+    ),
+    column(
+      width = 4,
+      calendarProInput(
+        inputId = "disable",
+        label = "Select a date:",
+        placeholder = "Select a date",
+        width = "100%"
+      ),
+      verbatimTextOutput("res3"),
+      radioButtons(
+        inputId = "disable_fridays",
+        label = "Disable fridays:",
+        choices = c("yes", "no"),
+        selected = "no",
+        inline = TRUE
+      ),
+      radioButtons(
+        inputId = "disable_tomorrow",
+        label = "Disable tomorrow:",
+        choices = c("yes", "no"),
+        selected = "no",
+        inline = TRUE
+      ),
+    )
+  )
+)
+
+server &lt;- function(input, output, session) {
+
+  output$res1 &lt;- renderPrint(input$calendar)
+
+  observeEvent(input$label, {
+    if (isTruthy(input$label)) {
+      updateCalendarPro("calendar", label = input$label)
+    }
+  })
+
+  observeEvent(input$today, {
+    updateCalendarPro("calendar", value = Sys.Date())
+  })
+
+  observeEvent(input$today3, {
+    updateCalendarPro("calendar", value = Sys.Date() + 3)
+  })
+
+  observeEvent(input$mode, {
+    updateCalendarPro("calendar", selectionDatesMode = input$mode)
+  }, ignoreInit = TRUE)
+
+
+
+  output$res2 &lt;- renderPrint(input$time)
+
+  observeEvent(input$set_time_1, {
+    updateCalendarPro("time", value = Sys.Date() - 1, selectedTime = "11:00")
+  })
+
+  observeEvent(input$set_time_2, {
+    updateCalendarPro("time", value = Sys.time())
+  })
+
+
+
+  output$res3 &lt;- renderPrint(input$disable)
+
+  observeEvent(input$disable_fridays, {
+    if (input$disable_fridays == "yes") {
+      updateCalendarPro("disable", disableWeekdays = 5)
+    } else {
+      updateCalendarPro("disable", disableWeekdays = numeric(0))
+    }
+  }, ignoreInit = TRUE)
+
+  observeEvent(input$disable_tomorrow, {
+    if (input$disable_tomorrow == "yes") {
+      updateCalendarPro("disable", disableDates = Sys.Date() + 1)
+    } else {
+      updateCalendarPro("disable", disableDates = numeric(0))
+    }
+  }, ignoreInit = TRUE)
+
+}
+
+if (interactive())
+  shinyApp(ui, server)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>shinyWidgets</em> version 0.9.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

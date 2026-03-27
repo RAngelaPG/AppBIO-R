@@ -23,7 +23,7 @@ paired columns.
 </p>
 <p>Lastly, there are date-time helpers for extracting parts of dates as
 integers, for example the year (<code>year()</code>), month
-(<code>month()</code>), or day in the month (<code>mday()</code>); see Usage and Exampels.
+(<code>month()</code>), or day in the month (<code>mday()</code>); see Usage and Examples.
 </p>
 
 
@@ -71,6 +71,7 @@ wday(x)
 mday(x)
 week(x)
 isoweek(x)
+isoyear(x)     
 month(x)
 quarter(x)
 year(x)
@@ -146,6 +147,11 @@ hours. Because <code>ITime</code> is stored in seconds, you can add it to a
 <code>POSIXct</code> object, but you should not add it to a <code>Date</code>
 object.
 </p>
+<p>For <code>as.ITime</code>, note that the string <code>"24:00:00"</code> is parsed as <code>"00:00:00"</code>.
+This is because the conversion uses <code>as.POSIXct</code>, which treats <code>"24:00:00"</code> as midnight of the next day. 
+This differs from ISO 8601 (which allows <code>"24:00:00"</code> to represent end-of-day), but aligns with POSIX standards.
+To represent end-of-day intervals, use <code>"23:59:59"</code> or arithmetic (e.g., <code>as.ITime("23:59:59") + 1L</code>).
+</p>
 <p>We also provide S3 methods to convert to and from <code>Date</code> and <code>POSIXct</code>.
 </p>
 <p><code>ITime</code> is time zone-agnostic. When converting <code>ITime</code> and
@@ -184,6 +190,15 @@ They can round or truncate to hours and minutes.
 Note for ITime's with 30 seconds, rounding is inconsistent due to rounding off a 5.
 See 'Details' in <code><a href="../../base/html/Round.html">round</a></code> for more information.
 </p>
+<p>Functions like <code>week()</code> and <code>isoweek()</code> provide week numbering functionality.
+<code>week()</code> computes completed or fractional weeks within the year,
+while <code>isoweek()</code> calculates week numbers according to ISO 8601 standards,
+which specify that the first week of the year is the one containing the first Thursday.
+This convention ensures that week boundaries align consistently with year boundaries,
+accounting for both year transitions and varying day counts per week.
+</p>
+<p>Similarly, <code>isoyear()</code> returns the ISO 8601 year corresponding to the ISO week.
+</p>
 
 
 <h3>Value</h3>
@@ -198,12 +213,12 @@ stored as the number of seconds in the day.
 <code>itime</code> in <code>IDate</code> and <code>ITime</code> format.
 </p>
 <p><code>second</code>, <code>minute</code>, <code>hour</code>, <code>yday</code>, <code>wday</code>,
-<code>mday</code>, <code>week</code>, <code>month</code>, <code>quarter</code>,
+<code>mday</code>, <code>week</code>, <code>isoweek</code>, <code>isoyear</code>, <code>month</code>, <code>quarter</code>,
 and <code>year</code> return integer values
 for second, minute, hour, day of year, day of week,
 day of month, week, month, quarter, and year, respectively.
 <code>yearmon</code> and <code>yearqtr</code> return double values representing
-respectively 'year + (month-1) / 12' and 'year + (quarter-1) / 4'.
+respectively <code>year + (month-1) / 12</code> and <code>year + (quarter-1) / 4</code>.
 </p>
 <p><code>second</code>, <code>minute</code>, <code>hour</code> are taken directly from
 the <code>POSIXlt</code> representation.
@@ -221,10 +236,10 @@ and <code>mon</code> are all 0-based, here they are 1-based.
 
 <h3>References</h3>
 
-<p>G. Grothendieck and T. Petzoldt, &ldquo;Date and Time Classes in R,&rdquo;
+<p>G. Grothendieck and T. Petzoldt, &ldquo;Date and Time Classes in R&rdquo;,
 R News, vol. 4, no. 1, June 2004.
 </p>
-<p>H. Wickham, https://gist.github.com/10238.
+<p>H. Wickham, https://gist.github.com/hadley/10238.
 </p>
 <p>ISO 8601, https://www.iso.org/iso/home/standards/iso8601.htm
 </p>
@@ -257,10 +272,16 @@ identical(as.ITime("10:45"), methods::as("10:45", "ITime"))
 
 (t &lt;- as.ITime("10:45:04", format = "%H:%M:%S"))
 
+# "24:00:00" is parsed as "00:00:00"
+as.ITime("24:00:00")
+
+# Workaround for end-of-day: add 1 second to "23:59:59"
+as.ITime("23:59:59") + 1L
+
 as.POSIXct("2001-01-01") + as.ITime("10:45")
 
 datetime &lt;- seq(as.POSIXct("2001-01-01"), as.POSIXct("2001-01-03"), by = "5 hour")
-(af &lt;- data.table(IDateTime(datetime), a = rep(1:2, 5), key = "a,idate,itime"))
+(af &lt;- data.table(IDateTime(datetime), a = rep(1:2, 5), key = c("a", "idate", "itime")))
 
 af[, mean(a), by = "itime"]
 af[, mean(a), by = list(hour = hour(itime))]
@@ -282,7 +303,18 @@ round(seqdates, "months")
 round(seqtimes, "hours")
 trunc(seqtimes, "hours")
 
+# Examples for isoyear() and isoweek()
+d1 = as.IDate("2019-12-30")
+year(d1)
+isoweek(d1)
+isoyear(d1)
+
+d2 = as.IDate("2016-01-01")
+year(d2)
+isoweek(d2)
+isoyear(d2)
+
 </pre>
 
-<hr /><div style="text-align: center;">[Package <em>data.table</em> version 1.15.4 <a href="00Index.html">Index</a>]</div>
+<hr /><div style="text-align: center;">[Package <em>data.table</em> version 1.18.2.1 <a href="00Index.html">Index</a>]</div>
 </div></body></html>

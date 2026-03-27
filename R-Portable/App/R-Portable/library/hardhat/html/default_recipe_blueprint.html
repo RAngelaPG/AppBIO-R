@@ -1,0 +1,235 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Default recipe blueprint</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for default_recipe_blueprint {hardhat}"><tr><td>default_recipe_blueprint {hardhat}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Default recipe blueprint</h2>
+
+<h3>Description</h3>
+
+<p>This pages holds the details for the recipe preprocessing blueprint. This
+is the blueprint used by default from <code>mold()</code> if <code>x</code> is a recipe.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+default_recipe_blueprint(
+  intercept = FALSE,
+  allow_novel_levels = FALSE,
+  fresh = TRUE,
+  strings_as_factors = TRUE,
+  composition = "tibble"
+)
+
+## S3 method for class 'recipe'
+mold(x, data, ..., blueprint = NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>intercept</code></td>
+<td>
+<p>A logical. Should an intercept be included in the
+processed data? This information is used by the <code>process</code> function
+in the <code>mold</code> and <code>forge</code> function list.</p>
+</td></tr>
+<tr valign="top"><td><code>allow_novel_levels</code></td>
+<td>
+<p>A logical. Should novel factor levels be allowed at
+prediction time? This information is used by the <code>clean</code> function in the
+<code>forge</code> function list, and is passed on to <code><a href="../../hardhat/help/scream.html">scream()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>fresh</code></td>
+<td>
+<p>Should already trained operations be re-trained when <code>prep()</code> is
+called?</p>
+</td></tr>
+<tr valign="top"><td><code>strings_as_factors</code></td>
+<td>
+<p>Should character columns be converted to factors
+when <code>prep()</code> is called?</p>
+</td></tr>
+<tr valign="top"><td><code>composition</code></td>
+<td>
+<p>Either &quot;tibble&quot;, &quot;matrix&quot;, or &quot;dgCMatrix&quot; for the format
+of the processed predictors. If &quot;matrix&quot; or &quot;dgCMatrix&quot; are chosen, all of
+the predictors must be numeric after the preprocessing method has been
+applied; otherwise an error is thrown.</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>An unprepped recipe created from <code><a href="../../recipes/help/recipe.html">recipes::recipe()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A data frame or matrix containing the outcomes and predictors.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Not used.</p>
+</td></tr>
+<tr valign="top"><td><code>blueprint</code></td>
+<td>
+<p>A preprocessing <code>blueprint</code>. If left as <code>NULL</code>, then a
+<code><a href="../../hardhat/help/default_recipe_blueprint.html">default_recipe_blueprint()</a></code> is used.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>For <code>default_recipe_blueprint()</code>, a recipe blueprint.
+</p>
+
+
+<h3>Mold</h3>
+
+<p>When <code>mold()</code> is used with the default recipe blueprint:
+</p>
+
+<ul>
+<li><p> It calls <code><a href="../../recipes/help/prep.html">recipes::prep()</a></code> to prep the recipe.
+</p>
+</li>
+<li><p> It calls <code><a href="../../recipes/help/juice.html">recipes::juice()</a></code> to extract the outcomes and predictors. These
+are returned as tibbles.
+</p>
+</li>
+<li><p> If <code>intercept = TRUE</code>, adds an intercept column to the predictors.
+</p>
+</li></ul>
+
+
+
+<h3>Forge</h3>
+
+<p>When <code>forge()</code> is used with the default recipe blueprint:
+</p>
+
+<ul>
+<li><p> It calls <code><a href="../../hardhat/help/shrink.html">shrink()</a></code> to trim <code>new_data</code> to only the required columns and
+coerce <code>new_data</code> to a tibble.
+</p>
+</li>
+<li><p> It calls <code><a href="../../hardhat/help/scream.html">scream()</a></code> to perform validation on the structure of the columns
+of <code>new_data</code>.
+</p>
+</li>
+<li><p> It calls <code><a href="../../recipes/help/bake.html">recipes::bake()</a></code> on the <code>new_data</code> using the prepped recipe
+used during training.
+</p>
+</li>
+<li><p> It adds an intercept column onto <code>new_data</code> if <code>intercept = TRUE</code>.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# example code
+
+library(recipes)
+
+# ---------------------------------------------------------------------------
+# Setup
+
+train &lt;- iris[1:100, ]
+test &lt;- iris[101:150, ]
+
+# ---------------------------------------------------------------------------
+# Recipes example
+
+# Create a recipe that logs a predictor
+rec &lt;- recipe(Species ~ Sepal.Length + Sepal.Width, train) |&gt;
+  step_log(Sepal.Length)
+
+processed &lt;- mold(rec, train)
+
+# Sepal.Length has been logged
+processed$predictors
+
+processed$outcomes
+
+# The underlying blueprint is a prepped recipe
+processed$blueprint$recipe
+
+# Call forge() with the blueprint and the test data
+# to have it preprocess the test data in the same way
+forge(test, processed$blueprint)
+
+# Use `outcomes = TRUE` to also extract the preprocessed outcome!
+# This logged the Sepal.Length column of `new_data`
+forge(test, processed$blueprint, outcomes = TRUE)
+
+# ---------------------------------------------------------------------------
+# With an intercept
+
+# You can add an intercept with `intercept = TRUE`
+processed &lt;- mold(rec, train, blueprint = default_recipe_blueprint(intercept = TRUE))
+
+processed$predictors
+
+# But you also could have used a recipe step
+rec2 &lt;- step_intercept(rec)
+
+mold(rec2, iris)$predictors
+
+# ---------------------------------------------------------------------------
+# Matrix output for predictors
+
+# You can change the `composition` of the predictor data set
+bp &lt;- default_recipe_blueprint(composition = "dgCMatrix")
+processed &lt;- mold(rec, train, blueprint = bp)
+class(processed$predictors)
+
+# ---------------------------------------------------------------------------
+# Non standard roles
+
+# If you have custom recipes roles, they are assumed to be required at
+# `bake()` time when passing in `new_data`. This is an assumption that both
+# recipes and hardhat makes, meaning that those roles are required at
+# `forge()` time as well.
+rec_roles &lt;- recipe(train) |&gt;
+  update_role(Sepal.Width, new_role = "predictor") |&gt;
+  update_role(Species, new_role = "outcome") |&gt;
+  update_role(Sepal.Length, new_role = "id") |&gt;
+  update_role(Petal.Length, new_role = "important")
+
+processed_roles &lt;- mold(rec_roles, train)
+
+# The custom roles will be in the `mold()` result in case you need
+# them for modeling.
+processed_roles$extras
+
+# And they are in the `forge()` result
+forge(test, processed_roles$blueprint)$extras
+
+# If you remove a column with a custom role from the test data, then you
+# won't be able to `forge()` even though this recipe technically didn't
+# use that column in any steps
+test2 &lt;- test
+test2$Petal.Length &lt;- NULL
+try(forge(test2, processed_roles$blueprint))
+
+# Most of the time, if you find yourself in the above scenario, then we
+# suggest that you remove `Petal.Length` from the data that is supplied to
+# the recipe. If that isn't an option, you can declare that that column
+# isn't required at `bake()` time by using `update_role_requirements()`
+rec_roles &lt;- update_role_requirements(rec_roles, "important", bake = FALSE)
+processed_roles &lt;- mold(rec_roles, train)
+forge(test2, processed_roles$blueprint)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>hardhat</em> version 1.4.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

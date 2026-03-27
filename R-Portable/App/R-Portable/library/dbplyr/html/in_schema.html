@@ -1,0 +1,69 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Refer to a table in another schema/catalog</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for in_schema {dbplyr}"><tr><td>in_schema {dbplyr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Refer to a table in another schema/catalog</h2>
+
+<h3>Description</h3>
+
+<p><code>in_schema()</code> and <code>in_catalog()</code> can be used to refer to tables outside of
+the current catalog/schema. However, we now recommend using <code>I()</code> as it's
+typically less typing.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+in_schema(schema, table)
+
+in_catalog(catalog, schema, table)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>catalog, schema, table</code></td>
+<td>
+<p>Names of catalog, schema, and table.
+These will be automatically quoted; use <code><a href="../../dbplyr/help/sql.html">sql()</a></code> to pass a raw name
+that won't get quoted.</p>
+</td></tr>
+</table>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Previously:
+in_schema("my_schema", "my_table")
+in_catalog("my_catalog", "my_schema", "my_table")
+in_schema(sql("my_schema"), sql("my_table"))
+
+# Now
+I("my_schema.my_table")
+I("my_catalog.my_schema.my_table")
+I("my_schema.my_table")
+
+# Example using schemas with SQLite
+con &lt;- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+
+# Add auxiliary schema
+tmp &lt;- tempfile()
+DBI::dbExecute(con, paste0("ATTACH '", tmp, "' AS aux"))
+
+library(dplyr, warn.conflicts = FALSE)
+copy_to(con, iris, "df", temporary = FALSE)
+copy_to(con, mtcars, I("aux.df"), temporary = FALSE)
+
+con %&gt;% tbl("df")
+con %&gt;% tbl(I("aux.df"))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>dbplyr</em> version 2.5.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

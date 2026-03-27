@@ -1,0 +1,148 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Gryphon data from the Journal of Animal Ecology</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for DT_gryphon {enhancer}"><tr><td>DT_gryphon {enhancer}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Gryphon data from the Journal of Animal Ecology
+</h2>
+
+<h3>Description</h3>
+
+<p>This is a dataset that was included in the Journal of animal ecology by Wilson et al. (2010; see references) to help users understand how to use mixed models with animal datasets with pedigree data. 
+</p>
+<p>The dataset contains 3 elements:
+</p>
+<p>gryphon; variables indicating the animal, the mother of the animal, sex of the animal, and two quantitative traits named 'BWT' and 'TARSUS'.
+</p>
+<p>pedi; dataset with 2 columns indicating the sire and the dam of the animals contained in the gryphon dataset.
+</p>
+<p>A; additive relationship matrix formed using the 'getA()' function used over the pedi dataframe.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>data("DT_gryphon")</pre>
+
+
+<h3>Format</h3>
+
+<p>The format is:
+chr &quot;DT_gryphon&quot;
+</p>
+
+
+<h3>Source</h3>
+
+<p>This data comes from the Journal of Animal Ecology. Please, if using this data cite Wilson et al. publication. If using our mixed model solver please cite Covarrubias' publication.
+</p>
+
+
+<h3>References</h3>
+
+<p>Wilson AJ, et al. (2010) An ecologist's guide to the animal model. Journal of Animal Ecology 79(1): 13-26.
+</p>
+<p>Giovanny Covarrubias-Pazaran (2024).  lme4breeding: enabling genetic evaluation in the age of genomic data. To be submitted to Bioinformatics.
+</p>
+<p>Douglas Bates, Martin Maechler, Ben Bolker, Steve Walker (2015). Fitting Linear Mixed-Effects Models Using lme4. Journal of Statistical Software, 67(1), 1-48.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+data(DT_gryphon)
+DT &lt;- DT_gryphon
+A &lt;- A_gryphon
+P &lt;- P_gryphon
+#### look at the data
+head(DT)
+
+
+
+############## sommer #################
+
+if(requireNamespace("sommer")){
+library(sommer)
+mix1 &lt;- mmes(BWT~1,
+             random=~vsm(ism(ANIMAL),Gu=A),
+             rcov=~units,
+             data=DT)
+summary(mix1)$varcomp
+
+## mmes algorithm uses the inverse of the relationship matrix
+## if you select henderson=TRUE
+Ai &lt;- solve(A + diag(1e-4,ncol(A),ncol(A)))
+Ai &lt;- as(as(as( Ai,  "dMatrix"), "generalMatrix"), "CsparseMatrix")
+attr(Ai, 'inverse')=TRUE
+####====================####
+#### multivariate model ####
+####     2 traits       ####
+####====================####
+head(DT)
+
+traits &lt;- c("BWT","TARSUS")
+DT[,traits] &lt;- apply(DT[,traits],2,scale)
+DTL &lt;- reshape(DT[,c("ANIMAL","MOTHER","BYEAR","SEX", traits)],
+               idvar = c("ANIMAL","MOTHER","BYEAR","SEX"),
+               varying = traits,
+               v.names = "value", direction = "long",
+               timevar = "trait", times = traits )
+DTL &lt;- DTL[with(DTL, order(trait,ANIMAL)), ]
+head(DTL)
+
+# #### fit the multivariate model with no fixed effects (intercept only)
+mix2 &lt;- mmes(value~trait, # henderson=TRUE,
+             random=~vsm(usm(trait),ism(ANIMAL),Gu=A),
+             rcov=~vsm(dsm(trait),ism(units)),
+             data=DTL)
+summary(mix2)$varcomp
+cov2cor(mix2$theta[[1]])
+
+}
+
+############## lme4breeding #################
+if(requireNamespace("lme4breeding")){
+library(lme4breeding)
+## fit the model with no fixed effects (intercept only)
+mix1 &lt;- lmeb(BWT~ (1|ANIMAL),
+                 relmat = list(ANIMAL=A),
+                 data=DT)
+vc &lt;- VarCorr(mix1); print(vc,comp=c("Variance"))
+sigma(mix1)^2 # error variance
+BLUP &lt;- ranef(mix1, condVar=TRUE)
+condVAR &lt;- lapply(BLUP, function(x){attr(x, which="postVar")}) # take sqrt() for SEs
+
+
+### multi-trait model
+traits &lt;- c("BWT","TARSUS")
+for(iTrait in traits){DT[,iTrait] &lt;- scale(imputev(DT[,iTrait]))}
+DTL &lt;- reshape(DT[,c("ANIMAL", traits)], idvar = "ANIMAL", varying = traits,
+               v.names = "value", direction = "long",
+               timevar = "trait", times = traits )
+DTL &lt;- DTL[with(DTL, order(trait)), ]
+head(DTL)
+
+system.time(
+  mix &lt;- lmeb(value ~ (0+trait|ANIMAL),
+                  relmat = list(ANIMAL=A),
+                  # rotation = TRUE, 
+                  data=DTL)
+)
+vc &lt;- VarCorr(mix); print(vc,comp=c("Variance"))
+cov2cor(vc$ANIMAL)
+sigma(mix)^2 # error variance
+
+}
+
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>enhancer</em> version 1.1.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

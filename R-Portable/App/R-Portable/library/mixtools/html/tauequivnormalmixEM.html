@@ -1,0 +1,284 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Special EM Algorithm for three-component tau equivalence...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for tauequivnormalmixEM {mixtools}"><tr><td>tauequivnormalmixEM {mixtools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Special EM Algorithm for three-component tau equivalence model</h2>
+
+<h3>Description</h3>
+
+<p>Return ECM algorithm output for a specific case of a three-component tau equivalence model
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+tauequivnormalmixEM (x, lambda = NULL, mu = NULL, sigma = NULL, k = 3, 
+          mean.constr = NULL, sd.constr = NULL, gparam = NULL,
+          epsilon = 1e-08, maxit = 10000, maxrestarts=20, 
+          verb = FALSE, fast=FALSE, ECM = TRUE,
+          arbmean = TRUE, arbvar = TRUE) 
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A vector of length n consisting of the data,
+passed directly to <code><a href="../../mixtools/help/normalmixMMlc.html">normalmixMMlc</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>Initial value of mixing proportions, 
+passed directly to <code><a href="../../mixtools/help/normalmixMMlc.html">normalmixMMlc</a></code>.  Automatically 
+repeated as necessary 
+to produce a vector of length <code>k</code>, then normalized to sum to 1.
+If <code>NULL</code>, then <code>lambda</code> is random from a uniform Dirichlet
+distribution (i.e., its entries are uniform random and then it is 
+normalized to sum to 1).</p>
+</td></tr>
+<tr valign="top"><td><code>mu</code></td>
+<td>
+<p>Starting value of vector of component means for algorithm,
+passed directly to <code><a href="../../mixtools/help/normalmixMMlc.html">normalmixMMlc</a></code>. 
+If non-NULL and a vector,
+<code>k</code> is set to <code>length(mu)</code>.  If NULL, then the initial value
+is randomly generated from a normal distribution with center(s) determined
+by binning the data.</p>
+</td></tr>
+<tr valign="top"><td><code>sigma</code></td>
+<td>
+<p>Starting value of vector of component standard deviations 
+for algorithm, passed directly to <code><a href="../../mixtools/help/normalmixMMlc.html">normalmixMMlc</a></code>.  
+Obsolete for linear constraint on the inverse variances,
+use <code>gparam</code> instead to specify a starting value.
+Note: This needs more precision</p>
+</td></tr>
+<tr valign="top"><td><code>k</code></td>
+<td>
+<p>Number of components, passed directly to <code><a href="../../mixtools/help/normalmixMMlc.html">normalmixMMlc</a></code>.  
+Initial value ignored unless <code>mu</code> and <code>sigma</code> are both NULL.
+Also, initial value is ignored if <code>mean.constr</code> is NULL, since in that
+case we presume <code>k=3</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>mean.constr</code></td>
+<td>
+<p>If non-NULL, this parameter is
+passed directly to <code><a href="../../mixtools/help/normalmixMMlc.html">normalmixMMlc</a></code> and both 
+<code>mean.lincstr</code> and <code>var.lincstr</code> are passed as NULL to
+<code><a href="../../mixtools/help/normalmixMMlc.html">normalmixMMlc</a></code>.  If NULL, then 
+it is assumed that <code>k=3</code> and the means must take the form
+<i>&alpha;</i>, <i>&alpha;-&delta;</i>, and <i>&alpha;+&delta;</i> for unknown parameters
+<i>&alpha;</i> and <i>&delta;</i>.  Furthermore, the reciprocal variances are
+assumed to be <i>&gamma;_1+&gamma;_2</i>, <i>&gamma;_1</i>, and <i>&gamma;_1</i>
+for unknown positive parameters <i>&gamma;_1</i> and <i>&gamma;_2</i>.
+These constraints are passed to the
+<code><a href="../../mixtools/help/normalmixMMlc.html">normalmixMMlc</a></code> function using the <code>mean.lincstr</code> and
+<code>var.lincstr</code> arguments
+as shown in the examples for the <code><a href="../../mixtools/help/normalmixMMlc.html">normalmixMMlc</a></code> help file.</p>
+</td></tr>
+<tr valign="top"><td><code>sd.constr</code></td>
+<td>
+<p>Deprecated.</p>
+</td></tr>
+<tr valign="top"><td><code>gparam</code></td>
+<td>
+<p>This argument is passed directly to <code><a href="../../mixtools/help/normalmixMMlc.html">normalmixMMlc</a>.</code>
+</p>
+</td></tr>
+<tr valign="top"><td><code>epsilon</code></td>
+<td>
+<p>The convergence criterion.  Convergence is declared when the change in 
+the observed data log-likelihood increases by less than epsilon.</p>
+</td></tr>
+<tr valign="top"><td><code>maxit</code></td>
+<td>
+<p>The maximum number of iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>maxrestarts</code></td>
+<td>
+<p>The maximum number of restarts allowed in case of a problem
+with the particular starting values chosen due to one of the variance
+estimates getting too small
+(each restart uses randomly chosen
+starting values).  It is well-known that when each component of a normal
+mixture may have its own mean and variance, the likelihood has no maximizer;
+in such cases, we hope to find a &quot;nice&quot; local maximum with this algorithm
+instead, but occasionally the algorithm finds a &quot;not nice&quot; solution and
+one of the variances goes to zero, driving the likelihood to infinity.</p>
+</td></tr>
+<tr valign="top"><td><code>verb</code></td>
+<td>
+<p>If TRUE, then various updates are printed during each 
+iteration of the algorithm.</p>
+</td></tr> 
+<tr valign="top"><td><code>fast</code></td>
+<td>
+<p>If TRUE and k==2 and arbmean==TRUE, then use 
+<code><a href="../../mixtools/help/normalmixEM2comp.html">normalmixEM2comp</a></code>, which is a much faster version of the EM 
+algorithm for this case.
+This version is less protected against certain kinds of underflow
+that can cause numerical problems and it does not permit any restarts.  If
+k&gt;2, <code>fast</code> is ignored.</p>
+</td></tr>
+<tr valign="top"><td><code>ECM</code></td>
+<td>
+<p>logical:  Should this algorithm be an ECM algorithm in the sense
+of Meng and Rubin (1993)?  If FALSE, the algorithm is a true EM algorithm;
+if TRUE, then every half-iteration alternately updates the means conditional
+on the variances or the variances conditional on the means, with an extra
+E-step in between these updates.  For <code>tauequivnormalmixEM</code>, it must
+be TRUE.</p>
+</td></tr>
+<tr valign="top"><td><code>arbmean</code></td>
+<td>
+<p>Deprecated.</p>
+</td></tr>
+<tr valign="top"><td><code>arbvar</code></td>
+<td>
+<p>Deprecated.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The <code>tauequivnormalmixEM</code> function is merely a wrapper for the
+<code><a href="../../mixtools/help/normalmixMMlc.html">normalmixMMlc</a></code> function.
+# This is the standard EM algorithm for normal mixtures that maximizes
+# the conditional expected complete-data
+# log-likelihood at each M-step of the algorithm.
+#  If desired, the
+#  EM algorithm may be replaced by an ECM algorithm (see <code>ECM</code> argument)
+#  that alternates between maximizing with respect to the <code>mu</code>
+#  and <code>lambda</code> while holding <code>sigma</code> fixed, and maximizing with
+#  respect to <code>sigma</code> and <code>lambda</code> while holding <code>mu</code>
+#  fixed.  In the case where <code>arbmean</code> is <code>FALSE</code>
+#  and <code>arbvar</code> is <code>TRUE</code>, there is no closed-form EM algorithm,
+#  so the ECM option is forced in this case.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>normalmixEM</code> returns a list of class <code>mixEM</code> with items:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>The raw data.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>The final mixing proportions.</p>
+</td></tr>
+<tr valign="top"><td><code>mu</code></td>
+<td>
+<p>The final mean parameters.</p>
+</td></tr>
+<tr valign="top"><td><code>sigma</code></td>
+<td>
+<p>The final standard deviation(s)</p>
+</td></tr>
+<tr valign="top"><td><code>scale</code></td>
+<td>
+<p>Scale factor for the component standard deviations, if applicable.</p>
+</td></tr>
+<tr valign="top"><td><code>loglik</code></td>
+<td>
+<p>The final log-likelihood.</p>
+</td></tr>
+<tr valign="top"><td><code>posterior</code></td>
+<td>
+<p>An nxk matrix of posterior probabilities for
+observations.</p>
+</td></tr>
+<tr valign="top"><td><code>all.loglik</code></td>
+<td>
+<p>A vector of each iteration's log-likelihood.  This vector
+includes both the initial and the final values; thus, the number of iterations 
+is one less than its length.</p>
+</td></tr>
+<tr valign="top"><td><code>restarts</code></td>
+<td>
+<p>The number of times the algorithm restarted due to unacceptable choice of initial values.</p>
+</td></tr>
+<tr valign="top"><td><code>ft</code></td>
+<td>
+<p>A character vector giving the name of the function.</p>
+</td></tr>
+</table>
+
+
+<h3>References</h3>
+
+
+<ul>
+<li><p> Thomas, H., Lohaus, A., and Domsch, H. (2011) Stable Unstable Reliability
+Theory, <em>British Journal of Mathematical and Statistical Psychology</em>
+65(2): 201-221.
+</p>
+</li>
+<li><p> Meng, X.-L. and Rubin, D. B. (1993) Maximum Likelihood Estimation
+Via the ECM Algorithm:  A General Framework, <em>Biometrika</em> 80(2):
+267-278.
+</p>
+</li></ul>
+
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../mixtools/help/normalmixMMlc.html">normalmixMMlc</a></code>, <code><a href="../../mixtools/help/normalmixEM.html">normalmixEM</a></code>, <code><a href="../../mixtools/help/mvnormalmixEM.html">mvnormalmixEM</a></code>, <code><a href="../../mixtools/help/normalmixEM2comp.html">normalmixEM2comp</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Analyzing synthetic data as in the tau equivalent model  
+## From Thomas et al (2011), see also Chauveau and Hunter (2013)
+## a 3-component mixture of normals with linear constraints.
+lbd &lt;- c(0.6,0.3,0.1); m &lt;- length(lbd)
+sigma &lt;- sig0 &lt;- sqrt(c(1,9,9))
+# means constaints mu = M beta
+M &lt;- matrix(c(1,1,1,0,1,-1), 3, 2)
+beta &lt;- c(1,5) # unknown constained mean
+mu0 &lt;- mu &lt;- as.vector(M %*% beta)
+# linear constraint on the inverse variances pi = A.g
+A &lt;- matrix(c(1,1,1,0,1,0), m, 2, byrow=TRUE)
+iv0 &lt;- 1/(sig0^2)
+g0 &lt;- c(iv0[2],iv0[1] - iv0[2]) # gamma^0 init 
+
+# simulation and EM fits
+set.seed(40); n=100; x &lt;- rnormmix(n,lbd,mu,sigma)
+s &lt;- normalmixEM(x,mu=mu0,sigma=sig0,maxit=2000) # plain EM
+# EM with var and mean linear constraints
+sc &lt;- normalmixMMlc(x, lambda=lbd, mu=mu0, sigma=sig0,
+					mean.lincstr=M, var.lincstr=A, gparam=g0)
+# Using tauequivnormalmixEM function to call normalmixMMlc					
+tau &lt;- tauequivnormalmixEM (x, lambda=lbd, mu=mu0, gparam=g0)
+# plot and compare both estimates
+dnormmixt &lt;- function(t, lam, mu, sig){
+	m &lt;- length(lam); f &lt;- 0
+	for (j in 1:m) f &lt;- f + lam[j]*dnorm(t,mean=mu[j],sd=sig[j])
+	f}
+t &lt;- seq(min(x)-2, max(x)+2, len=200)
+hist(x, freq=FALSE, col="lightgrey", 
+		ylim=c(0,0.3), ylab="density",main="")
+lines(t, dnormmixt(t, lbd, mu, sigma), col="darkgrey", lwd=2) # true
+lines(t, dnormmixt(t, s$lambda, s$mu, s$sigma), lty=2) 
+lines(t, dnormmixt(t, sc$lambda, sc$mu, sc$sigma), col=1, lty=3)
+lines(t, dnormmixt(t, tau$lambda, tau$mu, tau$sigma), col=2, lty=4)
+legend("topleft", c("true","plain EM","constr EM", "Tau Equiv"), 
+	col=c("darkgrey",1,1,2), lty=c(1,2,3,4), lwd=c(2,1,1,1))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mixtools</em> version 2.0.0.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

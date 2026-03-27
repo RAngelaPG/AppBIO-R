@@ -1,0 +1,153 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Calculate discriminant validity statistics</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for discriminantValidity {semTools}"><tr><td>discriminantValidity {semTools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Calculate discriminant validity statistics</h2>
+
+<h3>Description</h3>
+
+<p>Calculate discriminant validity statistics based on a fitted lavaan object
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+discriminantValidity(object, cutoff = 0.9, merge = FALSE, level = 0.95,
+  boot.ci.type = "perc")
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>The <a href="../../lavaan/help/lavaan-class.html">lavaan::lavaan</a> model object returned by
+the <code><a href="../../lavaan/help/cfa.html">lavaan::cfa()</a></code> function.</p>
+</td></tr>
+<tr valign="top"><td><code>cutoff</code></td>
+<td>
+<p>A cutoff to be used in the constrained models in likelihood
+ratio tests.</p>
+</td></tr>
+<tr valign="top"><td><code>merge</code></td>
+<td>
+<p>Whether the constrained models should be constructed by merging
+two factors as one. Implies <code>cutoff</code> = 1.</p>
+</td></tr>
+<tr valign="top"><td><code>level</code></td>
+<td>
+<p>The confidence level required.</p>
+</td></tr>
+<tr valign="top"><td><code>boot.ci.type</code></td>
+<td>
+<p>If bootstrapping was used, the type of interval required.
+The value should be one of <code>"norm"</code>, <code>"basic"</code>, <code>"perc"</code>,
+or <code>"bca.simple"</code>. For the first three options, see the help page of
+the <code>boot.ci</code> function in the boot package. The
+<code>"bca.simple"</code> option produces intervals using the adjusted bootstrap
+percentile (BCa) method, but with no correction for acceleration (only for
+bias). Note that the p-value is still computed assuming that the z-statistic
+follows a standard normal distribution.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Evaluated on the measurement scale level, discriminant validity is commonly
+evaluated by checking if each pair of latent correlations is sufficiently
+below one (in absolute value) that the latent variables can be thought of
+representing two distinct constructs.
+</p>
+<p><code>discriminantValidity</code> function calculates two sets of statistics that
+are commonly used in discriminant validity evaluation. The first set are
+factor correlation estimates and their confidence intervals. The second set
+is a series of nested model tests, where the baseline model is compared
+against a set of constrained models that are constructed by constraining
+each factor correlation to the specified cutoff one at a time.
+</p>
+<p>The function assume that the <code>object</code> is set of confirmatory
+factor analysis results where the latent variables are scaled by fixing their
+variances to 1s. If the model is not a CFA model, the function will calculate
+the statistics for the correlations among exogenous latent variables, but
+for the <em>residual</em> variances with endogenous variables. If the
+latent variables are scaled in some other way (e.g. fixing the first loadings),
+the function issues a warning and re-estimates the model by fixing latent
+variances to 1 (and estimating all loadings) so that factor covariances are
+already estimated as correlations.
+</p>
+<p>The likelihood ratio tests are done by comparing the original baseline model
+against more constrained alternatives. By default, these alternatives are
+constructed by fixing each correlation at a time to a cutoff value. The
+typical purpose of this test is to demonstrate that the estimated factor
+correlation is well below the cutoff and a significant <i>chi^2</i> statistic
+thus indicates support for discriminant validity. In some cases, the original
+correlation estimate may already be greater than the cutoff, making it
+redundant to fit a &quot;restricted&quot; model. When this happens, the likelihood
+ratio test will be replaced by comparing the baseline model against itself.
+For correlations that are estimated to be negative, a negation of the cutoff
+is used in the constrained model.
+</p>
+<p>Another alternative is to do a nested model comparison against a model where
+two factors are merged as one by setting the <code>merge</code> argument to
+<code>TRUE</code>. In this comparison, the constrained model is constructed by
+removing one of the correlated factors from the model and assigning its
+indicators to the factor that remains in the model.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>data.frame</code> of latent variable correlation estimates, their
+confidence intervals, and a likelihood ratio tests against constrained models.
+with the following attributes:
+</p>
+
+<dl>
+<dt>baseline</dt><dd><p>The baseline model after possible rescaling.</p>
+</dd>
+<dt>constrained</dt><dd><p>A <code>list</code> of the fitted constrained models
+used in the likelihood ratio test.</p>
+</dd>
+</dl>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Mikko Rönkkö (University of Jyväskylä; <a href="mailto:mikko.ronkko@jyu.fi">mikko.ronkko@jyu.fi</a>):
+</p>
+
+
+<h3>References</h3>
+
+<p>Rönkkö, M., &amp; Cho, E. (2022). An updated guideline for assessing
+discriminant validity. <em>Organizational Research Methods</em>, 25(1), 6–14.
+doi: <a href="https://doi.org/10.1177/1094428120968614">10.1177/1094428120968614</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+library(lavaan)
+
+HS.model &lt;- ' visual  =~ x1 + x2 + x3
+              textual =~ x4 + x5 + x6
+              speed   =~ x7 + x8 + x9 '
+
+fit &lt;- cfa(HS.model, data = HolzingerSwineford1939)
+discriminantValidity(fit)
+discriminantValidity(fit, merge = TRUE)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>semTools</em> version 0.5-8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

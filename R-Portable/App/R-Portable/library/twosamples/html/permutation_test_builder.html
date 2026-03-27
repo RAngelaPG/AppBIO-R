@@ -1,0 +1,104 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Permutation Test Builder</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for permutation_test_builder {twosamples}"><tr><td>permutation_test_builder {twosamples}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Permutation Test Builder</h2>
+
+<h3>Description</h3>
+
+<p>(<strong>Warning!</strong> This function has changed substantially between v1.2.0 and v2.0.0) This function takes a two-sample test statistic and produces a function which performs randomization tests (sampling with replacement) using that test stat. This is an internal function of the <code>twosamples</code> package.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+permutation_test_builder(test_stat_function, default.p = 2)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>test_stat_function</code></td>
+<td>
+<p>a function of the joint vector and a label vector producing a positive number, intended as the test-statistic to be used.</p>
+</td></tr>
+<tr valign="top"><td><code>default.p</code></td>
+<td>
+<p>This allows for some introduction of defaults and parameters. Typically used to control the power functions raise something to.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>test_stat_function must be structured to take two vectors &ndash; the first a combined sample vector and the second a logical vector indicating which sample each value came from, as well as a third and fourth value. i.e. (fun = function(jointvec,labelvec,val1,val2) ...). See examples.
+</p>
+
+
+<h4>Conversion Function</h4>
+
+<p>Test stat functions designed to work with the prior version of <code>permutation_test_builder</code> will not work.
+E.g. If your test statistic is
+</p>
+<div class="sourceCode"><pre>mean_diff_stat = function(x,y,pow) abs(mean(x)-mean(y))^pow
+</pre></div>
+<p>then <code>permutation_test_builder(mean_diff_stat,1)</code> will no longer work as intended, but it will if you run the below code first.
+</p>
+<div class="sourceCode"><pre>perm_stat_helper = function(stat_fn,def_power) {
+  output = function(joint,vec_labels,power=def_power,na) {
+    a = joint[vec_labels]
+    b = joint[!vec_labels]
+    stat_fn(a,b,power)
+  }
+  output
+}
+
+mean_diff_stat = perm_stat_helper(mean_diff_stat)
+</pre></div>
+
+
+
+<h3>Value</h3>
+
+<p>This function returns a function which will perform permutation tests on given test stat.
+</p>
+
+
+<h3>Functions</h3>
+
+
+<ul>
+<li> <p><code>permutation_test_builder()</code>: Takes a test statistic, returns a testing function.
+</p>
+</li></ul>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../twosamples/help/two_sample.html">two_sample()</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+mean_stat = function(joint,label,p,na) abs(mean(joint[label])-mean(joint[!label]))**p
+myfun = twosamples:::permutation_test_builder(mean_stat,2.0)
+set.seed(314159)
+vec1 = rnorm(20)
+vec2 = rnorm(20,0.5)
+out = myfun(vec1,vec2)
+out
+summary(out)
+plot(out)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>twosamples</em> version 2.0.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

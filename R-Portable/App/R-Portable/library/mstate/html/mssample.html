@@ -1,0 +1,192 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Sample paths through a multi-state model</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mssample {mstate}"><tr><td>mssample {mstate}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Sample paths through a multi-state model</h2>
+
+<h3>Description</h3>
+
+<p>Given cumulative transition hazards sample paths through the multi-state
+model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+mssample(
+  Haz,
+  trans,
+  history = list(state = 1, time = 0, tstate = NULL),
+  beta.state = NULL,
+  clock = c("forward", "reset"),
+  output = c("state", "path", "data"),
+  tvec,
+  cens = NULL,
+  M = 10,
+  do.trace = NULL
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>Haz</code></td>
+<td>
+<p>Cumulative hazards to be sampled from. These should be given as a
+data frame with columns <code>time</code>, <code>Haz</code>, <code>trans</code>, for instance
+as the <code>Haz</code> list element given by <code><a href="../../mstate/help/msfit.html">msfit</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>trans</code></td>
+<td>
+<p>Transition matrix describing the multi-state model.  See
+<code>trans</code> in <code><a href="../../mstate/help/msprep.html">msprep</a></code> for more detailed information</p>
+</td></tr>
+<tr valign="top"><td><code>history</code></td>
+<td>
+<p>A list with elements <code>state</code>, specifying the starting
+state(s), <code>time</code>, the starting time(s), and <code>tstate</code>, a numeric
+vector of length the number of states, specifying at what times states have
+been visited, if appropriate. The default of <code>tstate</code> is <code>NULL</code>;
+more information can be found under Details.
+</p>
+<p>The elements <code>state</code> and <code>time</code> may either be scalars or vectors,
+in which case different sampled paths may start from different states or at
+different times. By default, all sampled paths start from state 1 at time 0.</p>
+</td></tr>
+<tr valign="top"><td><code>beta.state</code></td>
+<td>
+<p>A matrix of dimension (no states) x (no transitions)
+specifying estimated effects of times at which earlier states were reached
+on subsequent transitions. If these are not in the model, the value
+<code>NULL</code> (default) suffices; more information can be found under Details</p>
+</td></tr>
+<tr valign="top"><td><code>clock</code></td>
+<td>
+<p>Character argument, either <code>"forward"</code> (default) or
+<code>"reset"</code>, specifying whether the time-scale of the cumulative hazards
+is in forward time (<code>"forward"</code>) or duration in the present state
+(<code>"reset"</code>)</p>
+</td></tr>
+<tr valign="top"><td><code>output</code></td>
+<td>
+<p>One of <code>"state"</code>, <code>"path"</code>, or <code>"data"</code>,
+specifying whether states, paths, or data should be output.</p>
+</td></tr>
+<tr valign="top"><td><code>tvec</code></td>
+<td>
+<p>A numeric vector of time points at which the states or paths
+should be evaluated. Ignored if <code>output</code>=<code>"data"</code></p>
+</td></tr>
+<tr valign="top"><td><code>cens</code></td>
+<td>
+<p>An independent censoring distribution, given as a data frame
+with time and Haz</p>
+</td></tr>
+<tr valign="top"><td><code>M</code></td>
+<td>
+<p>The number of sampled trajectories through the multi-state model.
+The default is 10, since the procedure can become quite time-consuming</p>
+</td></tr>
+<tr valign="top"><td><code>do.trace</code></td>
+<td>
+<p>An integer, specifying that the replication number should be
+written to the console every <code>do.trace</code> replications. Default is
+<code>NULL</code> in which case no output is written to the console during the
+simulation</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The procedure is described in detail in Fiocco, Putter &amp; van Houwelingen
+(2008). The argument <code>beta.state</code> and the element <code>tstate</code> from
+the argument <code>history</code> are meant to incorporate situations where the
+time at which some previous states were visited may affect future transition
+rates. The relation between time of visit of state <code>s</code> and transition
+<code>k</code> is assumed to be linear on the log-hazards; the corresponding
+regression coefficient is to be supplied as the (s,k)-element of
+<code>beta.state</code>, which is 0 if no such effect has been included in the
+model. If no such effects are present, then <code>beta.state</code>=<code>NULL</code>
+(default) suffices. In the <code>tstate</code> element of <code>history</code>, the
+<code>s</code>-th element is the time at which state <code>s</code> was visited. This is
+only relevant for states which have been visited prior to the beginning of
+sampling, i.e. before the <code>time</code> element of <code>history</code>; the
+elements of <code>tstate</code> are internally updated when in the sampling
+process new states are visited (only if <code>beta.state</code> is not <code>NULL</code>
+to avoid unnecessary computations).
+</p>
+
+
+<h3>Value</h3>
+
+<p>M simulated paths through the multi-state model given by
+<code>trans</code> and <code>Haz</code>. It is either a data frame with columns
+<code>time</code>, <code>pstate1</code>, ..., <code>pstateS</code> for S states when
+<code>output="state"</code>, or with columns <code>time</code>, <code>ppath1</code>,...,
+<code>ppathP</code> for the P paths specified in <code><a href="../../mstate/help/paths.html">paths</a></code>(trans) when
+<code>output="path"</code>. When <code>output="data"</code>, the sampled paths are
+stored in an <code>"msdata"</code> object, a data frame in long format such as
+that obtained by <code><a href="../../mstate/help/msprep.html">msprep</a></code>. This may be useful for
+(semi-)parametric bootstrap procedures, in which case <code>cens</code> may be
+used as censoring distribution (assumed to be independent of all transition
+times and independent of any covariates).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Marta Fiocco, Hein Putter <a href="mailto:H.Putter@lumc.nl">H.Putter@lumc.nl</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Fiocco M, Putter H, van Houwelingen HC (2008). Reduced-rank
+proportional hazards regression and simulation-based prediction for
+multi-state models. <em>Statistics in Medicine</em> <b>27</b>, 4340&ndash;4358.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# transition matrix for illness-death model
+tmat &lt;- trans.illdeath()
+# data in wide format, for transition 1 this is dataset E1 of
+# Therneau &amp; Grambsch (T&amp;G)
+tg &lt;- data.frame(illt=c(1,1,6,6,8,9),ills=c(1,0,1,1,0,1),
+        dt=c(5,1,9,7,8,12),ds=c(1,1,1,1,1,1),
+        x1=c(1,1,1,0,0,0),x2=c(6:1))
+# data in long format using msprep
+tglong &lt;- msprep(time=c(NA,"illt","dt"),status=c(NA,"ills","ds"),
+        data=tg,keep=c("x1","x2"),trans=tmat)
+# expanded covariates
+tglong &lt;- expand.covs(tglong,c("x1","x2"))
+# Cox model with different covariate
+cx &lt;- coxph(Surv(Tstart,Tstop,status)~x1.1+x2.2+strata(trans),
+        data=tglong,method="breslow")
+# new data, to check whether results are the same for transition 1 as T&amp;G
+newdata &lt;- data.frame(trans=1:3,x1.1=c(0,0,0),x2.2=c(0,1,0),strata=1:3)
+fit &lt;- msfit(cx,newdata,trans=tmat)
+tv &lt;- unique(fit$Haz$time)
+# mssample
+set.seed(1234)
+mssample(Haz=fit$Haz,trans=tmat,tvec=tv,M=100)
+set.seed(1234)
+paths(tmat)
+mssample(Haz=fit$Haz,trans=tmat,tvec=tv,M=100,output="path")
+set.seed(1234)
+mssample(Haz=fit$Haz,trans=tmat,tvec=tv,M=100,output="data",do.trace=25)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mstate</em> version 0.3.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Add New Points to NMDS ordination</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for MDSaddpoints {vegan}"><tr><td>MDSaddpoints {vegan}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Add New Points to NMDS ordination</h2>
+
+<h3>Description</h3>
+
+<p>Add new points to an existing <code><a href="../../vegan/help/metaMDS.html">metaMDS</a></code> or
+<code><a href="../../vegan/help/monoMDS.html">monoMDS</a></code> ordination.</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+MDSaddpoints(nmds, dis, neighbours = 5, maxit = 200)
+
+dist2xy(dist, pick, type = c("xy", "xx"), invert = FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>nmds</code></td>
+<td>
+<p>Result object from <code><a href="../../vegan/help/metaMDS.html">metaMDS</a></code> or
+<code><a href="../../vegan/help/monoMDS.html">monoMDS</a></code>. The configuration of points is fixed,
+but new points are added.</p>
+</td></tr>
+<tr valign="top"><td><code>dis</code></td>
+<td>
+<p>Rectangular non-symmetric dissimilarity matrix among new
+points (rows) and old fixed points (columns). Such matrix can be
+extracted from complete dissimilarities of both old and new points
+with <code>dist2xy</code>, or calculated with <code><a href="../../vegan/help/designdist2.html">designdist2</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>neighbours</code></td>
+<td>
+<p>Number of nearest points used to get the starting
+locations for new points.</p>
+</td></tr>
+<tr valign="top"><td><code>maxit</code></td>
+<td>
+<p>Maximum number of iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>dist</code></td>
+<td>
+<p>Input dissimilarities.</p>
+</td></tr>
+<tr valign="top"><td><code>pick</code></td>
+<td>
+<p>Indices (integers) of selected observations or a logical
+vector that is <code>TRUE</code> for picked items. The output will be
+in the original order and will not be reordered by this argument.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p><code>"xy"</code> returns rectangular data of picked against
+not picked observations, and <code>"xx"</code> a subset of symmetric
+dissimilarities.</p>
+</td></tr>
+<tr valign="top"><td><code>invert</code></td>
+<td>
+<p>Invert <code>pick</code>: drop elements listed.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Function provides an interface to <code>monoMDS</code> Fortran code to add new
+points to an existing ordination that will be regarded as fixed. The
+function has a similar role as <code>predict</code> functions with
+<code>newdata</code> in Euclidean ordination (e.g. <code><a href="../../vegan/help/predict.cca.html">predict.cca</a></code>).
+Input data must be a rectangular matrix of distances among new added
+points (rows) and all fixed old points (columns). Such matrices can be
+extracted from complete dissimilarities with helper function
+<code>dist2xy</code>. Function <code><a href="../../vegan/help/designdist2.html">designdist2</a></code> can directly
+calculate such rectangular dissimilarity matrices between sampling units
+(rows) in two matries. In addition, <a href="https://CRAN.R-project.org/package=analogue"><span class="pkg">analogue</span></a> has distance
+function that can calculate dissimilarities among two matrices,
+including functions that cannot be specified in
+<code><a href="../../vegan/help/designdist2.html">designdist2</a></code>.
+</p>
+<p>Great care is needed in preparing the dissimilarities for the
+input. The dissimilarity index must be exactly the same as in the
+fixed ordination, and columns must match old fixed points, and rows
+added new points.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Function return a list of class <code>"nmds"</code> (there are no other
+objects of that type in <span class="pkg">vegan</span>) with following elements
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>points</code></td>
+<td>
+<p>Coordinates of added new points</p>
+</td></tr>
+<tr valign="top"><td><code>seeds</code></td>
+<td>
+<p>Starting coordinates for new points.</p>
+</td></tr>
+<tr valign="top"><td><code>deltastress</code></td>
+<td>
+<p>Change of stress with added points.</p>
+</td></tr>
+<tr valign="top"><td><code>iters</code></td>
+<td>
+<p>Number of iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>cause</code></td>
+<td>
+<p>Cause of termination of iterations. Integer for
+convergence criteria in <code><a href="../../vegan/help/monoMDS.html">monoMDS</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Cross-validation: remove a point when performing NMDS and add as
+## a new points
+data(dune)
+d &lt;- vegdist(dune)
+## remove point 3 from ordination
+mod3 &lt;- metaMDS(dist2xy(d, 3, "xx", invert = TRUE), trace=0)
+## add point 3 to the result
+MDSaddpoints(mod3, dist2xy(d, 3))
+## Use designdist2
+d15 &lt;- designdist(dune[1:15,])
+m15 &lt;- metaMDS(d15, trace=0)
+MDSaddpoints(m15, designdist2(dune[1:15,], dune[16:20,]))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>vegan</em> version 2.7-3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

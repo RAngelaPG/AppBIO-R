@@ -29,7 +29,7 @@ $.extend(shinyBS.inputBindings.modal, {
     return $(el).hasClass("in");
   },
   subscribe: function(el, callback) {
-    $(el).on("hidden.bs.modal shown.bs.modal", callback)
+    $(el).on("hidden.bs.modal shown.bs.modal", () => callback(true));
   },
   unsubscribe: function(el) {
     $(el).off("hidden.bs.modal shown.bs.modal")
@@ -223,13 +223,15 @@ shinyBS.removeTooltip = function(id, type) {
 // shiny inputs/outputs
 shinyBS.getTooltipTarget = function(id) {
   
-  var $id = $("#" + id);
+  var $id = $("#" + id).closest(".shiny-input-container, .shiny-bound-output, .btn, .shiny-download-link");
   
+/*  
   if($id.hasClass("js-range-slider")) {
     $id = $id.parent();
   } else if($id.hasClass("selectized")) {
     $id = $id.siblings("div.selectize-control")
   }
+*/
 
   return $id;
   

@@ -1,0 +1,230 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: expand double-bar RE notation by splitting</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for expandDoubleVert {reformulas}"><tr><td>expandDoubleVert {reformulas}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>expand double-bar RE notation by splitting</h2>
+
+<h3>Description</h3>
+
+<p>Modeled after lme4:::expandSlash, by Doug Bates. However,
+all formula operators that apply to factors (<code>*</code>, <code>/</code>, <code>+</code>)
+are applicable: the results are expanded into a list of independent (additive)
+random effect terms
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+expandDoubleVert(term)
+
+RHSForm(formula) &lt;- value
+
+sumTerms(termList)
+
+reOnly(f, response = FALSE, bracket = TRUE, doublevert_split = TRUE)
+
+makeOp(x, y, op = NULL)
+
+addForm0(f1, f2)
+
+addForm(...)
+
+expandAllGrpVar(bb)
+
+findbars_x(
+  term,
+  debug = FALSE,
+  specials = character(0),
+  default.special = "us",
+  target = "|",
+  expand_doublevert_method = c("diag_special", "split")
+)
+
+findbars(term)
+
+inForm(form, value)
+
+extractForm(term, value)
+
+dropHead(term, value)
+
+drop.special(x, value = quote(offset), preserve = NULL)
+
+replaceForm(term, target, repl)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>term</code></td>
+<td>
+<p>expression/formula</p>
+</td></tr>
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>a formula object</p>
+</td></tr>
+<tr valign="top"><td><code>value</code></td>
+<td>
+<p>term to remove from formula</p>
+</td></tr>
+<tr valign="top"><td><code>termList</code></td>
+<td>
+<p>a list of formula terms</p>
+</td></tr>
+<tr valign="top"><td><code>f</code></td>
+<td>
+<p>a formula</p>
+</td></tr>
+<tr valign="top"><td><code>response</code></td>
+<td>
+<p>include response variable?</p>
+</td></tr>
+<tr valign="top"><td><code>bracket</code></td>
+<td>
+<p>bracket-protect terms?</p>
+</td></tr>
+<tr valign="top"><td><code>doublevert_split</code></td>
+<td>
+<p>(logical) TRUE for lme4 back-compatibility; FALSE to make double vertical bars into <code>diag()</code> eterms</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>formula</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>a formula term (or an operator)</p>
+</td></tr>
+<tr valign="top"><td><code>op</code></td>
+<td>
+<p>an operator</p>
+</td></tr>
+<tr valign="top"><td><code>f1</code></td>
+<td>
+<p>formula #1</p>
+</td></tr>
+<tr valign="top"><td><code>f2</code></td>
+<td>
+<p>formula #2</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>arguments to pass through to <code>addForm0</code></p>
+</td></tr>
+<tr valign="top"><td><code>bb</code></td>
+<td>
+<p>a list of naked grouping variables, i.e. 1 | f</p>
+</td></tr>
+<tr valign="top"><td><code>debug</code></td>
+<td>
+<p>(logical) debug?</p>
+</td></tr>
+<tr valign="top"><td><code>specials</code></td>
+<td>
+<p>list of special terms</p>
+</td></tr>
+<tr valign="top"><td><code>default.special</code></td>
+<td>
+<p>character: special to use for parenthesized terms - i.e. random effects terms with unspecified structure</p>
+</td></tr>
+<tr valign="top"><td><code>expand_doublevert_method</code></td>
+<td>
+<p>method for handling <code>||</code> operator: split into separate terms or replace by <code>diag</code>? Inherited from <em>previous call where it was specified</em>.
+</p>
+
+<ol>
+<li><p> atom (not a call or an expression): NULL
+</p>
+</li>
+<li><p> special, i.e. foo(...) where &quot;foo&quot; is in specials: return term
+</p>
+</li>
+<li><p> parenthesized term: <em>if</em> the head of the head is | (i.e.
+it is of the form (xx|gg), then convert it to the default
+special type; we won't allow pathological cases like
+((xx|gg)) ... can we detect them?
+</p>
+</li></ol>
+</td></tr>
+<tr valign="top"><td><code>preserve</code></td>
+<td>
+<p>(integer) retain the specified occurrence of &quot;value&quot;</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>a list of expressions
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+f &lt;- y ~ 1 + x
+RHSForm(f) &lt;- quote(2+x^2)
+print(f)
+reOnly(~ 1 + x + y + (1|f) + (1|g))
+addForm0(y~x,~1)
+addForm0(~x,~y)
+ff &lt;- findbars_x(y~1+(x|f/g))
+expandAllGrpVar(ff)
+expandAllGrpVar(quote(1|(f/g)/h))
+expandAllGrpVar(quote(1|f/g/h))
+expandAllGrpVar(quote(1|f*g))
+expandAllGrpVar(quote(1|f+g))
+expandAllGrpVar(quote(a+b|f+g+h*i))
+expandAllGrpVar(quote(s(log(d), k = 4)))
+expandAllGrpVar(quote(s(log(d+1))))
+splitForm(quote(us(1|x,n=2)))
+findbars_x(~ 1 + (x + y || g), expand_doublevert_method = "diag_special")
+findbars_x(~ 1 + (x + y || g), expand_doublevert_method = "split")
+findbars_x(~ 1 + (1 | f) + (1 | g))
+findbars_x(~ 1 + (1 | f) + (1 | g))
+findbars_x(~ 1 + (1|h) + (x + y || g), expand_doublevert_method = "split")
+findbars_x(~ 1 + (1|Subject))
+findbars_x(~ (1||Subject))
+findbars_x(~ (1|Subject))
+findbars_x(~ (1|Subject), default.special = NULL)
+findbars_x(~ 1 + x)
+findbars_x(~ s(x, bs = "tp"))
+findbars_x(y ~ a + log(b) + s(x, bs = "tp") + s(y, bs = "gp"),
+   target = "s", default.special = NULL)
+findbars(~ 1 + (x + y || g))
+findbars(~ 1 + (1 | f) + (1 | g))
+findbars(~ 1 + (1|h) + (x + y || g))
+findbars(~ 1 + (1|Subject))
+findbars(~  1 + (1||Subject))
+findbars(~ (1||Subject))
+findbars(~ 1 + x)
+inForm(z~.,quote(.))
+inForm(z~y,quote(.))
+inForm(z~a+b+c,quote(c))
+inForm(z~a+b+(d+e),quote(c))
+f &lt;- ~ a + offset(x)
+f2 &lt;- z ~ a
+inForm(f,quote(offset))
+inForm(f2,quote(offset))
+extractForm(~a+offset(b),quote(offset))
+extractForm(~c,quote(offset))
+extractForm(~a+offset(b)+offset(c),quote(offset))
+extractForm(~offset(x),quote(offset))
+dropHead(~a+offset(b),quote(offset))
+dropHead(~a+poly(x+z,3)+offset(b),quote(offset))
+drop.special(x~a + b+ offset(z))
+replaceForm(quote(a(b+x*c(y,z))),quote(y),quote(R))
+ss &lt;- ~(1 | cask:batch) + (1 | batch)
+replaceForm(ss,quote(cask:batch),quote(batch:cask))
+replaceForm(ss, quote(`:`), quote(`%:%`))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>reformulas</em> version 0.4.4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Linear Equation Solving for Sparse Matrices</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for spam-solve {spam}"><tr><td>spam-solve {spam}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Linear Equation Solving for Sparse Matrices</h2>
+
+<h3>Description</h3>
+
+<p><code>backsolve</code> and <code>forwardsolve</code> solve a system
+of linear equations where the coefficient matrix
+is upper or lower triangular.
+<br />
+<code>solve</code> solves a linear system or computes the inverse
+of a matrix if the right-hand-side is missing.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S4 method for signature 'spam'
+solve(a, b, Rstruct=NULL, ...)
+## S4 method for signature 'spam'
+backsolve(r, x, ...)
+## S4 method for signature 'spam'
+forwardsolve(l, x, ...)
+## S4 method for signature 'spam'
+chol2inv(x, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>a</code></td>
+<td>
+<p>symmetric positive definite matrix of class <code>spam</code> or a Cholesky factor
+as the result of a <code>chol</code> call.</p>
+</td></tr>
+<tr valign="top"><td><code>l,r</code></td>
+<td>
+<p>object of class <code>spam</code> or <code>spam.chol.</code><em>method</em> returned by the function
+<code>chol</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>x,b</code></td>
+<td>
+<p>vector or regular matrix of right-hand-side(s) of a system of linear equations.</p>
+</td></tr>
+<tr valign="top"><td><code>Rstruct</code></td>
+<td>
+<p>the Cholesky structure of <code>a</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>further arguments passed to or from other methods, see
+&lsquo;Details&rsquo; below.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>We can solve <code>A %*% x = b</code> by first computing the Cholesky decomposition <code>A =
+  t(R)%*%R)</code>, then solving <code>t(R)%*%y = b</code> for <code>y</code>, and
+finally solving <code>R%*%x = y</code> for <code>x</code>.
+<code>solve</code> combines <code>chol</code>, a Cholesky decomposition of a
+symmetric positive definite sparse matrix, with <code>forwardsolve</code> and
+then <code>backsolve</code>.<br />
+</p>
+<p>In case <code>a</code> is from a <code>chol</code> call, then <code>solve</code> is an
+efficient way to calculate <code>backsolve(a, forwardsolve( t(a), b))</code>.
+</p>
+<p>However, for <code>a.spam</code> and <code>a.mat</code> from a <code>chol</code> call
+with a sparse and ordinary matrix,  note that
+<code>forwardsolve( a.mat, b, transpose=T, upper.tri=T)</code>
+is equivalent to
+<code>forwardsolve( t(a.mat), b)</code>
+and <code>backsolve(a.spam, forwardsolve(a.spam, b, transpose=T, upper.tri=T))</code>
+yields the desired result. But
+<code>backsolve(a.spam,forwardsolve(t(a.spam), resid))</code> is
+wrong because  <code>t(a.spam)</code> is a <code>spam</code> and not a
+<code>spam.chol.NgPeyton</code> object.
+</p>
+<p><code>forwardsolve</code> and <code>backsolve</code> solve a system of linear
+equations where the coefficient matrix is lower (<code>forwardsolve</code>) or
+upper (<code>backsolve</code>) triangular.  Usually, the triangular matrix is
+result from a <code>chol</code> call and it is not required to transpose it
+for <code>forwardsolve</code>.  Note that arguments of the default
+methods <code>k</code>, <code>upper.tri</code> and <code>transpose</code> do not have any
+effects here.
+</p>
+<p>Notice that it is more efficient to solve successively the linear
+equations (both triangular solves) than to implement these in the
+Fortran code.
+</p>
+<p>If the right-hand-side in <code>solve</code> is missing it will compute
+the inverse of a matrix. For details about the specific Cholsesky
+decomposition, see <code><a href="../../spam/help/chol.html">chol</a></code>.
+</p>
+<p>Recall that the Cholesky factors are from ordered matrices.
+</p>
+<p><code>chol2inv(x)</code> is a faster way to <code>solve(x)</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>There is intentionally no <acronym><span class="acronym">S3</span></acronym> distinction between the classes
+<code>spam</code> and <code>spam.chol.</code><em>method</em>.</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Reinhard Furrer, based on Ng and Peyton (1993) Fortran routines</p>
+
+
+<h3>References</h3>
+
+<p>See references in <code><a href="../../spam/help/chol.html">chol</a></code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../spam/help/chol.spam.html">chol.spam</a></code> and <code><a href="../../spam/help/ordering.html">ordering</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Generate multivariate form a covariance inverse:
+# (usefull for GRMF)
+set.seed(13)
+n &lt;- 25    # dimension
+N &lt;- 1000  # sample size
+Sigmainv &lt;- .25^abs(outer(1:n,1:n,"-"))
+Sigmainv &lt;- as.spam( Sigmainv, eps=1e-4)
+
+
+Sigma &lt;- solve( Sigmainv)  # for verification
+iidsample &lt;- array(rnorm(N*n),c(n,N))
+
+mvsample &lt;- backsolve( chol(Sigmainv), iidsample)
+norm( var(t(mvsample)) - Sigma)
+
+# compare with:
+mvsample &lt;- backsolve( chol(as.matrix( Sigmainv)), iidsample, n)
+   #### ,n as patch
+norm( var(t(mvsample)) - Sigma)
+
+
+
+# 'solve' step by step:
+b &lt;- rnorm( n)
+R &lt;- chol(Sigmainv)
+norm( backsolve( R, forwardsolve( R, b))-
+      solve( Sigmainv, b) )
+norm( backsolve( R, forwardsolve( R, diag(n)))- Sigma )
+
+
+# 'update':
+R1 &lt;- update( R, Sigmainv + diag.spam( n))
+
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>spam</em> version 2.11-3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Add useful extension functions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for initExtension {RSQLite}"><tr><td>initExtension {RSQLite}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Add useful extension functions</h2>
+
+<h3>Description</h3>
+
+<p>Several extension functions are included in the <span class="pkg">RSQLite</span> package.
+When enabled via <code>initExtension()</code>, these extension functions can be used in
+SQL queries.
+Extensions must be enabled separately for each connection.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+initExtension(db, extension = c("math", "regexp", "series", "csv", "uuid"))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>db</code></td>
+<td>
+<p>A <code><a href="../../RSQLite/help/SQLiteConnection-class.html">SQLiteConnection</a></code> object to load these extensions into.</p>
+</td></tr>
+<tr valign="top"><td><code>extension</code></td>
+<td>
+<p>The extension to load.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The <code>"math"</code> extension functions are written by Liam Healy and made available
+through the SQLite website (<a href="https://www.sqlite.org/src/ext/contrib">https://www.sqlite.org/src/ext/contrib</a>).
+This package contains a slightly modified version of the original code.
+See the section &quot;Available functions in the math extension&quot; for details.
+</p>
+<p>The <code>"regexp"</code> extension provides a regular-expression matcher for POSIX
+extended regular expressions,
+as available through the SQLite source code repository
+(<a href="https://sqlite.org/src/file?filename=ext/misc/regexp.c">https://sqlite.org/src/file?filename=ext/misc/regexp.c</a>).
+SQLite will then implement the <code style="white-space: pre;">A regexp B</code> operator,
+where <code>A</code> is the string to be matched and <code>B</code> is the regular expression.
+</p>
+<p>The <code>"series"</code> extension loads the table-valued function <code>generate_series()</code>,
+as available through the SQLite source code repository
+(<a href="https://sqlite.org/src/file?filename=ext/misc/series.c">https://sqlite.org/src/file?filename=ext/misc/series.c</a>).
+</p>
+<p>The <code>"csv"</code> extension loads the function <code>csv()</code> that can be used to create
+virtual tables,
+as available through the SQLite source code repository
+(<a href="https://sqlite.org/src/file?filename=ext/misc/csv.c">https://sqlite.org/src/file?filename=ext/misc/csv.c</a>).
+</p>
+<p>The <code>"uuid"</code> extension loads the functions <code>uuid()</code>, <code>uuid_str(X)</code> and
+<code>uuid_blob(X)</code> that can be used to create universally unique identifiers,
+as available through the SQLite source code repository
+(<a href="https://sqlite.org/src/file?filename=ext/misc/uuid.c">https://sqlite.org/src/file?filename=ext/misc/uuid.c</a>).
+</p>
+
+
+<h3>Available functions in the math extension</h3>
+
+
+<dl>
+<dt>Math functions</dt><dd><p>acos, acosh, asin, asinh, atan, atan2, atanh, atn2,
+ceil, cos, cosh, cot, coth, degrees, difference, exp, floor, log, log10,
+pi, power, radians, sign, sin, sinh, sqrt, square, tan, tanh</p>
+</dd>
+<dt>String functions</dt><dd><p>charindex, leftstr, ltrim, padc, padl, padr, proper,
+replace, replicate, reverse, rightstr, rtrim, strfilter, trim</p>
+</dd>
+<dt>Aggregate functions</dt><dd><p>stdev, variance, mode, median, lower_quartile,
+upper_quartile</p>
+</dd>
+</dl>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+library(DBI)
+db &lt;- RSQLite::datasetsDb()
+
+# math
+RSQLite::initExtension(db)
+dbGetQuery(db, "SELECT stdev(mpg) FROM mtcars")
+sd(mtcars$mpg)
+
+# regexp
+RSQLite::initExtension(db, "regexp")
+dbGetQuery(db, "SELECT * FROM mtcars WHERE carb REGEXP '[12]'")
+
+# series
+RSQLite::initExtension(db, "series")
+dbGetQuery(db, "SELECT value FROM generate_series(0, 20, 5);")
+
+dbDisconnect(db)
+
+# csv
+db &lt;- dbConnect(RSQLite::SQLite())
+RSQLite::initExtension(db, "csv")
+# use the filename argument to mount CSV files from disk
+sql &lt;- paste0(
+  "CREATE VIRTUAL TABLE tbl USING ",
+  "csv(data='1,2', schema='CREATE TABLE x(a INT, b INT)')"
+)
+dbExecute(db, sql)
+dbGetQuery(db, "SELECT * FROM tbl")
+
+# uuid
+db &lt;- dbConnect(RSQLite::SQLite())
+RSQLite::initExtension(db, "uuid")
+dbGetQuery(db, "SELECT uuid();")
+dbDisconnect(db)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>RSQLite</em> version 2.4.6 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

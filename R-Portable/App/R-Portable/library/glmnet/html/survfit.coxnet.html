@@ -1,0 +1,103 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Compute a survival curve from a coxnet object</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for survfit.coxnet {glmnet}"><tr><td>survfit.coxnet {glmnet}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Compute a survival curve from a coxnet object</h2>
+
+<h3>Description</h3>
+
+<p>Computes the predicted survivor function for a Cox proportional hazards
+model with elastic net penalty.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'coxnet'
+survfit(formula, s = NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>A class <code>coxnet</code> object.</p>
+</td></tr>
+<tr valign="top"><td><code>s</code></td>
+<td>
+<p>Value(s) of the penalty parameter lambda at which the survival
+curve is required. Default is the entire sequence used to create the model.
+However, it is recommended that <code>survfit.coxnet</code> is called for
+a single penalty parameter.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>This is the mechanism for passing additional arguments like
+(i) x= and y= for the x and y used to fit the model,
+(ii) weights= and offset= when the model was fit with these options,
+(iii) arguments for new data (newx, newoffset, newstrata), and
+(iv) arguments to be passed to survfit.coxph().</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>To be consistent with other functions in <code>glmnet</code>, if <code>s</code>
+is not specified, survival curves are returned for the entire lambda
+sequence. This is not recommended usage: it is best to call
+<code>survfit.coxnet</code> with a single value of the penalty parameter
+for the <code>s</code> option.
+</p>
+
+
+<h3>Value</h3>
+
+<p>If <code>s</code> is a single value, an object of class &quot;survfitcox&quot;
+and &quot;survfit&quot; containing one or more survival curves. Otherwise, a list
+of such objects, one element for each value in <code>s</code>.
+Methods defined for survfit objects are print, summary and plot.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+set.seed(2)
+nobs &lt;- 100; nvars &lt;- 15
+xvec &lt;- rnorm(nobs * nvars)
+xvec[sample.int(nobs * nvars, size = 0.4 * nobs * nvars)] &lt;- 0
+x &lt;- matrix(xvec, nrow = nobs)
+beta &lt;- rnorm(nvars / 3)
+fx &lt;- x[, seq(nvars / 3)] %*% beta / 3
+ty &lt;- rexp(nobs, exp(fx))
+tcens &lt;- rbinom(n = nobs, prob = 0.3, size = 1)
+y &lt;- survival::Surv(ty, tcens)
+fit1 &lt;- glmnet(x, y, family = "cox")
+
+# survfit object for Cox model where lambda = 0.1
+sf1 &lt;- survival::survfit(fit1, s = 0.1, x = x, y = y)
+plot(sf1)
+
+# example with new data
+sf2 &lt;- survival::survfit(fit1, s = 0.1, x = x, y = y, newx = x[1:3, ])
+plot(sf2)
+
+# example with strata
+y2 &lt;- stratifySurv(y, rep(1:2, length.out = nobs))
+fit2 &lt;- glmnet(x, y2, family = "cox")
+sf3 &lt;- survival::survfit(fit2, s = 0.1, x = x, y = y2)
+sf4 &lt;- survival::survfit(fit2, s = 0.1, x = x, y = y2,
+               newx = x[1:3, ], newstrata = c(1, 1, 1))
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>glmnet</em> version 4.1-10 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

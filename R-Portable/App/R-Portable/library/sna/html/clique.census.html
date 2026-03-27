@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Compute Cycle Census Information</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for clique.census {sna}"><tr><td>clique.census {sna}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Compute Cycle Census Information
+</h2>
+
+<h3>Description</h3>
+
+<p><code>clique.census</code> computes clique census statistics on one or more input graphs.  In addition to aggregate counts of maximal cliques, results may be disaggregated by vertex and co-membership information may be computed.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+clique.census(dat, mode = "digraph", tabulate.by.vertex = TRUE,
+    clique.comembership = c("none", "sum", "bysize"), enumerate = TRUE,
+    na.omit = TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>dat</code></td>
+<td>
+
+<p>one or more input graphs.
+</p>
+</td></tr>
+<tr valign="top"><td><code>mode</code></td>
+<td>
+
+<p><code>"digraph"</code> for directed graphs, or <code>"graph"</code> for undirected graphs.
+</p>
+</td></tr>
+<tr valign="top"><td><code>tabulate.by.vertex</code></td>
+<td>
+
+<p>logical; should maximal clique counts be tabulated by vertex? 
+</p>
+</td></tr>
+<tr valign="top"><td><code>clique.comembership</code></td>
+<td>
+
+<p>the type of clique co-membership information to be tabulated, if any.  <code>"sum"</code> returns a vertex by vertex matrix of clique co-membership counts; these are disaggregated by clique size if <code>"bysize"</code> is used.  If <code>"none"</code> is given, no co-membership information is computed.
+</p>
+</td></tr>
+<tr valign="top"><td><code>enumerate</code></td>
+<td>
+
+<p>logical; should an enumeration of all maximal cliques be returned?
+</p>
+</td></tr>
+<tr valign="top"><td><code>na.omit</code></td>
+<td>
+
+<p>logical; should missing edges be omitted?
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>A (maximal) <em>clique</em> is a maximal set of mutually adjacenct vertices.  Cliques are important for their role as cohesive subgroups, but show up in many other contexts as well.
+</p>
+<p>A <em>subgraph census statistic</em> is a function which, for any given graph and subgraph, gives the number of copies of the latter contained in the former.  A collection of subgraph census statistics is referred to as a <em>subgraph census</em>; widely used examples include the dyad and triad censuses, implemented in <code>sna</code> by the <code><a href="../../sna/help/dyad.census.html">dyad.census</a></code> and <code><a href="../../sna/help/triad.census.html">triad.census</a></code> functions (respectively).  Likewise, <code>kpath.census</code> and <code>kcycle.census</code> compute a range of census statistics related to <i>k</i>-paths and <i>k</i>-cycles.   <code>clique.census</code> provides similar functionality for the census of maximal cliques, including:
+</p>
+
+<ul>
+<li><p> Aggregate counts of maximal cliques by size. 
+</p>
+</li>
+<li><p> Counts of cliques to which each vertex belongs (when <code>tabulate.byvertex==TRUE</code>). 
+</p>
+</li>
+<li><p> Counts of clique co-memberships, potentially disaggregated by size (when the appropriate co-membership argument is set to <code>bylength</code>). 
+</p>
+</li></ul>
+
+<p>These calculations are intrinsically expensive (clique enumeration is NP hard in the general case), and users should be aware that computing the census can be impractical on large graphs (unless they are very sparse).  On the other hand, the algorithm employed here (a variant of Makino and Uno (2004)) is generally fast enough to suport enumeration for even dense graphs of several hundred vertices on a typical desktop computer.
+</p>
+<p>Calling this function with <code>mode=="digraph"</code>, forces and initial symmetrization step, which can be avoided with <code>mode=="graph"</code>.  While incorrectly employing the default is harmless (except for the relatively small cost of verifying symmetry), setting <code>mode=="graph"</code> incorrectly may result in problematic behavior.  When in doubt, stick with the default.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with the following elements:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>clique.count </code></td>
+<td>
+<p>If <code>tabulate.byvertex==FALSE</code>, a vector of aggregate counts by clique size.  Otherwise, a matrix whose first column is a vector of aggregate clique counts, and whose succeeding columns contain vectors of clique counts for each vertex.</p>
+</td></tr>
+<tr valign="top"><td><code>clique.comemb </code></td>
+<td>
+<p>If <code>clique.comembership!="none"</code>, a matrix or array containing co-membership in cliques by vertex pairs.  If <code>clique.comembership=="sum"</code>, only a matrix of co-memberships is returned; if <code>bysize</code> is used, however, co-memberships are returned in a <code>maxsize</code> by <i>n</i> by <i>n</i> array whose <i>i,j,k</i>th cell is the number of cliques of size <i>i</i> containing <code>j</code> and <code>k</code> (with <code>maxsize</code> being the size of the largest maximal clique).</p>
+</td></tr>
+<tr valign="top"><td><code>cliques </code></td>
+<td>
+<p>If <code>enumerate=TRUE</code>, a list of length equal to the maximum clique size, each element of which is in turn a list of all cliques of corresponding size (given as vectors of vertices).</p>
+</td></tr>
+</table>
+
+
+<h3>Warning </h3>
+
+<p> The computational cost of calculating cliques grows very sharply in size and network density.  It is possible that the expected completion time for your calculation may exceed your life expectancy (and those of subsequent generations). </p>
+
+
+<h3>Author(s)</h3>
+
+<p>Carter T. Butts <a href="mailto:buttsc@uci.edu">buttsc@uci.edu</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Wasserman, S. and Faust, K.  (1994).  <em>Social Network Analysis: Methods and Applications.</em>  Cambridge: Cambridge University Press.
+</p>
+<p>Makino, K. and Uno, T.  (2004.)  &ldquo;New Algorithms for Enumerating All Maximal Cliques.&rdquo;  In T. Hagerup and J. Katajainen (eds.), <em>SWAT 2004</em>, LNCS 3111, 260-272.  Berlin: Springer-Verlag.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../sna/help/dyad.census.html">dyad.census</a></code>, <code><a href="../../sna/help/triad.census.html">triad.census</a></code>, <code><a href="../../sna/help/kcycle.census.html">kcycle.census</a></code>, <code><a href="../../sna/help/kpath.census.html">kpath.census</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+#Generate a fairly dense random graph
+g&lt;-rgraph(25)
+
+#Obtain cliques by vertex, with co-membership by size
+cc&lt;-clique.census(g,clique.comembership="bysize")
+cc$clique.count                             #Examine clique counts
+cc$clique.comemb[1,,]                       #Isolate co-membership is trivial
+cc$clique.comemb[2,,]                       #Co-membership for 2-cliques
+cc$clique.comemb[3,,]                       #Co-membership for 3-cliques
+cc$cliques                                  #Enumerate the cliques
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sna</em> version 2.8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Replace outliers for series of observations by NA</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for removeSerieOut {statgenHTP}"><tr><td>removeSerieOut {statgenHTP}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Replace outliers for series of observations by NA</h2>
+
+<h3>Description</h3>
+
+<p>Function for replacing outliers for series of observations in the data by NA.
+The input can either be a data.frame, specified in <code>dat</code>, or the output
+of the <code>fitSpline</code> function, specified in <code>fitSpline</code>. Exactly one
+of these should be provided as input for the function.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+removeSerieOut(
+  dat = NULL,
+  fitSpline = NULL,
+  serieOut,
+  reason = c("mean corr", "angle", "slope"),
+  traits = attr(x = serieOut, which = "trait")
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>dat</code></td>
+<td>
+<p>A <code>data.frame</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>fitSpline</code></td>
+<td>
+<p>An object of class <code>HTPSpline</code>, the output of the
+<code><a href="../../statgenHTP/help/fitSpline.html">fitSpline</a></code> function.</p>
+</td></tr>
+<tr valign="top"><td><code>serieOut</code></td>
+<td>
+<p>A data.frame with at least the column plotId with
+values corresponding to those in dat/fitSpline.</p>
+</td></tr>
+<tr valign="top"><td><code>reason</code></td>
+<td>
+<p>A character vector indicating which types of outliers should
+be replaced by NA.</p>
+</td></tr>
+<tr valign="top"><td><code>traits</code></td>
+<td>
+<p>The traits that should be replaced by NA. When using the
+output of <code>detectSerieOut</code> as input for <code>serieOut</code> this defaults
+to the trait used for when detecting the outliers.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>Depending on the input either a <code>data.frame</code> or an object of
+class <code>HTPSpline</code> for which the outliers specified in <code>serieOut</code>
+are replaced by NA.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other functions for detecting outliers for series of observations: 
+<code><a href="../../statgenHTP/help/detectSerieOut.html">detectSerieOut</a>()</code>,
+<code><a href="../../statgenHTP/help/plot.serieOut.html">plot.serieOut</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Run the function to fit P-splines on a subset of genotypes.
+subGenoVator &lt;- c("G160", "G151")
+fit.spline &lt;- fitSpline(inDat = spatCorrectedVator,
+                        trait = "EffpsII_corr",
+                        genotypes = subGenoVator,
+                        knots = 50)
+
+## Extract the tables of predicted values and P-spline coefficients.
+predDat &lt;- fit.spline$predDat
+coefDat &lt;- fit.spline$coefDat
+
+## The coefficients are then used to tag suspect time courses
+outVator &lt;- detectSerieOut(corrDat = spatCorrectedVator,
+                           predDat = predDat,
+                           coefDat = coefDat,
+                           trait = "EffpsII_corr",
+                           genotypes = subGenoVator,
+                           thrCor = 0.9,
+                           thrPca = 30,
+                           thrSlope = 0.7)
+
+## Replace the outliers by NA in the corrected data.
+spatCorrectedVatorOut &lt;- removeSerieOut(dat = spatCorrectedVator,
+                                        serieOut = outVator)
+
+## Only replace the slope outliers by NA in the corrected data.
+spatCorrectedVatorOut2 &lt;- removeSerieOut(dat = spatCorrectedVator,
+                                        serieOut = outVator,
+                                        reason = "slope")
+
+## Replace the outliers by NA in the corrected data.
+## Replace both the corrected value and the raw trait value by NA.
+spatCorrectedVatorOut3 &lt;-
+  removeSerieOut(dat = spatCorrectedVator,
+                 serieOut = outVator,
+                 traits = c("EffpsII", "EffpsII_corr"))
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>statgenHTP</em> version 1.0.9.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

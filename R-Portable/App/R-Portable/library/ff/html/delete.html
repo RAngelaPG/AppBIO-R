@@ -1,0 +1,122 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Deleting the file behind an ff object</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for delete {ff}"><tr><td>delete {ff}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Deleting the file behind an ff object </h2>
+
+<h3>Description</h3>
+
+<p>The generic <code>delete</code> deletes the content of an object without removing the object itself.
+The generic <code>deleteIfOpen</code> does the same, but only if <code><a href="../../ff/help/is.open.html">is.open</a></code> returns TRUE.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+delete(x, ...)
+deleteIfOpen(x, ...)
+## S3 method for class 'ff'
+delete(x, ...)
+## S3 method for class 'ffdf'
+delete(x, ...)
+## S3 method for class 'ff_pointer'
+delete(x, ...)
+## Default S3 method:
+delete(x, ...)
+## S3 method for class 'ff'
+deleteIfOpen(x, ...)
+## S3 method for class 'ff_pointer'
+deleteIfOpen(x, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p> an ff or ram object </p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p> further arguments (not used) </p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The proper sequence to fully delete an ff object is: <code>delete(x);rm(x)</code>, where <code>delete.ff</code> frees the Memory Mapping resources and deletes the ff file,
+leaving intact the R-side object including its <code><a href="../../base/html/class.html">class</a></code>, <code><a href="../../ff/help/Extract.ff.html">physical</a></code> and <code><a href="../../ff/help/Extract.ff.html">virtual</a></code> attributes.
+The default method is a compatibility function doing something similar with ram objects: by assiging an empty list to the name of the ram object to the parent frame
+we destroy the content of the object, leaving an empty stub that prevents raising an error if the parent frame calls the <code>delete(x);rm(x)</code> sequence. <br />
+The <code>deleteIfOpen</code> does the same as <code>delete</code> but protects closed ff objects from deletion, it is mainly intended for use through a finalizer, as are the <code>ff_pointer</code> methods.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>delete</code> returns TRUE if the/all ff files could be removed and FALSE otherwise. <br />
+<code>deleteIfOpen</code> returns TRUE if the/all ff files could be removed, FALSE if not and NA if the ff object was open.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Deletion of ff files can be triggerd automatically via three routes:
+</p>
+
+<ol>
+<li><p> if an ff object with a 'delete' finalizer is removed
+</p>
+</li>
+<li><p> if an ff object was created with <code>fffinonexit=TRUE</code> the finalizer is also called when R shuts down.
+</p>
+</li>
+<li><p> if an ff object was created in <code>getOption("fftempdir")</code>, it will be unlinked together with the fftempdir <code><a href="../../base/help/ns-hooks.html">.onUnload</a></code>
+</p>
+</li></ol>
+
+<p>Thus in order to retain an ff file, one has to create it elsewhere than in fftempdir with a finalizer that does not destroy the file (by default files outside fftempdir get a 'close' finalizer') i.e. one of the following:
+</p>
+
+<ol>
+<li><p> name the file AND use <code>fffinalizer="close"</code>
+</p>
+</li>
+<li><p> name the file AND use <code>fffinalizer="deleteIfOpen"</code> AND close the ff object before leaving R
+</p>
+</li>
+<li><p> name the file AND use <code>fffinalizer="delete"</code> AND use <code>fffinonexit=FALSE</code>
+</p>
+</li></ol>
+
+
+
+<h3>Author(s)</h3>
+
+<p> Jens Oehlschlägel </p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../ff/help/ff.html">ff</a></code>, <code><a href="../../ff/help/close.ff.html">close.ff</a></code>, <code><a href="../../ff/help/open.ff.html">open.ff</a></code>, <code><a href="../../base/html/reg.finalizer.html">reg.finalizer</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+  message('create the ff file outside getOption("fftempir"), 
+    it will have default finalizer "close", so you need to delete it explicitely')
+  x &lt;- ff(1:12, pattern="./ffexample")
+  delete(x)
+  rm(x)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ff</em> version 4.5.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

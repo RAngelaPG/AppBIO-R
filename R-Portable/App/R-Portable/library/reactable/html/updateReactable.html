@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Update a reactable instance</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for updateReactable {reactable}"><tr><td>updateReactable {reactable}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Update a reactable instance</h2>
+
+<h3>Description</h3>
+
+<p><code>updateReactable()</code> updates a reactable instance within a Shiny application.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+updateReactable(
+  outputId,
+  data = NULL,
+  selected = NULL,
+  expanded = NULL,
+  page = NULL,
+  meta = NULL,
+  session = NULL
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>outputId</code></td>
+<td>
+<p>The Shiny output ID of the <code>reactable</code> instance.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>Table data. A data frame or matrix.
+</p>
+<p><code>data</code> should have the same columns as the original table data.
+When updating <code>data</code>, the selected rows, expanded rows, and current page
+will reset unless explicitly specified. All other state will persist,
+including sorting, filtering, and grouping state.</p>
+</td></tr>
+<tr valign="top"><td><code>selected</code></td>
+<td>
+<p>Selected rows. Either a numeric vector of row indices,
+or <code>NA</code> to deselect all rows.</p>
+</td></tr>
+<tr valign="top"><td><code>expanded</code></td>
+<td>
+<p>Expanded rows. Either <code>TRUE</code> to expand all rows, or <code>FALSE</code>
+to collapse all rows.</p>
+</td></tr>
+<tr valign="top"><td><code>page</code></td>
+<td>
+<p>The current page. A single, positive integer.</p>
+</td></tr>
+<tr valign="top"><td><code>meta</code></td>
+<td>
+<p>Custom table metadata. Either a named list with new values, or <code>NA</code>
+to clear all metadata. New values are merged into the current metadata, so only
+the values specified in <code>meta</code> will be updated.</p>
+</td></tr>
+<tr valign="top"><td><code>session</code></td>
+<td>
+<p>The Shiny session object. Defaults to the current Shiny session.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>None
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Run in an interactive R session
+if (interactive()) {
+
+library(shiny)
+library(reactable)
+
+data &lt;- MASS::Cars93[, 1:7]
+
+ui &lt;- fluidPage(
+  actionButton("select_btn", "Select rows"),
+  actionButton("clear_btn", "Clear selection"),
+  actionButton("expand_btn", "Expand rows"),
+  actionButton("collapse_btn", "Collapse rows"),
+  actionButton("page_btn", "Change page"),
+  selectInput("filter_type", "Filter type", unique(data$Type), multiple = TRUE),
+  reactableOutput("table")
+)
+
+server &lt;- function(input, output) {
+  output$table &lt;- renderReactable({
+    reactable(
+      data,
+      filterable = TRUE,
+      searchable = TRUE,
+      selection = "multiple",
+      details = function(index) paste("Details for row:", index)
+    )
+  })
+
+  observeEvent(input$select_btn, {
+    # Select rows
+    updateReactable("table", selected = c(1, 3, 5))
+  })
+
+  observeEvent(input$clear_btn, {
+    # Clear row selection
+    updateReactable("table", selected = NA)
+  })
+
+  observeEvent(input$expand_btn, {
+    # Expand all rows
+    updateReactable("table", expanded = TRUE)
+  })
+
+  observeEvent(input$collapse_btn, {
+    # Collapse all rows
+    updateReactable("table", expanded = FALSE)
+  })
+
+  observeEvent(input$page_btn, {
+    # Change current page
+    updateReactable("table", page = 3)
+  })
+
+  observe({
+    # Filter data
+    filtered &lt;- if (length(input$filter_type) &gt; 0) {
+      data[data$Type %in% input$filter_type, ]
+    } else {
+      data
+    }
+    updateReactable("table", data = filtered)
+  })
+}
+
+shinyApp(ui, server)
+}
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>reactable</em> version 0.4.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

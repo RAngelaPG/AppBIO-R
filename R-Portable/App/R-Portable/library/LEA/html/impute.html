@@ -1,0 +1,122 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Impute missing genotypes using an snmf object</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for impute {LEA}"><tr><td>impute {LEA}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Impute missing genotypes using an snmf object</h2>
+
+<h3>Description</h3>
+
+<p>Impute missing genotypes in a genotype file (.lfmm) by using ancestry and genotype frequency estimates from an <code>snmf</code> run. The function generates a new <code>lfmm</code> file. See <code><a href="../../LEA/help/lfmm.html">lfmm</a></code> and <code><a href="../../LEA/help/lfmm2.html">lfmm2</a></code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+impute (object, input.file, method, K, run) 
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+
+<p>An snmfProject object.
+</p>
+</td></tr>
+<tr valign="top"><td><code>input.file</code></td>
+<td>
+<p>A path (character string) to an input file in lfmm format with missing genotypes. The same input data must be used when generating the snmf object. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>A character string: &quot;random&quot; or &quot;mode&quot;. With &quot;random&quot;, imputation is performed by using the genotype probabilities. With &quot;mode&quot;, the most likely genotype is used for matrix completion. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>K</code></td>
+<td>
+<p>An integer value. The number of ancestral populations.
+</p>
+</td></tr>
+<tr valign="top"><td><code>run</code></td>
+<td>
+<p>An integer value. A particular run used for imputation (usually the run number that minimizes the cross entropy criterion).
+</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<table summary="R valueblock">
+<tr valign="top"><td><code>NULL</code></td>
+<td>
+<p>The function writes the imputed genotypes in an output file having the &quot;_imputed.lfmm&quot; suffix.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Olivier Francois
+</p>
+
+
+<h3>References</h3>
+
+<p>Gain C, Francois O. (2021). LEA 3: Factor models in population genetics and ecological genomics with R. Molecular Ecology Resources, doi.org/10.1111/1755-0998.13366. 
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../LEA/help/snmf.html">snmf</a></code>
+<code><a href="../../LEA/help/lfmm.html">lfmm</a></code>
+<code><a href="../../LEA/help/lfmm2.html">lfmm2</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+### Example of analysis ###
+
+data("tutorial")
+# creation of a genotype file with missing genotypes
+# The data contain 400 SNPs for 50 individuals.
+
+dat = as.numeric(tutorial.R)
+dat[sample(1:length(dat), 100)] &lt;-  9
+dat &lt;- matrix(dat, nrow = 50, ncol = 400 )
+write.lfmm(dat, "genotypes.lfmm")
+
+################
+# running snmf #
+################
+
+project.snmf = snmf("genotypes.lfmm", K = 4, 
+        entropy = TRUE, repetitions = 10,
+        project = "new")
+        
+# select the run with the lowest cross-entropy value
+best = which.min(cross.entropy(project.snmf, K = 4))
+
+# Impute the missing genotypes
+impute(project.snmf, "genotypes.lfmm", method = 'mode', K = 4, run = best)
+
+# Compare with truth
+# Proportion of correct imputation results:
+mean( tutorial.R[dat == 9] == read.lfmm("genotypes.lfmm_imputed.lfmm")[dat == 9] )
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>LEA</em> version 3.19.8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,86 @@
+---
+title: "package mycor"
+author: "Keon-Woong Moon <cardiomoon@gmail.com>"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{package mycor}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\usepackage[utf8]{inputenc}
+---
+```{r,echo=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, comment=NA)
+```
+
+## Motivation
+
+### For correlation analysis : `cor`, `cor.test` and `lm`
+
+When I began to study R software, I was really impressed with the function `cor`. As you knows, the 'cor' function returns all `r` values of every possible pairs of matrix or data.frame provided that it consists of numeric data only. For example, `cor(mtcars[1:5])` acts just as expected. 
+```{r}
+cor(mtcars[1:5])
+```
+
+But `cor(iris)` returns error because the data.frame consist of both numeric and factor variable.
+
+```{r,error=TRUE,purl=FALSE}
+cor(iris)
+```
+
+If you wanted to get `p` values as well as `r` values, you should use `cor.test` instead of `cor`. But `cor.test` can deal with only one pair of numeric vectors of the same length, neither a matrix nor a data.frame. Furthermore, if you wanted to get the `slope` and `intercept` of simple linear regression line of xyplot, you had to perform `lm` test for every pairs of numeric variables of the data.frame.  
+
+## Solution ; Do not repeat yourself !! 
+
+My idea is that a single function deals with data.frame of mixed numeric, logical and factor variables, select numeric variables, perform `cor.test` and `lm` to get `r`,`p`,`slope` and `intercept` of every pairs of the variables for exploratory analysis. It can save my time and effort.   
+
+## Function "mycor" and Class "mycor"
+
+Use of mycor function is simple. Just call mycor with a data.frame. For example, just call `cor(iris)`. Unlikely `cor`, it does not result in an error.
+```{r,message=FALSE}
+require(lattice)
+require(mycor)
+mycor(iris)
+```
+
+The mycor function reurns an object of class "mycor". This can be saved for print, summarize and plot. A S3 method for class `formula` can be used to function `mycor`. Function `print.mycor` shows the r values and th p values similar to the function `cor`. A `mycor` class object can be summarized with summary function, summary().
+
+```{r}
+out=mycor(iris,alternative="greater", method="kendall",digits=2)
+out1=mycor(~mpg+disp+hp+wt,data=mtcars)
+summary(out1)
+```
+
+The `mycor` function uses cor.test internally, so you can use all options of `cor.test` - namely `alternatives`, `method`, `conf.level`,... .
+
+## Plot "mycor" object
+
+Probably most valuable function is plot. It is not a new function. It uses internally one of two popular function : graphics::pairs() and lattice::parallelplot(). In fact, plot.mycor function have four types of plot : Three variants of pairs and parallelplot. Call function `plot` with no option makes pairs().  
+
+```{r,fig.width=6, fig.height=6}
+plot(out)
+```
+
+But if you specify the groups, you can get more pretty plot. You can use extra arguments which can used in pairs() or parallelplot().
+
+```{r,fig.width=6, fig.height=6}
+plot(out,groups=species,main="Test of mycor::plot")
+```
+
+With `type=2` option, you can get histogram at diagonal panel. 
+
+```{r,fig.width=6, fig.height=6}
+plot(out,type=2,groups=spe)
+```
+
+With `type=3` option, you can get correlation plot at upper panels.
+
+```{r,fig.width=6, fig.height=6}
+plot(out1,type=3)
+```
+
+With `type=4` option, you can get parallelplot.
+
+```{r,fig.width=6, fig.height=6}
+plot(out,type=4,groups=spe)
+plot(out1,type=4,groups=cyl)
+```

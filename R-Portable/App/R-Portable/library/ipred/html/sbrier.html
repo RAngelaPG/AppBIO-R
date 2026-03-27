@@ -1,0 +1,211 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Model Fit for Survival Data</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for sbrier {ipred}"><tr><td>sbrier {ipred}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Model Fit for Survival Data </h2>
+
+<h3>Description</h3>
+
+<p>Model fit for survival data: the integrated Brier score for censored
+observations.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+sbrier(obj, pred, btime= range(obj[,1]))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>obj</code></td>
+<td>
+<p>an object of class <code>Surv</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>pred</code></td>
+<td>
+<p>predicted values. Either a probability or a list of
+<code>survfit</code> objects. </p>
+</td></tr>
+<tr valign="top"><td><code>btime</code></td>
+<td>
+<p>numeric vector of times, the integrated Brier score is
+computed if this is of <code>length &gt; 1</code>. 
+The Brier score at <code>btime</code>
+is returned otherwise.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>There is no obvious criterion of model fit for censored data. The Brier
+score for censoring as well as it's integrated version were suggested by
+Graf et al (1999).
+</p>
+<p>The integrated Brier score is always computed over a subset of the
+interval given by the range of the time slot of the survival object <code>obj</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The (integrated) Brier score with attribute <code>time</code> is returned. 
+</p>
+
+
+<h3>References</h3>
+
+ 
+<p>Erika Graf, Claudia Schmoor, Willi Sauerbrei and Martin Schumacher (1999),
+Assessment and comparison of prognostic classification schemes for
+survival data. <em>Statistics in Medicine</em> <b>18</b>(17-18), 2529&ndash;2545.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>More measures for the validation of predicted surival probabilities 
+are implemented in package <code>pec</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+library("survival")
+data("DLBCL", package = "ipred")
+smod &lt;- Surv(DLBCL$time, DLBCL$cens)
+
+KM &lt;- survfit(smod ~ 1)
+# integrated Brier score up to max(DLBCL$time)
+sbrier(smod, KM)
+
+# integrated Brier score up to time=50
+sbrier(smod, KM, btime=c(0, 50))
+
+# Brier score for time=50
+sbrier(smod, KM, btime=50)
+
+# a "real" model: one single survival tree with Intern. Prognostic Index
+# and mean gene expression in the first cluster as predictors
+mod &lt;- bagging(Surv(time, cens) ~ MGEc.1 + IPI, data=DLBCL, nbagg=1)
+
+# this is a list of survfit objects (==KM-curves), one for each observation
+# in DLBCL
+pred &lt;- predict(mod, newdata=DLBCL)
+
+# integrated Brier score up to max(time)
+sbrier(smod, pred)
+
+# Brier score at time=50
+sbrier(smod, pred, btime=50)
+# artificial examples and illustrations
+
+cleans &lt;- function(x) { attr(x, "time") &lt;- NULL; names(x) &lt;- NULL; x }
+
+n &lt;- 100
+time &lt;- rpois(n, 20)
+cens &lt;- rep(1, n)
+
+# checks, Graf et al. page 2536, no censoring at all!
+# no information: \pi(t) = 0.5 
+
+a &lt;- sbrier(Surv(time, cens), rep(0.5, n), time[50])
+stopifnot(all.equal(cleans(a),0.25))
+
+# some information: \pi(t) = S(t)
+
+n &lt;- 100
+time &lt;- 1:100
+mod &lt;- survfit(Surv(time, cens) ~ 1)
+a &lt;- sbrier(Surv(time, cens), rep(list(mod), n))
+mymin &lt;- mod$surv * (1 - mod$surv)
+cleans(a)
+sum(mymin)/diff(range(time))
+
+# independent of ordering
+rand &lt;- sample(1:100)
+b &lt;- sbrier(Surv(time, cens)[rand], rep(list(mod), n)[rand])
+stopifnot(all.equal(cleans(a), cleans(b)))
+
+
+
+# 2 groups at different risk
+
+time &lt;- c(1:10, 21:30)
+strata &lt;- c(rep(1, 10), rep(2, 10))
+cens &lt;- rep(1, length(time))
+
+# no information about the groups
+
+a &lt;- sbrier(Surv(time, cens), survfit(Surv(time, cens) ~ 1))
+b &lt;- sbrier(Surv(time, cens), rep(list(survfit(Surv(time, cens) ~1)), 20))
+stopifnot(all.equal(a, b))
+
+# risk groups known
+
+mod &lt;- survfit(Surv(time, cens) ~ strata)
+b &lt;- sbrier(Surv(time, cens), c(rep(list(mod[1]), 10), rep(list(mod[2]), 10)))
+stopifnot(a &gt; b)
+
+### GBSG2 data
+data("GBSG2", package = "TH.data")
+
+thsum &lt;- function(x) {
+  ret &lt;- c(median(x), quantile(x, 0.25), quantile(x,0.75))
+  names(ret)[1] &lt;- "Median"
+  ret
+}
+
+t(apply(GBSG2[,c("age", "tsize", "pnodes",
+                 "progrec", "estrec")], 2, thsum))
+
+table(GBSG2$menostat)
+table(GBSG2$tgrade)
+table(GBSG2$horTh)
+
+# pooled Kaplan-Meier
+
+mod &lt;- survfit(Surv(time, cens) ~ 1, data=GBSG2)
+# integrated Brier score
+sbrier(Surv(GBSG2$time, GBSG2$cens), mod)
+# Brier score at 5 years
+sbrier(Surv(GBSG2$time, GBSG2$cens), mod, btime=1825)
+
+# Nottingham prognostic index
+
+GBSG2 &lt;- GBSG2[order(GBSG2$time),]
+
+NPI &lt;- 0.2*GBSG2$tsize/10 + 1 + as.integer(GBSG2$tgrade)
+NPI[NPI &lt; 3.4] &lt;- 1
+NPI[NPI &gt;= 3.4 &amp; NPI &lt;=5.4] &lt;- 2
+NPI[NPI &gt; 5.4] &lt;- 3
+
+mod &lt;- survfit(Surv(time, cens) ~ NPI, data=GBSG2)
+plot(mod)
+
+pred &lt;- c()
+survs &lt;- c()
+for (i in sort(unique(NPI)))
+    survs &lt;- c(survs, getsurv(mod[i], 1825))
+
+for (i in 1:nrow(GBSG2))
+   pred &lt;- c(pred, survs[NPI[i]])
+
+# Brier score of NPI at t=5 years
+sbrier(Surv(GBSG2$time, GBSG2$cens), pred, btime=1825)
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ipred</em> version 0.9-15 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

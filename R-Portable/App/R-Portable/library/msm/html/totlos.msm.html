@@ -1,0 +1,273 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Total length of stay, or expected number of visits</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for totlos.msm {msm}"><tr><td>totlos.msm {msm}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Total length of stay, or expected number of visits</h2>
+
+<h3>Description</h3>
+
+<p>Estimate the expected total length of stay, or the expected number of
+visits, in each state, for an individual in a given period of evolution of a
+multi-state model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+totlos.msm(
+  x,
+  start = 1,
+  end = NULL,
+  fromt = 0,
+  tot = Inf,
+  covariates = "mean",
+  piecewise.times = NULL,
+  piecewise.covariates = NULL,
+  num.integ = FALSE,
+  discount = 0,
+  env = FALSE,
+  ci = c("none", "normal", "bootstrap"),
+  cl = 0.95,
+  B = 1000,
+  cores = NULL,
+  ...
+)
+
+envisits.msm(
+  x = NULL,
+  start = 1,
+  end = NULL,
+  fromt = 0,
+  tot = Inf,
+  covariates = "mean",
+  piecewise.times = NULL,
+  piecewise.covariates = NULL,
+  num.integ = FALSE,
+  discount = 0,
+  ci = c("none", "normal", "bootstrap"),
+  cl = 0.95,
+  B = 1000,
+  cores = NULL,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A fitted multi-state model, as returned by <code><a href="../../msm/help/msm.html">msm</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>start</code></td>
+<td>
+<p>Either a single number giving the state at the beginning of the
+period, or a vector of probabilities of being in each state at this time.</p>
+</td></tr>
+<tr valign="top"><td><code>end</code></td>
+<td>
+<p>States to estimate the total length of stay (or number of visits)
+in. Defaults to all states.  This is deprecated, since with the analytic
+solution (see &quot;Details&quot;) it doesn't save any computation to only estimate
+for a subset of states.</p>
+</td></tr>
+<tr valign="top"><td><code>fromt</code></td>
+<td>
+<p>Time from which to estimate.  Defaults to 0, the beginning of
+the process.</p>
+</td></tr>
+<tr valign="top"><td><code>tot</code></td>
+<td>
+<p>Time up to which the estimate is made.  Defaults to infinity,
+giving the expected time spent in or number of visits to the state until
+absorption. However, the calculation will be much more efficient if a finite
+(potentially large) time is specified: see the &quot;Details&quot; section.  For
+models without an absorbing state, <code>t</code> must be specified.</p>
+</td></tr>
+<tr valign="top"><td><code>covariates</code></td>
+<td>
+<p>The covariate values to estimate for.  This can either
+be:<br />
+</p>
+<p>the string <code>"mean"</code>, denoting the means of the covariates in the data
+(this is the default),<br />
+</p>
+<p>the number <code>0</code>, indicating that all the covariates should be set to
+zero,<br />
+</p>
+<p>or a list of values, with optional names. For example
+</p>
+<p><code>list (60, 1)</code>
+</p>
+<p>where the order of the list follows the order of the covariates originally
+given in the model formula, or a named list,
+</p>
+<p><code>list (age = 60, sex = 1)</code></p>
+</td></tr>
+<tr valign="top"><td><code>piecewise.times</code></td>
+<td>
+<p>Times at which piecewise-constant intensities change.
+See <code><a href="../../msm/help/pmatrix.piecewise.msm.html">pmatrix.piecewise.msm</a></code> for how to specify this. This is
+only required for time-inhomogeneous models specified using explicit
+time-dependent covariates, and should not be used for models specified using
+&quot;pci&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>piecewise.covariates</code></td>
+<td>
+<p>Covariates on which the piecewise-constant
+intensities depend. See <code><a href="../../msm/help/pmatrix.piecewise.msm.html">pmatrix.piecewise.msm</a></code> for how to
+specify this.</p>
+</td></tr>
+<tr valign="top"><td><code>num.integ</code></td>
+<td>
+<p>Use numerical integration instead of analytic solution (see
+below).</p>
+</td></tr>
+<tr valign="top"><td><code>discount</code></td>
+<td>
+<p>Discount rate in continuous time.</p>
+</td></tr>
+<tr valign="top"><td><code>env</code></td>
+<td>
+<p>Supplied to <code><a href="../../msm/help/totlos.msm.html">totlos.msm</a></code>.  If <code>TRUE</code>, return the
+expected number of visits to each state. If <code>FALSE</code>, return the total
+length of stay in each state. <code><a href="../../msm/help/envisits.msm.html">envisits.msm</a></code> simply calls
+<code><a href="../../msm/help/totlos.msm.html">totlos.msm</a></code> with <code>env=TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>ci</code></td>
+<td>
+<p>If <code>"normal"</code>, then calculate a confidence interval by
+simulating <code>B</code> random vectors from the asymptotic multivariate normal
+distribution implied by the maximum likelihood estimates (and covariance
+matrix) of the log transition intensities and covariate effects, then
+calculating the total length of stay for each replicate.
+</p>
+<p>If <code>"bootstrap"</code> then calculate a confidence interval by non-parametric
+bootstrap refitting.  This is 1-2 orders of magnitude slower than the
+<code>"normal"</code> method, but is expected to be more accurate. See
+<code><a href="../../msm/help/boot.msm.html">boot.msm</a></code> for more details of bootstrapping in <span class="pkg">msm</span>.
+</p>
+<p>If <code>"none"</code> (the default) then no confidence interval is calculated.</p>
+</td></tr>
+<tr valign="top"><td><code>cl</code></td>
+<td>
+<p>Width of the symmetric confidence interval, relative to 1</p>
+</td></tr>
+<tr valign="top"><td><code>B</code></td>
+<td>
+<p>Number of bootstrap replicates</p>
+</td></tr>
+<tr valign="top"><td><code>cores</code></td>
+<td>
+<p>Number of cores to use for bootstrapping using parallel
+processing. See <code><a href="../../msm/help/boot.msm.html">boot.msm</a></code> for more details.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Further arguments to be passed to the <code><a href="../../stats/html/integrate.html">integrate</a></code>
+function to control the numerical integration.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The expected total length of stay in state <i>j</i> between times <i>t_1</i>
+and <i>t_2</i>, from the point of view of an individual in state <i>i</i> at
+time 0, is defined by the integral from <i>t_1</i> to <i>t_2</i> of the
+<i>i,j</i> entry of the transition probability matrix <i>P(t) = Exp(tQ)</i>,
+where <i>Q</i> is the transition intensity matrix.
+</p>
+<p>The corresponding expected number of visits to state <i>j</i> (excluding the
+stay in the current state at time 0) is <i>&sum;_{i!=j} T_i Q_{i,j}</i>, where
+<i>T_i</i> is the expected amount of time spent in state <i>i</i>.
+</p>
+<p>More generally, suppose that <i>pi_0</i> is the vector of
+probabilities of being in each state at time 0, supplied in <code>start</code>,
+and we want the vector <i>x</i> giving the expected lengths of
+stay in each state.  The corresponding integral has the following solution
+(van Loan 1978; van Rosmalen et al. 2013)
+</p>
+<p style="text-align: center;"><i>x = [1, 0_K] Exp(t Q') [0_K, I_K]'</i></p>
+
+<p>where </p>
+<p style="text-align: center;"><i>Q' = rbind(c(0, pi_0), cbind(0_K, Q - r I_K))</i></p>
+
+<p><i>pi_0</i> is the row vector of initial state probabilities supplied
+in <code>start</code>, <i>0_K</i> is the row vector of K zeros,
+<i>r</i> is the discount rate, <i>I_K</i> is the K x K identity matrix,
+and <i>Exp</i> is the matrix exponential.
+</p>
+<p>Alternatively, the integrals can be calculated numerically, using the
+<code><a href="../../stats/html/integrate.html">integrate</a></code> function.  This may take a long time for models with
+many states where <i>P(t)</i> is expensive to calculate.  This is required
+where <code>tot = Inf</code>, since the package author is not aware of any
+analytic expression for the limit of the above formula as <i>t</i> goes to
+infinity.
+</p>
+<p>With the argument <code>num.integ=TRUE</code>, numerical integration is used even
+where the analytic solution is available. This facility is just provided for
+checking results against versions 1.2.4 and earlier, and will be removed
+eventually. Please let the package maintainer know if any results are
+different.
+</p>
+<p>For a model where the individual has only one place to go from each state,
+and each state is visited only once, for example a progressive disease model
+with no recovery or death, these are equal to the mean sojourn time in each
+state.  However, consider a three-state health-disease-death model with
+transitions from health to disease, health to death, and disease to death,
+where everybody starts healthy.  In this case the mean sojourn time in the
+disease state will be greater than the expected length of stay in the
+disease state.  This is because the mean sojourn time in a state is
+conditional on entering the state, whereas the expected total time diseased
+is a forecast for a healthy individual, who may die before getting the
+disease.
+</p>
+<p>In the above formulae, <i>Q</i> is assumed to be constant over time, but the
+results generalise easily to piecewise-constant intensities.  This function
+automatically handles models fitted using the <code>pci</code> option to
+<code><a href="../../msm/help/msm.html">msm</a></code>. For any other inhomogeneous models, the user must specify
+<code>piecewise.times</code> and <code>piecewise.covariates</code> arguments to
+<code><a href="../../msm/help/totlos.msm.html">totlos.msm</a></code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A vector of expected total lengths of stay
+(<code><a href="../../msm/help/totlos.msm.html">totlos.msm</a></code>), or expected number of visits
+(<code><a href="../../msm/help/envisits.msm.html">envisits.msm</a></code>), for each transient state.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>C. H. Jackson <a href="mailto:chris.jackson@mrc-bsu.cam.ac.uk">chris.jackson@mrc-bsu.cam.ac.uk</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>C. van Loan (1978). Computing integrals involving the matrix
+exponential. IEEE Transactions on Automatic Control 23(3)395-404.
+</p>
+<p>J. van Rosmalen, M. Toy and J.F. O'Mahony (2013). A mathematical approach
+for evaluating Markov models in continuous time without discrete-event
+simulation.  Medical Decision Making 33:767-779.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../msm/help/sojourn.msm.html">sojourn.msm</a></code>, <code><a href="../../msm/help/pmatrix.msm.html">pmatrix.msm</a></code>,
+<code><a href="../../stats/html/integrate.html">integrate</a></code>, <code><a href="../../msm/help/boot.msm.html">boot.msm</a></code>.
+</p>
+
+<hr /><div style="text-align: center;">[Package <em>msm</em> version 1.8.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

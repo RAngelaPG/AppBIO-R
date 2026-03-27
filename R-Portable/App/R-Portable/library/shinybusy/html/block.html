@@ -1,0 +1,142 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Block / unblock an UI element</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for block {shinybusy}"><tr><td>block {shinybusy}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Block / unblock an UI element</h2>
+
+<h3>Description</h3>
+
+<p>Block / unblock an UI element
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+block(
+  id,
+  text = "Loading",
+  type = c("standard", "hourglass", "circle", "arrows", "dots", "pulse"),
+  ...,
+  selector = NULL,
+  session = shiny::getDefaultReactiveDomain()
+)
+
+unblock(
+  id,
+  selector = NULL,
+  timeout = 0,
+  session = shiny::getDefaultReactiveDomain()
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>id</code></td>
+<td>
+<p>Id of the element to block, for exemple an <code>outputId</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>text</code></td>
+<td>
+<p>Text displayed below the blocking indicator. Must be a single character string.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>Type of blocking indicator.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Other configuration option, see <a href="https://notiflix.github.io/documentation#DocsBlock">online documentation</a>.</p>
+</td></tr>
+<tr valign="top"><td><code>selector</code></td>
+<td>
+<p>Custom CSS selector, if used <code>id</code> is ignored.</p>
+</td></tr>
+<tr valign="top"><td><code>session</code></td>
+<td>
+<p>Default Shiny session.</p>
+</td></tr>
+<tr valign="top"><td><code>timeout</code></td>
+<td>
+<p>Unblock after a delay.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>No value.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(shinybusy)
+library(shiny)
+
+ui &lt;- fluidPage(
+  tags$h3("Block Output"),
+  fluidRow(
+    column(
+      width = 6,
+      plotOutput(outputId = "plot1"),
+      actionButton("block_manually", "Block / unblock")
+    ),
+    column(
+      width = 6,
+      plotOutput(outputId = "plot2"),
+      actionButton("block_reac", "Block when calculating in reactive()")
+    )
+  )
+)
+
+server &lt;- function(input, output, session) {
+
+  output$plot1 &lt;- renderPlot({
+    barplot(table(floor(runif(100) * 6)))
+  })
+
+  observeEvent(input$block_manually, {
+    if (input$block_manually %% 2 == 1) {
+      block(id = "plot1", type = "pulse", svgColor = "#5ea4d8")
+    } else {
+      unblock(id = "plot1")
+    }
+  })
+
+  data_r &lt;- reactive({
+    input$block_reac
+    block(
+      id = "plot2",
+      type = "circle",
+      text = "Calculating, please wait...",
+      messageColor = "#FFF",
+      svgColor = "#FFF",
+      backgroundColor = "#5ea4d8"
+    )
+    Sys.sleep(3)
+    data &lt;- data.frame(x = rnorm(50), y = rnorm(50))
+    unblock(id = "plot2", timeout = 300)
+    return(data)
+  })
+
+  output$plot2 &lt;- renderPlot({
+    plot(data_r())
+  })
+
+}
+
+if (interactive())
+  shinyApp(ui, server)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>shinybusy</em> version 0.3.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

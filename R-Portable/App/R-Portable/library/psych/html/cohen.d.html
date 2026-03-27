@@ -1,0 +1,332 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Find Cohen d and confidence intervals</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for cohen.d {psych}"><tr><td>cohen.d {psych}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Find Cohen d and confidence intervals</h2>
+
+<h3>Description</h3>
+
+<p>Given a data.frame or matrix, find the standardized mean difference (Cohen's d) and confidence intervals for each variable depending upon a grouping variable.  Convert the d statistic to the r equivalent, report the student's t statistic and associated p values, and return statistics for both values of the grouping variable.  The Mahalanobis distance between the centroids of the two groups in the space defined by all the variables ia also found.  Confidence intervals for Cohen d for one group (difference from 0) may also be found. Several measures of the distributional overlap (e.g. OVL, OVL2, etc.) are available.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+cohen.d(x, group,alpha=.05,std=TRUE,sort=NULL,dictionary=NULL,MD=TRUE,data=NULL)
+cohenPooled(cd=list(), cohen="TRUE")
+d.robust(x,group,trim=.2)
+cohen.d.ci(d,n=NULL,n2=NULL,n1=NULL,alpha=.05)
+d.ci(d,n=NULL,n2=NULL,n1=NULL,alpha=.05)
+cohen.d.by(x,group,group2,alpha=.05,MD=TRUE)
+d2r(d)
+r2d(rho)
+d2t(d,n=NULL,n2=NULL,n1=NULL)
+t2d(t,n=NULL,n2=NULL,n1=NULL)
+m2t(m1,m2,s1,s2,n1=NULL,n2=NULL,n=NULL,pooled=TRUE)  #returns d invisibily
+m2d(m1,m2,s1,s2,n1=NULL,n2=NULL,n=NULL,pooled=TRUE)
+d2OVL(d)  #Percent overlap for 1 distribtion
+d2OVL2(d)  #Percent overlap joint distribution
+d2CL(d)   #Common language effect size
+d2U3(d)   #Proportion in higher group exceedding median of lower group
+cd.validity(d, keys, abs=TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A data frame or matrix  (can be specified in formula mode) </p>
+</td></tr>
+<tr valign="top"><td><code>group</code></td>
+<td>
+<p>Some dichotomous grouping variable (may be specified using formula input (see example))</p>
+</td></tr>
+<tr valign="top"><td><code>group2</code></td>
+<td>
+<p>Apply cohen.d for each of the subgroups defined by group2 (may be specified by formula as well)</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>If using formula mode and specifying a particular variable (see example)</p>
+</td></tr>
+<tr valign="top"><td><code>cd</code></td>
+<td>
+<p>A list of objects returned from multiple runs of cohen.d to be pooled</p>
+</td></tr>
+<tr valign="top"><td><code>cohen</code></td>
+<td>
+<p>By default, pool cohen.d's. if FALSE pool hedges.g</p>
+</td></tr>
+<tr valign="top"><td><code>d</code></td>
+<td>
+<p>An effect size</p>
+</td></tr>
+<tr valign="top"><td><code>keys</code></td>
+<td>
+<p>A list of scoring keys (similar to scoreItems)</p>
+</td></tr>
+<tr valign="top"><td><code>abs</code></td>
+<td>
+<p>When finding average cd validities, should we take absolute values (TRUE)</p>
+</td></tr>
+<tr valign="top"><td><code>trim</code></td>
+<td>
+<p>The amount of trimming used in finding the means and sds in d.robust</p>
+</td></tr>
+<tr valign="top"><td><code>n</code></td>
+<td>
+<p>Total sample size (of groups 1 and 2)</p>
+</td></tr>
+<tr valign="top"><td><code>n1</code></td>
+<td>
+<p>Sample size of group 1 (if only one group)</p>
+</td></tr>
+<tr valign="top"><td><code>n2</code></td>
+<td>
+<p>Sample size of group 2 </p>
+</td></tr>
+<tr valign="top"><td><code>pooled</code></td>
+<td>
+<p>Pool the two variances</p>
+</td></tr>
+<tr valign="top"><td><code>t</code></td>
+<td>
+<p>Student's t statistic</p>
+</td></tr>
+<tr valign="top"><td><code>alpha</code></td>
+<td>
+<p>1-alpha is the width of the confidence interval</p>
+</td></tr>
+<tr valign="top"><td><code>std</code></td>
+<td>
+<p>Find the correlation rather covariance matrix</p>
+</td></tr>
+<tr valign="top"><td><code>rho</code></td>
+<td>
+<p>A correlation to be converted to an effect size</p>
+</td></tr>
+<tr valign="top"><td><code>m1</code></td>
+<td>
+<p>Mean of group 1</p>
+</td></tr>
+<tr valign="top"><td><code>m2</code></td>
+<td>
+<p>Mean of group 2</p>
+</td></tr>
+<tr valign="top"><td><code>s1</code></td>
+<td>
+<p>Standard deviation of group 1</p>
+</td></tr>
+<tr valign="top"><td><code>s2</code></td>
+<td>
+<p>Standard deviation of group 2</p>
+</td></tr>
+<tr valign="top"><td><code>sort</code></td>
+<td>
+<p>Should we sort (and if so, in which direction), the results of cohen.d? 
+Directions are &quot;decreasing&quot; or  &quot;increasing&quot;.  If TRUE, sorts in a decreasing order.</p>
+</td></tr>
+<tr valign="top"><td><code>dictionary</code></td>
+<td>
+<p>What are the items being described?</p>
+</td></tr>
+<tr valign="top"><td><code>MD</code></td>
+<td>
+<p>Find Mahalanobis distance in cohen.d.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>There are many ways of reporting how two groups differ.  Cohen's d statistic is just the differences of means expressed in terms of the pooled within group standard deviation.  This is insensitive to sample size.  r is the a universal measure of effect size that is a simple function of d, but is bounded -1 to 1.  The t statistic is merely d * sqrt(n)/2 and thus reflects sample size.   
+</p>
+<p style="text-align: center;"><i>(M2- M1)/Sp</i></p>
+  
+<p>where Sp is the pooled standard deviation.  
+</p>
+<p style="text-align: center;"><i>&radic;{((n1-1)*s1^2 + (n2-1)* s2^2)/{N}  }  </i></p>
+
+<p>Cohens d uses N as the divisor for the pooled sums of squares.  Hedges g uses N-2.  
+</p>
+<p>Confidence intervals for Cohen's d are found by converting the d to a t, finding the confidence intervals for t, and then converting those back to ds.  This take advantage of the uniroot function and the non-centrality parameter of the t distribution.
+</p>
+<p>The results of <code><a href="../../psych/help/cohen.d.html">cohen.d</a></code> may be displayed using the <code><a href="../../psych/help/error.dots.html">error.dots</a></code> function.  This will include the labels provided in the dictionary.  
+</p>
+<p>In the case of finding the confidence interval (using <code><a href="../../psych/help/cohen.d.ci.html">cohen.d.ci</a></code> for a comparison against 0 (the one sample case), specify n1.  This will yield a d = t/sqrt(n1)  whereas in the case of the difference between two samples, d = 2*t/sqrt(n) (for equal sample sizes n = n1+ n2) or d = t/sqrt(1/n1 + 1/n2)  for the case of unequal sample sizes.
+</p>
+<p>Since we find d and then convert this to t, using d2t,  the question is how to pool the variances. Until 7/14/21 I was using the total n to estimate the t and thus the p values.  In response to a query (see news), I switched to using the actual sample size ns (n1 and n2) and then finding t based upon the hedges g value.  This produces t values as reported by t.test with the var.equal = TRUE option.
+</p>
+<p>It is probably useful to comment that the various confidence intervals reported are based upon normal theory and should be interpreted cautiously.  
+</p>
+<p><code><a href="../../psych/help/cohen.d.by.html">cohen.d.by</a></code> will find Cohen's d for groups for each subset of the data defined by group2.  The summary of the output produces a simplified listing of the d values for each variable for each group.  May be called directly from cohen.d by using formula input and specifying two grouping variables. 
+</p>
+<p><code><a href="../../psych/help/d.robust.html">d.robust</a></code> follows Algina et al. 2005) to find trimmed means (trim =.2) and Winsorize variances (trim =.2).  Supposedly, this provides a more robust estimate of effect sizes.
+</p>
+<p><code><a href="../../psych/help/m2t.html">m2t</a></code> reports Student's t.test for two groups given their means, standard deviations, and sample size.  This is convenient when checking statistics where those estimates are provided, but the raw data are not available.  By default, it gives the pooled estimate of variance, but if pooled is FALSE, it applies Welch's correction.
+</p>
+<p>The Mahalanobis Distance combines the individual ds and weight them by their unique contribution:  <i>D = &radic;{d' R^{-1}d}</i>.
+By default, <code><a href="../../psych/help/cohen.d.html">cohen.d</a></code> will find the Mahalanobis distance between the two groups (if there is more than one DV.)  This requires finding the correlation of all of the DVs and can fail if that matrix is not invertible because some pairs do not exist.  Thus, setting MD=FALSE will prevent the Mahalanobis calculation.
+</p>
+<p>Marco del Giudice (2019) has a very helpful paper discussing how to interpret d and Md in terms of various overlap coefficients. These may be found by the use of the <code><a href="../../psych/help/d2OVL.html">d2OVL</a></code> (percent overlap for 1 distribution), <code><a href="../../psych/help/d2OVL2.html">d2OVL2</a></code> percent overlap of joint distributions, <code><a href="../../psych/help/d2CL.html">d2CL</a></code> (the common language effect size), and <code><a href="../../psych/help/d2U3.html">d2U3</a></code> (proportion in higher group exceeding median of the lower group).
+</p>
+<p style="text-align: center;"><i>OVL = 2 &phi;(-d/2)</i></p>
+<p>  is the proportion of overlap (and gets smaller the larger the d).
+where  Phi  is the cumulative density function of the normal distribution.
+</p>
+<p style="text-align: center;"><i>OVL_2 = OVL/(2-OVL)</i></p>
+
+<p>The proportion of individuals in one group above the median of the other group is U3
+</p>
+<p style="text-align: center;"><i>U_3 = &phi;(d)</i></p>
+<p>.
+</p>
+<p>The Common Language Effect size 
+</p>
+<p style="text-align: center;"><i>CL = &phi;(d * &radic;(2) )</i></p>
+
+<p>These last two get larger with (abs (d)).  
+For graphic displays of Cohen's d and Mahalanobis D, see the <code><a href="../../psych/help/scatterHist.html">scatterHist</a></code> examples, or the example from the psychTools::GERAS data set. 
+</p>
+
+
+<h3>Value</h3>
+
+<table summary="R valueblock">
+<tr valign="top"><td><code>d</code></td>
+<td>
+<p>Cohen's d statistic, including the upper and lower confidence levels</p>
+</td></tr>
+<tr valign="top"><td><code>hedges.g</code></td>
+<td>
+<p>Hedge's g statistic, including the upper and lower confidence levels</p>
+</td></tr>
+<tr valign="top"><td><code>M.dist</code></td>
+<td>
+<p>Mahalanobis distance between the two groups</p>
+</td></tr>
+<tr valign="top"><td><code>t</code></td>
+<td>
+<p>Student's t statistic</p>
+</td></tr>
+<tr valign="top"><td><code>r</code></td>
+<td>
+<p>The point biserial r equivalent of d</p>
+</td></tr>
+<tr valign="top"><td><code>n</code></td>
+<td>
+<p>sample size used for each analysis</p>
+</td></tr>
+<tr valign="top"><td><code>p</code></td>
+<td>
+<p>The probability of abs(t)&gt;0</p>
+</td></tr>
+<tr valign="top"><td><code>descriptive</code></td>
+<td>
+<p>The descriptive statistics for each group.  This is useful to show means and then the d values.</p>
+</td></tr>
+<tr valign="top"><td><code>OVL</code></td>
+<td>
+<p>etc. some of the measures of overlap discussed by DelGiudice, 2009</p>
+</td></tr>
+</table>
+
+
+<h3>Note</h3>
+
+<p>Cohen and Hedges differ in they way they calculate the pooled within group standard deviation. I find the treatment by McGrath and Meyer to be most helpful in understanding the differences.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>William Revelle
+</p>
+
+
+<h3>References</h3>
+
+<p>Cohen, Jackob (1988) Statistical Power Analysis for the Behavioral Sciences. 2nd Edition, Lawrence Erlbaum Associates. 
+</p>
+<p>Algina, James and Keselman, H. J. and Penfield, Randall D. (2005) An Alternative to Cohen's Standardized Mean Difference Effect Size: A Robust Parameter and Confidence Interval in the Two Independent Groups Case. Psychological Methods.  10, 317-328.
+</p>
+<p>Goulet-Pelletier, Jean-Christophe and Cousineau, Denis.(2018) A review of effect sizes and their confidence intervals, Part I: The Cohen's d family. The Quantitative Methods for Psychology, 14, 242-265.
+</p>
+<p>Marco Del Giudice (2019) Measuring Sex Differences and Similarities, (in VanderLaan and Wong (ed. ) Gender and sexuality development: Contemporary theory and research.)
+</p>
+<p>McGrath, Robert E and Meyer, Gregory J. (2006) When effect sizes disagree: the case of r and d. Psychological methods, 11, 4, 386-401.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../psych/help/describeBy.html">describeBy</a></code>, <code><a href="../../psych/help/describe.html">describe</a></code> and <code><a href="../../graphics/html/plot.default.html">plot</a></code> or <code><a href="../../psych/help/error.dots.html">error.dots</a></code> to display the results.  <code><a href="../../psych/help/scatterHist.html">scatterHist</a></code> to show d and MD for pairs of variables. (See in particular the use of <code><a href="../../psych/help/scatterHist.html">scatterHist</a></code> on psychTools::GERAS daa set.)
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+cohen.d(sat.act,"gender")
+#robust version
+round(d.robust(sat.act,"gender")$robust.d,2)
+
+#formula input is nicer
+cohen.d(sat.act ~ gender) #formula input version
+#if we want to report the group means, we grab the data in descriptive
+cd &lt;- cohen.d(sat.act ~ gender)
+cd.df &lt;- data.frame(d = cd$cohen.d[,"effect"], male = cd$descriptive$mean[1,cd$order[-1]],
+      female = cd$descriptive$mean[2, cd$order[-1]])
+#report cohen.d by another group
+cd &lt;- cohen.d.by(sat.act,"gender","education")
+cohen.d(SATV + SATQ ~ gender, data=sat.act) #just choose two variables
+summary(cd)  #summarize the output
+
+#now do it for subsets and then pool them
+cd1 &lt;- cohen.d(sat.act[1:300,],group= "gender")
+cd2 &lt;- cohen.d(sat.act[301:600,],group="gender")
+cd.pooled &lt;- cohenPooled(list(cd1,cd2))
+#graph them using error.dots
+error.dots(stats=cd.pooled)
+#or show them as two sets together using plot
+plot(cd1,sort=FALSE)
+plot(cd2,sort=FALSE,add=TRUE,col="red",lwd=2)
+
+
+
+#formula version combines these functions
+cd &lt;- cohen.d(sat.act ~ gender + education)  #find d by gender for each level of education
+summary(cd)
+
+#now show several examples of confidence intervals
+#one group (d vs 0)
+#consider the t from the cushny data set
+t2d( -4.0621,n1=10)
+d.ci(-1.284549,n1=10)  #the confidence interval of the effect of drug on sleep
+#two groups
+d.ci(.62,n=64)  #equal group size
+d.ci(.62,n1=35,n2=29) #unequal group size
+#several examples of d and t from data
+m2d(52.58,-70.65,49.9,47.5) #Terman and Miles 1936
+
+#graphically show the various overlap statistics
+curve(d2OVL2(x),0,3,xlab="d",ylab="",lty="dashed",
+       main="Four representations of effect size (d) ")
+curve(d2OVL(x),0,3,xlab="d",add=TRUE,)
+curve(d2CL(x),0,3,add=TRUE)
+curve(d2U3(x), add=TRUE,lty="dotted")
+text(1,.37,"OVL2")
+text(2,.37,"OVL")
+text(1,.88,"U3")
+text(2, .88,"CL")
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>psych</em> version 2.6.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

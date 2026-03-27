@@ -1,0 +1,328 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Composite Reliability using SEM</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for reliability-deprecated {semTools}"><tr><td>reliability-deprecated {semTools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Composite Reliability using SEM</h2>
+
+<h3>Description</h3>
+
+<p>Calculate composite reliability from estimated factor-model parameters
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+reliability(object, what = c("alpha", "omega", "omega2", "omega3", "ave"),
+            return.total = FALSE, dropSingle = TRUE, omit.factors = character(0),
+            omit.indicators = character(0), omit.imps = c("no.conv", "no.se"))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>A <a href="../../lavaan/help/lavaan-class.html">lavaan::lavaan</a> or <a href="../../lavaan.mi/help/lavaan.mi-class.html">lavaan.mi::lavaan.mi</a> object,
+expected to contain only exogenous common factors (i.e., a CFA model).</p>
+</td></tr>
+<tr valign="top"><td><code>what</code></td>
+<td>
+<p><code>character</code> vector naming any reliability indices to
+calculate. All are returned by default. When indicators are ordinal,
+both traditional <code>"alpha"</code> and Zumbo et al.'s (2007) so-called
+&quot;ordinal alpha&quot; (<code>"alpha.ord"</code>) are returned, though the latter is
+arguably of dubious value (Chalmers, 2018).</p>
+</td></tr>
+<tr valign="top"><td><code>return.total</code></td>
+<td>
+<p><code>logical</code> indicating whether to return a final
+column containing the reliability of a composite of all indicators (not
+listed in <code>omit.indicators</code>) of factors not listed in
+<code>omit.factors</code>.  Ignored in 1-factor models, and should only be set
+<code>TRUE</code> if all factors represent scale dimensions that could be
+meaningfully collapsed to a single composite (scale sum or scale mean).</p>
+</td></tr>
+<tr valign="top"><td><code>dropSingle</code></td>
+<td>
+<p><code>logical</code> indicating whether to exclude factors
+defined by a single indicator from the returned results. If <code>TRUE</code>
+(default), single indicators will still be included in the <code>total</code>
+column when <code>return.total = TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>omit.factors</code></td>
+<td>
+<p><code>character</code> vector naming any common factors
+modeled in <code>object</code> whose composite reliability is not of
+interest. For example, higher-order or method factors. Note that
+<code><a href="../../semTools/help/reliabilityL2.html">reliabilityL2()</a></code> should be used to calculate composite
+reliability of a higher-order factor.</p>
+</td></tr>
+<tr valign="top"><td><code>omit.indicators</code></td>
+<td>
+<p><code>character</code> vector naming any observed variables
+that should be ignored when calculating composite reliability. This can
+be useful, for example, to estimate reliability when an indicator is
+removed.</p>
+</td></tr>
+<tr valign="top"><td><code>omit.imps</code></td>
+<td>
+<p><code>character</code> vector specifying criteria for omitting
+imputations from pooled results.  Can include any of
+<code>c("no.conv", "no.se", "no.npd")</code>, the first 2 of which are the
+default setting, which excludes any imputations that did not
+converge or for which standard errors could not be computed.  The
+last option (<code>"no.npd"</code>) would exclude any imputations which
+yielded a nonpositive definite covariance matrix for observed or
+latent variables, which would include any &quot;improper solutions&quot; such
+as Heywood cases.  NPD solutions are not excluded by default because
+they are likely to occur due to sampling error, especially in small
+samples.  However, gross model misspecification could also cause
+NPD solutions, users can compare pooled results with and without
+this setting as a sensitivity analysis to see whether some
+imputations warrant further investigation.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The coefficient alpha (Cronbach, 1951) can be calculated by
+</p>
+<p style="text-align: center;"><i> &alpha; = \frac{k}{k - 1}&le;ft[ 1 - \frac{&sum;^{k}_{i = 1}
+&sigma;_{ii}}{&sum;^{k}_{i = 1} &sigma;_{ii} + 2&sum;_{i &lt; j} &sigma;_{ij}}
+\right],</i></p>
+
+<p>where <i>k</i> is the number of items in a factor, <i>&sigma;_{ii}</i> is the
+item <em>i</em> observed variances, <i>&sigma;_{ij}</i> is the observed
+covariance of items <em>i</em> and <em>j</em>.
+</p>
+<p>Several coefficients for factor-analysis reliability have been termed
+&quot;omega&quot;, which Cho (2021) argues is a misleading misnomer and argues for
+using <i>&rho;</i> to represent them all, differentiated by descriptive
+subscripts.  In our package, we number <i>&omega;</i> based on commonly
+applied calculations.  Bentler (1968) first introduced factor-analysis
+reliability for a unidimensional factor model with congeneric indicators.
+However, assuming there are no cross-loadings in a multidimensional CFA,
+this reliability coefficient can be calculated for each factor in the model.
+</p>
+<p style="text-align: center;"><i> &omega;_1 =\frac{&le;ft( &sum;^{k}_{i = 1} &lambda;_i \right)^{2}
+Var&le;ft( &psi; \right)}{&le;ft( &sum;^{k}_{i = 1} &lambda;_i \right)^{2}
+Var&le;ft( &psi; \right) + &sum;^{k}_{i = 1} &theta;_{ii} + 2&sum;_{i &lt; j}
+&theta;_{ij} }, </i></p>
+
+<p>where <i>&lambda;_i</i> is the factor loading of item <em>i</em>, <i>&psi;</i> is
+the factor variance, <i>&theta;_{ii}</i> is the variance of measurement errors
+of item <em>i</em>, and <i>&theta;_{ij}</i> is the covariance of measurement
+errors from item <em>i</em> and <em>j</em>. McDonald (1999) later referred to
+this <em>and other reliability coefficients</em> as &quot;omega&quot;, which is a source
+of confusion when reporting coefficients (Cho, 2021).
+</p>
+<p>The additional coefficients generalize the first formula by accounting for
+multidimenisionality (possibly with cross-loadings) and correlated errors.
+By setting <code>return.total=TRUE</code>, one can estimate reliability for a
+single composite calculated using all indicators in the multidimensional
+CFA (Bentler, 1972, 2009).  <code>"omega2"</code> is calculated by
+</p>
+<p style="text-align: center;"><i> &omega;_2 = \frac{&le;ft( &sum;^{k}_{i = 1} &lambda;_i \right)^{2}
+Var&le;ft( &psi; \right)}{\bold{1}^\prime \hat{&Sigma;} \bold{1}}, </i></p>
+
+<p>where <i>\hat{&Sigma;}</i> is the model-implied covariance matrix, and
+<i>\bold{1}</i> is the <i>k</i>-dimensional vector of 1. The first and the
+second coefficients omega will have the same value per factor in models with
+simple structure, but they differ when there are (e.g.) cross-loadings
+or method factors. The first coefficient omega can be viewed as the
+reliability controlling for the other factors (like <i>&eta;^2_{partial}</i> in
+ANOVA). The second coefficient omega can be viewed as the unconditional
+reliability (like <i>&eta;^2</i> in ANOVA).
+</p>
+<p>The <code>"omega3"</code> coefficient (McDonald, 1999), sometimes referred to as
+hierarchical omega, can be calculated by
+</p>
+<p style="text-align: center;"><i> &omega;_3 =\frac{&le;ft( &sum;^{k}_{i = 1} &lambda;_i \right)^{2}
+Var&le;ft( &psi; \right)}{\bold{1}^\prime &Sigma; \bold{1}}, </i></p>
+
+<p>where <i>&Sigma;</i> is the observed covariance matrix. If the model fits the
+data well, <i>&omega;_3</i> will be similar to <i>&omega;_2</i>. Note that if
+there is a directional effect in the model, all coefficients are calculated
+from total factor variances: <code>lavInspect(object, "cov.lv")</code>.
+</p>
+<p>In conclusion, <i>&omega;_1</i>, <i>&omega;_2</i>, and <i>&omega;_3</i> are
+different in the denominator. The denominator of the first formula assumes
+that a model is congeneric factor model where measurement errors are not
+correlated. The second formula accounts for correlated measurement errors.
+However, these two formulas assume that the model-implied covariance matrix
+explains item relationships perfectly. The residuals are subject to sampling
+error. The third formula use observed covariance matrix instead of
+model-implied covariance matrix to calculate the observed total variance.
+This formula is the most conservative method in calculating coefficient
+omega.
+</p>
+<p>The average variance extracted (AVE) can be calculated by
+</p>
+<p style="text-align: center;"><i> AVE = \frac{\bold{1}^\prime
+\textrm{diag}&le;ft(&Lambda;&Psi;&Lambda;^\prime\right)\bold{1}}{\bold{1}^\prime
+\textrm{diag}&le;ft(\hat{&Sigma;}\right) \bold{1}}, </i></p>
+
+<p>Note that this formula is modified from Fornell &amp; Larcker (1981) in the case
+that factor variances are not 1. The proposed formula from Fornell &amp; Larcker
+(1981) assumes that the factor variances are 1. Note that AVE will not be
+provided for factors consisting of items with dual loadings. AVE is the
+property of items but not the property of factors. AVE is calculated with
+polychoric correlations when ordinal indicators are used.
+</p>
+<p>Coefficient alpha is by definition applied by treating indicators as numeric
+(see Chalmers, 2018), which is consistent with the <code>alpha</code> function in
+the <code>psych</code> package. When indicators are ordinal, <code>reliability</code>
+additionally applies the standard alpha calculation to the polychoric
+correlation matrix to return Zumbo et al.'s (2007) &quot;ordinal alpha&quot;.
+</p>
+<p>Coefficient omega for categorical items is calculated using Green and Yang's
+(2009, formula 21) approach. Three types of coefficient omega indicate
+different methods to calculate item total variances. The original formula
+from Green and Yang is equivalent to <i>&omega;_3</i> in this function.
+Green and Yang did not propose a method for
+calculating reliability with a mixture of categorical and continuous
+indicators, and we are currently unaware of an appropriate method.
+Therefore, when <code>reliability</code> detects both categorical and continuous
+indicators of a factor, an error is returned. If the categorical indicators
+load on a different factor(s) than continuous indicators, then reliability
+will still be calculated separately for those factors, but
+<code>return.total</code> must be <code>FALSE</code> (unless <code>omit.factors</code> is used
+to isolate factors with indicators of the same type).
+</p>
+
+
+<h3>Value</h3>
+
+<p>Reliability values (coefficient alpha, coefficients omega, average
+variance extracted) of each factor in each group. If there are multiple
+factors, a <code>total</code> column can optionally be included.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Sunthud Pornprasertmanit (<a href="mailto:psunthud@gmail.com">psunthud@gmail.com</a>)
+</p>
+<p>Yves Rosseel (Ghent University; <a href="mailto:Yves.Rosseel@UGent.be">Yves.Rosseel@UGent.be</a>)
+</p>
+<p>Terrence D. Jorgensen (University of Amsterdam; <a href="mailto:TJorgensen314@gmail.com">TJorgensen314@gmail.com</a>)
+</p>
+
+
+<h3>References</h3>
+
+<p>Bentler, P. M. (1972). A lower-bound method for the dimension-free
+measurement of internal consistency. <em>Social Science Research, 1</em>(4),
+343&ndash;357. doi: <a href="https://doi.org/10.1016/0049-089X(72)90082-8">10.1016/0049-089X(72)90082-8</a>
+</p>
+<p>Bentler, P. M. (2009). Alpha, dimension-free, and model-based internal
+consistency reliability. <em>Psychometrika, 74</em>(1), 137&ndash;143.
+doi: <a href="https://doi.org/10.1007/s11336-008-9100-1">10.1007/s11336-008-9100-1</a>
+</p>
+<p>Chalmers, R. P. (2018). On misconceptions and the limited usefulness of
+ordinal alpha. <em>Educational and Psychological Measurement, 78</em>(6),
+1056&ndash;1071. doi: <a href="https://doi.org/10.1177/0013164417727036">10.1177/0013164417727036</a>
+</p>
+<p>Cho, E. (2021) Neither Cronbach’s alpha nor McDonald’s omega: A commentary
+on Sijtsma and Pfadt. <em>Psychometrika, 86</em>(4), 877&ndash;886.
+doi: <a href="https://doi.org/10.1007/s11336-021-09801-1">10.1007/s11336-021-09801-1</a>
+</p>
+<p>Cronbach, L. J. (1951). Coefficient alpha and the internal structure of
+tests. <em>Psychometrika, 16</em>(3), 297&ndash;334. doi: <a href="https://doi.org/10.1007/BF02310555">10.1007/BF02310555</a>
+</p>
+<p>Fornell, C., &amp; Larcker, D. F. (1981). Evaluating structural equation models
+with unobservable variables and measurement errors. <em>Journal of
+Marketing Research, 18</em>(1), 39&ndash;50. doi: <a href="https://doi.org/10.2307/3151312">10.2307/3151312</a>
+</p>
+<p>Green, S. B., &amp; Yang, Y. (2009). Reliability of summed item scores using
+structural equation modeling: An alternative to coefficient alpha.
+<em>Psychometrika, 74</em>(1), 155&ndash;167. doi: <a href="https://doi.org/10.1007/s11336-008-9099-3">10.1007/s11336-008-9099-3</a>
+</p>
+<p>McDonald, R. P. (1999). <em>Test theory: A unified treatment</em>. Mahwah, NJ:
+Erlbaum.
+</p>
+<p>Raykov, T. (2001). Estimation of congeneric scale reliability using
+covariance structure analysis with nonlinear constraints <em>British
+Journal of Mathematical and Statistical Psychology, 54</em>(2), 315&ndash;323.
+doi: <a href="https://doi.org/10.1348/000711001159582">10.1348/000711001159582</a>
+</p>
+<p>Zumbo, B. D., Gadermann, A. M., &amp; Zeisser, C. (2007). Ordinal versions of
+coefficients alpha and theta for Likert rating scales.
+<em>Journal of Modern Applied Statistical Methods, 6</em>(1), 21&ndash;29.
+doi: <a href="https://doi.org/10.22237/jmasm/1177992180">10.22237/jmasm/1177992180</a>
+</p>
+<p>Zumbo, B. D., &amp; Kroc, E. (2019). A measurement is a choice and Stevens’
+scales of measurement do not help make it: A response to Chalmers.
+<em>Educational and Psychological Measurement, 79</em>(6), 1184&ndash;1197.
+doi: <a href="https://doi.org/10.1177/0013164419844305">10.1177/0013164419844305</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../semTools/help/semTools-deprecated.html">semTools-deprecated()</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+data(HolzingerSwineford1939)
+HS9 &lt;- HolzingerSwineford1939[ , c("x7","x8","x9")]
+HSbinary &lt;- as.data.frame( lapply(HS9, cut, 2, labels=FALSE) )
+names(HSbinary) &lt;- c("y7","y8","y9")
+HS &lt;- cbind(HolzingerSwineford1939, HSbinary)
+
+HS.model &lt;- ' visual  =~ x1 + x2 + x3
+              textual =~ x4 + x5 + x6
+              speed   =~ y7 + y8 + y9 '
+
+fit &lt;- cfa(HS.model, data = HS, ordered = c("y7","y8","y9"), std.lv = TRUE)
+
+## works for factors with exclusively continuous OR categorical indicators
+reliability(fit)
+
+## reliability for ALL indicators only available when they are
+## all continuous or all categorical
+reliability(fit, omit.factors = "speed", return.total = TRUE)
+
+
+## loop over visual indicators to calculate alpha if one indicator is removed
+for (i in paste0("x", 1:3)) {
+  cat("Drop x", i, ":\n")
+  print(reliability(fit, omit.factors = c("textual","speed"),
+                    omit.indicators = i, what = "alpha"))
+}
+
+
+## works for multigroup models and for multilevel models (and both)
+data(Demo.twolevel)
+## assign clusters to arbitrary groups
+Demo.twolevel$g &lt;- ifelse(Demo.twolevel$cluster %% 2L, "type1", "type2")
+model2 &lt;- ' group: type1
+  level: within
+    fac =~ y1 + L2*y2 + L3*y3
+  level: between
+    fac =~ y1 + L2*y2 + L3*y3
+
+group: type2
+  level: within
+    fac =~ y1 + L2*y2 + L3*y3
+  level: between
+    fac =~ y1 + L2*y2 + L3*y3
+'
+fit2 &lt;- sem(model2, data = Demo.twolevel, cluster = "cluster", group = "g")
+reliability(fit2, what = c("alpha","omega3"))
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>semTools</em> version 0.5-8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

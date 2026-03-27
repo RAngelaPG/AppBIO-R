@@ -1,0 +1,191 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Supervised scatter matrix based on quantiles</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for scovq {ICS}"><tr><td>scovq {ICS}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Supervised scatter matrix based on quantiles
+</h2>
+
+<h3>Description</h3>
+
+<p>Function for a supervised scatter matrix that is the weighted
+covariance matrix of <code>x</code> with weights 1/(<code>q2-q1</code>) if <code>y</code> is between the
+lower (<code>q1</code>) and upper (<code>q2</code>) quantile and 0 otherwise (or vice versa). 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+scovq(x, y, q1 = 0, q2 = 0.5, pos = TRUE, type = 7, 
+      method = "unbiased", na.action = na.fail, 
+      check = TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+
+<p>numeric data matrix with at least two columns.
+</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+
+<p>numerical vector specifying the dependent variable.
+</p>
+</td></tr>
+<tr valign="top"><td><code>q1</code></td>
+<td>
+
+<p>percentage for lower quantile of <code>y</code>. With 0 &lt;= <code>q1</code> &lt; <code>q2</code>. See details.
+</p>
+</td></tr>
+<tr valign="top"><td><code>q2</code></td>
+<td>
+
+<p>percentage for upper quantile of <code>y</code>. With <code>q1</code> &lt; <code>q2</code> &lt;= 1. See details.
+</p>
+</td></tr>
+<tr valign="top"><td><code>pos</code></td>
+<td>
+
+<p>logical. If TRUE then the weights are 1/(<code>q2-q1</code>) if <code>y</code> is between the <code>q1</code>- and <code>q2</code>-
+quantiles and 0 othervise. If FALSE then the weights are 0 if <code>y</code>
+between <code>q1</code>- and <code>q2</code>-quantiles  and 1/(<code>1-q2+q1</code>) otherwise.
+</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+
+<p>passed on to function <code><a href="../../stats/html/quantile.html">quantile</a></code>. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+
+<p>passed on to function <code><a href="../../stats/html/cov.wt.html">cov.wt</a></code>. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+
+<p>a function which indicates what should happen when the data
+contain 'NA's.  Default is to fail.
+</p>
+</td></tr>
+<tr valign="top"><td><code>check</code></td>
+<td>
+
+<p>logical. Checks if the input should be checked for consistency. If not needed setting
+it to FALSE might save some time.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The weights for this supervised scatter matrix for <code>pos=TRUE</code> are
+<i>w(y) = I(q1-quantile &lt; y &lt; q2-quantile)/(q2-q1)</i>. Then <code>scovq</code> is calculated as
+</p>
+<p style="text-align: center;"><i>
+  scovq = &sum; w(y) (x-x_w_bar)'(x-x_w_bar).</i></p>
+  
+<p>where <i> x_w_bar = sum w(y)x</i>.
+</p>
+<p>To see how this function can be used in the context of supervised invariant coordinate selection
+see the example below.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a matrix.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Klaus Nordhausen</p>
+
+
+<h3>References</h3>
+
+<p><cite>Liski, E., Nordhausen, K. and Oja, H. (2014), Supervised invariant coordinate selection, <em>Statistics: A Journal of Theoretical and Applied Statistics</em>, <b>48</b>,  711&ndash;731. &lt;doi:10.1080/02331888.2013.800067&gt;.</cite>
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../stats/html/cov.wt.html">cov.wt</a></code> and <code><a href="../../ICS/help/ics.html">ics</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Creating some data
+
+# The number of explaining variables
+p &lt;- 10
+# The number of observations
+n &lt;- 400
+# The error variance
+sigma &lt;- 0.5
+# The explaining variables 
+X &lt;- matrix(rnorm(p*n),n,p)
+# The error term
+epsilon &lt;- rnorm(n, sd = sigma)
+# The response
+y &lt;- X[,1]^2 + X[,2]^2*epsilon
+
+
+# SICS with ics
+
+X.centered &lt;- sweep(X,2,colMeans(X),"-")
+SICS &lt;- ics(X.centered, S1=cov, S2=scovq, S2args=list(y=y, q1=0.25, 
+        q2=0.75, pos=FALSE), stdKurt=FALSE, stdB="Z")
+
+# Assuming it is known that k=2, then the two directions 
+# of interest are choosen as:
+
+k &lt;- 2
+KURTS &lt;- SICS@gKurt 
+KURTS.max &lt;- ifelse(KURTS &gt;= 1, KURTS, 1/KURTS)
+ordKM &lt;- order(KURTS.max, decreasing = TRUE)
+
+indKM &lt;- ordKM[1:k]
+
+# The two variables of interest
+Zk &lt;- ics.components(SICS)[,indKM]
+
+# The correspondings transformation matrix
+Bk &lt;- coef(SICS)[indKM,]
+
+# The corresponding projection matrix
+Pk &lt;- t(Bk) %*% solve(Bk %*% t(Bk)) %*% Bk
+
+# Visualization
+pairs(cbind(y,Zk))
+
+# checking the subspace difference
+
+# true projection
+
+B0 &lt;- rbind(rep(c(1,0),c(1,p-1)),rep(c(0,1,0),c(1,1,p-2)))
+P0 &lt;- t(B0) %*% solve(B0 %*% t(B0)) %*% B0
+
+# crone and crosby subspace distance measure, should be small
+k - sum(diag(P0 %*% Pk))
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ICS</em> version 1.4-2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Positive or Negative Semidefiniteness</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for isSemidefinite {miscTools}"><tr><td>isSemidefinite {miscTools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Positive or Negative Semidefiniteness</h2>
+
+<h3>Description</h3>
+
+<p>Check whether a symmetric matrix is positive or negative semidefinite.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+isSemidefinite( m, ... )
+
+## Default S3 method:
+isSemidefinite( m, ... )
+
+## S3 method for class 'matrix'
+isSemidefinite( m, positive = TRUE,
+   tol = 100 * .Machine$double.eps,
+   method = ifelse( nrow( m ) &lt; 13, "det", "eigen" ), ... )
+
+## S3 method for class 'list'
+isSemidefinite( m, ... )
+
+semidefiniteness( m, ... )
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>m</code></td>
+<td>
+<p>a symmetric quadratic matrix or a list containing
+symmetric quadratic matrices.</p>
+</td></tr>
+<tr valign="top"><td><code>positive</code></td>
+<td>
+<p>logical. Check for positive semidefiniteness
+(if <code>TRUE</code>, default)
+or for negative semidefiniteness (if <code>FALSE</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>tol</code></td>
+<td>
+<p>tolerance level (values between <code>-tol</code> and <code>tol</code>
+are considered to be zero).</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>method to test for semidefiniteness, either
+checking the signs of the principal minors
+(if <code>"det"</code>, default for matrices with up to 12 rows/columns)
+or checking the signs of the eigenvalues
+(if <code>"eigen"</code>, default for matrices with 13 or more rows/columns).</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>further arguments of <code>isSemidefinite.list</code>
+are passed to <code>isSemidefinite.matrix</code>;.
+further arguments of <code>semidefiniteness</code>
+are passed to <code>isSemidefinite</code>;
+further arguments of other functions are currently ignored.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Function <code>semidefiniteness()</code> passes all its arguments
+to <code>isSemidefinite()</code>.
+It is only kept for backward-compatibility
+and may be removed in the future.
+</p>
+<p>If argument <code>positive</code> is set to <code>FALSE</code>,
+<code>isSemidefinite()</code> checks for negative semidefiniteness
+by checking for positive semidefiniteness
+of the negative of argument <code>m</code>, i.e. <code>-m</code>.
+</p>
+<p>If method <code>"det"</code> is used
+(default for matrices with up to 12 rows/columns),
+<code>isSemidefinite()</code> checks whether all principal minors
+(not only the leading principal minors)
+of the matrix <code>m</code>
+(or of the matrix <code>-m</code> if argument <code>positive</code> is <code>FALSE</code>)
+are larger than <code>-tol</code>.
+Due to rounding errors,
+which are unavoidable on digital computers,
+the calculated determinants of singular (sub-)matrices
+(which should theoretically be zero)
+can considerably deviate from zero.
+In order to reduce the probability of incorrect results
+due to rounding errors,
+<code>isSemidefinite()</code> does not calculate the determinants
+of (sub-)matrices with reciprocal condition numbers
+smaller than argument <code>tol</code>
+but sets the corresponding principal minors to (exactly) zero.
+The number of principal minors of an <i>N x N</i> matrix is
+<i>&sum;_{k=1}^N ( N</i> choose <i> k )</i>,
+which gets very large for large matrices.
+Therefore, it is not recommended to use method <code>"det"</code>
+for matrices with, say, more than 12 rows/columns.
+</p>
+<p>If method <code>"eigen"</code>
+(default for matrices with 13 or more rows/columns) is used,
+<code>isSemidefinite()</code> checks whether all eigenvalues
+of the matrix <code>m</code>
+(or of the matrix <code>-m</code> if argument <code>positive</code> is <code>FALSE</code>)
+are larger than <code>-tol</code>.
+In case of a singular or nearly singular matrix,
+some eigenvalues
+that theoretically should be zero
+can considerably deviate from zero
+due to rounding errors,
+which are unavoidable on digital computers.
+<code>isSemidefinite()</code> uses the following procedure
+to reduce the probability of incorrectly returning <code>FALSE</code>
+due to rounding errors in the calculation of eigenvalues
+of singular or nearly singular matrices:
+if the reciprocal condition number of an <i>NxN</i> matrix
+is smaller than argument <code>tol</code>
+and not all of the eigenvalues of this matrix are larger than <code>-tol</code>,
+<code>isSemidefinite()</code> checks
+whether all <i>( N</i> choose <i> (N-k) )</i>
+<i>(N-k) x (N-k)</i> submatrices
+are positive semidefinite,
+where <i>k</i> with <i>0 &lt; k &lt; N</i> is the number of eigenvalues
+in the interval <code>-tol</code> and <code>tol</code>.
+If necessary, this procedure is done recursively.
+</p>
+<p>Please note that a matrix can be
+neither positive semidefinite nor negative semidefinite.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>isSemidefinite()</code> and <code>semidefiniteness()</code>
+return a locigal value (if argument <code>m</code> is a matrix)
+or a logical vector (if argument <code>m</code> is a list)
+indicating whether the matrix (or each of the matrices)
+is positive/negative (depending on argument <code>positive</code>)
+semidefinite.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Arne Henningsen</p>
+
+
+<h3>References</h3>
+
+<p>Chiang, A.C. (1984):
+<em>Fundamental Methods of Mathematical Economics</em>,
+3rd ed., McGraw-Hill.
+</p>
+<p>Gantmacher, F.R. (1959):
+<em>The Theory of Matrices</em>,
+Chelsea Publishing.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+   # a positive semidefinite matrix
+   isSemidefinite( matrix( 1, 3, 3 ))
+
+   # a negative semidefinite matrix
+   isSemidefinite( matrix(-1, 3, 3 ), positive = FALSE )
+
+   # a matrix that is positive and negative semidefinite
+   isSemidefinite( matrix( 0, 3, 3 ))
+   isSemidefinite( matrix( 0, 3, 3 ), positive = FALSE )
+
+   # a matrix that is neither positive nor negative semidefinite
+   isSemidefinite( symMatrix( 1:6 ) )
+   isSemidefinite( symMatrix( 1:6 ), positive = FALSE )
+   
+   # checking a list of matrices
+   ml &lt;- list( matrix( 1, 3, 3 ), matrix(-1, 3, 3 ), matrix( 0, 3, 3 ) )
+   isSemidefinite( ml )
+   isSemidefinite( ml, positive = FALSE )
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>miscTools</em> version 0.6-30 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

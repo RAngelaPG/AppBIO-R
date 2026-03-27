@@ -1,0 +1,228 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Median Constrained Bucket Order (MCBO)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mcbo {ConsRank}"><tr><td>mcbo {ConsRank}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Median Constrained Bucket Order (MCBO)</h2>
+
+<h3>Description</h3>
+
+<p>Find the median ranking constrained to exactly b buckets (tied groups) according 
+to Kemeny's axiomatic approach. This implements the algorithms described in 
+D'Ambrosio et al. (2019) for rank aggregation with fixed bucket constraints.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+mcbo(
+  X,
+  nbuckets,
+  wk = NULL,
+  ps = TRUE,
+  algorithm = "BB",
+  itermax = 10,
+  np = 10,
+  gl = 100,
+  ff = 0.4,
+  cr = 0.8,
+  use_cpp = TRUE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>X</code></td>
+<td>
+<p>A N by M data matrix, in which there are N judges and M objects to be judged. 
+Each row is a ranking of the objects which are represented by the columns. 
+If X contains the rankings observed only once, the argument wk can be used</p>
+</td></tr>
+<tr valign="top"><td><code>nbuckets</code></td>
+<td>
+<p>Integer. The number of buckets (tied groups) the consensus ranking 
+must contain. Must be between 2 and M-1 (where M is the number of objects)</p>
+</td></tr>
+<tr valign="top"><td><code>wk</code></td>
+<td>
+<p>Optional: the frequency of each ranking in the data</p>
+</td></tr>
+<tr valign="top"><td><code>ps</code></td>
+<td>
+<p>Logical. If TRUE, displays progress information on screen. Default TRUE</p>
+</td></tr>
+<tr valign="top"><td><code>algorithm</code></td>
+<td>
+<p>Character string specifying the algorithm to use. One of:
+</p>
+
+<ul>
+<li><p> &quot;BB&quot; - Branch-and-Bound (exact, default). Best for M &lt;= 15
+</p>
+</li>
+<li><p> &quot;quick&quot; - Quick algorithm (heuristic). Best for 15 &lt; M &lt;= 50
+</p>
+</li>
+<li><p> &quot;decor&quot; - Differential Evolution (metaheuristic). Best for M &gt; 50
+</p>
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>itermax</code></td>
+<td>
+<p>Integer. Maximum number of iterations for &quot;quick&quot; and &quot;decor&quot; algorithms. 
+Default 10</p>
+</td></tr>
+<tr valign="top"><td><code>np</code></td>
+<td>
+<p>Integer. Number of population individuals for &quot;decor&quot; algorithm. Default 10</p>
+</td></tr>
+<tr valign="top"><td><code>gl</code></td>
+<td>
+<p>Integer. Generations limit for &quot;decor&quot;: maximum number of consecutive 
+generations without improvement. Default 100</p>
+</td></tr>
+<tr valign="top"><td><code>ff</code></td>
+<td>
+<p>Numeric. Scaling rate for mutation in &quot;decor&quot;. Must be in [0,1]. Default 0.4</p>
+</td></tr>
+<tr valign="top"><td><code>cr</code></td>
+<td>
+<p>Numeric. Crossover range for &quot;decor&quot;. Must be in [0,1]. Default 0.8</p>
+</td></tr>
+<tr valign="top"><td><code>use_cpp</code></td>
+<td>
+<p>Logical. If TRUE (default), use optimized C++ implementations 
+for core functions (combinpmatr, scorematrix, PenaltyBB2, etc.)</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The median constrained bucket order problem finds the ranking that minimizes the 
+sum of Kemeny distances to the input rankings, subject to the constraint that 
+the solution must have exactly <code>nbuckets</code> groups of tied items.
+</p>
+<p>This is useful in applications where the output must conform to predetermined 
+categories, such as:
+</p>
+
+<ul>
+<li><p> Wine quality classifications (e.g., 5 fixed tiers)
+</p>
+</li>
+<li><p> Medical triage systems (fixed severity codes)
+</p>
+</li>
+<li><p> Educational grading (fixed letter grades: A, B, C, D, F)
+</p>
+</li></ul>
+
+<p>The search space is restricted to <i>Z^{n/b}</i>, which contains
+</p>
+<p style="text-align: center;"><i>&sum;_{b=1}^{n} b! S(n,b)</i></p>
+
+<p>rankings, where S(n,b) is the Stirling number of the second kind.
+</p>
+<p><strong>Algorithm Selection Guidelines:</strong>
+</p>
+
+<ul>
+<li> <p><strong>BB</strong>: Exact solution, guaranteed optimal. Use for M &lt;= 15 items
+</p>
+</li>
+<li> <p><strong>quick</strong>: Fast heuristic, near-optimal. Use for 15 &lt; M &lt;= 50 items
+</p>
+</li>
+<li> <p><strong>decor</strong>: Best for large problems. Use for M &gt; 50 items
+</p>
+</li></ul>
+
+<p>For stochastic algorithms (quick, decor), consider running multiple times 
+(controlled by <code>itermax</code>) to avoid local optima.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list containing the following components:
+</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: left;">
+  Consensus </td><td style="text-align: left;"> </td><td style="text-align: left;"> The consensus ranking with exactly nbuckets buckets</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+  Tau </td><td style="text-align: left;"> </td><td style="text-align: left;"> Averaged TauX rank correlation coefficient</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+  Eltime </td><td style="text-align: left;"> </td><td style="text-align: left;"> Elapsed time in seconds
+</td>
+</tr>
+
+</table>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Antonio D'Ambrosio <a href="mailto:antdambr@unina.it">antdambr@unina.it</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>D'Ambrosio, A., Iorio, C., Staiano, M., and Siciliano, R. (2019). 
+Median constrained bucket order rank aggregation. 
+Computational Statistics, 34(2), 787-802. 
+doi: <a href="https://doi.org/10.1007/s00180-018-0858-z">10.1007/s00180-018-0858-z</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../ConsRank/help/consrank.html">consrank</a></code> for unconstrained consensus ranking
+</p>
+<p><code><a href="../../ConsRank/help/combinpmatr.html">combinpmatr</a></code> for computing the combined input matrix
+</p>
+<p><code><a href="../../ConsRank/help/scorematrix.html">scorematrix</a></code> for computing score matrices
+</p>
+<p><code><a href="../../ConsRank/help/tau_x.html">tau_x</a></code> for TauX correlation coefficient
+</p>
+<p><code><a href="../../ConsRank/help/kemenyd.html">kemenyd</a></code> for Kemeny distance
+</p>
+<p><code><a href="../../ConsRank/help/stirling2.html">stirling2</a></code> for Stirling numbers (bucket combinatorics)
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+# Simple example with 98 judges ranking 5 items into 3 buckets
+data(Idea)
+RevIdea &lt;- 6 - Idea  # Reverse ranking
+CR &lt;- mcbo(RevIdea, nbuckets = 3, algorithm = "BB")
+print(CR$Consensus)
+print(CR$Tau)
+
+# Large dataset with Quick algorithm
+data(EMD)
+CR_quick &lt;- mcbo(EMD[,1:15], nbuckets = 5, wk = EMD[,16], 
+                 algorithm = "quick", itermax = 20)
+
+## End(Not run)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ConsRank</em> version 3.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

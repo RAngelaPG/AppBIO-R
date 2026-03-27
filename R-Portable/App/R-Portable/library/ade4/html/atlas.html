@@ -1,0 +1,114 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Small Ecological Dataset</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for atlas {ade4}"><tr><td>atlas {ade4}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Small Ecological Dataset</h2>
+
+<h3>Description</h3>
+
+<p><code>atlas</code> is a list containing three kinds of information about 23 regions (The French Alps) : <br />
+geographical coordinates, meteorology and bird presences.</p>
+
+
+<h3>Usage</h3>
+
+<pre>data(atlas)</pre>
+
+
+<h3>Format</h3>
+
+<p><code>atlas</code> is a list of 9 components:
+</p>
+
+<dl>
+<dt>area</dt><dd><p>is a convex hull of 23 geographical regions.</p>
+</dd>
+<dt>xy</dt><dd><p>are the coordinates of the region centers and altitude (in meters).</p>
+</dd>
+<dt>names.district</dt><dd><p>is a vector of region names.</p>
+</dd>
+<dt>meteo</dt><dd><p>is a data frame with 7 variables: min and max temperature in january; 
+min and max temperature in july; january, july and total rainfalls.</p>
+</dd>
+<dt>birds</dt><dd><p>is a data frame with 15 variables (species).</p>
+</dd>
+<dt>contour</dt><dd><p>is a data frame with 4 variables (x1, y1, x2, y2) for the contour display of The French Alps.</p>
+</dd>
+<dt>alti</dt><dd><p>is a data frame with 3 variables altitude in percentage [0,800], ]800,1500] and ]1500,5000].</p>
+</dd>
+<dt>Spatial</dt><dd><p>is the map of the 23 regions of The French Alps (an object of the class <code>SpatialPolygons</code> of <code>sp</code>).</p>
+</dd>
+<dt>Spatial.contour</dt><dd><p>is the contour of the map of the 23 regions of the French Alps (an object of the class <code>SpatialPolygons</code> of <code>sp</code>).</p>
+</dd>
+</dl>
+
+
+<h3>Source</h3>
+
+<p>Extract from: <br />
+Lebreton, Ph. (1977) Les oiseaux nicheurs rhonalpins. <em>Atlas ornithologique Rhone-Alpes</em>.
+Centre Ornithologique Rhone-Alpes, Universite Lyon 1, 69621 Villeurbanne. 
+Direction de la Protection de la Nature, Ministere de la Qualite de la Vie. 1&ndash;354.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(atlas)
+if(adegraphicsLoaded()) {
+  if(requireNamespace("sp", quietly = TRUE)) {
+    g11 &lt;- s.Spatial(atlas$Spatial, pSp.col = "white", plot = FALSE)
+    g12 &lt;- s.label(atlas$area[, 2:3], plabels.cex = 0, plot = FALSE)
+    g1 &lt;- superpose(g11, g12, plot = FALSE)
+    g2 &lt;- s.label(atlas$xy, lab = atlas$names.district, Sp = atlas$Spatial, 
+      pgrid.dra = FALSE, pSp.col = "white", plot = FALSE)
+    obj3 &lt;- sp::SpatialPolygonsDataFrame(Sr = atlas$Spatial, data = atlas$meteo)
+    g3 &lt;- s.Spatial(obj3[, 1], nclass = 12, psub = list(position = "topleft", 
+      text = "Temp Mini January", cex = 2), plot = FALSE)
+    g4 &lt;- s.corcircle((dudi.pca(atlas$meteo, scann = FALSE)$co), plabels.cex = 1, plot = FALSE)
+    G1 &lt;- ADEgS(list(g1, g2, g3, g4), layout = c(2, 2))
+  
+    obj5 &lt;- sp::SpatialPolygonsDataFrame(Sr = atlas$Spatial, 
+      data = dudi.pca(atlas$meteo, scann = FALSE)$li)
+    g5 &lt;- s.Spatial(obj5[, 1], nclass = 12, psub = list(position = "topleft", 
+      text = "Principal Component Analysis analysis", cex = 1.5), plot = FALSE)
+    coa1 &lt;- dudi.coa(atlas$birds, scann = FALSE, nf = 1)
+    obj6 &lt;- sp::SpatialPolygonsDataFrame(Sr = atlas$Spatial, data = coa1$li)
+    g6 &lt;- s.Spatial(obj6[, 1], nclass = 12, psub = list(position = "topleft", 
+      text = "Correspondence analysis", cex = 1.5), plot = FALSE)
+    g7 &lt;- s.value(atlas$xy, coa1$li$Axis1, Sp = atlas$Spatial.contour, ppoints.cex = 2, 
+      porigin.include = FALSE, paxes.draw = FALSE, pSp.col = "white", plot = FALSE)
+    g8 &lt;- triangle.label(atlas$alti, plabels.cex = 0, plot = FALSE)
+    G2 &lt;- ADEgS(list(g5, g6, g7, g8), layout = c(2, 2))
+  
+  }
+} else {
+  op &lt;- par(no.readonly = TRUE) 
+  par(mfrow = c(2, 2))
+  area.plot(atlas$area, cpoin = 1.5)
+  area.plot(atlas$area, lab = atlas$names.district, clab = 1)
+  x &lt;- atlas$meteo$mini.jan
+  
+  names(x) &lt;- row.names(atlas$meteo)
+  area.plot(atlas$area, val = x, ncl = 12, sub = "Temp Mini January", csub = 2, cleg = 1)
+  s.corcircle((dudi.pca(atlas$meteo, scann = FALSE)$co), clab = 1)
+  
+  area.plot(atlas$area, val = dudi.pca(atlas$meteo,scann=FALSE)$li[, 1], ncl = 12, 
+    sub = "Principal Component Analysis analysis", csub = 1.5, cleg = 1)
+  birds.coa &lt;- dudi.coa(atlas$birds, sca = FALSE, nf = 1)
+  x &lt;- birds.coa$li$Axis1
+  area.plot(atlas$area, val = x, ncl = 12, sub = "Correspondence analysis", csub = 1.5, cleg = 1)
+  
+  s.value(atlas$xy, x, contour = atlas$contour, csi = 2, incl = FALSE, addax = FALSE)
+  triangle.plot(atlas$alti)
+  par(op)
+  par(mfrow = c(1, 1))}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ade4</em> version 1.7-23 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

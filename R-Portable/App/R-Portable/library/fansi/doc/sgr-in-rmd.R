@@ -32,9 +32,11 @@ old.hooks <- c(
 ) )
 
 ## ----error=TRUE---------------------------------------------------------------
+try({
 message(paste0(sgr.string, collapse="\n"))
 warning(paste0(c("", sgr.string), collapse="\n"))
 stop(paste0(c("", sgr.string), collapse="\n"))
+})
 
 ## -----------------------------------------------------------------------------
 do.call(knitr::knit_hooks$set, old.hooks)

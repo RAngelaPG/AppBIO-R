@@ -1,0 +1,341 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: BFGS, conjugate gradient, SANN and Nelder-Mead Maximization</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for maxBFGS {maxLik}"><tr><td>maxBFGS {maxLik}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>BFGS, conjugate gradient, SANN and Nelder-Mead Maximization</h2>
+
+<h3>Description</h3>
+
+<p>These functions are wrappers for <code><a href="../../stats/html/optim.html">optim</a></code>, adding
+constrained optimization and fixed parameters.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+maxBFGS(fn, grad=NULL, hess=NULL, start, fixed=NULL,
+   control=NULL,
+   constraints=NULL,
+   finalHessian=TRUE,
+   parscale=rep(1, length=length(start)),
+   ... )
+
+maxCG(fn, grad=NULL, hess=NULL, start, fixed=NULL,
+   control=NULL,
+   constraints=NULL,
+   finalHessian=TRUE,
+   parscale=rep(1, length=length(start)), ...)
+
+maxSANN(fn, grad=NULL, hess=NULL, start, fixed=NULL,
+   control=NULL,
+   constraints=NULL,
+   finalHessian=TRUE,
+   parscale=rep(1, length=length(start)),
+   ... )
+
+maxNM(fn, grad=NULL, hess=NULL, start, fixed=NULL,
+   control=NULL,
+   constraints=NULL,
+   finalHessian=TRUE,
+   parscale=rep(1, length=length(start)),
+   ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>fn</code></td>
+<td>
+<p>function to be maximised.  Must have the parameter vector as
+the first argument.  In order to use numeric gradient
+and BHHH method, <code>fn</code> must return a vector of
+observation-specific likelihood values.  Those are summed internally where
+necessary.  If the parameters are out of range, <code>fn</code> should
+return <code>NA</code>.  See details for constant parameters.</p>
+</td></tr>
+<tr valign="top"><td><code>grad</code></td>
+<td>
+<p>gradient of <code>fn</code>.  Must have the parameter vector as
+the first argument.  If <code>NULL</code>, numeric
+gradient is used (<code>maxNM</code> and <code>maxSANN</code> do not use
+gradient).  
+Gradient may return
+a matrix, where columns correspond to the parameters and rows to the
+observations (useful for maxBHHH).  The columns are summed internally.</p>
+</td></tr>
+<tr valign="top"><td><code>hess</code></td>
+<td>
+<p>Hessian of <code>fn</code>.  Not used by any of these methods, included for
+compatibility with <code><a href="../../maxLik/help/maxNR.html">maxNR</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>start</code></td>
+<td>
+<p>initial values for the parameters.  If start values
+are named, those names are also carried over to the results.</p>
+</td></tr>
+<tr valign="top"><td><code>fixed</code></td>
+<td>
+<p>parameters to be treated as constants at their
+<code>start</code> values.  If present, it is treated as an index vector of
+<code>start</code> parameters.</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+<p>list of control parameters or a &lsquo;MaxControl&rsquo;
+object.  If it is a list, the default values are used for the
+parameters that are left unspecified by the user.
+These functions accept the following parameters:
+</p>
+
+<dl>
+<dt>reltol</dt><dd><p>sqrt(.Machine$double.eps), stopping
+condition.  Relative convergence
+tolerance: the algorithm stops if the relative improvement
+between iterations is less than &lsquo;reltol&rsquo;.  Note: for
+compatibility reason &lsquo;tol&rsquo; is equivalent to
+&lsquo;reltol&rsquo; for optim-based optimizers.
+</p>
+</dd>
+<dt>iterlim</dt><dd><p>integer, maximum number of iterations.
+Default values are 200 for &lsquo;BFGS&rsquo;, 500
+(&lsquo;CG&rsquo; and &lsquo;NM&rsquo;), and 10000 (&lsquo;SANN&rsquo;).
+Note that
+&lsquo;iteration&rsquo; may mean different things for different
+optimizers.
+</p>
+</dd>
+<dt>printLevel</dt><dd><p>integer, larger number prints more working
+information.  Default 0, no information.
+</p>
+</dd>
+<dt>nm_alpha</dt><dd><p>1, Nelder-Mead simplex method reflection
+coefficient (see Nelder &amp; Mead, 1965)
+</p>
+</dd>
+<dt>nm_beta</dt><dd><p>0.5, Nelder-Mead contraction coefficient</p>
+</dd>
+<dt>nm_gamma</dt><dd><p>2, Nelder-Mead expansion coefficient</p>
+</dd>
+</dl>
+
+<dl>
+<dt>sann_cand</dt><dd><p><code>NULL</code> or a function for <code>"SANN"</code> algorithm
+to generate a new candidate point;
+if <code>NULL</code>, Gaussian Markov kernel is used
+(see argument <code>gr</code> of <code><a href="../../stats/html/optim.html">optim</a></code>).</p>
+</dd>
+<dt>sann_temp</dt><dd><p>10, starting temperature
+for the &ldquo;SANN&rdquo; cooling schedule.  See <code><a href="../../stats/html/optim.html">optim</a></code>.</p>
+</dd>
+<dt>sann_tmax</dt><dd><p>10, number of function evaluations at each temperature for
+the &ldquo;SANN&rdquo; optimizer.  See <code><a href="../../stats/html/optim.html">optim</a></code>.</p>
+</dd>
+<dt>sann_randomSeed</dt><dd><p>123, integer to seed random numbers to
+ensure replicability of &ldquo;SANN&rdquo; optimization and preserve
+<code>R</code> random numbers.  Use
+options like <code>sann_randomSeed=Sys.time()</code> or
+<code>sann_randomSeed=sample(100,1)</code> if you want stochastic
+results.
+</p>
+</dd>
+</dl>
+
+</td></tr>
+<tr valign="top"><td><code>constraints</code></td>
+<td>
+<p>either <code>NULL</code> for unconstrained optimization
+or a list with two components.  The components may be either
+<code>eqA</code> and <code>eqB</code> for equality-constrained optimization
+<i>A %*% theta + B = 0</i>; or <code>ineqA</code> and
+<code>ineqB</code> for inequality constraints <i>A
+      %*% theta + B &gt; 0</i>.  More
+than one
+row in <code>ineqA</code> and <code>ineqB</code> corresponds to more than
+one linear constraint, in that case all these must be zero
+(equality) or positive (inequality constraints).
+The equality-constrained problem is forwarded
+to <code><a href="../../maxLik/help/sumt.html">sumt</a></code>, the inequality-constrained case to
+<code><a href="../../maxLik/help/constrOptim2.html">constrOptim2</a></code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>finalHessian</code></td>
+<td>
+<p>how (and if) to calculate the final Hessian.  Either
+<code>FALSE</code> (not calculate), <code>TRUE</code> (use analytic/numeric
+Hessian) or <code>"bhhh"</code>/<code>"BHHH"</code> for information equality
+approach.  The latter approach is only suitable for maximizing
+log-likelihood function.  It requires the gradient/log-likelihood to
+be supplied by individual observations, see <code><a href="../../maxLik/help/maxBHHH.html">maxBHHH</a></code> for
+details. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>parscale</code></td>
+<td>
+<p>A vector of scaling values for the parameters.
+Optimization is performed on 'par/parscale' and these should
+be comparable in the sense that a unit change in any element
+produces about a unit change in the scaled value. (see
+<code><a href="../../stats/html/optim.html">optim</a></code>)</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>further arguments for <code>fn</code> and <code>grad</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>In order to provide a consistent interface, all these functions also
+accept arguments that other optimizers use.  For instance,
+<code>maxNM</code> accepts the &lsquo;grad&rsquo; argument despite being a
+gradient-less method.
+</p>
+<p>The &lsquo;state&rsquo; (or &lsquo;seed&rsquo;) of R's random number generator
+is saved at the beginning of the <code>maxSANN</code> function
+and restored at the end of this function
+so this function does <em>not</em> affect the generation of random numbers
+although the random seed is set to argument <code>random.seed</code>
+and the &lsquo;SANN&rsquo; algorithm uses random numbers.
+</p>
+
+
+<h3>Value</h3>
+
+<p>object of class &quot;maxim&quot;.  Data can be extracted through the following
+functions: 
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>maxValue</code></td>
+<td>
+<p><code>fn</code> value at maximum (the last calculated value
+if not converged.)</p>
+</td></tr>
+<tr valign="top"><td><code>coef</code></td>
+<td>
+<p>estimated parameter value.</p>
+</td></tr>
+<tr valign="top"><td><code>gradient</code></td>
+<td>
+<p>vector, last calculated gradient value.  Should be
+close to 0 in case of normal convergence.</p>
+</td></tr>
+<tr valign="top"><td><code>estfun</code></td>
+<td>
+<p>matrix of gradients at parameter value <code>estimate</code>
+evaluated at each observation (only if <code>grad</code> returns a matrix
+or <code>grad</code> is not specified and <code>fn</code> returns a vector).</p>
+</td></tr>
+<tr valign="top"><td><code>hessian</code></td>
+<td>
+<p>Hessian at the maximum (the last calculated value if
+not converged).</p>
+</td></tr>
+<tr valign="top"><td><code>returnCode</code></td>
+<td>
+<p>integer. Success code, 0 is success (see
+<code><a href="../../stats/html/optim.html">optim</a></code>).</p>
+</td></tr>
+<tr valign="top"><td><code>returnMessage</code></td>
+<td>
+<p> a short message, describing the return code.</p>
+</td></tr>
+<tr valign="top"><td><code>activePar</code></td>
+<td>
+<p>logical vector, which parameters are optimized over.
+Contains only <code>TRUE</code>-s if no parameters are fixed.</p>
+</td></tr>
+<tr valign="top"><td><code>nIter</code></td>
+<td>
+<p>number of iterations.  Two-element integer vector giving the number of
+calls to <code>fn</code> and <code>gr</code>, respectively.
+This excludes those calls needed to
+compute the Hessian, if requested, and any calls to <code>fn</code> to compute a
+finite-difference approximation to the gradient.</p>
+</td></tr>
+<tr valign="top"><td><code>maximType</code></td>
+<td>
+<p>character string, type of maximization.</p>
+</td></tr>
+<tr valign="top"><td><code>maxControl</code></td>
+<td>
+<p>the optimization control parameters in the form of a
+<code><a href="../../maxLik/help/MaxControl-class.html">MaxControl</a></code> object.</p>
+</td></tr>
+</table>
+<p>The following components can only be extracted directly (with <code>\$</code>):
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>constraints</code></td>
+<td>
+<p>A list, describing the constrained optimization
+(<code>NULL</code> if unconstrained).  Includes the following components:
+</p>
+
+<dl>
+<dt>type</dt><dd><p>type of constrained optimization</p>
+</dd>
+<dt>outer.iterations</dt><dd><p>number of iterations in the constraints step</p>
+</dd>
+<dt>barrier.value</dt><dd><p>value of the barrier function</p>
+</dd>
+</dl>
+
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Ott Toomet, Arne Henningsen</p>
+
+
+<h3>References</h3>
+
+<p>Nelder, J. A. &amp; Mead, R. A, Simplex Method for Function
+Minimization, The Computer Journal, 1965, 7, 308-313
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../stats/html/optim.html">optim</a></code>, <code><a href="../../stats/html/nlm.html">nlm</a></code>, <code><a href="../../maxLik/help/maxNR.html">maxNR</a></code>,
+<code><a href="../../maxLik/help/maxBHHH.html">maxBHHH</a></code>, <code><a href="../../maxLik/help/maxBFGSR.html">maxBFGSR</a></code> for a
+<code><a href="../../maxLik/help/maxNR.html">maxNR</a></code>-based BFGS implementation.</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Maximum Likelihood estimation of Poissonian distribution
+n &lt;- rpois(100, 3)
+loglik &lt;- function(l) n*log(l) - l - lfactorial(n)
+# we use numeric gradient
+summary(maxBFGS(loglik, start=1))
+# you would probably prefer mean(n) instead of that ;-)
+# Note also that maxLik is better suited for Maximum Likelihood
+###
+### Now an example of constrained optimization
+###
+f &lt;- function(theta) {
+  x &lt;- theta[1]
+  y &lt;- theta[2]
+  exp(-(x^2 + y^2))
+  ## you may want to use exp(- theta %*% theta) instead
+}
+## use constraints: x + y &gt;= 1
+A &lt;- matrix(c(1, 1), 1, 2)
+B &lt;- -1
+res &lt;- maxNM(f, start=c(1,1), constraints=list(ineqA=A, ineqB=B),
+control=list(printLevel=1))
+print(summary(res))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>maxLik</em> version 1.5-2.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

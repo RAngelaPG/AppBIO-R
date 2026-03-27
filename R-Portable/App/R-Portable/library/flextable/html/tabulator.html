@@ -1,0 +1,219 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Tabulation of aggregations</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for tabulator {flextable}"><tr><td>tabulator {flextable}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Tabulation of aggregations</h2>
+
+<h3>Description</h3>
+
+<p>It tabulates a data.frame representing an aggregation
+which is then transformed as a flextable with
+<a href="../../flextable/help/as_flextable.tabulator.html">as_flextable</a>. The function
+allows to define any display with the syntax of flextable in
+a table whose layout is showing dimensions of the aggregation
+across rows and columns.
+
+<img src="https://www.ardata.fr/img/flextable-imgs/ft-0-7-2-001-square.png" alt="tabulator illustration" style="width:100%;">
+
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+tabulator(
+  x,
+  rows,
+  columns,
+  datasup_first = NULL,
+  datasup_last = NULL,
+  hidden_data = NULL,
+  row_compose = list(),
+  ...
+)
+
+## S3 method for class 'tabulator'
+summary(object, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>an aggregated data.frame</p>
+</td></tr>
+<tr valign="top"><td><code>rows</code></td>
+<td>
+<p>column names to use in rows dimensions</p>
+</td></tr>
+<tr valign="top"><td><code>columns</code></td>
+<td>
+<p>column names to use in columns dimensions</p>
+</td></tr>
+<tr valign="top"><td><code>datasup_first</code></td>
+<td>
+<p>additional data that will be merged with
+table and placed after the columns presenting
+the row dimensions.</p>
+</td></tr>
+<tr valign="top"><td><code>datasup_last</code></td>
+<td>
+<p>additional data that will be merged with
+table and placed at the end of the table.</p>
+</td></tr>
+<tr valign="top"><td><code>hidden_data</code></td>
+<td>
+<p>additional data that will be merged with
+table, the columns are not presented but can be used
+with <code><a href="../../flextable/help/compose.html">compose()</a></code> or <code><a href="../../flextable/help/mk_par.html">mk_par()</a></code> function.</p>
+</td></tr>
+<tr valign="top"><td><code>row_compose</code></td>
+<td>
+<p>a list of call to <code><a href="../../flextable/help/as_paragraph.html">as_paragraph()</a></code> - these
+calls will be applied to the row dimensions (the name is
+used to target the displayed column).</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>named arguments calling function <code><a href="../../flextable/help/as_paragraph.html">as_paragraph()</a></code>.
+The names are used as labels and the values are evaluated
+when the flextable is created.</p>
+</td></tr>
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>an object returned by function
+<code>tabulator()</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>an object of class <code>tabulator</code>.
+</p>
+
+
+<h3>Methods (by generic)</h3>
+
+
+<ul>
+<li> <p><code>summary(tabulator)</code>: call <code>summary()</code> to get
+a data.frame describing mappings between variables
+and their names in the flextable. This data.frame contains
+a column named <code>col_keys</code> where are stored the names that
+can be used for further selections.
+</p>
+</li></ul>
+
+
+<h3>Note</h3>
+
+<p>This is very first version of the function; be aware it
+can evolve or change.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../flextable/help/as_flextable.tabulator.html">as_flextable.tabulator()</a></code>, <code><a href="../../flextable/help/summarizor.html">summarizor()</a></code>,
+<code><a href="../../flextable/help/as_grouped_data.html">as_grouped_data()</a></code>, <code><a href="../../flextable/help/tabulator_colnames.html">tabulator_colnames()</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+set_flextable_defaults(digits = 2, border.color = "gray")
+
+library(data.table)
+# example 1 ----
+if (require("stats")) {
+  dat &lt;- aggregate(breaks ~ wool + tension,
+    data = warpbreaks, mean
+  )
+
+  cft_1 &lt;- tabulator(
+    x = dat, rows = "wool",
+    columns = "tension",
+    `mean` = as_paragraph(as_chunk(breaks)),
+    `(N)` = as_paragraph(as_chunk(length(breaks), formatter = fmt_int))
+  )
+
+  ft_1 &lt;- as_flextable(cft_1)
+  ft_1
+}
+
+# example 2 ----
+if (require("ggplot2")) {
+  multi_fun &lt;- function(x) {
+    list(mean = mean(x), sd = sd(x))
+  }
+
+  dat &lt;- as.data.table(ggplot2::diamonds)
+  dat &lt;- dat[cut %in% c("Fair", "Good", "Very Good")]
+
+  dat &lt;- dat[, unlist(lapply(.SD, multi_fun),
+    recursive = FALSE
+  ),
+  .SDcols = c("z", "y"),
+  by = c("cut", "color")
+  ]
+
+  tab_2 &lt;- tabulator(
+    x = dat, rows = "color",
+    columns = "cut",
+    `z stats` = as_paragraph(as_chunk(fmt_avg_dev(z.mean, z.sd, digit2 = 2))),
+    `y stats` = as_paragraph(as_chunk(fmt_avg_dev(y.mean, y.sd, digit2 = 2)))
+  )
+  ft_2 &lt;- as_flextable(tab_2)
+  ft_2 &lt;- autofit(x = ft_2, add_w = .05)
+  ft_2
+}
+
+# example 3 ----
+# data.table version
+dat &lt;- melt(as.data.table(iris),
+  id.vars = "Species",
+  variable.name = "name", value.name = "value"
+)
+dat &lt;- dat[,
+  list(
+    avg = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE)
+  ),
+  by = c("Species", "name")
+]
+# dplyr version
+# library(dplyr)
+# dat &lt;- iris %&gt;%
+#   pivot_longer(cols = -c(Species)) %&gt;%
+#   group_by(Species, name) %&gt;%
+#   summarise(avg = mean(value, na.rm = TRUE),
+#   sd = sd(value, na.rm = TRUE),
+#   .groups = "drop")
+
+tab_3 &lt;- tabulator(
+  x = dat, rows = c("Species"),
+  columns = "name",
+  `mean (sd)` = as_paragraph(
+    as_chunk(avg),
+    " (", as_chunk(sd), ")"
+  )
+)
+ft_3 &lt;- as_flextable(tab_3)
+ft_3
+
+init_flextable_defaults()
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>flextable</em> version 0.9.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

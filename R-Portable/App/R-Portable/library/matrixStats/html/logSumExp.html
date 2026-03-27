@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Accurately computes the logarithm of the sum of exponentials</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for logSumExp {matrixStats}"><tr><td>logSumExp {matrixStats}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Accurately computes the logarithm of the sum of exponentials</h2>
+
+<h3>Description</h3>
+
+<p>Accurately computes the logarithm of the sum of exponentials, that is,
+<i>log(sum(exp(lx)))</i>.  If <i>lx = log(x)</i>, then this is equivalently to
+calculating <i>log(sum(x))</i>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+logSumExp(lx, idxs = NULL, na.rm = FALSE, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>lx</code></td>
+<td>
+<p>A <code><a href="../../base/help/numeric.html">numeric</a></code> <code><a href="../../base/help/vector.html">vector</a></code>.
+Typically <code>lx</code> are <i>log(x)</i> values.</p>
+</td></tr>
+<tr valign="top"><td><code>idxs</code></td>
+<td>
+<p>A <code><a href="../../base/help/vector.html">vector</a></code> indicating subset of elements to
+operate over. If <code><a href="../../base/help/NULL.html">NULL</a></code>, no subsetting is done.</p>
+</td></tr>
+<tr valign="top"><td><code>na.rm</code></td>
+<td>
+<p>If <code><a href="../../base/help/logical.html">TRUE</a></code>, missing values are
+excluded.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Not used.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This function, which avoid numerical underflow, is often used when computing
+the logarithm of the sum of small numbers (<i>|x| &lt;&lt; 1</i>) such as
+probabilities.
+</p>
+<p>This is function is more accurate than <code>log(sum(exp(lx)))</code> when the
+values of <i>x = exp(lx)</i> are <i>|x| &lt;&lt; 1</i>.  The implementation of this
+function is based on the observation that </p>
+<p style="text-align: center;"><i> log(a + b) = [ la = log(a),
+lb = log(b) ] = log( exp(la) + exp(lb) ) = la + log ( 1 + exp(lb - la) ) </i></p>
+
+<p>Assuming <i>la &gt; lb</i>, then <i>|lb - la| &lt; |lb|</i>, and it is less likely
+that the computation of <i>1 + exp(lb - la)</i> will not underflow/overflow
+numerically.  Because of this, the overall result from this function should
+be more accurate.  Analogously to this, the implementation of this function
+finds the maximum value of <code>lx</code> and subtracts it from the remaining
+values in <code>lx</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns a <code><a href="../../base/help/numeric.html">numeric</a></code> scalar.
+</p>
+
+
+<h3>Benchmarking</h3>
+
+<p>This method is optimized for correctness, that
+avoiding underflowing.  It is implemented in native code that is optimized
+for speed and memory.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Henrik Bengtsson
+</p>
+
+
+<h3>References</h3>
+
+<p>[1] R Core Team, <em>Writing R Extensions</em>, v3.0.0, April 2013. <br />
+[2] Laurent El Ghaoui, <em>Hyper-Textbook: Optimization Models
+and Applications</em>, University of California at Berkeley, August 2012.
+(Chapter 'Log-Sum-Exp (LSE) Function and Properties') <br />
+[3] R-help thread <em>logsumexp function in R</em>, 2011-02-17.
+<a href="https://stat.ethz.ch/pipermail/r-help/2011-February/269205.html">https://stat.ethz.ch/pipermail/r-help/2011-February/269205.html</a><br />
+</p>
+
+
+<h3>See Also</h3>
+
+<p>To compute this function on rows or columns of a matrix, see
+<code><a href="../../matrixStats/help/rowLogSumExps.html">rowLogSumExps</a></code>().
+</p>
+<p>For adding <em>two</em> double values in native code, R provides the C
+function <code>logspace_add()</code> [1].  For properties of the
+log-sum-exponential function, see [2].
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## EXAMPLE #1
+lx &lt;- c(1000.01, 1000.02)
+y0 &lt;- log(sum(exp(lx)))
+print(y0) ## Inf
+
+y1 &lt;- logSumExp(lx)
+print(y1) ## 1000.708
+
+
+## EXAMPLE #2
+lx &lt;- c(-1000.01, -1000.02)
+y0 &lt;- log(sum(exp(lx)))
+print(y0) ## -Inf
+
+y1 &lt;- logSumExp(lx)
+print(y1) ## -999.3218
+
+
+## EXAMPLE #3
+## R-help thread 'Beyond double-precision?' on May 9, 2009.
+
+set.seed(1)
+x &lt;- runif(50)
+
+## The logarithm of the harmonic mean
+y0 &lt;- log(1 / mean(1 / x))
+print(y0)  ## -1.600885
+
+lx &lt;- log(x)
+y1 &lt;- log(length(x)) - logSumExp(-lx)
+print(y1)  ## [1] -1.600885
+
+# Sanity check
+stopifnot(all.equal(y1, y0))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>matrixStats</em> version 1.5.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

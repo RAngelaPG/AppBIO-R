@@ -1,0 +1,193 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Parallel calculation functions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for snowfall-calculation {snowfall}"><tr><td>snowfall-calculation {snowfall}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Parallel calculation functions</h2>
+
+<h3>Description</h3>
+
+<p>Parallel calculation functions. Execution is distributed automatically
+over the cluster.<br />
+Most of this functions are wrappers for <span class="pkg">snow</span> functions, but all
+can be used directly in sequential mode.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+sfClusterApply( x, fun, ... )
+sfClusterApplyLB( x, fun, ... )
+sfClusterApplySR( x, fun, ..., name="default", perUpdate=NULL, restore=sfRestore() )
+
+sfClusterMap( fun, ..., MoreArgs = NULL, RECYCLE = TRUE )
+
+sfLapply( x, fun, ... )
+sfSapply( x, fun, ..., simplify = TRUE, USE.NAMES = TRUE )
+sfApply( x, margin, fun, ... )
+sfRapply( x, fun, ... )
+sfCapply( x, fun, ... )
+
+sfMM( a, b )
+
+sfRestore()
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>vary depending on function. See function details below.</p>
+</td></tr>
+<tr valign="top"><td><code>fun</code></td>
+<td>
+<p>function to call</p>
+</td></tr>
+<tr valign="top"><td><code>margin</code></td>
+<td>
+<p>vector speficying the dimension to use</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>additional arguments to pass to standard function</p>
+</td></tr>
+<tr valign="top"><td><code>simplify</code></td>
+<td>
+<p>logical; see <code>sapply</code></p>
+</td></tr>
+<tr valign="top"><td><code>USE.NAMES</code></td>
+<td>
+<p>logical; see <code>sapply</code></p>
+</td></tr>
+<tr valign="top"><td><code>a</code></td>
+<td>
+<p>matrix</p>
+</td></tr>
+<tr valign="top"><td><code>b</code></td>
+<td>
+<p>matrix</p>
+</td></tr>
+<tr valign="top"><td><code>RECYCLE</code></td>
+<td>
+<p>see snow documentation</p>
+</td></tr>
+<tr valign="top"><td><code>MoreArgs</code></td>
+<td>
+<p>see snow documentation</p>
+</td></tr>
+<tr valign="top"><td><code>name</code></td>
+<td>
+<p>a character string indicating the name of this parallel
+execution. Naming is only needed if there are more than one call to
+<code>sfClusterApplySR</code> in a program.</p>
+</td></tr>
+<tr valign="top"><td><code>perUpdate</code></td>
+<td>
+<p>a numerical value indicating the progress
+printing. Values range from 1 to 100 (no printing). Value means: any
+X percent of progress status is printed. Default (on given value &lsquo;NULL&rsquo;) is 5).</p>
+</td></tr>
+<tr valign="top"><td><code>restore</code></td>
+<td>
+<p>logical indicating whether results from previous runs
+should be restored or not. Default is coming from sfCluster. If
+running without sfCluster, default is FALSE, if yes, it is set to
+the value coming from the external program.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>sfClusterApply</code> calls each index of a given list on a seperate
+node, so length of given list must be smaller than nodes. Wrapper for
+<span class="pkg">snow</span> function <code>clusterApply</code>.
+</p>
+<p><code>sfClusterApplyLB</code> is a load balanced version of
+<code>sfClusterApply</code>. If a node finished it's list segment it
+immidiately starts with the next segment. Use this function in
+infrastructures with machines with different speed. Wrapper for
+<span class="pkg">snow</span> function <code>clusterApplyLB</code>.
+</p>
+<p><code>sfClusterApplySR</code> saves intermediate results and is able to
+restore them on a restart. Use this function on very long calculations
+or it is (however) foreseeable that cluster will not be able to finish
+it's calculations (e.g. because of a shutdown of a node machine). If
+your program use more than one parallised part, argument <code>name</code>
+must be given with a unique name for each loop. Intermediate data is
+saved depending on R-filename, so restore of data must be explicit
+given for not confusing changes on your R-file (it is recommended to
+only restore on fully tested programs). If restores,
+<code>sfClusterApplySR</code> continues calculation after the first non-null
+value in the saved list. If your parallized function can return null
+values, you probably want to change this.
+</p>
+<p><code>sfLapply</code>, <code>sfSapply</code> and <code>sfApply</code> are parallel
+versions of <code>lapply</code>, <code>sapply</code> and <code>apply</code>. The first
+two use an list or vector as argument, the latter an array.
+</p>
+<p><code>parMM</code> is a parallel matrix multiplication.  Wrapper for
+<span class="pkg">snow</span> function <code>parMM</code>.
+</p>
+<p><em><code>sfRapply</code> and <code>sfCapply</code> are not implemented atm.</em>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>See snow documentation for details on commands:
+<code><a href="../../snow/help/snow-parallel.html">snow-parallel</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+  restoreResults &lt;- TRUE
+
+  sfInit(parallel=FALSE)
+
+  ## Execute in cluster or sequential.
+  sfLapply(1:10, exp)
+
+  ## Execute with intermediate result saving and restore on wish.
+  sfClusterApplySR(1:100, exp, name="CALC_EXP", restore=restoreResults)
+  sfClusterApplySR(1:100, sum, name="CALC_SUM", restore=restoreResults)
+
+  sfStop()
+
+  ##
+  ## Small bootstrap example.
+  ##
+  sfInit(parallel=TRUE, cpus=2)
+
+  require(mvna)
+  data(sir.adm)
+
+  sfExport("sir.adm", local=FALSE)
+  sfLibrary(cmprsk)
+
+  wrapper &lt;- function(a) {
+    index &lt;- sample(1:nrow(sir.adm), replace=TRUE)
+    temp &lt;- sir.adm[index, ]
+    fit &lt;- crr(temp$time, temp$status, temp$pneu, failcode=1, cencode=0)
+    return(fit$coef)
+  }
+
+  result &lt;- sfLapply(1:100, wrapper)
+
+  mean( unlist( rbind( result ) ) )
+  sfStop()
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>snowfall</em> version 1.84-6.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

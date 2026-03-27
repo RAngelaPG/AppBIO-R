@@ -1,0 +1,227 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: An implementation of least squares with non-negative and...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for nnnpls {nnls}"><tr><td>nnnpls {nnls}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>An implementation of least squares with non-negative and non-positive
+constraints</h2>
+
+<h3>Description</h3>
+
+<p>An implementation of an algorithm for linear least squares problems
+with non-negative and non-positive
+constraints based on the Lawson-Hanson
+NNLS algorithm.   Solves <i>\min{\parallel A x - b \parallel_2}</i>
+with the constraint <i>x_i &ge; 0</i>
+if <i>con_i &ge; 0</i> and <i>x_i &le; 0</i> otherwise,  where
+<i>x, con \in R^n, b \in R^m</i>, and <i>A</i> is an <i>m \times n</i> matrix.  
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+nnnpls(A, b, con)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>A</code></td>
+<td>
+<p>numeric matrix with <code>m</code> rows and <code>n</code> columns</p>
+</td></tr>
+<tr valign="top"><td><code>b</code></td>
+<td>
+<p>numeric vector of length <code>m</code> </p>
+</td></tr>
+<tr valign="top"><td><code>con</code></td>
+<td>
+<p>numeric vector of length <code>m</code> where element <code>i</code>
+is negative if and only if element <code>i</code> of the solution vector
+<code>x</code> should be constrained to non-positive, as opposed to
+non-negative, values. </p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p><code>nnnpls</code> returns
+an object of class <code>"nnnpls"</code>.
+</p>
+<p>The generic accessor functions <code>coefficients</code>,
+<code>fitted.values</code>, <code>deviance</code> and <code>residuals</code> extract
+various useful features of the value returned by <code>nnnpls</code>.
+</p>
+<p>An object of class <code>"nnnpls"</code> is a list containing the
+following components:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>the parameter estimates.</p>
+</td></tr>
+<tr valign="top"><td><code>deviance</code></td>
+<td>
+<p>the residual sum-of-squares.</p>
+</td></tr>
+<tr valign="top"><td><code>residuals</code></td>
+<td>
+<p>the residuals, that is response minus fitted values.</p>
+</td></tr>
+<tr valign="top"><td><code>fitted</code></td>
+<td>
+<p>the fitted values.</p>
+</td></tr>
+<tr valign="top"><td><code>mode</code></td>
+<td>
+<p>a character vector containing a message regarding why
+termination occured.</p>
+</td></tr>
+<tr valign="top"><td><code>passive</code></td>
+<td>
+<p>vector of the indices of <code>x</code> that are not bound
+at zero. </p>
+</td></tr>
+<tr valign="top"><td><code>bound</code></td>
+<td>
+<p>vector of the indices of <code>x</code> that are bound
+at zero.</p>
+</td></tr>
+<tr valign="top"><td><code>nsetp</code></td>
+<td>
+<p>the number of elements of <code>x</code> that are not bound
+at zero. </p>
+</td></tr>
+</table>
+
+
+<h3>Source</h3>
+
+<p>This is an R interface to Fortran77 code distributed
+with the book referenced below by Lawson CL, Hanson RJ (1995),
+obtained from Netlib (file &lsquo;<span class="file">lawson-hanson/all</span>&rsquo;), with some
+trivial modifications to allow for the combination of constraints to
+non-negative and non-positive values, and to return the variable
+NSETP.
+</p>
+
+
+<h3>References</h3>
+
+<p>Lawson CL, Hanson RJ (1974). Solving Least Squares Problems. Prentice
+Hall, Englewood Cliffs, NJ.
+</p>
+<p>Lawson CL, Hanson RJ (1995). Solving Least Squares Problems. Classics
+in Applied Mathematics. SIAM, Philadelphia.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><a href="../../nnls/help/nnls.html">nnls</a>, the method <code>"L-BFGS-B"</code> for <a href="../../stats/html/optim.html">optim</a>,
+<a href="../../quadprog/help/solve.QP.html">solve.QP</a>, <a href="../../bvls/help/bvls.html">bvls</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## simulate a matrix A
+## with 3 columns, each containing an exponential decay 
+t &lt;- seq(0, 2, by = .04)
+k &lt;- c(.5, .6, 1)
+A &lt;- matrix(nrow = 51, ncol = 3)
+Acolfunc &lt;- function(k, t) exp(-k*t)
+for(i in 1:3) A[,i] &lt;- Acolfunc(k[i],t)
+
+## simulate a matrix X
+## with 3 columns, each containing a Gaussian shape 
+## 2 of the Gaussian shapes are non-negative and 1 is non-positive 
+X &lt;- matrix(nrow = 51, ncol = 3)
+wavenum &lt;- seq(18000,28000, by=200)
+location &lt;- c(25000, 22000, 20000) 
+delta &lt;- c(3000,3000,3000)
+Xcolfunc &lt;- function(wavenum, location, delta)
+  exp( - log(2) * (2 * (wavenum - location)/delta)^2)
+for(i in 1:3) X[,i] &lt;- Xcolfunc(wavenum, location[i], delta[i])
+X[,2] &lt;- -X[,2]
+
+## set seed for reproducibility
+set.seed(3300)
+
+## simulated data is the product of A and X with some
+## spherical Gaussian noise added 
+matdat &lt;- A %*% t(X) + .005 * rnorm(nrow(A) * nrow(X))
+
+## estimate the rows of X using NNNPLS criteria 
+nnnpls_sol &lt;- function(matdat, A) {
+  X &lt;- matrix(0, nrow = 51, ncol = 3)
+  for(i in 1:ncol(matdat)) 
+     X[i,] &lt;- coef(nnnpls(A,matdat[,i],con=c(1,-1,1)))
+  X
+}
+X_nnnpls &lt;- nnnpls_sol(matdat,A) 
+
+## Not run:  
+## can solve the same problem with L-BFGS-B algorithm
+## but need starting values for x and 
+## impose a very low/high bound where none is desired
+bfgs_sol &lt;- function(matdat, A) {
+  startval &lt;- rep(0, ncol(A))
+  fn1 &lt;- function(par1, b, A) sum( ( b - A %*% par1)^2)
+  X &lt;- matrix(0, nrow = 51, ncol = 3)
+  for(i in 1:ncol(matdat))  
+    X[i,] &lt;-  optim(startval, fn = fn1, b=matdat[,i], A=A,
+              lower=rep(0, -1000, 0), upper=c(1000,0,1000),
+              method="L-BFGS-B")$par
+    X
+}
+X_bfgs &lt;- bfgs_sol(matdat,A) 
+
+## the RMS deviation under NNNPLS is less than under L-BFGS-B 
+sqrt(sum((X - X_nnnpls)^2)) &lt; sqrt(sum((X - X_bfgs)^2))
+
+## and L-BFGS-B is much slower 
+system.time(nnnpls_sol(matdat,A))
+system.time(bfgs_sol(matdat,A))
+
+## can also solve the same problem by reformulating it as a
+## quadratic program (this requires the quadprog package; if you
+## have quadprog installed, uncomment lines below starting with
+## only 1 "#" )
+
+# library(quadprog)
+
+# quadprog_sol &lt;- function(matdat, A) {
+#  X &lt;- matrix(0, nrow = 51, ncol = 3)
+#  bvec &lt;- rep(0, ncol(A))
+#  Dmat &lt;- crossprod(A,A)
+#  Amat &lt;- diag(c(1,-1,1))
+#  for(i in 1:ncol(matdat)) { 
+#    dvec &lt;- crossprod(A,matdat[,i]) 
+#    X[i,] &lt;- solve.QP(dvec = dvec, bvec = bvec, Dmat=Dmat,
+#                      Amat=Amat)$solution
+#  }
+#  X
+# }
+# X_quadprog &lt;- quadprog_sol(matdat,A) 
+
+## the RMS deviation under NNNPLS is about the same as under quadprog 
+# sqrt(sum((X - X_nnnpls)^2))
+# sqrt(sum((X - X_quadprog)^2))
+
+## and quadprog requires about the same amount of time 
+# system.time(nnnpls_sol(matdat,A))
+# system.time(quadprog_sol(matdat,A))
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>nnls</em> version 1.6 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

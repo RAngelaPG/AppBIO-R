@@ -1,0 +1,148 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Estimate the Effective Number of Tests</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for meff {poolr}"><tr><td>meff {poolr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Estimate the Effective Number of Tests</h2>
+
+<h3>Description</h3>
+
+<p>Estimate the effective number of tests.<script>MathJax = {output: {font: "mathjax-newcm", fontPath: "../../mathjaxr/doc/mathjax/font",}};</script><script defer src="../../mathjaxr/doc/mathjax/tex-chtml.js"></script></p>
+
+
+<h3>Usage</h3>
+
+<pre>
+meff(R, eigen, method, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>R</code></td>
+<td>
+<p>a \(k \times k\) symmetric matrix that reflects the correlation structure among the tests.</p>
+</td></tr>
+<tr valign="top"><td><code>eigen</code></td>
+<td>
+<p>optional vector to directly supply the eigenvalues to the function (instead of computing them from the matrix given via <code>R</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>character string to specify the method to be used to estimate the effective number of tests (either <code>"nyholt"</code>, <code>"liji"</code>, <code>"gao"</code>, <code>"galwey"</code>, or <code>"chen"</code>). See &lsquo;Details&rsquo;.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>other arguments.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The function estimates the effective number of tests based on one of five different methods. All methods except the one by Chen and Liu (2011) work by extracting the eigenvalues from the \(R\) matrix supplied via the <code>R</code> argument (or from the eigenvalues directly passed via the <code>eigen</code> argument). Letting \(\lambda_i\) denote the \(i\)th eigenvalue of this matrix (with \(i = 1, \ldots, k\)) in decreasing order, the effective number of tests (\(m\)) is estimated as follows.
+</p>
+<p><b>Method by Nyholt (2004)</b>
+</p>
+\[m = 1 + (k - 1) \left(1 - \frac{\mbox{Var}(\lambda)}{k}\right)\]<p> where \(\mbox{Var}(\lambda)\) is the observed sample variance of the \(k\) eigenvalues.
+</p>
+<p><b>Method by Li &amp; Ji (2005)</b>
+</p>
+\[m = \sum_{i = 1}^k f(|\lambda_i|)\]<p> where \(f(x) = I(x \ge 1) + (x - \lfloor x \rfloor)\) and \(\lfloor \cdot \rfloor\) is the floor function.
+</p>
+<p><b>Method by Gao et al. (2008)</b>
+</p>
+\[m = \min(x) \; \mbox{such that} \; \frac{\sum_{i = 1}^x \lambda_{i}}{\sum_{i = 1}^k \lambda_{i}} > C\]<p> where \(C\) is a pre-defined parameter which is set to 0.995 by default, but can be adjusted (see &lsquo;Note&rsquo;).
+</p>
+<p><b>Method by Galwey (2009)</b>
+</p>
+\[m = \frac{\left(\sum_{i = 1}^k \sqrt{\lambda_i'}\right)^2}{\sum_{i = 1}^k \lambda_i'}\]<p> where \(\lambda_i' = \max[0, \lambda_i]\).
+</p>
+<p><b>Method by Chen &amp; Liu (2011)</b>
+</p>
+\[m = \sum_{i = 1}^k \frac{1}{R_i}\]<p> where \(R_i = \sum_{j = 1}^k |r_{ij}|^C\) for \(i = 1, \ldots, k\) and \(r_{ij}\) denotes the element in the \(R\) matrix in row \(i\) and column \(j\). By default, the value of \(C\) is set to 7, but can be adjusted (see &lsquo;Note&rsquo;).
+</p>
+<p><b>Note:</b> For all methods that can yield a non-integer estimate (all but the method by Gao et al., 2008), the resulting estimate \(m\) is rounded down to the nearest integer.
+</p>
+<p><b>Specifying the R Matrix</b>
+</p>
+<p>The \(R\) matrix should reflect the dependence structure among the tests. There is no general solution on how such a matrix should be constructed, as this depends on the type of test and the sidedness of these tests. For example, we can use the correlations among related but changing elements across the analyses/tests, or a function thereof, as a proxy for the dependence structure. For example, when conducting \(k\) analyses with the same dependent variable and \(k\) different independent variables, the correlations among the independent variables could serve as such a proxy. Analogously, if analyses are conducted for \(k\) dependent variables with the same set of independent variables, the correlations among the dependent variables could be used instead.
+</p>
+<p>If the tests of interest have test statistics that can be assumed to follow a multivariate normal distribution and a matrix is available that reflects the correlations among the test statistics (which might be approximated by the correlations among the interchanging independent or dependent variables), then the <code><a href="../../poolr/help/mvnconv.html">mvnconv</a></code> function can be used to convert this correlation matrix into the correlations among the (one- or two-sided) \(p\)-values, which in turn can then be passed to the <code>R</code> argument. See &lsquo;Examples&rsquo;.
+</p>
+<p><b>Non-Positive Semi-Definite R</b>
+</p>
+<p>Depending on the way \(R\) was constructed, it may happen that this matrix is not positive semi-definite, leading to negative eigenvalues. The methods given above can all still be carried out in this case. However, another possibility is to handle such a case by using an algorithm that finds the nearest positive (semi-)definite matrix (e.g., Higham 2002) before passing this matrix to the function (see <code><a href="../../Matrix/help/nearPD.html">nearPD</a></code> from the <span class="pkg">Matrix</span> package for a corresponding implementation).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A scalar giving the estimate of the effective number of tests.
+</p>
+
+
+<h3>Note</h3>
+
+<p>For <code>method = "gao"</code>, <code>C = 0.995</code> by default, but a different value of <code>C</code> can be passed to the function via <code>...</code> (e.g., <code>meff(R, method = "gao", C = 0.95)</code>). For <code>method = "chen"</code>, <code>C = 7</code> by default, but a different value of <code>C</code> can be passed to the function via <code>...</code> (e.g., <code>meff(R, method = "chen", C = 6)</code>).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Ozan Cinar <a href="mailto:ozancinar86@gmail.com">ozancinar86@gmail.com</a> <br />
+Wolfgang Viechtbauer <a href="mailto:wvb@wvbauer.com">wvb@wvbauer.com</a> <br />
+</p>
+
+
+<h3>References</h3>
+
+<p>Chen, Z. X., &amp; Liu, Q. Z. (2011). A new approach to account for the correlations among single nucleotide polymorphisms in genome-wide association studies. <em>Human Heredity</em>, <b>72</b>(1), 1&ndash;9. <code style="white-space: pre;">https://doi.org/10.1159/000330135</code>
+</p>
+<p>Cinar, O. &amp; Viechtbauer, W. (2022). The poolr package for combining independent and dependent p values. <em>Journal of Statistical Software</em>, <b>101</b>(1), 1&ndash;42. <code style="white-space: pre;">https://doi.org/10.18637/jss.v101.i01</code>
+</p>
+<p>Gao, X., Starmer, J., &amp; Martin, E. R. (2008). A multiple testing correction method for genetic association studies using correlated single nucleotide polymorphisms. <em>Genetic Epidemiology, 32</em>(4), 361&ndash;369. <code style="white-space: pre;">https://doi.org/10.1002/gepi.20310</code>
+</p>
+<p>Galwey, N. W. (2009). A new measure of the effective number of tests, a practical tool for comparing families of non-independent significance tests. <em>Genetic Epidemiology, 33</em>(7), 559&ndash;568. <code style="white-space: pre;">https://doi.org/10.1002/gepi.20408</code>
+</p>
+<p>Higham, N. J. (2002). Computing the nearest correlation matrix: A problem from finance. <em>IMA Journal of Numerical Analysis, 22</em>(3), 329&ndash;343. <code style="white-space: pre;">https://doi.org/10.1093/imanum/22.3.329</code>
+</p>
+<p>Li, J., &amp; Ji, L. (2005). Adjusting multiple testing in multilocus analyses using the eigenvalues of a correlation matrix. <em>Heredity, 95</em>(3), 221&ndash;227. <code style="white-space: pre;">https://doi.org/10.1038/sj.hdy.6800717</code>
+</p>
+<p>Nyholt, D. R. (2004). A simple correction for multiple testing for single-nucleotide polymorphisms in linkage disequilibrium with each other. <em>American Journal of Human Genetics, 74</em>(4), 765&ndash;769. <code style="white-space: pre;">https://doi.org/10.1086/383251</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# copy LD correlation matrix into r (see help(grid2ip) for details on these data)
+r &lt;- grid2ip.ld
+
+# estimate the effective number of tests based on the LD correlation matrix
+meff(r, method = "nyholt")
+meff(r, method = "liji")
+meff(r, method = "gao")
+meff(r, method = "galwey")
+meff(r, method = "chen")
+
+# use mvnconv() to convert the LD correlation matrix into a matrix with the
+# correlations among the (two-sided) p-values assuming that the test
+# statistics follow a multivariate normal distribution with correlation
+# matrix r (note: 'side = 2' by default in mvnconv())
+mvnconv(r, target = "p", cov2cor = TRUE)[1:5,1:5] # show only rows/columns 1-5
+
+# use this matrix instead for estimating the effective number of tests
+meff(mvnconv(r, target = "p", cov2cor = TRUE), method = "nyholt")
+meff(mvnconv(r, target = "p", cov2cor = TRUE), method = "liji")
+meff(mvnconv(r, target = "p", cov2cor = TRUE), method = "gao")
+meff(mvnconv(r, target = "p", cov2cor = TRUE), method = "galwey")
+meff(mvnconv(r, target = "p", cov2cor = TRUE), method = "chen")
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>poolr</em> version 1.2-0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

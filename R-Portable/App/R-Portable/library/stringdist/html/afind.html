@@ -1,0 +1,203 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Stringdist-based fuzzy text search</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for afind {stringdist}"><tr><td>afind {stringdist}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Stringdist-based fuzzy text search</h2>
+
+<h3>Description</h3>
+
+<p><code>afind</code> slides a window of fixed width over a string <code>x</code> and
+computes the distance between the each window and the sought-after
+<code>pattern</code>. The location, content, and distance corresponding to the
+window with the best match is returned.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+afind(
+  x,
+  pattern,
+  window = NULL,
+  value = TRUE,
+  method = c("osa", "lv", "dl", "hamming", "lcs", "qgram", "cosine", "running_cosine",
+    "jaccard", "jw", "soundex"),
+  useBytes = FALSE,
+  weight = c(d = 1, i = 1, s = 1, t = 1),
+  q = 1,
+  p = 0,
+  bt = 0,
+  nthread = getOption("sd_num_thread")
+)
+
+grab(x, pattern, maxDist = Inf, value = FALSE, ...)
+
+grabl(x, pattern, maxDist = Inf, ...)
+
+extract(x, pattern, maxDist = Inf, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>strings to search in</p>
+</td></tr>
+<tr valign="top"><td><code>pattern</code></td>
+<td>
+<p>strings to find (not a regular expression). For <code>grab</code>,
+<code>grabl</code>, and <code>extract</code> this must be a single string.</p>
+</td></tr>
+<tr valign="top"><td><code>window</code></td>
+<td>
+<p>width of moving window.</p>
+</td></tr>
+<tr valign="top"><td><code>value</code></td>
+<td>
+<p>toggle return matrix with matched strings.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>Matching algorithm to use. See <code><a href="../../stringdist/help/stringdist-metrics.html">stringdist-metrics</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>useBytes</code></td>
+<td>
+<p>Perform byte-wise comparison. See <code><a href="../../stringdist/help/stringdist-encoding.html">stringdist-encoding</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>weight</code></td>
+<td>
+<p>For <code>method='osa'</code> or <code>'dl'</code>, the penalty for
+deletion, insertion, substitution and transposition, in that order. When
+<code>method='lv'</code>, the penalty for transposition is ignored. When
+<code>method='jw'</code>, the weights associated with characters of <code>a</code>,
+characters from <code>b</code> and the transposition weight, in that order. 
+Weights must be positive and not exceed 1. <code>weight</code> is ignored
+completely when <code>method='hamming'</code>, <code>'qgram'</code>, <code>'cosine'</code>,
+<code>'Jaccard'</code>, <code>'lcs'</code>, or <code>'soundex'</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>q</code></td>
+<td>
+<p>q-gram size, only when method is <code>'qgram'</code>, <code>'jaccard'</code>,
+or <code>'cosine'</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>p</code></td>
+<td>
+<p>Winklers 'prefix' parameter for Jaro-Winkler distance, with
+<i>0&le;q p&le;q0.25</i>. Only when method is <code>'jw'</code></p>
+</td></tr>
+<tr valign="top"><td><code>bt</code></td>
+<td>
+<p>Winkler's boost threshold. Winkler's prefix factor is
+only applied when the Jaro distance is larger than <code>bt</code>.
+Applies only to <code>method='jw'</code> and <code>p&gt;0</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>nthread</code></td>
+<td>
+<p>Number of threads used by the underlying C-code. A sensible
+default is chosen, see <code><a href="../../stringdist/help/stringdist-parallelization.html">stringdist-parallelization</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>maxDist</code></td>
+<td>
+<p>Only windows with distance <code>&lt;= maxDist</code> are considered a match.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>passed to <code>afind</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Matching is case-sensitive.  Both <code>x</code> and <code>pattern</code> are converted
+to <code>UTF-8</code> prior to search, unless <code>useBytes=TRUE</code>, in which case
+the distances are measured bytewise.
+</p>
+<p>Code is parallelized over the <code>x</code> variable: each value of <code>x</code>
+is scanned for every element in <code>pattern</code> using a separate thread (when <code>nthread</code>
+is larger than 1).
+</p>
+<p>The functions <code>grab</code> and <code>grabl</code> are approximate string matching
+functions that somewhat resemble base R's <code><a href="../../base/help/grep.html">grep</a></code> and
+<code><a href="../../base/help/grep.html">grepl</a></code>. They are implemented as convenience wrappers
+of <code>afind</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>For <code>afind</code>: a <code>list</code> of three matrices, each with
+<code>length(x)</code> rows and <code>length(pattern)</code> columns. In each matrix,
+element <i>(i,j)</i> corresponds to <code>x[i]</code> and <code>pattern[j]</code>. The 
+names and description of each matrix is as follows.
+</p>
+
+<ul>
+<li><p><code>location</code>. <code>[integer]</code>, location of the start of best matching window.
+When <code>useBytes=FALSE</code>, this corresponds to the location of a <code>UTF</code> code point
+in <code>x</code>, possibly after conversion from its original encoding.
+</p>
+</li>
+<li><p><code>distance</code>. <code>[character]</code>, the string distance between pattern and
+the best matching window.
+</p>
+</li>
+<li><p><code>match</code>. <code>[character]</code>, the first, best matching window.
+</p>
+</li></ul>
+
+<p>For <code>grab</code>, an <code>integer</code> vector, indicating in which elements of
+<code>x</code> a match was found with a distance <code>&lt;= maxDist</code>. The matched
+values when <code>value=TRUE</code> (equivalent to <code><a href="../../base/help/grep.html">grep</a></code>).
+</p>
+<p>For <code>grabl</code>, a <code>logical</code> vector, indicating in which elements of
+<code>x</code> a match was found with a distance <code>&lt;= maxDist</code>.  (equivalent
+to <code><a href="../../base/help/grep.html">grepl</a></code>).
+</p>
+<p>For <code>extract</code>, a <code>character</code> matrix with <code>length(x)</code> rows and
+<code>length(pattern)</code> columns.  If match was found, element <i>(i,j)</i>
+contains the match, otherwise it is set to <code>NA</code>.
+</p>
+
+
+<h3>Running cosine distance</h3>
+
+<p>This algorithm gains efficiency by using that two consecutive windows have
+a large overlap in their q-gram profiles. It gives the same result as
+the <code>"cosine"</code> distance, but much faster.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other matching: 
+<code><a href="../../stringdist/help/amatch.html">amatch</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+texts = c("When I grow up, I want to be"
+       , "one of the harvesters of the sea"
+       , "I think before my days are gone"
+       , "I want to be a fisherman")
+patterns = c("fish", "gone","to be")
+
+afind(texts, patterns, method="running_cosine", q=3)
+
+grabl(texts,"grew", maxDist=1)
+extract(texts, "harvested", maxDist=3)
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>stringdist</em> version 0.9.17 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

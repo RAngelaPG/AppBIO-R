@@ -1,0 +1,142 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Paginate tables</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for paginate {flextable}"><tr><td>paginate {flextable}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Paginate tables</h2>
+
+<h3>Description</h3>
+
+<p>Prevents breaks between tables rows you want to stay together.
+This feature only applies to Word and RTF output.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+paginate(
+  x,
+  init = NULL,
+  hdr_ftr = TRUE,
+  group = character(),
+  group_def = c("rle", "nonempty")
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>flextable object</p>
+</td></tr>
+<tr valign="top"><td><code>init</code></td>
+<td>
+<p>init value for keep_with_next property, it default
+value is <code>get_flextable_defaults()$keep_with_next</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>hdr_ftr</code></td>
+<td>
+<p>if TRUE (default), prevent breaks between table body
+and header and between table body and footer.</p>
+</td></tr>
+<tr valign="top"><td><code>group</code></td>
+<td>
+<p>name of a column to use for finding groups</p>
+</td></tr>
+<tr valign="top"><td><code>group_def</code></td>
+<td>
+<p>algorithm to be used to identify groups
+that should not be split into two pages, one of 'rle', 'nonempty':
+</p>
+
+<ul>
+<li><p> 'rle': runs of equal values are used to define the groups,
+to be used with <code><a href="../../flextable/help/tabulator.html">tabulator()</a></code>.
+</p>
+</li>
+<li><p> 'nonempty': non empty value start a new group,
+to be used with <code><a href="../../flextable/help/as_flextable.tabular.html">as_flextable.tabular()</a></code>.
+</p>
+</li></ul>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The pagination of tables allows you to control their position
+in relation to page breaks.
+</p>
+<p>For small tables, a simple setting is usually used that indicates
+that all rows should be displayed together:
+</p>
+<div class="sourceCode"><pre>paginate(x, init = TRUE, hdr_ftr = TRUE)
+</pre></div>
+<p>For large tables, it is recommended to use a setting that
+indicates that all rows of the header should be bound to
+the first row of the table to avoid the case where the header
+is displayed alone at the bottom of the page and then repeated
+on the next one:
+</p>
+<div class="sourceCode"><pre>paginate(x, init = FALSE, hdr_ftr = TRUE)
+</pre></div>
+<p>For tables that present groups that you don't want to be presented
+on two pages, you must use a parameterization involving the notion
+of group and an algorithm for determining the groups.
+</p>
+<div class="sourceCode"><pre>paginate(x, group = "grp", group_def = "rle")
+</pre></div>
+
+
+<h3>Value</h3>
+
+<p>updated flextable object
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+library(data.table)
+library(flextable)
+
+init_flextable_defaults()
+
+multi_fun &lt;- function(x) {
+  list(mean = mean(x), sd = sd(x))
+}
+
+dat &lt;- as.data.table(ggplot2::diamonds)
+dat &lt;- dat[clarity %in% c("I1", "SI1", "VS2")]
+
+dat &lt;- dat[, unlist(lapply(.SD, multi_fun),
+  recursive = FALSE
+),
+.SDcols = c("z", "y"),
+by = c("cut", "color", "clarity")
+]
+
+tab &lt;- tabulator(
+  x = dat, rows = c("cut", "color"),
+  columns = "clarity",
+  `z stats` = as_paragraph(as_chunk(fmt_avg_dev(z.mean, z.sd, digit2 = 2))),
+  `y stats` = as_paragraph(as_chunk(fmt_avg_dev(y.mean, y.sd, digit2 = 2)))
+)
+
+ft_1 &lt;- as_flextable(tab)
+ft_1 &lt;- autofit(x = ft_1, add_w = .05) |&gt;
+  paginate(group = "cut", group_def = "rle")
+
+save_as_docx(ft_1, path = tempfile(fileext = ".docx"))
+save_as_rtf(ft_1, path = tempfile(fileext = ".rtf"))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>flextable</em> version 0.9.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

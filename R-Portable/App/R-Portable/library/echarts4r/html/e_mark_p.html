@@ -1,0 +1,148 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Mark</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for e_mark_p {echarts4r}"><tr><td>e_mark_p {echarts4r}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Mark</h2>
+
+<h3>Description</h3>
+
+<p>Mark points, lines, and areas with a proxy ([echarts4rProxy()]).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+e_mark_p(e, type, serie_index, data, ...)
+
+e_mark_p_(e, type, serie_index, data = NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>e</code></td>
+<td>
+<p>An <code>echarts4r</code> object as returned by <code><a href="../../echarts4r/help/e_charts.html">e_charts</a></code> or
+a proxy as returned by <code><a href="../../echarts4r/help/echarts4rProxy.html">echarts4rProxy</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>Type of mark: 'point','line' or 'area', defaults to 'point'.</p>
+</td></tr>
+<tr valign="top"><td><code>serie_index</code></td>
+<td>
+<p>Single index of serie to mark on, defaults to 1.
+Proxy doesn't know series' names, so it only uses index.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>Location of point, line or area, defaults to NULL.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Any other option to pass, check See Also section.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Allows the three type of marks to work with [echarts4rProxy()]
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(shiny)
+library(dplyr)
+
+ui &lt;- fluidPage(
+  fluidRow(
+    column(3, actionButton("pxy", "Marks")),
+    column(
+      3,
+      checkboxInput("tln", "Timeline", value = FALSE)
+    )
+  ),
+  echarts4rOutput("plot")
+)
+
+server &lt;- function(input, output) {
+  data(EuStockMarkets)
+
+  bb &lt;- as.data.frame(EuStockMarkets) |&gt;
+    slice_head(n = 150) |&gt;
+    mutate(day = 1:n())
+
+  output$plot &lt;- renderEcharts4r({
+    react()
+  })
+
+  observeEvent(input$pxy, {
+    echarts4rProxy("plot", data = NULL) |&gt;
+      e_mark_p(
+        type = "line",
+        serie_index = 1,
+        data = list(type = "average"),
+        lineStyle = list(type = "dashed", color = "cyan")
+      ) |&gt;
+      e_mark_p(
+        serie_index = 2,
+        data = list(
+          xAxis = bb$day[60],
+          yAxis = bb$SMI[60],
+          value = "pnt"
+        )
+      ) |&gt;
+      e_mark_p(
+        type = "line",
+        serie_index = 2,
+        data = list(
+          list(xAxis = bb$day[10], yAxis = bb$SMI[10]),
+          list(xAxis = bb$day[37], yAxis = bb$SMI[37])
+        ),
+        lineStyle = list(type = "solid", color = "yellow")
+      ) |&gt;
+      e_mark_p(
+        type = "area",
+        serie_index = 1,
+        data = list(
+          list(xAxis = bb$day[95]),
+          list(xAxis = bb$day[105])
+        ),
+        itemStyle = list(color = "lightblue"),
+        label = list(formatter = "X-area", position = "middle")
+      ) |&gt;
+      e_merge()
+  })
+
+  react &lt;- eventReactive(input$tln, {
+    tmp &lt;- bb
+    if (input$tln) tmp &lt;- tmp |&gt; group_by(day &lt; 75)
+
+    tmp |&gt;
+      e_charts(
+        day,
+        backgroundColor = "#181818",
+        legend = list(textStyle = list(color = "#aaa")),
+        timeline = input$tln
+      ) |&gt;
+      e_y_axis(scale = TRUE, axisLabel = list(color = "#aaa")) |&gt;
+      e_line(CAC, symbol = "none", color = "#ff33b8") |&gt;
+      e_line(SMI, symbol = "none", color = "green")
+  })
+}
+if (interactive()) {
+  shinyApp(ui, server)
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>echarts4r</em> version 0.5.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

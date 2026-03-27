@@ -1,0 +1,170 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Create a textarea input control with explicit submission</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for input_submit_textarea {bslib}"><tr><td>input_submit_textarea {bslib}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Create a textarea input control with explicit submission</h2>
+
+<h3>Description</h3>
+
+<p>Creates a textarea input where users can enter multi-line text and submit
+their input using a dedicated button or keyboard shortcut. This control is
+ideal when you want to capture finalized input, rather than reacting to every
+keystroke, making it useful for chat boxes, comments, or other scenarios
+where users may compose and review their text before submitting.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+input_submit_textarea(
+  id,
+  label = NULL,
+  ...,
+  placeholder = NULL,
+  value = "",
+  width = "min(680px, 100%)",
+  rows = 1,
+  button = NULL,
+  toolbar = NULL,
+  submit_key = c("enter+modifier", "enter")
+)
+
+update_submit_textarea(
+  id,
+  ...,
+  value = NULL,
+  placeholder = NULL,
+  label = NULL,
+  submit = FALSE,
+  focus = FALSE,
+  session = get_current_session()
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>id</code></td>
+<td>
+<p>The input ID.</p>
+</td></tr>
+<tr valign="top"><td><code>label</code></td>
+<td>
+<p>The label to display above the input control. If <code>NULL</code>, no
+label is displayed.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Additional attributes to apply to the underlying <code style="white-space: pre;">&lt;textarea&gt;</code>
+element (e.g., spellcheck, autocomplete, etc).</p>
+</td></tr>
+<tr valign="top"><td><code>placeholder</code></td>
+<td>
+<p>The placeholder text for the user input.</p>
+</td></tr>
+<tr valign="top"><td><code>value</code></td>
+<td>
+<p>The value to set the user input to.</p>
+</td></tr>
+<tr valign="top"><td><code>width</code></td>
+<td>
+<p>Any valid CSS unit (e.g., <code>width="100%"</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>rows</code></td>
+<td>
+<p>The number of rows (i.e., height) of the textarea. This essentially
+sets the minimum height &ndash; the textarea can grow taller as the user
+enters more text.</p>
+</td></tr>
+<tr valign="top"><td><code>button</code></td>
+<td>
+<p>A <a href="../../htmltools/help/builder.html">htmltools::tags</a> element to use for the submit button. It's recommended
+that this be a <code><a href="../../bslib/help/input_task_button.html">input_task_button()</a></code> since it will automatically provide a
+busy indicator (and disable) until the next flush occurs. Note also that if
+the submit button launches a <a href="../../shiny/help/ExtendedTask.html">shiny::ExtendedTask</a>, this button can also be bound
+to the task (<code><a href="../../bslib/help/bind_task_button.html">bind_task_button()</a></code>) and/or manually updated for more
+accurate progress reporting (<code><a href="../../bslib/help/update_task_button.html">update_task_button()</a></code>).</p>
+</td></tr>
+<tr valign="top"><td><code>toolbar</code></td>
+<td>
+<p>A list of optional UI elements (e.g., links, icons) to
+display next to the submit button.</p>
+</td></tr>
+<tr valign="top"><td><code>submit_key</code></td>
+<td>
+<p>A character string indicating what keyboard event should
+trigger the submit button. The default is <code>enter+modifier</code>, which requires
+the user to hold down Ctrl (or Cmd on Mac) before pressing Enter to
+submit. This helps prevent accidental submissions. To allow submission with
+just the Enter key, use <code>enter</code>. In this case, the user can still insert
+new lines using Shift+Enter or Alt+Enter.</p>
+</td></tr>
+<tr valign="top"><td><code>submit</code></td>
+<td>
+<p>Whether to automatically submit the text for the user. Requires <code>value</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>focus</code></td>
+<td>
+<p>Whether to move focus to the input element. Requires <code>value</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>session</code></td>
+<td>
+<p>The <code>session</code> object; using the default is recommended.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A textarea input control that can be added to a UI definition.
+</p>
+
+
+<h3>Server value</h3>
+
+<p>The server receives a character string containing the user's text input.
+</p>
+<p><strong>Important:</strong> The initial server value is always <code>""</code> (empty string),
+regardless of any <code>value</code> parameter provided to <code>input_submit_textarea()</code>.
+The server value updates only when the user explicitly submits the input by
+either pressing the Enter key (possibly with a modifier key) or clicking the
+submit button.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../bslib/help/update_submit_textarea.html">update_submit_textarea()</a></code>, <code><a href="../../bslib/help/input_task_button.html">input_task_button()</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+library(shiny)
+library(bslib)
+
+ui &lt;- page_fluid(
+  input_submit_textarea("text", placeholder = "Enter some input..."),
+  verbatimTextOutput("value")
+)
+server &lt;- function(input, output) {
+  output$value &lt;- renderText({
+    req(input$text)
+    Sys.sleep(2)
+    paste("You entered:", input$text)
+  })
+}
+shinyApp(ui, server)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>bslib</em> version 0.10.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

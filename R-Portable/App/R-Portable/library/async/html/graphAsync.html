@@ -1,0 +1,166 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Draw a graph representation of a coroutine.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for graphAsync {async}"><tr><td>graphAsync {async}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Draw a graph representation of a coroutine.</h2>
+
+<h3>Description</h3>
+
+<p><code>graphAsync</code> will traverse the objects representing a
+<a href="../../async/help/gen.html">generator</a> or <a href="../../async/help/async.html">async</a> and render a graph of its structure
+using Graphviz (if it is installed.)
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+graphAsync(
+  obj,
+  basename = if (is.name(substitute(obj))) as.character(substitute(obj)) else
+    stop("Please specify basename"),
+  type = "pdf",
+  ...,
+  envs = TRUE,
+  vars = FALSE,
+  handlers = FALSE,
+  orphans = FALSE,
+  dot = find_dot(),
+  filename = paste0(basename, ".", type),
+  dotfile = if (type == "dot") filename else paste0(basename, ".dot")
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>obj</code></td>
+<td>
+<p>A <a href="../../async/help/gen.html">generator</a>, <a href="../../async/help/async.html">async</a> or <a href="../../async/help/stream.html">stream</a> object.</p>
+</td></tr>
+<tr valign="top"><td><code>basename</code></td>
+<td>
+<p>The base file name. If <code>basename="X"</code> and
+<code>type="pdf"</code> you will end up with two files, <code>"X.dot"</code> and
+<code>"X.pdf"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>the output format. If &quot;dot&quot;, we will just write a
+Graphviz dot file. If another extension like &quot;pdf&quot; or &quot;svg&quot;, will
+write a DOT file and then attempt to invoke Graphviz <code>dot</code> (if it
+is available according to <code><a href="../../base/html/Sys.which.html">Sys.which</a></code>) to produce the image.
+If <code>type=""</code> <code>graphAsync</code> will return graphviz DOT language as a
+character vector</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Unused.</p>
+</td></tr>
+<tr valign="top"><td><code>envs</code></td>
+<td>
+<p>If <code>TRUE</code>, multiple nodes that share the same
+environment will be grouped together in clusters.</p>
+</td></tr>
+<tr valign="top"><td><code>vars</code></td>
+<td>
+<p>If <code>TRUE</code>, context variables used in each state node
+will be included on the graph, with edges indicating
+reads/stores.</p>
+</td></tr>
+<tr valign="top"><td><code>handlers</code></td>
+<td>
+<p>If <code>TRUE</code>, state nodes will have thin edges
+connecting to trampoline handlers they call, in addition to the
+dashed edges connecting to the next transition.</p>
+</td></tr>
+<tr valign="top"><td><code>orphans</code></td>
+<td>
+<p>If <code>TRUE</code>, nodes will be included even if there are
+no connections to them (this mostly being interface methods and
+unused handlers).</p>
+</td></tr>
+<tr valign="top"><td><code>dot</code></td>
+<td>
+<p>Optional path to the <code>dot</code> executable.</p>
+</td></tr>
+<tr valign="top"><td><code>filename</code></td>
+<td>
+<p>Optionally specify the output picture file name.</p>
+</td></tr>
+<tr valign="top"><td><code>dotfile</code></td>
+<td>
+<p>Optionally specify the output DOT file name.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>graphAsync</code> will write a Graphviz DOT format file describing the
+given <a href="../../async/help/gen.html">generator</a> or <a href="../../async/help/async.html">async</a>/await block. The graph shows the
+generator as a state machine with nodes that connect to each other.
+</p>
+<p>If <code>type</code> is something other than <code>dot</code> <code style="white-space: pre;">graphAsync will then try to invoke Graphviz </code>dot' to turn the graph description into an image
+file.
+</p>
+<p>The green octagonal node is where the program starts, while red
+&quot;stop&quot; and blue &quot;return&quot; are where it ends. Nodes in green type on
+dark background show code that runs in the host language
+unmodified; gray nodes implement control flow. Dark arrows carry a
+value; gray edges carry no value. A &quot;semicolon&quot; node receives a
+value and discards it.
+</p>
+<p>Some nodes share a context with other nodes, shown by an enclosing
+box. Contexts can have state variables, shown as a rectangular
+record; orange edges from functions to variables represent writes;
+blue edges represent reads.
+</p>
+<p>Dashed edges represent a state transition that goes through a
+trampoline handler. Dashed edges have a Unicode symbol representing
+the type of trampoline; (DOUBLE VERTICAL BAR) for await/yield; (TOP
+ARC ANTICLOCKWISE ARROW WITH PLUS) or (TOP ARC CLOCKWISE ARROW WITH
+MINUS) to wind on or off an exception handler; (ANTICLOCKWISE
+TRIANGLE-HEADED BOTTOM U-SHAPED ARROW) for a plain trampoline with
+no side effects (done once per loop, to avoid overflowing the
+stack.)  Meanwhile, a thin edge connects to the trampoline handler.
+(So the user-facing &quot;yield&quot; function registers a continuation to
+the next step but actually calls the generator's yield handler.)
+</p>
+
+
+<h3>Value</h3>
+
+<p>If <code>type=""</code>, a character vector of DOT source. Else
+The name of the file that was created.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+randomWalk &lt;- gen({x &lt;- 0; repeat {yield(x); x &lt;- x + rnorm(1)}})
+## Not run: 
+graphAsync(randomWalk, "pdf")
+# writes "randomWalk.dot" and invokes dot to make "randomWalk.pdf"
+
+#or, display it in an R window with the Rgraphviz package:
+g &lt;- Rgraphviz::agread("randomWalk.dot")
+Rgraphviz::plot(g)
+
+## End(Not run)
+#Or render an HTML sidget using DiagrammeR:
+## Not run: 
+dot &lt;- graphAsync(randomWalk, type="")
+DiagrammeR::DiagrammeR(paste0(dot, collapse="\n"), type="grViz")
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>async</em> version 0.3.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

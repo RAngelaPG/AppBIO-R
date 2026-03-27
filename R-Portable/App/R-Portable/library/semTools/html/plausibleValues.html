@@ -1,0 +1,243 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Plausible-Values Imputation of Factor Scores Estimated from a...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for plausibleValues {semTools}"><tr><td>plausibleValues {semTools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Plausible-Values Imputation of Factor Scores Estimated from a lavaan Model</h2>
+
+<h3>Description</h3>
+
+<p>Draw plausible values of factor scores estimated from a fitted
+<code><a href="../../lavaan/help/lavaan.html">lavaan::lavaan()</a></code> model, then treat them as multiple imputations
+of missing data using <code><a href="../../lavaan.mi/help/lavaan.mi.html">lavaan.mi::lavaan.mi()</a></code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+plausibleValues(object, nDraws = 20L, seed = 12345,
+  omit.imps = c("no.conv", "no.se"), ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>A fitted model of class <a href="../../lavaan/help/lavaan-class.html">lavaan::lavaan</a>,
+<a href="../../blavaan/help/blavaan-class.html">blavaan::blavaan</a>, or <a href="../../lavaan.mi/help/lavaan.mi-class.html">lavaan.mi::lavaan.mi</a></p>
+</td></tr>
+<tr valign="top"><td><code>nDraws</code></td>
+<td>
+<p><code>integer</code> specifying the number of draws, analogous to
+the number of imputed data sets. If <code>object</code> is of class
+<a href="../../lavaan.mi/help/lavaan.mi-class.html">lavaan.mi::lavaan.mi</a>, this will be the number of draws taken
+<em>per imputation</em>.  If <code>object</code> is of class
+<a href="../../blavaan/help/blavaan-class.html">blavaan::blavaan</a>, <code>nDraws</code> cannot exceed
+<code>blavInspect(object, "niter") * blavInspect(bfitc, "n.chains")</code>
+(number of MCMC samples from the posterior). The drawn samples will be
+evenly spaced (after permutation for <code>target="stan"</code>), using
+<code><a href="../../base/html/Round.html">ceiling()</a></code> to resolve decimals.</p>
+</td></tr>
+<tr valign="top"><td><code>seed</code></td>
+<td>
+<p><code>integer</code> passed to <code><a href="../../base/html/Random.html">set.seed()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>omit.imps</code></td>
+<td>
+<p><code>character</code> vector specifying criteria for omitting
+imputations when <code>object</code> is of class <a href="../../lavaan.mi/help/lavaan.mi-class.html">lavaan.mi::lavaan.mi</a>.
+Can include any of <code>c("no.conv", "no.se", "no.npd")</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Optional arguments to pass to <code><a href="../../lavaan/help/lavPredict.html">lavaan::lavPredict()</a></code>.
+<code>assemble</code> will be ignored because multiple groups are always
+assembled into a single <code>data.frame</code> per draw. <code>type</code> will be
+ignored because it is set internally to <code>type="lv"</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Because latent variables are unobserved, they can be considered as missing
+data, which can be imputed using Monte Carlo methods.  This may be of
+interest to researchers with sample sizes too small to fit their complex
+structural models.  Fitting a factor model as a first step,
+<code><a href="../../lavaan/help/lavPredict.html">lavaan::lavPredict()</a></code> provides factor-score estimates, which can
+be treated as observed values in a path analysis (Step 2).  However, the
+resulting standard errors and test statistics could not be trusted because
+the Step-2 analysis would not take into account the uncertainty about the
+estimated factor scores.  Using the asymptotic sampling covariance matrix
+of the factor scores provided by <code><a href="../../lavaan/help/lavPredict.html">lavaan::lavPredict()</a></code>,
+<code>plausibleValues</code> draws a set of <code>nDraws</code> imputations from the
+sampling distribution of each factor score, returning a list of data sets
+that can be treated like multiple imputations of incomplete data.  If the
+data were already imputed to handle missing data, <code>plausibleValues</code>
+also accepts an object of class <a href="../../lavaan.mi/help/lavaan.mi-class.html">lavaan.mi::lavaan.mi</a>, and will
+draw <code>nDraws</code> plausible values from each imputation.  Step 2 would
+then take into account uncertainty about both missing values and factor
+scores.  Bayesian methods can also be used to generate factor scores, as
+available with the <span class="pkg">blavaan</span> package, in which case plausible
+values are simply saved parameters from the posterior distribution. See
+Asparouhov and Muthen (2010) for further technical details and references.
+</p>
+<p>Each returned <code>data.frame</code> includes a <code>case.idx</code> column that
+indicates the corresponding rows in the data set to which the model was
+originally fitted (unless the user requests only Level-2 variables).  This
+can be used to merge the plausible values with the original observed data,
+but users should note that including any new variables in a Step-2 model
+might not accurately account for their relationship(s) with factor scores
+because they were not accounted for in the Step-1 model from which factor
+scores were estimated.
+</p>
+<p>If <code>object</code> is a multilevel <code>lavaan</code> model, users can request
+plausible values for latent variables at particular levels of analysis by
+setting the <code><a href="../../lavaan/help/lavPredict.html">lavaan::lavPredict()</a></code> argument <code>level=1</code> or
+<code>level=2</code>.  If the <code>level</code> argument is not passed via ...,
+then both levels are returned in a single merged data set per draw.  For
+multilevel models, each returned <code>data.frame</code> also includes a column
+indicating to which cluster each row belongs (unless the user requests only
+Level-2 variables).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>list</code> of length <code>nDraws</code>, each of which is a
+<code>data.frame</code> containing plausible values, which can be treated as
+a <code>list</code> of imputed data sets to be passed to the <code>lavaan.mi</code> package
+(see <strong>Examples</strong>). If <code>object</code> is of class
+<a href="../../lavaan.mi/help/lavaan.mi-class.html">lavaan.mi::lavaan.mi</a>, the <code>list</code> will be of length
+<code>nDraws*m</code>, where <code>m</code> is the number of imputations.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Terrence D. Jorgensen (University of Amsterdam;
+<a href="mailto:TJorgensen314@gmail.com">TJorgensen314@gmail.com</a>)
+</p>
+
+
+<h3>References</h3>
+
+<p>Asparouhov, T. &amp; Muthen, B. O. (2010). <em>Plausible values for latent
+variables using M</em>plus. Technical Report. Retrieved from
+www.statmodel.com/download/Plausible.pdf
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../lavaan.mi/help/lavaan.mi.html">lavaan.mi::lavaan.mi()</a></code>, <a href="../../lavaan.mi/help/lavaan.mi-class.html">lavaan.mi::lavaan.mi</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## example from ?cfa and ?lavPredict help pages
+HS.model &lt;- ' visual  =~ x1 + x2 + x3
+              textual =~ x4 + x5 + x6
+              speed   =~ x7 + x8 + x9 '
+
+fit1 &lt;- cfa(HS.model, data = HolzingerSwineford1939)
+fs1 &lt;- plausibleValues(fit1, nDraws = 3,
+                       ## lavPredict() can add only the modeled data
+                       append.data = TRUE)
+lapply(fs1, head)
+
+
+## To merge factor scores to original data.frame (not just modeled data)
+fs1 &lt;- plausibleValues(fit1, nDraws = 3)
+idx &lt;- lavInspect(fit1, "case.idx")      # row index for each case
+if (is.list(idx)) idx &lt;- do.call(c, idx) # for multigroup models
+data(HolzingerSwineford1939)             # copy data to workspace
+HolzingerSwineford1939$case.idx &lt;- idx   # add row index as variable
+## loop over draws to merge original data with factor scores
+for (i in seq_along(fs1)) {
+  fs1[[i]] &lt;- merge(fs1[[i]], HolzingerSwineford1939, by = "case.idx")
+}
+lapply(fs1, head)
+
+
+## multiple-group analysis, in 2 steps
+step1 &lt;- cfa(HS.model, data = HolzingerSwineford1939, group = "school",
+            group.equal = c("loadings","intercepts"))
+PV.list &lt;- plausibleValues(step1)
+
+## subsequent path analysis
+path.model &lt;- ' visual ~ c(t1, t2)*textual + c(s1, s2)*speed '
+if(requireNamespace("lavaan.mi")){
+  library(lavaan.mi)
+  step2 &lt;- sem.mi(path.model, data = PV.list, group = "school")
+  ## test equivalence of both slopes across groups
+  lavTestWald.mi(step2, constraints = 't1 == t2 ; s1 == s2')
+}
+
+
+## multilevel example from ?Demo.twolevel help page
+model &lt;- '
+  level: 1
+    fw =~ y1 + y2 + y3
+    fw ~ x1 + x2 + x3
+  level: 2
+    fb =~ y1 + y2 + y3
+    fb ~ w1 + w2
+'
+msem &lt;- sem(model, data = Demo.twolevel, cluster = "cluster")
+mlPVs &lt;- plausibleValues(msem, nDraws = 3) # both levels by default
+lapply(mlPVs, head, n = 10)
+## only Level 1
+mlPV1 &lt;- plausibleValues(msem, nDraws = 3, level = 1)
+lapply(mlPV1, head)
+## only Level 2
+mlPV2 &lt;- plausibleValues(msem, nDraws = 3, level = 2)
+lapply(mlPV2, head)
+
+
+
+## example with 20 multiple imputations of missing data:
+nPVs &lt;- 5
+nImps &lt;- 20
+
+if (requireNamespace("lavaan.mi")) {
+  data(HS20imps, package = "lavaan.mi")
+
+  ## specify CFA model from lavaan's ?cfa help page
+  HS.model &lt;- '
+    visual  =~ x1 + x2 + x3
+    textual =~ x4 + x5 + x6
+    speed   =~ x7 + x8 + x9
+  '
+  out2 &lt;- cfa.mi(HS.model, data = HS20imps)
+  PVs &lt;- plausibleValues(out2, nDraws = nPVs)
+
+  idx &lt;- out2@Data@case.idx # can't use lavInspect() on lavaan.mi
+  ## empty list to hold expanded imputations
+  impPVs &lt;- list()
+  for (m in 1:nImps) {
+    HS20imps[[m]]["case.idx"] &lt;- idx
+    for (i in 1:nPVs) {
+      impPVs[[ nPVs*(m - 1) + i ]] &lt;- merge(HS20imps[[m]],
+                                            PVs[[ nPVs*(m - 1) + i ]],
+                                            by = "case.idx")
+    }
+  }
+  lapply(impPVs, head)
+}
+
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>semTools</em> version 0.5-8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

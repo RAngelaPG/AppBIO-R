@@ -1,0 +1,160 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Insert dummy cities into a distance matrix</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for insert_dummy {TSP}"><tr><td>insert_dummy {TSP}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Insert dummy cities into a distance matrix</h2>
+
+<h3>Description</h3>
+
+<p>Inserts dummy cities into a TSP problem.  A
+dummy city has the same, constant distance (0) to all other cities and is
+infinitely far from other dummy cities. A dummy city can be used to
+transform a shortest Hamiltonian path problem (i.e., finding an optimal
+linear order) into a shortest Hamiltonian cycle problem which can be solved
+by a TSP solvers (Garfinkel 1985).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+insert_dummy(x, n = 1, const = 0, inf = Inf, label = "dummy")
+
+## S3 method for class 'TSP'
+insert_dummy(x, n = 1, const = 0, inf = Inf, label = "dummy")
+
+## S3 method for class 'ATSP'
+insert_dummy(x, n = 1, const = 0, inf = Inf, label = "dummy")
+
+## S3 method for class 'ETSP'
+insert_dummy(x, n = 1, const = 0, inf = Inf, label = "dummy")
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>an object with a TSP problem.</p>
+</td></tr>
+<tr valign="top"><td><code>n</code></td>
+<td>
+<p>number of dummy cities.</p>
+</td></tr>
+<tr valign="top"><td><code>const</code></td>
+<td>
+<p>distance of the dummy cities to all other cities.</p>
+</td></tr>
+<tr valign="top"><td><code>inf</code></td>
+<td>
+<p>distance between dummy cities.</p>
+</td></tr>
+<tr valign="top"><td><code>label</code></td>
+<td>
+<p>labels for the dummy cities. If only one label is given, it is
+reused for all dummy cities.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Several dummy cities can be used together with a TSP solvers to perform
+rearrangement clustering (Climer and Zhang 2006).
+</p>
+<p>The dummy cities are inserted after the other cities in <code>x</code>.
+</p>
+<p>A <code>const</code> of 0 is guaranteed to work if the TSP finds the optimal
+solution. For heuristics returning suboptimal solutions, a higher
+<code>const</code> (e.g., <code>2 * max(x)</code>) might provide better results.
+</p>
+
+
+<h3>Value</h3>
+
+<p>returns an object of the same class as <code>x</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Michael Hahsler
+</p>
+
+
+<h3>References</h3>
+
+<p>Sharlee Climer, Weixiong Zhang (2006): Rearrangement Clustering:
+Pitfalls, Remedies, and Applications, <em>Journal of Machine Learning
+Research</em> <b>7</b>(Jun), pp. 919&ndash;943.
+</p>
+<p>R.S. Garfinkel (1985): Motivation and modelling (chapter 2). In: E. L.
+Lawler, J. K. Lenstra, A.H.G. Rinnooy Kan, D.  B. Shmoys (eds.) The
+traveling salesman problem - A guided tour of combinatorial optimization,
+Wiley &amp; Sons.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other TSP: 
+<code><a href="../../TSP/help/ATSP.html">ATSP</a>()</code>,
+<code><a href="../../TSP/help/Concorde.html">Concorde</a></code>,
+<code><a href="../../TSP/help/ETSP.html">ETSP</a>()</code>,
+<code><a href="../../TSP/help/TSP.html">TSP</a>()</code>,
+<code><a href="../../TSP/help/TSPLIB.html">TSPLIB</a></code>,
+<code><a href="../../TSP/help/reformulate_ATSP_as_TSP.html">reformulate_ATSP_as_TSP</a>()</code>,
+<code><a href="../../TSP/help/solve_TSP.html">solve_TSP</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Example 1: Find a short Hamiltonian path
+set.seed(1000)
+x &lt;- data.frame(x = runif(20), y = runif(20), row.names = LETTERS[1:20])
+
+tsp &lt;- TSP(dist(x))
+
+## add a dummy city to cut the tour into a path
+tsp &lt;- insert_dummy(tsp, label = "cut")
+tour &lt;- solve_TSP(tsp)
+tour
+
+plot(x)
+lines(x[cut_tour(tour, cut = "cut"),])
+
+
+## Example 2: Rearrangement clustering of the iris dataset
+set.seed(1000)
+data("iris")
+tsp &lt;- TSP(dist(iris[-5]))
+
+## insert 2 dummy cities to creates 2 clusters
+tsp_dummy &lt;- insert_dummy(tsp, n = 3, label = "boundary")
+
+## get a solution for the TSP
+tour &lt;- solve_TSP(tsp_dummy)
+
+## plot the reordered distance matrix with the dummy cities as lines separating
+## the clusters
+image(tsp_dummy, tour)
+abline(h = which(labels(tour)=="boundary"), col = "red")
+abline(v = which(labels(tour)=="boundary"), col = "red")
+
+## plot the original data with paths connecting the points in each cluster
+plot(iris[,c(2,3)], col = iris[,5])
+paths &lt;- cut_tour(tour, cut = "boundary")
+for(p in paths) lines(iris[p, c(2,3)])
+
+## Note: The clustering is not perfect!
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>TSP</em> version 1.2.6 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

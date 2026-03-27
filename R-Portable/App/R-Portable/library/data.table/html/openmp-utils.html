@@ -10,7 +10,7 @@
 
 <h3>Description</h3>
 
-<p>Set and get number of threads to be used in <code>data.table</code> functions that are parallelized with OpenMP. The number of threads is initialized when <code>data.table</code> is first loaded in the R session using optional environment variables. Thereafter, the number of threads may be changed by calling <code>setDTthreads</code>. If you change an environment variable using <code>Sys.setenv</code> you will need to call <code>setDTthreads</code> again to reread the environment variables.
+<p>Set and get number of threads to be used in <code>data.table</code> functions that are parallelized with OpenMP. The number of threads is initialized when <code>data.table</code> is first loaded in the R session using optional environment variables. Thereafter, the number of threads may be changed by calling <code>setDTthreads</code>. If you change an environment variable using <code><a href="../../base/help/Sys.setenv.html">Sys.setenv</a></code> you will need to call <code>setDTthreads</code> again to reread the environment variables.
 </p>
 
 
@@ -39,7 +39,7 @@
 </td></tr>
 <tr valign="top"><td><code>throttle</code></td>
 <td>
-<p> 1024 (default) means that, roughly speaking, a single thread will be used when nrow(DT)&lt;=1024, 2 threads when nrow(DT)&lt;=2048, etc. The throttle is to speed up small data tasks (especially when repeated many times) by not incurring the overhead of managing multiple threads. Hence the number of threads is throttled (restricted) for small tasks. </p>
+<p> 1024 (default) means that, roughly speaking, a single thread will be used when <code>nrow(DT)&lt;=1024</code>, 2 threads when <code>nrow(DT)&lt;=2048</code>, etc. The throttle is to speed up small data tasks (especially when repeated many times) by not incurring the overhead of managing multiple threads. Hence the number of threads is throttled (restricted) for small tasks. </p>
 </td></tr>
 <tr valign="top"><td><code>verbose</code></td>
 <td>
@@ -56,11 +56,11 @@
 </p>
 <p>Some hardware allows CPUs to be removed and/or replaced while the server is running. If this happens, our understanding is that <code>omp_get_num_procs()</code> will reflect the new number of processors available. But if this happens after data.table started, <code>setDTthreads(...)</code> will need to be called again by you before data.table will reflect the change. If you have such hardware, please let us know your experience via GitHub issues / feature requests.
 </p>
-<p>Use <code>getDTthreads(verbose=TRUE)</code> to see the relevant environment variables, their values and the current number of threads data.table is using. For example, the environment variable <code>R_DATATABLE_NUM_PROCS_PERCENT</code> can be used to change the default number of logical CPUs from 50% to another value between 2 and 100. If you change these environment variables using 'Sys.setenv()' after data.table and/or OpenMP has initialized then you will need to call <code>setDTthreads(threads=NULL)</code> to reread their current values. <code>getDTthreads()</code> merely retrieves the internal value that was set by the last call to <code>setDTthreads()</code>. <code>setDTthreads(threads=NULL)</code> is called when data.table is first loaded and is not called again unless you call it.
+<p>Use <code>getDTthreads(verbose=TRUE)</code> to see the relevant environment variables, their values and the current number of threads data.table is using. For example, the environment variable <code>R_DATATABLE_NUM_PROCS_PERCENT</code> can be used to change the default number of logical CPUs from 50% to another value between 2 and 100. If you change these environment variables using <code>Sys.setenv()</code> after data.table and/or OpenMP has initialized then you will need to call <code>setDTthreads(threads=NULL)</code> to reread their current values. <code>getDTthreads()</code> merely retrieves the internal value that was set by the last call to <code>setDTthreads()</code>. <code>setDTthreads(threads=NULL)</code> is called when data.table is first loaded and is not called again unless you call it.
 </p>
 <p><code>setDTthreads()</code> affects <code>data.table</code> only and does not change R itself or other packages using OpenMP. We have followed the advice of section 1.2.1.1 in the R-exts manual: &quot;... or, better, for the regions in your code as part of their specification... num_threads(nthreads)... That way you only control your own code and not that of other OpenMP users.&quot; Every parallel region in data.table contain a <code>num_threads(getDTthreads())</code> directive. This is mandated by a <code>grep</code> in data.table's quality control script.
 </p>
-<p><code>setDTthreads(0)</code> is the same as <code>setDTthreads(percent=100)</code>; i.e. use all logical CPUs, subject to <code>Sys.getenv("OMP_THREAD_LIMIT")</code>. Please note again that developers of CRAN packages should never change <code>OMP_THREAD_LIMIT</code> inside their package to a value greater than 2 as CRAN very strictly enforces limits on automated parallelism in packages.
+<p><code>setDTthreads(0)</code> is the same as <code>setDTthreads(percent=100)</code>; i.e. use all logical CPUs, subject to <code>Sys.getenv("OMP_THREAD_LIMIT")</code>. Please note again that CRAN's daily test system sets <code>OMP_THREAD_LIMIT</code> to 2, so developers of CRAN packages should never change <code>OMP_THREAD_LIMIT</code> inside their package to a value greater than 2.
 </p>
 <p>Internally parallelized code is used in the following places:
 </p>
@@ -78,7 +78,7 @@
 <li><p>&lsquo;<span class="file">fifelse.c</span>&rsquo; - <code><a href="../../data.table/help/fifelse.html">fifelse</a>()</code>
 </p>
 </li>
-<li><p>&lsquo;<span class="file">fread.c</span>&rsquo; - <code><a href="../../data.table/help/fread.html">fread</a>()</code>
+<li><p>&lsquo;<span class="file">fread.c</span>&rsquo;, &lsquo;<span class="file">freadR.c</span>&rsquo; - <code><a href="../../data.table/help/fread.html">fread</a>(). Parallelized across row-based chunks of the file.</code>
 </p>
 </li>
 <li><p>&lsquo;<span class="file">forder.c</span>&rsquo;, &lsquo;<span class="file">fsort.c</span>&rsquo;, and &lsquo;<span class="file">reorder.c</span>&rsquo; - <code><a href="../../data.table/help/forder.html">forder</a>()</code> and related
@@ -87,10 +87,10 @@
 <li><p>&lsquo;<span class="file">froll.c</span>&rsquo;, &lsquo;<span class="file">frolladaptive.c</span>&rsquo;, and &lsquo;<span class="file">frollR.c</span>&rsquo; - <code><a href="../../data.table/help/froll.html">froll</a>()</code> and family
 </p>
 </li>
-<li><p>&lsquo;<span class="file">fwrite.c</span>&rsquo; - <code><a href="../../data.table/help/fwrite.html">fwrite</a>()</code>
+<li><p>&lsquo;<span class="file">fwrite.c</span>&rsquo; - <code><a href="../../data.table/help/fwrite.html">fwrite</a>(). Parallelized across rows.</code>
 </p>
 </li>
-<li><p>&lsquo;<span class="file">gsumm.c</span>&rsquo; - GForce in various places, see <a href="../../data.table/help/GForce.html">GForce</a>
+<li><p>&lsquo;<span class="file">gsumm.c</span>&rsquo; - GForce in various places, see <a href="../../data.table/help/GForce.html">GForce</a>. Parallelized across groups.
 </p>
 </li>
 <li><p>&lsquo;<span class="file">nafill.c</span>&rsquo; - <code><a href="../../data.table/help/nafill.html">nafill</a>()</code>
@@ -103,6 +103,8 @@
 </p>
 </li></ul>
 
+<p>We endeavor to keep this list up to date, but note that the canonical reference here is the source code itself.
+</p>
 
 
 <h3>Value</h3>
@@ -117,5 +119,5 @@
   getDTthreads(verbose=TRUE)
 </pre>
 
-<hr /><div style="text-align: center;">[Package <em>data.table</em> version 1.15.4 <a href="00Index.html">Index</a>]</div>
+<hr /><div style="text-align: center;">[Package <em>data.table</em> version 1.18.2.1 <a href="00Index.html">Index</a>]</div>
 </div></body></html>

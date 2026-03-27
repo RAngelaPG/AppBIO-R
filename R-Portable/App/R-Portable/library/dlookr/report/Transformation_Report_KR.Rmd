@@ -1,0 +1,436 @@
+---
+title: "데이터 변환 보고서"
+author: "Report by dlookr package"
+date: "`r Sys.Date()`"
+output: 
+  prettydoc::html_pretty:
+    toc: true
+    number_sections: true
+    theme: cayman
+    highlight: github
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(warn = -1)
+```
+
+```{r environment, echo=FALSE, warning=FALSE, message=FALSE}
+library(dlookr)
+library(magrittr)
+library(dplyr)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(knitr)
+library(kableExtra)
+
+if (!requireNamespace("mice", quietly = TRUE)) {
+  stop("Package 'mice' needed for this function to work. Please install it.", 
+       call. = FALSE)
+}
+
+if (!requireNamespace("rpart", quietly = TRUE)) {
+  stop("Package 'rpart' needed for this function to work. Please install it.", 
+       call. = FALSE)
+}
+```
+
+```{r init, echo=FALSE, warning=FALSE, message=FALSE}
+#library(smbinning)
+#library(xtable)
+
+edaData <- as.data.frame(get("edaData", .dlookrEnv))
+targetVariable <- get("targetVariable", .dlookrEnv)
+
+if (length(targetVariable) == 0) targetVariable <- NULL
+
+names(edaData) <- gsub("[[:punct:][:space:]]", "_", names(edaData))
+
+idx.numeric <- find_class(edaData, type = "numerical")
+varname <- names(edaData)[idx.numeric]
+
+varname <- setdiff(varname, targetVariable)
+
+setUnder <- function(x) {
+  gsub("_", ".", x)
+}
+```
+
+# 대체 (Imputation)
+## 결측치 (Missing Values)
+### 결측치 대체 정보
+결측값을 대체하기 위한 변수는 다음과 같다.
+```{r nalist, echo=FALSE, warning=FALSE, message=FALSE, comment=""}
+nalist <- find_na(edaData, index = FALSE)
+
+if (length(nalist) > 0) {
+  naclass <- get_class(edaData) %>% 
+    filter(variable %in% nalist) %>% 
+    select(class) %>% 
+    pull() %>% 
+    as.character()
+  
+  cat(paste(nalist, collapse = ", "))
+} else {
+  cat("결측치를 포함한 변수가 없습니다.")
+}
+```
+
+```{r Imputate_function, echo=FALSE}
+numerics <- c("mean", "median", "mode", "knn", "rpart", "mice")
+categories <- c("mode", "rpart", "mice")
+
+imputae_summary <- function(object) {
+  type <- attr(object, "type")
+  method <- attr(object, "method")
+  var_type <- attr(object, "var_type")
+
+  original <- object
+
+  if (type == "missing values") {
+    na_pos <- attr(object, "na_pos")
+    seed <- attr(object, "seed")
+
+    original[na_pos] <- NA
+  } else if (type == "outliers") {
+    outlier_pos <- attr(object, "outlier_pos")
+    outliers <- attr(object, "outliers")
+
+    original[outlier_pos] <- outliers
+  }
+
+  if (var_type == "numerical") {
+    original <- as.numeric(original)
+    object <- as.numeric(object)
+  } else if (var_type == "categorical") {
+    original <- factor(original)
+    object <- factor(object)
+  }
+
+  dframe <- data.frame(original = original,
+    imputation = object) %>%
+    tidyr::gather()
+
+  if (var_type == "numerical") {
+    smmry <- dframe %>%
+      group_by(key) %>%
+      describe("value") %>%
+      select(-variable, -key) %>%
+      t
+    
+    smmry <- smmry[, 2:1]
+    colnames(smmry) <- c("Original", "Imputation")
+  } else if (var_type == "categorical") {
+    tab_freq <- xtabs(~ value + key, dframe, addNA = TRUE)
+    tab_relat <- round(prop.table(tab_freq, 2) * 100, 2)
+
+    smmry <- cbind(tab_freq, tab_relat)
+    smmry <- smmry[, c(2, 1, 4, 3)]
+    colnames(smmry) <- c("original", "imputation",
+      "original_percent", "imputation_percent")
+  }
+
+  if (method %in% c("knn", "rpart", "mice")) {
+    if (method == "knn") {
+      met <- "K-Nearest Neighbors"
+    } else if (method == "rpart") {
+      met <- "Recursive Partitioning and Regression Trees"
+    } else if (method == "mice") {
+      met <- "Multivariate Imputation by Chained Equations"
+      met <- sprintf("%s\n - random seed : %s", met, seed)
+    }
+    cat(sprintf("* '%s' 방법에 대한 %s의 기술통계량\n\n", met, type))
+  }
+
+  cat("* 결측치 대체 정보 (대체 전 vs 대체 후)\n")
+
+  invisible(smmry)
+}
+```
+
+
+```{r Imputate_na, echo=FALSE, warning=FALSE, message=FALSE, comment="", fig.height=5, fig.width=7, results='asis'}
+
+if (length(nalist) > 0) {
+  for (i in 1:length(nalist)) {
+    cat("\n")
+    cat("###", setUnder(nalist[i]), "\n")
+    
+    if (naclass[i] %in% c("integer", "numeric")) {
+      method <- numerics
+    } else if (naclass[i] %in% c("factor", "ordered")) {
+      method <- categories
+    }
+    
+    if (is.null(targetVariable)) {
+      method <- setdiff(method, c("knn", "rpart", "mice"))
+    }
+    
+    for (j in 1:length(method)) {
+      cat("\n")
+      cat(sprintf("#### %s 방법의 결측치 대체\n", method[j]))
+      
+      impu <- imputate_na(edaData, nalist[i], targetVariable, method = method[j], print_flag = FALSE)
+
+      if (!attr(impu, "success")) {
+        cat(attr(impu, "message"), "<br><br><br>\n")
+        next
+      }
+      
+      tab <- imputae_summary(impu)
+      
+      kable(tab, digits = 2, format = "html",
+            format.args = list(big.mark = ",")) %>% 
+        kable_styling(full_width = FALSE, font_size = 13, position = "left") %>% 
+        row_spec(NROW(tab), bold = TRUE, color = "white", background = "#FFA349") %>% 
+        print()
+  
+      cat("\n")
+      cat("<br><br><br>\n")
+      
+      grid.draw(plot(impu))
+      cat("\n")
+    } 
+  }
+}
+```
+
+## 이상치 (Outliers)
+### 이상치 대체 정보
+이상치를 대체하기 위한 수치 변수는 다음과 같다.
+
+```{r outlist, echo=FALSE, warning=FALSE, message=FALSE, comment=""}
+outlist <- find_outliers(edaData, index = FALSE)
+
+if (length(outlist) > 0) {
+  cat(paste(outlist, collapse = ", "))
+} else {
+  cat("이상치를 포함한 수치변수가 없습니다.")
+}
+```
+
+```{r Imputate_outliers, echo=FALSE, warning=FALSE, message=FALSE, comment="", fig.height=5, fig.width=7, results='asis'}
+
+if (length(outlist) > 0) {
+  for (i in 1:length(outlist)) {
+    cat("\n")
+    cat("###", setUnder(outlist[i]), "\n")
+    
+    method <- c("mean", "median", "mode", "capping")
+    
+    for (j in 1:length(method)) {
+      cat("\n")
+      cat(sprintf("#### %s 방법의 이상치 대체\n", method[j]))
+      
+      impu <- imputate_outlier(edaData, outlist[i], method = method[j])
+      tab <- imputae_summary(impu)
+      
+      kable(tab, digits = 2, format = "html",
+            format.args = list(big.mark = ",")) %>% 
+        kable_styling(full_width = FALSE, font_size = 13, position = "left") %>% 
+        row_spec(NROW(tab), bold = TRUE, color = "white", background = "#FFA349") %>% 
+        print()
+  
+      cat("\n")
+      cat("<br><br><br>\n")
+      
+      grid.draw(plot(impu))
+      cat("\n")
+    } 
+  }
+}
+```
+
+# 비대칭 보정 (Resolving Skewness)
+## 비대칭 변수 정보
+비대칭을 해결하기위한 수치 변수는 다음과 같다.
+
+```{r, echo=FALSE}
+summary_transform <- function(object, ...) {
+  method <- attr(object, "method")
+  origin <- attr(object, "origin")
+
+  suppressWarnings({dframe <- data.frame(original = origin,
+    trans = object) %>%
+    tidyr::gather()})
+
+  smmry <- dframe %>%
+    group_by(key) %>%
+    describe("value") %>%
+    select(-variable, -key) %>%
+    t
+  colnames(smmry) <- c("원본", "변환값")
+  invisible(smmry)
+}
+```
+
+
+```{r skewlist, echo=FALSE, warning=FALSE, message=FALSE, comment=""}
+skewlist <- find_skewness(edaData, index = FALSE)
+skew <- find_skewness(edaData, value = TRUE)
+
+if (length(skewlist) > 0) {
+  cat(paste(skewlist, collapse = ", "))
+  skew <- skew[skewlist]
+} else {
+  cat("비대칭이 아주 심한 변수는 없습니다.")
+}
+```
+
+```{r resolve_skewness, echo=FALSE, warning=FALSE, message=FALSE, comment="", fig.height=4, fig.width=8, results='asis'}
+
+if (length(skewlist) > 0) {
+  for (i in 1:length(skewlist)) {
+    cat("\n")
+    cat("###", setUnder(skewlist[i]), "\n")
+    
+    if (skew[i] <= 0) {
+      method <- c("1/x", "x^2", "x^3")
+    } else {
+      method <- c("log", "log+1", "sqrt")
+    }
+      
+    for (j in 1:length(method)) {
+      cat("\n")
+      cat(sprintf("#### '%s' 방법의 비대칭 보정}\n", method[j]))      
+      
+      trans <- transform(pull(edaData, skewlist[i]), method = method[j])
+      tab <- summary_transform(trans)
+      
+      kable(tab, digits = 2, format = "html",
+            format.args = list(big.mark = ",")) %>% 
+        kable_styling(full_width = FALSE, font_size = 13, position = "left") %>% 
+        row_spec(NROW(tab), bold = TRUE, color = "white", background = "#FFA349") %>% 
+        print()
+  
+      cat("\n")
+      cat("<br><br><br>\n")
+      
+      grid.draw(plot(trans))
+      cat("\n")
+    } 
+  }
+}
+```
+
+# 비닝 (Binning)
+## 비닝을 위한 수치형 변수
+비닝을 위한 수치형 변수는 다음과 같습니다.
+
+```{r, echo=FALSE}
+idx.numeric <- find_class(edaData, type = "numerical")
+var_numeric <- names(edaData)[idx.numeric]
+
+var_numeric <- setdiff(var_numeric, targetVariable)
+```
+
+```{r target, echo=FALSE, warning=FALSE, message=FALSE, comment=""}
+var_numeric
+```
+
+## Binning
+```{r binning, echo=FALSE, warning=FALSE, message=FALSE, comment="", fig.height=5, fig.width=6, results='asis'}
+if (length(var_numeric) > 0) {
+  for (i in 1:length(var_numeric)) {
+    cat("\n")
+    cat("###", setUnder(var_numeric[i]), "\n")
+    
+    method <- c("quantile", "equal", "pretty", "kmeans", "bclust")
+    
+    for (j in 1:length(method)) {
+      cat("\n")
+      cat(sprintf("#### '%s' 방법의 비닝\n", method[j]))      
+      
+      error_flag <- FALSE
+      tryCatch(binn <- binning(pull(edaData, var_numeric[i]), type = method[j]),
+        error = function(e) {
+          msg <<- e$message
+          error_flag <<- TRUE
+      }, finally = NULL)
+      
+      if (error_flag) {
+        cat(msg, "\n\n")
+        rm(msg, error_flag)
+        next
+      }
+      
+      tab <- summary(binn)
+      
+      kable(tab, digits = 4, format = "html",
+            format.args = list(big.mark = ",")) %>% 
+        kable_styling(full_width = FALSE, font_size = 13, position = "left") %>% 
+        row_spec(NROW(tab), bold = TRUE, color = "white", background = "#FFA349") %>% 
+        print()
+  
+      cat("\n")
+      cat("<br><br><br>\n")
+      
+      plot(binn)
+      cat("\n")
+    } 
+  }
+}
+```
+
+## 최적 비닝(Optimal Binning)
+스코어링(scorecard) 모델링의 경우에는 일반적으로 수치형 데이터와 목적변수와의 특성을 고려하여 최적의 비닝(optimal binning)을 수행한다.
+optimal binning 작업에서는 수치형 데이터를 범주형 데이터로 범주화할 때, supervised discretization이라고 하는 재귀적 분할(recursive partitioning) 기법을 사용한다.
+단, optimal binning은 목적변수가 이진분류(binary class)일 경우만 가능하다.
+
+```{r optimal, echo=FALSE, warning=FALSE, message=FALSE, comment="", fig.height=6, fig.width=7, results='asis'}
+if (!is.null(targetVariable)) {
+  n_levles <- length(table(pull(edaData, targetVariable)))
+
+  if (n_levles == 2) {
+    # Optimal Binning for Scoring Modeling
+    results <- lapply(var_numeric, function(x)
+      binning_by(.data = edaData, y = targetVariable, x = x, p = 0.05))
+    
+    # could also use tapply here
+    for (i in 1:length(var_numeric)) {
+      cat("\n")
+      cat("###", setUnder(var_numeric[i]), "\n")
+
+      result <- results[[i]]
+
+      if (is.character(result)) {
+        if (result == "No significant splits")
+          result <- "목적변수와의 관계에서 유효한 범주화를 도출할 수 없습니다."
+        
+        cat(result)
+        cat("\n")
+        next
+      }
+      
+      cat("\n")
+
+      tab <- attr(result, "performance") %>% 
+        select(-CntCumPos, -CntCumNeg, -RateCumPos, -RateCumNeg)
+      
+      kable(tab, digits = 2, format = "html",
+        format.args = list(big.mark = ",")) %>% 
+        kable_styling(full_width = FALSE, font_size = 10, position = "left") %>% 
+        row_spec(NROW(tab), bold = TRUE, color = "white", background = "#FFA349") %>% 
+        print()
+  
+      cat("\n")
+      cat(sprintf("Information value = %s", attr(result, "iv")))
+      cat("<br><br><br>\n")
+  
+      plot(result)
+      cat("\n")
+    } 
+  } else {
+    cat("목적변수가 이진분류(binary class)가 아닙니다.\n\n")
+  }
+} else {
+  cat("목적변수를 지정하지 않았습니다.\n\n")
+}
+```
+
+```{r, echo=FALSE}
+options(warn = 0)
+```
+
+

@@ -1,0 +1,281 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: One Dimensional Root (Zero) Finding - in pure R</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for unirootR {Rmpfr}"><tr><td>unirootR {Rmpfr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>One Dimensional Root (Zero) Finding &ndash; in pure <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span></h2>
+
+<h3>Description</h3>
+
+<p>The function <code>unirootR</code> searches the interval from <code>lower</code>
+to <code>upper</code> for a root (i.e., zero) of the function <code>f</code> with
+respect to its first argument.
+</p>
+<p><code>unirootR()</code> is &ldquo;clone&rdquo; of <code><a href="../../stats/html/uniroot.html">uniroot</a>()</code>,
+written entirely in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>, in a way that it works with
+<code><a href="../../Rmpfr/help/mpfr-class.html">mpfr</a></code>-numbers as well.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+unirootR(f, interval, ...,
+        lower = min(interval), upper = max(interval),
+        f.lower = f(lower, ...), f.upper = f(upper, ...),
+        extendInt = c("no", "yes", "downX", "upX"),
+        trace = 0, verbose = as.logical(trace),
+        verbDigits = max(3, min(20, -log10(tol)/2)),
+        tol = .Machine$double.eps^0.25, maxiter = 1000L,
+        check.conv = FALSE,
+        warn.no.convergence = !check.conv,
+        epsC = NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+
+<table summary="R argblock">
+<tr valign="top"><td><code>f</code></td>
+<td>
+<p>the function for which the root is sought.</p>
+</td></tr>
+<tr valign="top"><td><code>interval</code></td>
+<td>
+<p>a vector containing the end-points of the interval
+to be searched for the root.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>additional named or unnamed arguments to be passed
+to <code>f</code></p>
+</td></tr>
+<tr valign="top"><td><code>lower, upper</code></td>
+<td>
+<p>the lower and upper end points of the interval to
+be searched.</p>
+</td></tr>
+<tr valign="top"><td><code>f.lower, f.upper</code></td>
+<td>
+<p>the same as <code>f(upper)</code> and
+<code>f(lower)</code>, respectively.  Passing these values from the caller
+where they are often known is more economical as soon as <code>f()</code>
+contains non-trivial computations.</p>
+</td></tr>
+<tr valign="top"><td><code>extendInt</code></td>
+<td>
+<p>character string specifying if the interval
+<code>c(lower,upper)</code> should be extended or directly produce an error
+when <code>f()</code> does not have differing signs at the endpoints.  The
+default, <code>"no"</code>, keeps the search interval and hence produces
+an error.  Can be abbreviated.</p>
+</td></tr>
+<tr valign="top"><td><code>trace</code></td>
+<td>
+<p>integer number; if positive, tracing information is
+produced.  Higher values giving more details.</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>logical (or integer) indicating if (and how much)
+verbose output should be produced during the iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>verbDigits</code></td>
+<td>
+<p>used only if <code>verbose</code> is true, indicates the
+number of digits numbers should be printed with, using
+<code><a href="../../base/html/format.html">format</a>(., digits=verbDigits)</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>tol</code></td>
+<td>
+<p>the desired accuracy (convergence tolerance).</p>
+</td></tr>
+<tr valign="top"><td><code>maxiter</code></td>
+<td>
+<p>the maximum number of iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>check.conv</code></td>
+<td>
+<p>logical indicating whether non convergence
+should be caught as an error, notably non-convergence in <code>maxiter</code>
+iterations should be an error instead of a warning.</p>
+</td></tr>
+<tr valign="top"><td><code>warn.no.convergence</code></td>
+<td>
+<p>if set to <code>FALSE</code> there's no warning
+about non-convergence.  Useful to just run a few iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>epsC</code></td>
+<td>
+<p>positive number or <code>NULL</code> in which case a smart
+default is sought.  This should specify the &ldquo;achievable
+machine precision&rdquo; <em>for</em> the given numbers and their
+arithmetic.
+</p>
+<p>The default will set this to <code><a href="../../base/html/zMachine.html">.Machine</a>$double.eps</code> for
+double precision numbers, and will basically use
+<code>2 ^ - min(getPrec(f.lower), getPrec(f.upper))</code> when that works
+(as, e.g., for <code><a href="../../Rmpfr/help/mpfr-class.html">mpfr</a></code>-numbers) otherwise.
+</p>
+<p>This is factually a lower bound for the achievable lower bound, and
+hence, setting <code>tol</code> smaller than <code>epsC</code> is typically
+non-sensical and produces a warning.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Note that arguments after <code>...</code> must be matched exactly.
+</p>
+<p>Either <code>interval</code> or both <code>lower</code> and <code>upper</code> must be
+specified: the upper endpoint must be strictly larger than the lower
+endpoint.  The function values at the endpoints must be of opposite
+signs (or zero), for <code>extendInt="no"</code>, the default.  Otherwise, if
+<code>extendInt="yes"</code>, the interval is extended on both sides, in
+search of a sign change, i.e., until the search interval <i>[l,u]</i>
+satisfies <i>f(l) * f(u) &lt;= 0</i>.
+</p>
+<p>If it is <em>known how</em> <i>f</i> changes sign at the root
+<i>x0</i>, that is, if the function is increasing or decreasing there,
+<code>extendInt</code> can (and typically should) be specified as
+<code>"upX"</code> (for &ldquo;upward crossing&rdquo;) or <code>"downX"</code>,
+respectively.  Equivalently, define <i>S:= +/- 1</i>, to
+require <i>S = sign(f(x0 +
+    eps))</i> at the solution.  In that case, the search interval <i>[l,u]</i>
+possibly is extended to be such that <i>
+    S * f(l) &lt;= 0</i> and <i>S * f(u) &gt;= 0</i>.
+</p>
+<p>The function only uses <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> code with basic arithmetic, such that it
+should also work with &ldquo;generalized&rdquo; numbers (such as
+<code><a href="../../Rmpfr/help/mpfr-class.html">mpfr</a></code>-numbers) as long the necessary
+<code><a href="../../methods/html/S4groupGeneric.html">Ops</a></code> methods are defined for those.
+</p>
+<p>The underlying algorithm assumes a continuous function (which then is
+known to have at least one root in the interval).
+</p>
+<p>Convergence is declared either if <code>f(x) == 0</code> or the change in
+<code>x</code> for one step of the algorithm is less than <code>tol</code> (plus an
+allowance for representation error in <code>x</code>).
+</p>
+<p>If the algorithm does not converge in <code>maxiter</code> steps, a warning
+is printed and the current approximation is returned.
+</p>
+<p><code>f</code> will be called as <code>f(<var>x</var>, ...)</code> for a (generalized)
+numeric value of <var>x</var>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with four components: <code>root</code> and <code>f.root</code> give the
+location of the root and the value of the function evaluated at that
+point. <code>iter</code> and <code>estim.prec</code> give the number of iterations
+used and an approximate estimated precision for <code>root</code>.  (If the
+root occurs at one of the endpoints, the estimated precision is
+<code>NA</code>.)
+</p>
+
+
+<h3>Source</h3>
+
+<p>Based on <code>zeroin()</code> (in package <span class="pkg">rootoned</span>) by John Nash who
+manually translated the C code in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>'s <code>zeroin.c</code> and on
+<code><a href="../../stats/html/uniroot.html">uniroot</a>()</code> in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>'s sources.
+</p>
+
+
+<h3>References</h3>
+
+<p>Brent, R. (1973),   see <code><a href="../../stats/html/uniroot.html">uniroot</a></code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>'s own (<span class="pkg">stats</span> package) <code><a href="../../stats/html/uniroot.html">uniroot</a></code>.
+<code><a href="../../base/html/polyroot.html">polyroot</a></code> for all complex roots of a polynomial;
+<code><a href="../../stats/html/optimize.html">optimize</a></code>, <code><a href="../../stats/html/nlm.html">nlm</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+require(utils) # for str
+
+## some platforms hit zero exactly on the first step:
+## if so the estimated precision is 2/3.
+f &lt;- function (x,a) x - a
+str(xmin &lt;- unirootR(f, c(0, 1), tol = 0.0001, a = 1/3))
+
+## handheld calculator example: fixpoint of cos(.):
+rc &lt;- unirootR(function(x) cos(x) - x, lower=-pi, upper=pi, tol = 1e-9)
+rc$root
+
+## the same with much higher precision:
+rcM &lt;- unirootR(function(x) cos(x) - x,
+                 interval= mpfr(c(-3,3), 300), tol = 1e-40)
+rcM
+x0 &lt;- rcM$root
+stopifnot(all.equal(cos(x0), x0,
+                    tol = 1e-40))## 40 digits accurate!
+
+str(unirootR(function(x) x*(x^2-1) + .5, lower = -2, upper = 2,
+            tol = 0.0001), digits.d = 10)
+str(unirootR(function(x) x*(x^2-1) + .5, lower = -2, upper = 2,
+            tol = 1e-10 ), digits.d = 10)
+
+## A sign change of f(.), but not a zero but rather a "pole":
+tan. &lt;- function(x) tan(x * (Const("pi",200)/180))# == tan( &lt;angle&gt; )
+(rtan &lt;- unirootR(tan., interval = mpfr(c(80,100), 200), tol = 1e-40))
+## finds 90 {"ok"}, and now gives a warning
+
+
+## Find the smallest value x for which exp(x) &gt; 0 (numerically):
+r &lt;- unirootR(function(x) 1e80*exp(x)-1e-300, c(-1000,0), tol = 1e-15)
+str(r, digits.d = 15) ##&gt; around -745, depending on the platform.
+
+exp(r$root)     # = 0, but not for r$root * 0.999...
+minexp &lt;- r$root * (1 - 10*.Machine$double.eps)
+exp(minexp)     # typically denormalized
+
+## --- using mpfr-numbers :
+
+## Find the smallest value x for which exp(x) &gt; 0 ("numerically");
+## Note that mpfr-numbers underflow *MUCH* later than doubles:
+## one of the smallest mpfr-numbers {see also ?mpfr-class } :
+(ep.M &lt;- mpfr(2, 55) ^ - ((2^30 + 1) * (1 - 1e-15)))
+r &lt;- unirootR(function(x) 1e99* exp(x) - ep.M, mpfr(c(-1e20, 0), 200))
+r # 97 iterations; f.root is very similar to ep.M
+
+## interval extension 'extendInt'  --------------
+
+f1 &lt;- function(x) (121 - x^2)/(x^2+1)
+f2 &lt;- function(x) exp(-x)*(x - 12)
+tools::assertError(unirootR(f1, c(0,10)), verbose=TRUE)
+##--&gt; error: f() .. end points not of opposite sign
+
+## where as  'extendInt="yes"'  simply first enlarges the search interval:
+u1 &lt;- unirootR(f1, c(0,10),extendInt="yes", trace=1)
+u2 &lt;- unirootR(f2, mpfr(c(0,2), 128), extendInt="yes", trace=2, verbose=FALSE, tol = 1e-25)
+stopifnot(all.equal(u1$root, 11, tolerance = 1e-5),
+          all.equal(u2$root, 12, tolerance = 1e-23))
+
+## The *danger* of interval extension:
+## No way to find a zero of a positive function, but
+## numerically, f(-|M|) becomes zero :
+u3 &lt;- unirootR(exp, c(0,2), extendInt="yes", trace=TRUE)
+
+## Nonsense example (must give an error):
+tools::assertCondition( unirootR(function(x) 1, 0:1, extendInt="yes"),
+                       "error", verbose=TRUE)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>Rmpfr</em> version 1.1-2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

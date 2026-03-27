@@ -1,0 +1,208 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Network Operators</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for network.operators {network}"><tr><td>network.operators {network}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Network Operators</h2>
+
+<h3>Description</h3>
+
+<p>These operators allow for algebraic manipulation of relational structures.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'network'
+e1 + e2
+
+## S3 method for class 'network'
+e1 - e2
+
+## S3 method for class 'network'
+e1 * e2
+
+## S3 method for class 'network'
+!e1
+
+## S3 method for class 'network'
+e1 | e2
+
+## S3 method for class 'network'
+e1 &amp; e2
+
+## S3 method for class 'network'
+e1 %c% e2
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>e1</code></td>
+<td>
+<p>an object of class <code>network</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>e2</code></td>
+<td>
+<p>another <code>network</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>In general, the binary network operators function by producing a new network
+object whose edge structure is based on that of the input networks.  The
+properties of the new structure depend upon the inputs as follows: </p>
+
+<ul>
+<li><p> The size of the new network is equal to the size of the input networks
+(for all operators save <code>%c%</code>), which must themselves be of equal size.
+Likewise, the <code>bipartite</code> attributes of the inputs must match, and this
+is preserved in the output.  </p>
+</li>
+<li><p> If either input network allows loops,
+multiplex edges, or hyperedges, the output acquires this property.  (If both
+input networks do not allow these features, then the features are disallowed
+in the output network.)  </p>
+</li>
+<li><p> If either input network is directed, the
+output is directed; if exactly one input network is directed, the undirected
+input is treated as if it were a directed network in which all edges are
+reciprocated.  </p>
+</li>
+<li><p> Supplemental attributes (including vertex names, but
+not edgwise missingness) are not transferred to the output.  </p>
+</li></ul>
+<p> The unary
+operator acts per the above, but with a single input.  Thus, the output
+network has the same properties as the input, with the exception of
+supplemental attributes.
+</p>
+<p>The behavior of the composition operator, <code>%c%</code>, is somewhat more
+complex than the others.  In particular, it will return a bipartite network
+whenever either input network is bipartite <em>or</em> the vertex names of the
+two input networks do not match (or are missing).  If both inputs are
+non-bipartite and have identical vertex names, the return value will have
+the same structure (but with loops).  This behavior corresponds to the
+interpretation of the composition operator as counting walks on labeled sets
+of vertices.
+</p>
+<p>Hypergraphs are not yet supported by these routines, but ultimately will be
+(as suggested by the above).
+</p>
+<p>The specific operations carried out by these operators are generally
+self-explanatory in the non-multiplex case, but semantics in the latter
+circumstance bear elaboration.  The following summarizes the behavior of
+each operator:
+</p>
+
+<dl>
+<dt><code>+</code></dt><dd><p>An <i>(i,j)</i> edge is created in
+the return graph for every <i>(i,j)</i> edge in each of the input graphs.</p>
+</dd>
+<dt><code>-</code></dt><dd><p>An <i>(i,j)</i> edge is created in the return graph for
+every <i>(i,j)</i> edge in the first input that is not matched by an
+<i>(i,j)</i> edge in the second input; if the second input has more
+<i>(i,j)</i> edges than the first, no <i>(i,j)</i> edges are created in the
+return graph.</p>
+</dd>
+<dt><code>*</code></dt><dd><p>An <i>(i,j)</i> edge is created for every
+pairing of <i>(i,j)</i> edges in the respective input graphs.</p>
+</dd>
+<dt><code>%c%</code></dt><dd><p>An <i>(i,j)</i> edge is created in the return graph for
+every edge pair <i>(i,k),(k,j)</i> with the first edge in the first input and
+the second edge in the second input.</p>
+</dd>
+<dt><code>!</code></dt><dd><p>An <i>(i,j)</i> edge
+is created in the return graph for every <i>(i,j)</i> in the input not having
+an edge.</p>
+</dd>
+<dt><code>|</code></dt><dd><p>An <i>(i,j)</i> edge is created in the return
+graph if either input contains an <i>(i,j)</i> edge.</p>
+</dd>
+<dt><code>&amp;</code></dt><dd><p>An
+<i>(i,j)</i> edge is created in the return graph if both inputs contain an
+<i>(i,j)</i> edge.</p>
+</dd>
+</dl>
+
+<p>Semantics for missing-edge cases follow from the above,
+under the interpretation that edges with <code>na==TRUE</code> are viewed as
+having an unknown state.  Thus, for instance, <code>x*y</code> with <code>x</code>
+having 2 <i>(i,j)</i> non-missing and 1 missing edge and <code>y</code> having 3
+respective non-missing and 2 missing edges will yield an output network with
+6 non-missing and 9 missing <i>(i,j)</i> edges.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The resulting network.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Currently, there is a naming conflict between the composition operator
+and the <code>%c%</code> operator in the <code><a href="../../sna/help/sna.html">sna</a></code> package.  This
+will be resolved in future releases; for the time being, one can determine
+which version of <code>%c%</code> is in use by varying which package is loaded
+first.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Carter T. Butts <a href="mailto:buttsc@uci.edu">buttsc@uci.edu</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Butts, C. T.  (2008).  &ldquo;network: a Package for Managing
+Relational Data in R.&rdquo; <em>Journal of Statistical Software</em>, 24(2).
+doi: <a href="https://doi.org/10.18637/jss.v024.i02">10.18637/jss.v024.i02</a>
+</p>
+<p>Wasserman, S. and Faust, K.  (1994).  <em>Social Network Analysis: Methods
+and Applications.</em> Cambridge: University of Cambridge Press.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../network/help/network.extraction.html">network.extraction</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+#Create an in-star
+m&lt;-matrix(0,6,6)
+m[2:6,1]&lt;-1
+g&lt;-network(m)
+plot(g)
+
+#Compose g with its transpose
+gcgt&lt;-g %c% (network(t(m)))
+plot(gcgt)
+gcgt
+
+#Show the complement of g
+!g
+
+#Perform various arithmatic and logical operations
+(g+gcgt)[,] == (g|gcgt)[,]             #All TRUE
+(g-gcgt)[,] == (g&amp;(!(gcgt)))[,]
+(g*gcgt)[,] == (g&amp;gcgt)[,]
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>network</em> version 1.20.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

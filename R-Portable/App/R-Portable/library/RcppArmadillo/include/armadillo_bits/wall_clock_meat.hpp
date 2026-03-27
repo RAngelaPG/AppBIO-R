@@ -23,9 +23,7 @@
 inline
 wall_clock::wall_clock()
   {
-  arma_debug_sigprint();
-  
-  chrono_time1 = std::chrono::steady_clock::now();  // warmup
+  arma_extra_debug_sigprint();
   }
 
 
@@ -33,7 +31,7 @@ wall_clock::wall_clock()
 inline
 wall_clock::~wall_clock()
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   }
 
 
@@ -42,11 +40,10 @@ inline
 void
 wall_clock::tic()
   {
-  arma_debug_sigprint();
-  
-  valid = true;
+  arma_extra_debug_sigprint();
   
   chrono_time1 = std::chrono::steady_clock::now();
+  valid = true;
   }
 
 
@@ -55,15 +52,20 @@ inline
 double
 wall_clock::toc()
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
-  const std::chrono::steady_clock::time_point chrono_time2 = std::chrono::steady_clock::now();
+  if(valid)
+    {
+    const std::chrono::steady_clock::time_point chrono_time2 = std::chrono::steady_clock::now();
+    
+    typedef std::chrono::duration<double> duration_type;  // TODO: check this
+    
+    const duration_type chrono_span = std::chrono::duration_cast< duration_type >(chrono_time2 - chrono_time1);
+    
+    return chrono_span.count();
+    }
   
-  typedef std::chrono::duration<double> duration_type;  // TODO: check this
-  
-  const duration_type chrono_span = std::chrono::duration_cast< duration_type >(chrono_time2 - chrono_time1);
-  
-  return (valid) ? double(chrono_span.count()) : double(0);
+  return 0.0;
   }
 
 

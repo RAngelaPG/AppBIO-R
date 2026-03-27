@@ -1,0 +1,175 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Construct a named vector with semantics useful for parameter...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for match_names {statnet.common}"><tr><td>match_names {statnet.common}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Construct a named vector with semantics useful for parameter vectors</h2>
+
+<h3>Description</h3>
+
+<p>This is a helper function that constructs a named vector with names
+in <code>names</code> with values taken from <code>v</code> and optionally <code>default</code>,
+performing various checks. It supersedes <code><a href="../../statnet.common/help/vector.namesmatch.html">vector.namesmatch()</a></code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+match_names(v, names, default = NULL, partial = TRUE, errname = NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>v</code></td>
+<td>
+<p>a vector</p>
+</td></tr>
+<tr valign="top"><td><code>names</code></td>
+<td>
+<p>a character vector of element names</p>
+</td></tr>
+<tr valign="top"><td><code>default</code></td>
+<td>
+<p>value to be used for elements of <code>names</code> not found in <code>v</code></p>
+</td></tr>
+<tr valign="top"><td><code>partial</code></td>
+<td>
+<p>whether partial matching is allowed</p>
+</td></tr>
+<tr valign="top"><td><code>errname</code></td>
+<td>
+<p>optional, name to be reported in any error messages;
+defaults to <code>deparse1(substitute(v))</code></p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>If <code>v</code> is not named, it is required to be the same length as
+<code>names</code> and is simply given the corresponding names. If it is
+named, nonempty names are matched to the corresponding elements of
+<code>names</code>, with partial matching supported.
+</p>
+<p>Default values can be specified by the caller in <code>default</code> or by
+the end-user by adding an element with an empty (<code>""</code>) name in
+addition to the others. If given, the latter overrides the former.
+</p>
+<p>Duplicated names in <code>v</code> or <code>names</code> are resolved sequentially,
+though note the example below for caveat about partial matching.
+</p>
+<p>Zero-length <code>v</code> is handled as follows:
+</p>
+
+<ul>
+<li><p> If length of <code>names</code> is empty, return <code>v</code> unchanged.
+</p>
+</li>
+<li><p> If it is not and <code>default</code> is not <code>NULL</code>, return the <code>default</code> vector.
+</p>
+</li>
+<li><p> Otherwise, raise an error.
+</p>
+</li></ul>
+
+<p>An informative error is raised under any of the following conditions:
+</p>
+
+<ul>
+<li> <p><code>v</code> is not named but has length that differs from that of <code>names</code>.
+</p>
+</li>
+<li><p> More than one element of <code>v</code> has an empty name.
+</p>
+</li>
+<li><p> Not all elements of <code>names</code> are matched by an element of <code>v</code>, and
+no default is specified.
+</p>
+</li>
+<li><p> Not all elements of <code>v</code> are used up for elements of <code>names</code>.
+</p>
+</li>
+<li><p> There is ambiguity that <code><a href="../../base/html/pmatch.html">pmatch()</a></code> cannot resolve.
+</p>
+</li></ul>
+
+
+
+<h3>Value</h3>
+
+<p>A named vector with names <code>names</code> (in that order). See
+Details.
+</p>
+
+
+<h3>Note</h3>
+
+<p>At this time, passing <code>partial=FALSE</code> will use a crude
+sentinel to prevent partial matching, which in some, extremely
+improbable, circumstances might not work.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# Unnamed:
+test &lt;- as.numeric(1:3)
+stopifnot(identical(
+  match_names(test, c('a', 'c', 'b')),
+  c(a = 1, c = 2, b = 3)
+))
+
+# Named, reordered:
+test &lt;- c(c = 1, b = 2, a = 3)
+stopifnot(identical(
+  match_names(test, c('a', 'c', 'b')),
+  c(a = 3, c = 1, b = 2)
+))
+
+# Default value specified by default= assigned to a
+test &lt;- c(c = 1, b = 2)
+stopifnot(identical(
+  match_names(test, c('a', 'c', 'b'), NA),
+  c(a = NA, c = 1, b = 2)
+))
+
+# Default value specified in v assigned to a and b:
+test &lt;- c(c = 1, 2)
+stopifnot(identical(
+  match_names(test, c('a', 'c', 'b')),
+  c(a = 2, c = 1, b = 2)
+))
+
+# Partial matching
+test &lt;- c(c = 1, 2)
+stopifnot(identical(
+  match_names(test, c('a', 'cab', 'b')),
+  c(a = 2, cab = 1, b = 2)
+))
+
+# Multiple matching
+test &lt;- c(c = 1, 2, c = 3)
+stopifnot(identical(
+  match_names(test, c('a', 'c', 'c')),
+  c(a = 2, c = 1, c = 3)
+))
+
+# Partial + multiple matching caveat: exact match will match first.
+test &lt;- c(c = 1, a = 2, ca = 3)
+stopifnot(identical(
+  match_names(test, c('a', 'ca', 'ca')),
+  c(a = 2, ca = 3, ca = 1)
+))
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>statnet.common</em> version 4.13.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

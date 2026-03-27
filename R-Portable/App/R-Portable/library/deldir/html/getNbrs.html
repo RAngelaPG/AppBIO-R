@@ -1,0 +1,149 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: List Delaunay neighbours.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for getNbrs {deldir}"><tr><td>getNbrs {deldir}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+List Delaunay neighbours.
+</h2>
+
+<h3>Description</h3>
+
+<p>Lists the indices (or identifiers if these are provided) of the
+Delaunay neighbours of each point in the set of points being
+triangulated/tessellated.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+getNbrs(object, interior = NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+
+<p>An object of class <code>"deldir"</code>, as returned by the function
+<code>deldir()</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>interior</code></td>
+<td>
+
+<p>Either a rectangle, i.e. a numeric vector of length 4,
+<code>(xmin,xmax,ymin,ymax)</code>, or a polygon (a list with components
+named <code>"x"</code> and <code>"y"</code>, which are numeric vectors
+of equal length, say <code>n</code>.  The pairs <code>(x[i],y[i])</code>
+specify the vertices of the polygon and should be presented in
+<em>anticlockwise</em> order.  The last vertex should <b>NOT</b>
+repeat the first.
+</p>
+<p>If <code>interior</code> is given as a rectangle, its entries must
+satisfy <code>xmin &lt; xmax</code> and <code>ymin &lt; ymax</code>.  Moreover,
+in this case, <code>interior</code> must be a subset of the rectangular
+window <code>rw</code> (see <code><a href="../../deldir/help/deldir.html">deldir</a>()</code>) with respect to
+which the points in question are being triangulated/tessellated.
+That is, its entries must satisfy <code>rw[1] &lt;= xmin</code>, <code>xmax &lt;= rw[2]</code>,
+<code>rw[3] &lt;= ymin</code> and <code>ymax &lt;= rw[4]</code>.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>If <code>interior</code> is specified then Delaunay neighbours are listed
+only for those points which lie in <code>interior</code>.  Note that
+these <em>neighbours</em> need not themselves lie in <code>interior</code>.
+</p>
+<p>Note also that it is possible for points <code>i</code> and <code>j</code> to
+be neighbours even though the &ldquo;clipped&rdquo; versions of the tiles
+are discontiguous.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A (named) list of length equal to the number points in the set
+being triangulated/tessellated, or to the number of such points that
+lie in <code>interior</code> if that argument was specified.  The names
+of the list are the identifiers of the points as specified by
+<code>id</code> if <code>id</code> was specified in the call to <code>deldir()</code>
+that produced <code>object</code>.  If <code>id</code> was not specified, then
+the names are the indices of the points, coerced to character mode.
+</p>
+<p>The entries of this list are vectors of the identifiers or
+indices of the Delaunay neighbours of the point corresponding to
+that entry.
+</p>
+
+
+<h3>Warning</h3>
+
+<p>Be careful about addressing the entries of the list returned
+by this function.  If <code>id</code> was not specified in the call
+to <code>deldir()</code> that produced <code>object</code>, then the names
+of this list are the point indices coerced to character mode.
+If <code>interior</code> was specified then the name of <i>i</i>-th entry
+of the list will not in general be <code>i</code>.  E.g. given that
+<code>xxx</code> is the list returned by this function, <code>xxx[[14]]</code>
+will <b>not</b> in general give the Delaunay neighbours of point 14.
+Instead, specify <code>xxx[["14"]]</code> or <code>xxx[[id[14]]]</code> where
+<code>id</code> is the vector of identifiers supplied in the call to
+<code>deldir()</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Rolf Turner <a href="mailto:rolfurner@posteo.net">rolfurner@posteo.net</a></p>
+
+
+<h3>References</h3>
+
+<p>See <code><a href="../../deldir/help/deldir.html">deldir</a>()</code> for references.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+set.seed(42)
+x &lt;- runif(60)
+y &lt;- runif(60)
+dxy &lt;- deldir(x,y,rw=c(0,1,0,1))
+nbrs &lt;- getNbrs(dxy,interior=c(0.2,0.8,0.2,0.8))
+nbrs[["14"]] # Correct.
+nbrs[[14]]   # Incorrect.
+names(nbrs)[14] # The result is 42.
+# Thus nbrs[[14]] actually gives the Delaunay neighbours of point 42.
+
+# Demonstrate that neighbours can have discontiguous clipped tiles.
+if(require(polyclip)) {
+    x &lt;- c(0.38,0.44,0.04,0.97,0.43,0.96,0.89,0.64,0.97,0.62,0.33,0.35,
+           0.40,0.78,0.04,0.75,0.68,0.17,0.26,0.51)
+    y &lt;- c(0.68,0.98,0.76,0.57,0.85,0.19,0.27,0.83,0.69,0.24,0.04,0.14,
+           0.22,0.48,0.20,0.72,0.01,0.38,0.51,0.00)
+    CP &lt;- list(x=c(0.72,0.93,0.76,0.61,-0.03,-0.04,0.41),
+               y=c(0.46,0.76,0.94,1.03,1.01,0.37,0.31))
+    dxy &lt;- deldir(x,y,rw=c(0,1,0,1))
+    TL &lt;- tile.list(dxy)
+    plot(TL,labelPts=TRUE)
+    plot(TL[16],clipp=CP,fillcol="orange",labelPts=TRUE,add=TRUE)
+    polygon(CP,border="red")
+    nbrs &lt;- getNbrs(dxy,interior=CP) # Tiles are clipped to CP.
+# Note that point 14 is a neighbour of point 16, even though their
+# clipped tiles do not meet.
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>deldir</em> version 2.0-4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

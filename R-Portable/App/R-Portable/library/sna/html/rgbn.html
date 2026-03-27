@@ -1,0 +1,166 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Draw from a Skvoretz-Fararo Biased Net Process</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for rgbn {sna}"><tr><td>rgbn {sna}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Draw from a Skvoretz-Fararo Biased Net Process </h2>
+
+<h3>Description</h3>
+
+<p>Produces a series of draws from a Skvoretz-Fararo biased net process using a Markov chain Monte Carlo or exact sampling procedure.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+rgbn(n, nv, param = list(pi=0, sigma=0, rho=0, d=0.5, delta=0, 
+    epsilon=0), burn = nv*nv*5*100, thin = nv*nv*5, maxiter = 1e7,
+    method = c("mcmc","cftp"), dichotomize.sib.effects = FALSE,
+    return.as.edgelist = FALSE, seed.graph = NULL, max.density = 1)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>n</code></td>
+<td>
+<p> number of draws to take. </p>
+</td></tr>
+<tr valign="top"><td><code>nv</code></td>
+<td>
+<p> number of vertices in the graph to be simulated. </p>
+</td></tr>
+<tr valign="top"><td><code>param</code></td>
+<td>
+<p> a list containing the biased net parameters (as described below); <i>d</i> and <i>epsilon</i> may be given as scalars or as <code>nv x nv</code> matrices of edgewise event probabilities.</p>
+</td></tr>
+<tr valign="top"><td><code>burn</code></td>
+<td>
+<p> for the MCMC, the number of burn-in draws to take (and discard). </p>
+</td></tr>
+<tr valign="top"><td><code>thin</code></td>
+<td>
+<p> the thinning parameter for the MCMC algorithm. </p>
+</td></tr>
+<tr valign="top"><td><code>maxiter</code></td>
+<td>
+<p> for the CFTP method, the number of iterations to try before giving up.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+ <p><code>"mcmc"</code> for the MCMC, or <code>"cftp"</code> for the exact sampling procedure.</p>
+</td></tr>
+<tr valign="top"><td><code>dichotomize.sib.effects</code></td>
+<td>
+<p> logical; should sibling and double role effects be dichotomized?</p>
+</td></tr> 
+<tr valign="top"><td><code>return.as.edgelist</code></td>
+<td>
+<p> logical; should the simulated draws be returned in edgelist format?</p>
+</td></tr> 
+<tr valign="top"><td><code>seed.graph</code></td>
+<td>
+<p> optionally, an initial state to use for MCMC.</p>
+</td></tr>
+<tr valign="top"><td><code>max.density</code></td>
+<td>
+<p> optional maximum density threshold for MCMC; if the chain encounters a graph of higher than max density, the chain is terminated (and the result flagged). </p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The biased net model stems from early work by Rapoport, who attempted to model networks via a hypothetical &ldquo;tracing&rdquo; process.  This process may be described loosely as follows.  One begins with a small &ldquo;seed&rdquo; set of vertices, each member of which is assumed to nominate (generate ties to) other members of the population with some fixed probability.  These members, in turn, may nominate new members of the population, as well as members who have already been reached.  Such nominations may be &ldquo;biased&rdquo; in one fashion or another, leading to a non-uniform growth process. 
+</p>
+<p>While the original biased net model depends upon the tracing process, a local (conditional) interpretation was put forward by Skvoretz and colleagues (2004).  Using a four-parameter model, they propose approximating the conditional probability of an <i>(i,j)</i> edge given all other edges in a random graph <i>G</i> by
+</p>
+<p style="text-align: center;"><i>
+Pr(i-&gt;j | G_{-ij}) apx 1 - (1-rho)^z (1-sigma)^y (1-pi)^x (1-d_{ij})
+</i></p>
+
+<p>where <i>x=1</i> iff <i>j \to i</i> (and 0 otherwise), <i>y</i> is the number of vertices <i>k!=i,j</i> such that <i>k-&gt;i, k-&gt;j</i>, and <i>z=1</i> iff <i>x=1</i> and <i>y&gt;0</i> (and 0 otherwise).  Thus, <i>x</i> is the number of potential <em>parent bias</em> events, <i>y</i> is the number of potential <em>sibling bias</em> events, and <i>z</i> is the number of potential <em>double role bias</em> events.  <i>d_{ij}</i> is the probability of the baseline edge event; note that an edge arises if the baseline event or any bias event occurs, and all events are assumed conditionally independent.  Written in this way, it is clear that the edges of <i>G</i> are conditionally independent if they share no endpoint.  Thus, a  model with the above structure should be a subfamily of the Markov graphs.
+</p>
+<p>One problem with the above structure is that the hypothetical probabilities implied by the model are not in general consistent - that is, there exist conditions under which there is no joint pmf for <i>G</i> with the implied full conditionals.  The interpretation of the above as exact conditional probabilities is thus potentially problematic.  However, a well-defined process can be constructed by interpreting the above as transition probabilities for a Markov chain that evolves by updating a randomly selected edge variable at each time point; this is a Gibbs sampler for the implied joint pmf where it exists, and otherwise an irreducible and aperiodic Markov chain with a well-defined equilibrium distribution (Butts, 2018).
+</p>
+<p>In the above process, all events act to promote the formation of edges; it is also possible to define events that inhibit them (Butts, 2024).  Let an <em>inhibition</em> event be one that, if it occurs, forbids the creation of an <i>i-&gt;j</i>.  As with <i>d</i>, we may specify a total probability <i>epsilon_{ij}</i> that such an event occurs exogenously for the <i>i,j</i> edge.  We may also specify endogenous inhibition events.  For instance, consider a <em>satiation</em> event, which has the potential to occur every time <i>i</i> emits an edge to some other vertex; each existing edge has a chance of triggering &ldquo;satiation,&rdquo; in which case the focal edge is inhibited. The associated approximate conditional (i.e., transition probability) with these effects is then
+</p>
+<p style="text-align: center;"><i>
+Pr(i-&gt;j | G_{-ij}) apx (1-epsilon_{ij}) (1-delta)^w [1 - (1-rho)^z (1-sigma)^y (1-pi)^x (1-d_{ij})]
+</i></p>
+
+<p>where <i>w</i> is the outdegree of <i>i</i> in <i>G_{-ij}</i> and <i>delta</i> is the probability of the satiation event.  The net effect of satiation is to suppress edge formation (in roughly geometric fashion) on high degree nodes.  This may be useful in preventing degeneracy when using sigma and rho effects.  Degeneracy can also be reduced by employing the <code>dichotomize.sib.effects</code> argument, which counts only the first shared partner's contribution towards sibling and double role effects.
+</p>
+<p>It should be noted that the above process is not entirely consistent with the tracing-based model, which is itself not uniformly well-specified in the literature.  For this reason, the local model is referred to here as a Skvoretz-Fararo or Markovian biased net graph process.  One significant advantage of this process is that it is well-defined, and easily simulated: the above equation can be used to form the transition rule for a Markov chain Monte Carlo algorithm, which is used by <i>rgbn</i> to take draws from the (local) biased net model.  (Note that while the underlying Markov chain is only a Gibbs sampler in the special cases for which the putative conditional distributions are jointly satisfiable, it <em>always</em> can be interpreted as simulating draws from the equilibrium distribution of a SF/MBN graph process.)  Burn-in and thinning are controlled by the corresponding arguments; since degeneracy is common with models of this type, it is advisable to check for adequate mixing.  An alternative simulation strategy is the exact sampling procedure of Butts (2018), which employs a form of coupling from the past (CFTP).  The CFTP method generates exact, independent draws from the equilibrium distribution of the biased net process (up to numerical limits), but can be slow to attain coalescence (and does not currently support satiation events or other inhibition events).  Setting <code>maxiter</code> to smaller values limits the search depth employed, at the possible cost of biasing the resulting sample.  An initial condition may be specified for the MCMC using the <code>seed.graph</code>; if not specified, the empty graph is used.
+</p>
+<p>For some applications (e.g., ABC rejection sampling), it can be useful to terminate simulation if the density is obviously too high for the draw to be useful.  (Compare to similar functionality in the <code>ergm</code> &ldquo;density guard&rdquo; feature.)  This can be invoked for the MCMC algorithm by setting the <code>max.density</code> less than 1.  In this case, the chain is terminated as soon as the threshold density is reached.  The resulting object is marked with an attribute called <code>early.termination</code> with a value of <code>TRUE</code>, which should obviously be checked if this feature is used (since the terminated draws are not from the target distribution - especially if <code>n&gt;1</code>!).  This feature cannot be used with CFTP, and is ignored when CFTP is selected.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An adjacency array or list of sna edgelists containing the simulated graphs.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Carter T. Butts <a href="mailto:buttsc@uci.edu">buttsc@uci.edu</a></p>
+
+
+<h3>References</h3>
+
+ 
+<p>Butts, C.T.  (2018).  &ldquo;A Perfect Sampling Method for Exponential Family Random Graph Models.&rdquo; <em>Journal of Mathematical Sociology</em>, 42(1), 17-36.
+</p>
+<p>Butts, C.T.  (2024).  &ldquo;A Return to Biased Nets: New Specifications and Approximate Bayesian Inference.&rdquo;  <em>Journal of Mathematical Sociology</em>.
+</p>
+<p>Rapoport, A.  (1957).  &ldquo;A Contribution to the Theory of Random and Biased Nets.&rdquo;  <em>Bulletin of Mathematical Biophysics,</em> 15, 523-533.
+</p>
+<p>Skvoretz, J.; Fararo, T.J.; and Agneessens, F.  (2004).  &ldquo;Advances in Biased Net Theory: Definitions, Derivations, and Estimations.&rdquo;  <em>Social Networks,</em> 26, 113-139.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../sna/help/bn.html">bn</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+#Generate draws with low density and no biases
+g1&lt;-rgbn(50,10,param=list(pi=0, sigma=0, rho=0, d=0.17))
+apply(dyad.census(g1),2,mean) #Examine the dyad census
+
+#Add a reciprocity bias
+g2&lt;-rgbn(50,10,param=list(pi=0.5, sigma=0, rho=0, d=0.17))
+apply(dyad.census(g2),2,mean) #Compare with g1
+
+#Alternately, add a sibling bias
+g3&lt;-rgbn(50,10,param=list(pi=0.0, sigma=0.3, rho=0, d=0.17))
+mean(gtrans(g3))              #Compare transitivity scores
+mean(gtrans(g1))
+
+#Create a two-group model with homophily
+x&lt;-rbinom(30,1,0.5)           #Generate group labels
+d&lt;-0.02+outer(x,x,"==")*0.2   #Set base tie probability
+g4&lt;-rgbn(1,30,param=list(pi=0.25, sigma=0.02, rho=0, d=d))
+gplot(g4, vertex.col=1+x)     #Note the group structure
+
+#Create a two-group model where cross-group ties are inhibited
+x&lt;-rbinom(30,1,0.5)           #Generate group labels
+ep&lt;-outer(x,x,"!=")*0.75      #Set inhibition probability
+g5&lt;-rgbn(1,30,param=list(pi=0.5, sigma=0.05, rho=0, d=0.1, 
+    epsilon=ep))
+gplot(g5, vertex.col=1+x)     #Note the group structure
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sna</em> version 2.8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

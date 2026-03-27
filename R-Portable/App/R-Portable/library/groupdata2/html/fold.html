@@ -1,0 +1,608 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Create balanced folds for cross-validation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for fold {groupdata2}"><tr><td>fold {groupdata2}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Create balanced folds for cross-validation</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#stable"><img src="../help/figures/lifecycle-stable.svg" alt='[Stable]' /></a>
+</p>
+<p>Divides data into groups by a wide range of methods.
+Balances a given categorical variable and/or numerical variable between folds and keeps (if possible)
+all data points with a shared ID (e.g. participant_id) in the same fold.
+Can create multiple unique fold columns for repeated cross-validation.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+fold(
+  data,
+  k = 5,
+  cat_col = NULL,
+  num_col = NULL,
+  id_col = NULL,
+  method = "n_dist",
+  id_aggregation_fn = sum,
+  extreme_pairing_levels = 1,
+  num_fold_cols = 1,
+  unique_fold_cols_only = TRUE,
+  max_iters = 5,
+  use_of_triplets = "fill",
+  handle_existing_fold_cols = "keep_warn",
+  parallel = FALSE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p><code>data.frame</code>. Can be <em>grouped</em>, in which case
+the function is applied group-wise.</p>
+</td></tr>
+<tr valign="top"><td><code>k</code></td>
+<td>
+<p><em>Depends on <code>`method`</code>.</em>
+</p>
+<p>Number of folds (default), fold size, with more (see <code>`method`</code>).
+</p>
+<p>When <code>`num_fold_cols` &gt; 1</code>, <code>`k`</code> can also be a vector
+with one <code>`k`</code> per fold column. This allows trying multiple <code>`k`</code> settings at a time. Note
+that the generated fold columns are not guaranteed to be in the order of <code>`k`</code>.
+</p>
+<p>Given as whole number or percentage (<code>0 &lt; `k` &lt; 1</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>cat_col</code></td>
+<td>
+<p>Name of categorical variable to balance between folds.
+</p>
+<p>E.g. when predicting a binary variable (a or b), we usually want
+both classes represented in every fold.
+</p>
+<p>N.B. If also passing an <code>`id_col`</code>, <code>`cat_col`</code> should be constant within each ID.</p>
+</td></tr>
+<tr valign="top"><td><code>num_col</code></td>
+<td>
+<p>Name of numerical variable to balance between folds.
+</p>
+<p>N.B. When used with <code>`id_col`</code>, values for each ID are aggregated using
+<code>`id_aggregation_fn`</code> before being balanced.
+</p>
+<p>N.B. When passing <code>`num_col`</code>, the <code>`method`</code> parameter is ignored.</p>
+</td></tr>
+<tr valign="top"><td><code>id_col</code></td>
+<td>
+<p>Name of factor with IDs.
+This will be used to keep all rows that share an ID in the same fold
+(if possible).
+</p>
+<p>E.g. If we have measured a participant multiple times and want to see the
+effect of time, we want to have all observations of this participant in
+the same fold.
+</p>
+<p>N.B. When <code>`data`</code> is a <em>grouped</em> <code>data.frame</code>
+(see <code><a href="../../dplyr/help/group_by.html">dplyr::group_by()</a></code>), IDs that appear in multiple
+groupings might end up in different folds in those groupings.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p><code>"n_dist"</code>, <code>"n_fill"</code>, <code>"n_last"</code>,
+<code>"n_rand"</code>, <code>"greedy"</code>, or <code>"staircase"</code>.
+</p>
+<p><strong>Notice</strong>: examples are sizes of the generated groups
+based on a vector with <code>57</code> elements.
+</p>
+
+
+<h4>n_dist (default)</h4>
+
+<p>Divides the data into a specified number of groups and
+distributes excess data points across groups
+<i>(e.g. 11, 11, 12, 11, 12)</i>.
+</p>
+<p><code>`k`</code> is number of groups</p>
+
+
+
+<h4>n_fill</h4>
+
+<p>Divides the data into a specified number of groups and
+fills up groups with excess data points from the beginning
+<i>(e.g. 12, 12, 11, 11, 11)</i>.
+</p>
+<p><code>`k`</code> is number of groups</p>
+
+
+
+<h4>n_last</h4>
+
+<p>Divides the data into a specified number of groups.
+It finds the most equal group sizes possible,
+using all data points. Only the last group is able to differ in size
+<i>(e.g. 11, 11, 11, 11, 13)</i>.
+</p>
+<p><code>`k`</code> is number of groups</p>
+
+
+
+<h4>n_rand</h4>
+
+<p>Divides the data into a specified number of groups.
+Excess data points are placed randomly in groups (only 1 per group)
+<i>(e.g. 12, 11, 11, 11, 12)</i>.
+</p>
+<p><code>`k`</code> is number of groups</p>
+
+
+
+<h4>greedy</h4>
+
+<p>Divides up the data greedily given a specified group size
+<i>(e.g. 10, 10, 10, 10, 10, 7)</i>.
+</p>
+<p><code>`k`</code> is group size</p>
+
+
+
+<h4>staircase</h4>
+
+<p>Uses step size to divide up the data.
+Group size increases with 1 step for every group,
+until there is no more data
+<i>(e.g. 5, 10, 15, 20, 7)</i>.
+</p>
+<p><code>`k`</code> is step size</p>
+</td></tr>
+<tr valign="top"><td><code>id_aggregation_fn</code></td>
+<td>
+<p>Function for aggregating values in <code>`num_col`</code>
+for each ID, before balancing <code>`num_col`</code>.
+</p>
+<p>N.B. Only used when <code>`num_col`</code> and <code>`id_col`</code> are both specified.</p>
+</td></tr>
+<tr valign="top"><td><code>extreme_pairing_levels</code></td>
+<td>
+<p>How many levels of extreme pairing to do
+when balancing folds by a numerical column (i.e. <code>`num_col`</code> is specified).
+</p>
+<p><strong>Extreme pairing</strong>: Rows/pairs are ordered as smallest, largest,
+second smallest, second largest, etc. If <code>extreme_pairing_levels &gt; 1</code>,
+this is done &quot;recursively&quot; on the extreme pairs. See <code>`Details/num_col`</code> for more.
+</p>
+<p>N.B. Larger values work best with large datasets. If set too high,
+the result might not be stochastic. Always check if an increase
+actually makes the folds more balanced. See example.</p>
+</td></tr>
+<tr valign="top"><td><code>num_fold_cols</code></td>
+<td>
+<p>Number of fold columns to create.
+Useful for repeated cross-validation.
+</p>
+<p>If <code>num_fold_cols &gt; 1</code>, columns will be named
+<i>".folds_1"</i>, <i>".folds_2"</i>, etc.
+Otherwise simply <i>".folds"</i>.
+</p>
+<p>N.B. If <code>`unique_fold_cols_only`</code> is <code>TRUE</code>,
+we can end up with fewer columns than specified, see <code>`max_iters`</code>.
+</p>
+<p>N.B. If <code>`data`</code> has existing fold columns, see <code>`handle_existing_fold_cols`</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>unique_fold_cols_only</code></td>
+<td>
+<p>Check if fold columns are identical and
+keep only unique columns.
+</p>
+<p>As the number of column comparisons can be time consuming,
+we can run this part in parallel. See <code>`parallel`</code>.
+</p>
+<p>N.B. We can end up with fewer columns than specified in
+<code>`num_fold_cols`</code>, see <code>`max_iters`</code>.
+</p>
+<p>N.B. Only used when <code>`num_fold_cols` &gt; 1</code> or <code>`data`</code> has existing fold columns.</p>
+</td></tr>
+<tr valign="top"><td><code>max_iters</code></td>
+<td>
+<p>Maximum number of attempts at reaching
+<code>`num_fold_cols`</code> <em>unique</em> fold columns.
+</p>
+<p>When only keeping unique fold columns, we risk having fewer columns than expected.
+Hence, we repeatedly create the missing columns and remove those that are not unique.
+This is done until we have <code>`num_fold_cols`</code> unique fold columns
+or we have attempted <code>`max_iters`</code> times.
+</p>
+<p>In some cases, it is not possible to create <code>`num_fold_cols`</code>
+unique combinations of the dataset, e.g.
+when specifying <code>`cat_col`</code>, <code>`id_col`</code> and <code>`num_col`</code>.
+<code>`max_iters`</code> specifies when to stop trying.
+Note that we can end up with fewer columns than specified in <code>`num_fold_cols`</code>.
+</p>
+<p>N.B. Only used when <code>`num_fold_cols` &gt; 1</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>use_of_triplets</code></td>
+<td>
+<p><code>"fill"</code>, <code>"instead"</code> or <code>"never"</code>.
+</p>
+<p>When to use extreme triplet grouping in numerical balancing (when <code>`num_col`</code> is specified).
+</p>
+
+
+<h4>fill (default)</h4>
+
+<p>When extreme pairing cannot create enough unique fold columns, use extreme triplet grouping
+to create additional unique fold columns.
+</p>
+
+
+
+<h4>instead</h4>
+
+<p>Use extreme triplet grouping instead of extreme pairing. For some datasets, grouping in triplets
+give better balancing than grouping in pairs. This can be worth exploring when
+numerical balancing is important.
+</p>
+<p>Tip: Compare the balances with <code><a href="../help/summarize_balances.html">summarize_balances()</a></code> and
+<code><a href="../help/ranked_balances.html">ranked_balances()</a></code>.
+</p>
+
+
+
+<h4>never</h4>
+
+<p>Never use extreme triplet grouping.
+</p>
+
+
+
+<h4>Extreme triplet grouping</h4>
+
+<p>Similar to extreme pairing (see <code>Details &gt;&gt; num_col</code>), extreme triplet grouping
+orders the rows as <em>smallest, closest to the median, largest, second smallest, second
+closest to the median, second largest,</em> etc. Each triplet gets a group identifier
+and we either perform recursive extreme triplet grouping on the identifiers or fold
+the identifiers and transfer the fold IDs to the original rows.
+</p>
+<p>For some datasets, this can be give more balanced groups than extreme pairing, but
+on average, extreme pairing works better. Due to the grouping into triplets instead of pairs
+they tend to create different groupings though, so when creating many fold columns
+and extreme pairing cannot create enough unique fold columns, we can create the remaining
+(or at least some additional number) with extreme triplet grouping.
+</p>
+<p>Extreme triplet grouping is implemented in
+<code><a href="../../rearrr/help/triplet_extremes.html">rearrr::triplet_extremes()</a></code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>handle_existing_fold_cols</code></td>
+<td>
+<p>How to handle existing fold columns.
+Either <code>"keep_warn"</code>, <code>"keep"</code>, or <code>"remove"</code>.
+</p>
+<p>To <strong>add</strong> extra fold columns, use <code>"keep"</code> or <code>"keep_warn"</code>.
+Note that existing fold columns might be renamed.
+</p>
+<p>To <strong>replace</strong> the existing fold columns, use <code>"remove"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>parallel</code></td>
+<td>
+<p>Whether to parallelize the fold column comparisons,
+when <code>`unique_fold_cols_only`</code> is <code>TRUE</code>.
+</p>
+<p>Requires a registered parallel backend.
+Like <code>doParallel::registerDoParallel</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+
+
+<h4>cat_col</h4>
+
+
+<ol>
+<li> <p><code>`data`</code> is subset by <code>`cat_col`</code>.
+</p>
+</li>
+<li><p> Subsets are grouped and merged.
+</p>
+</li></ol>
+
+
+
+
+<h4>id_col</h4>
+
+
+<ol>
+<li><p> Groups are created from unique IDs.
+</p>
+</li></ol>
+
+
+
+
+<h4>num_col</h4>
+
+
+<ol>
+<li><p> Rows are shuffled.
+<strong>Note</strong> that this will only affect rows with the same value in <code>`num_col`</code>.
+</p>
+</li>
+<li><p> Extreme pairing 1: Rows are ordered as <em>smallest, largest, second smallest, second largest</em>, etc.
+Each pair get a group identifier. (See <code><a href="../../rearrr/help/pair_extremes.html">rearrr::pair_extremes()</a></code>)
+</p>
+</li>
+<li><p> If <code>`extreme_pairing_levels` &gt; 1</code>: These group identifiers are reordered as <em>smallest,
+largest, second smallest, second largest</em>, etc., by the sum of <code>`num_col`</code> in the represented rows.
+These pairs (of pairs) get a new set of group identifiers, and the process is repeated
+<code>`extreme_pairing_levels`-2</code> times. Note that the group identifiers at the last level will represent
+<code>2^`extreme_pairing_levels`</code> rows, why you should be careful when choosing that setting.
+</p>
+</li>
+<li><p> The group identifiers from the last pairing are folded (randomly divided into groups),
+and the fold identifiers are transferred to the original rows.
+</p>
+</li></ol>
+
+<p>N.B. When doing extreme pairing of an unequal number of rows,
+the row with the smallest value is placed in a group by itself, and the order is instead:
+smallest, <em>second smallest, largest, third smallest, second largest</em>, etc.
+</p>
+<p>N.B. When <code>`num_fold_cols` &gt; 1</code> and fewer than <code>`num_fold_cols`</code> fold columns have
+been created after <code>`max_iters`</code> attempts, we try with <em>extreme triplets</em> instead
+(see <code><a href="../../rearrr/help/triplet_extremes.html">rearrr::triplet_extremes()</a></code>). It groups the elements
+as <em>smallest, closest to the median, largest, second smallest, second closest to the median, second largest</em>, etc.
+We can also choose to never/only use extreme triplets via <code>`use_of_triplets`</code>.
+</p>
+
+
+
+<h4>cat_col AND id_col</h4>
+
+
+<ol>
+<li> <p><code>`data`</code> is subset by <code>`cat_col`</code>.
+</p>
+</li>
+<li><p> Groups are created from unique IDs in each subset.
+</p>
+</li>
+<li><p> Subsets are merged.
+</p>
+</li></ol>
+
+
+
+
+<h4>cat_col AND num_col</h4>
+
+
+<ol>
+<li> <p><code>`data`</code> is subset by <code>`cat_col`</code>.
+</p>
+</li>
+<li><p> Subsets are grouped by <code>`num_col`</code>.
+</p>
+</li>
+<li><p> Subsets are merged such that the largest group
+(by sum of <code>`num_col`</code>) from the first category
+is merged with the smallest group from the second category, etc.
+</p>
+</li></ol>
+
+
+
+
+<h4>num_col AND id_col</h4>
+
+
+<ol>
+<li><p> Values in <code>`num_col`</code> are aggregated for each ID, using <code>`id_aggregation_fn`</code>.
+</p>
+</li>
+<li><p> The IDs are grouped, using the aggregated values as &quot;<code>num_col</code>&quot;.
+</p>
+</li>
+<li><p> The groups of the IDs are transferred to the rows.
+</p>
+</li></ol>
+
+
+
+
+<h4>cat_col AND num_col AND id_col</h4>
+
+
+<ol>
+<li><p> Values in <code>`num_col`</code> are aggregated for each ID, using <code>`id_aggregation_fn`</code>.
+</p>
+</li>
+<li><p> IDs are subset by <code>`cat_col`</code>.
+</p>
+</li>
+<li><p> The IDs in each subset are grouped,
+by using the aggregated values as &quot;<code>num_col</code>&quot;.
+</p>
+</li>
+<li><p> The subsets are merged such that the largest group
+(by sum of the aggregated values) from the first category
+is merged with the smallest group from the second category, etc.
+</p>
+</li>
+<li><p> The groups of the IDs are transferred to the rows.
+</p>
+</li></ol>
+
+
+
+
+<h3>Value</h3>
+
+<p><code>data.frame</code> with grouping factor for subsetting in cross-validation.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Ludvig Renbo Olsen, <a href="mailto:r-pkgs@ludvigolsen.dk">r-pkgs@ludvigolsen.dk</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../groupdata2/help/partition.html">partition</a></code> for balanced partitions
+</p>
+<p>Other grouping functions: 
+<code><a href="../../groupdata2/help/all_groups_identical.html">all_groups_identical</a>()</code>,
+<code><a href="../../groupdata2/help/collapse_groups.html">collapse_groups</a>()</code>,
+<code><a href="../../groupdata2/help/collapse_groups_by.html">collapse_groups_by</a></code>,
+<code><a href="../../groupdata2/help/group.html">group</a>()</code>,
+<code><a href="../../groupdata2/help/group_factor.html">group_factor</a>()</code>,
+<code><a href="../../groupdata2/help/partition.html">partition</a>()</code>,
+<code><a href="../../groupdata2/help/splt.html">splt</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Attach packages
+library(groupdata2)
+library(dplyr)
+
+# Create data frame
+df &lt;- data.frame(
+  "participant" = factor(rep(c("1", "2", "3", "4", "5", "6"), 3)),
+  "age" = rep(sample(c(1:100), 6), 3),
+  "diagnosis" = factor(rep(c("a", "b", "a", "a", "b", "b"), 3)),
+  "score" = sample(c(1:100), 3 * 6)
+)
+df &lt;- df %&gt;% arrange(participant)
+df$session &lt;- rep(c("1", "2", "3"), 6)
+
+# Using fold()
+
+## Without balancing
+df_folded &lt;- fold(data = df, k = 3, method = "n_dist")
+
+## With cat_col
+df_folded &lt;- fold(
+  data = df,
+  k = 3,
+  cat_col = "diagnosis",
+  method = "n_dist"
+)
+
+## With id_col
+df_folded &lt;- fold(
+  data = df,
+  k = 3,
+  id_col = "participant",
+  method = "n_dist"
+)
+
+## With num_col
+# Note: 'method' would not be used in this case
+df_folded &lt;- fold(data = df, k = 3, num_col = "score")
+
+# With cat_col and id_col
+df_folded &lt;- fold(
+  data = df,
+  k = 3,
+  cat_col = "diagnosis",
+  id_col = "participant", method = "n_dist"
+)
+
+## With cat_col, id_col and num_col
+df_folded &lt;- fold(
+  data = df,
+  k = 3,
+  cat_col = "diagnosis",
+  id_col = "participant", num_col = "score"
+)
+
+# Order by folds
+df_folded &lt;- df_folded %&gt;% arrange(.folds)
+
+## Multiple fold columns
+# Useful for repeated cross-validation
+# Note: Consider running in parallel
+df_folded &lt;- fold(
+  data = df,
+  k = 3,
+  cat_col = "diagnosis",
+  id_col = "participant",
+  num_fold_cols = 5,
+  unique_fold_cols_only = TRUE,
+  max_iters = 4
+)
+
+# Different `k` per fold column
+# Note: `length(k) == num_fold_cols`
+df_folded &lt;- fold(
+  data = df,
+  k = c(2, 3),
+  cat_col = "diagnosis",
+  id_col = "participant",
+  num_fold_cols = 2,
+  unique_fold_cols_only = TRUE,
+  max_iters = 4
+)
+
+# Check the generated columns
+# with `summarize_group_cols()`
+summarize_group_cols(
+  data = df_folded,
+  group_cols = paste0('.folds_', 1:2)
+)
+
+## Check if additional `extreme_pairing_levels`
+## improve the numerical balance
+set.seed(2) # try with seed 1 as well
+df_folded_1 &lt;- fold(
+  data = df,
+  k = 3,
+  num_col = "score",
+  extreme_pairing_levels = 1
+)
+df_folded_1 %&gt;%
+  dplyr::ungroup() %&gt;%
+  summarize_balances(group_cols = '.folds', num_cols = 'score')
+
+set.seed(2)  # Try with seed 1 as well
+df_folded_2 &lt;- fold(
+  data = df,
+  k = 3,
+  num_col = "score",
+  extreme_pairing_levels = 2
+)
+df_folded_2 %&gt;%
+  dplyr::ungroup() %&gt;%
+  summarize_balances(group_cols = '.folds', num_cols = 'score')
+
+# We can directly compare how balanced the 'score' is
+# in the two fold columns using a combination of
+# `summarize_balances()` and `ranked_balances()`
+# We see that the second fold column (made with `extreme_pairing_levels = 2`)
+# has a lower standard deviation of its mean scores - meaning that they
+# are more similar and thus more balanced
+df_folded_1$.folds_2 &lt;- df_folded_2$.folds
+df_folded_1 %&gt;%
+  dplyr::ungroup() %&gt;%
+  summarize_balances(group_cols = c('.folds', '.folds_2'), num_cols = 'score') %&gt;%
+  ranked_balances()
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>groupdata2</em> version 2.0.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

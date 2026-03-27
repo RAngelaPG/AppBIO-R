@@ -1,0 +1,189 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: 1-df and 2-df tests for genetic associations with SNPs (or...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for tdt.snp {snpStats}"><tr><td>tdt.snp {snpStats}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>1-df and 2-df tests for genetic associations with SNPs (or
+imputed SNPs) in family data</h2>
+
+<h3>Description</h3>
+
+<p>Given large-scale SNP data for families comprising both parents and one or 
+more affected offspring, this function computes 1 df tests (the TDT test) and 
+a 2 df test based on observed and expected transmissions of genotypes. 
+Tests based on imputation rules can also be carried out.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+tdt.snp(ped, id, father, mother, affected, data = sys.parent(), snp.data, 
+    rules = NULL, snp.subset, check.inheritance = TRUE, robust = FALSE,
+    uncertain = FALSE, score = FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>ped</code></td>
+<td>
+<p>Pedigree identifiers</p>
+</td></tr>
+<tr valign="top"><td><code>id</code></td>
+<td>
+<p>Subject identifiers</p>
+</td></tr>
+<tr valign="top"><td><code>father</code></td>
+<td>
+<p>Identifiers for subjects' fathers</p>
+</td></tr>
+<tr valign="top"><td><code>mother</code></td>
+<td>
+<p>Identifiers for subjects' mothers</p>
+</td></tr>
+<tr valign="top"><td><code>affected</code></td>
+<td>
+<p>Disease status (TRUE if affected, FALSE otherwise)</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A data frame in which to evaluate the previous five arguments</p>
+</td></tr>
+<tr valign="top"><td><code>snp.data</code></td>
+<td>
+<p>An object of class <code>"SnpMatrix"</code> containing the SNP
+genotypes to be tested</p>
+</td></tr>
+<tr valign="top"><td><code>rules</code></td>
+<td>
+<p>An object of class
+<code>"ImputationRules"</code>. If
+supplied, the rules coded in this object are used, together with
+<code>snp.data</code>, to calculate tests for imputed SNPs</p>
+</td></tr>
+<tr valign="top"><td><code>snp.subset</code></td>
+<td>
+<p>A vector describing the subset of SNPs to be
+considered. Default action is to test all SNPs in <code>snp.data</code>
+or, in imputation mode,  as specified by <code>rules</code></p>
+</td></tr>
+<tr valign="top"><td><code>check.inheritance</code></td>
+<td>
+<p>If TRUE, each affected offspring/parent trio 
+is tested for Mendelian inheritance and excluded if the test fails. If
+FALSE, misinheriting trios are used but the &quot;robust&quot; variance option is
+forced</p>
+</td></tr>
+<tr valign="top"><td><code>robust</code></td>
+<td>
+<p>If TRUE, forces the robust (Huber-White) variance option 
+(with <code>ped</code> determining independent &quot;clusters&quot;)</p>
+</td></tr>
+<tr valign="top"><td><code>uncertain</code></td>
+<td>
+<p>If TRUE, uncertain genotypes are handed by replacing
+score contributions by their posterior expectations. Otherwise these
+are treated as missing. Setting this option authomatically invokes
+use of <code>robust</code> variance estimates</p>
+</td></tr>
+<tr valign="top"><td><code>score</code></td>
+<td>
+<p>If <code>TRUE</code>, the output object will contain, for each
+SNP,  the score vector and its variance-covariance matrix</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Formally, the test statistics are score tests for the &quot;conditioning on
+parental genotype&quot; (CPG) likelihood. Parametrization of associations is
+the same as for the population-based tests calculated by 
+<code><a href="../../snpStats/help/single.snp.tests.html">single.snp.tests</a></code> so that results from family-based and 
+population-based studies can be combined using <code><a href="../../snpStats/help/pool.html">pool</a></code>.
+</p>
+<p>When the function is used to calculate tests for imputed SNPs, the
+test is still an approximate score test. The current version does not use 
+the family relationships in the imputation. With this option, the robust 
+variance estimate is forced. 
+</p>
+<p>The first five arguments are usually derived from  a &quot;pedfile&quot;. If a 
+data frame is supplied for the <code>data</code> argument, the first five 
+arguments will be evaluated in this frame. Otherwise they will be evaluated 
+in the calling environment. If the arguments are missing, they will be 
+assumed to be in their usual positions in the pedfile data frame 
+i.e. in columns one to 
+four for the identifiers  and column six for disease status 
+(with affected coded <code>2</code>). If the pedfile data are obtained from
+a dataframe, the row names of the <code>data</code> and <code>snp.data</code>
+files will be used to align the pedfile and SNP data. Otherwise, these
+vectors will be assumed to be in the same order as the rows of
+<code>snp.data</code>. 
+</p>
+<p>The <code>snp.subset</code> argument can be a logical,
+integer, or character vector.
+</p>
+<p>If imputed rather than observed SNPs are tested, or
+if <code>check.inheritance</code> is set to
+<code>FALSE</code>, the &quot;robust&quot; variance estimate is used regardless of the
+value supplied for the <code>robust</code> argument.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class
+<code>"SingleSnpTests"</code>. 
+If <code>score=TRUE</code>, the output object will be of the extended class
+<code>"SingleSnpTestsScore"</code>
+containing additional slots holding the score statistics and their
+variances (and covariances). This allows meta-analysis using the
+<code><a href="../../snpStats/help/pool.html">pool</a></code> function.
+</p>
+
+
+<h3>Note</h3>
+
+<p>When the snps are on the X chromosome (i.e. when the <code>snp.data</code> 
+argument is of class <code>"XSnpMatrix"</code>), the tests are constructed 
+in the same way as was described by Clayton (2008) for population-based 
+association tests i.e. assuming that 
+genotype relative risks for males mirror thos of homozygous females
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>David Clayton <a href="mailto:dc208@cam.ac.uk">dc208@cam.ac.uk</a></p>
+
+
+<h3>References</h3>
+
+<p>Clayton (2008) Testing for association on the X chromosome
+<em>Biostatistics</em>, <b>9</b>:593-600.)
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../snpStats/help/single.snp.tests.html">single.snp.tests</a></code>, <code><a href="../../snpStats/help/impute.snps.html">impute.snps</a></code>, 
+<code><a href="../../snpStats/help/pool.html">pool</a></code>, <code><a href="../../snpStats/help/ImputationRules-class.html">ImputationRules-class</a></code>,
+<code><a href="../../snpStats/help/SingleSnpTests-class.html">SingleSnpTests-class</a></code>,
+<code><a href="../../snpStats/help/SingleSnpTestsScore-class.html">SingleSnpTestsScore-class</a></code> 
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(families)
+tdt.snp(data=pedData, snp.data=genotypes)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>snpStats</em> version 1.44.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Activate an OpenTelemetry span for an R scope</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for local_active_span {otel}"><tr><td>local_active_span {otel}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Activate an OpenTelemetry span for an R scope</h2>
+
+<h3>Description</h3>
+
+<p>Activates the span for the caller (or other) frame.
+</p>
+<p>Usually you need this function for spans created with <code><a href="../../otel/help/start_span.html">start_span()</a></code>,
+which does not activate the new span. Usually you don't need it for
+spans created with <code><a href="../../otel/help/start_local_active_span.html">start_local_active_span()</a></code>, because it activates
+the new span automatically.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+local_active_span(span, end_on_exit = FALSE, activation_scope = parent.frame())
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>span</code></td>
+<td>
+<p>The OpenTelemetry span to activate.</p>
+</td></tr>
+<tr valign="top"><td><code>end_on_exit</code></td>
+<td>
+<p>Whether to end the span when exiting the activation
+scope.</p>
+</td></tr>
+<tr valign="top"><td><code>activation_scope</code></td>
+<td>
+<p>The scope to activate the span for, defaults to
+the caller frame.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>When the frame ends, the span is deactivated and the previously active
+span will be active again, if there was any.
+</p>
+<p>It is possible to activate the same span for multiple R frames.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Nothing.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other OpenTelemetry trace API: 
+<code><a href="../../otel/help/Zero+20Code+20Instrumentation.html">Zero Code Instrumentation</a></code>,
+<code><a href="../../otel/help/end_span.html">end_span</a>()</code>,
+<code><a href="../../otel/help/is_tracing_enabled.html">is_tracing_enabled</a>()</code>,
+<code><a href="../../otel/help/start_local_active_span.html">start_local_active_span</a>()</code>,
+<code><a href="../../otel/help/start_span.html">start_span</a>()</code>,
+<code><a href="../../otel/help/tracing-constants.html">tracing-constants</a></code>,
+<code><a href="../../otel/help/with_active_span.html">with_active_span</a>()</code>
+</p>
+<p>Other tracing for concurrent code: 
+<code><a href="../../otel/help/with_active_span.html">with_active_span</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+fun &lt;- function() {
+  # start span, do not activate
+  spn &lt;- otel::start_span("myfun")
+  # do not leak resources
+  on.exit(otel::end_span(spn), add = TRUE)
+  myfun &lt;- function() {
+     # activate span for this function
+     otel::local_active_span(spn)
+     # create child span
+     spn2 &lt;- otel::start_local_active_span("myfun/2")
+  }
+
+  myfun2 &lt;- function() {
+    # activate span for this function
+    otel::local_active_span(spn)
+    # create child span
+    spn3 &lt;- otel::start_local_active_span("myfun/3")
+  }
+  myfun()
+  myfun2()
+  end_span(spn)
+}
+fun()
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>otel</em> version 0.2.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

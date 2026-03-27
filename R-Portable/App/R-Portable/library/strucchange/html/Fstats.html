@@ -1,0 +1,146 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: F Statistics</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for Fstats {strucchange}"><tr><td>Fstats {strucchange}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>F Statistics</h2>
+
+<h3>Description</h3>
+
+<p>Computes a series of F statistics for a specified data window.</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+Fstats(formula, from = 0.15, to = NULL, data = list(), vcov. = NULL)</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>a symbolic description for the model to be tested</p>
+</td></tr>
+<tr valign="top"><td><code>from, to</code></td>
+<td>
+<p>numeric. If <code>from</code> is smaller than 1 they are
+interpreted as percentages of data and by default <code>to</code> is taken to be
+1 - <code>from</code>. F statistics will be calculated for the observations
+<code>(n*from):(n*to)</code>, when <code>n</code> is the number of observations in the
+model. If <code>from</code> is greater than 1 it is interpreted to be the index
+and <code>to</code> defaults to <code>n - from</code>. If <code>from</code> is a vector with
+two elements, then <code>from</code> and <code>to</code> are interpreted as time
+specifications like in <code><a href="../../stats/html/ts.html">ts</a></code>, see also the examples.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>an optional data frame containing the variables in the model. By
+default the variables are taken from the environment which <code>Fstats</code> is
+called from.</p>
+</td></tr>
+<tr valign="top"><td><code>vcov.</code></td>
+<td>
+<p>a function to extract the covariance matrix
+for the coefficients of a fitted model of class <code>"lm"</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>For every potential change point in <code>from:to</code> a F statistic (Chow
+test statistic) is computed. For this an OLS model is fitted for the
+observations before and after the potential change point, i.e. <code>2k</code>
+parameters have to be estimated, and the error sum of squares is computed (ESS).
+Another OLS model for all observations with a restricted sum of squares (RSS) is
+computed, hence <code>k</code> parameters have to be estimated here. If <code>n</code> is 
+the number of observations and <code>k</code> the number of regressors in the model,
+the formula is:
+</p>
+<p style="text-align: center;"><i>F = (RSS-ESS)/ESS * (n-2*k)</i></p>
+
+<p>Note that this statistic has an asymptotic chi-squared distribution with k degrees of
+freedom and (under the assumption of normality) F/k has an exact F distribution
+with k and n - 2k degrees of freedom.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>Fstats</code> returns an object of class <code>"Fstats"</code>, which contains
+mainly a time series of F statistics. The function <code><a href="../../graphics/html/plot.default.html">plot</a></code> has a
+method to plot the F statistics or the
+corresponding p values; with <code>sctest</code> a
+supF-, aveF- or expF-test on structural change can be performed.</p>
+
+
+<h3>References</h3>
+
+<p>Andrews D.W.K. (1993), Tests for parameter instability and structural
+change with unknown change point, <em>Econometrica</em>, <b>61</b>, 821-856.
+</p>
+<p>Hansen B. (1992), Tests for parameter instability in regressions with I(1)
+processes, <em>Journal of Business &amp; Economic Statistics</em>, <b>10</b>, 321-335.
+</p>
+<p>Hansen B. (1997), Approximate asymptotic p values for structural-change
+tests, <em>Journal of Business &amp; Economic Statistics</em>, <b>15</b>, 60-67. </p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../strucchange/help/plot.Fstats.html">plot.Fstats</a></code>, <code><a href="../../strucchange/help/sctest.Fstats.html">sctest.Fstats</a></code>,
+<code><a href="../../strucchange/help/boundary.Fstats.html">boundary.Fstats</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Nile data with one breakpoint: the annual flows drop in 1898
+## because the first Ashwan dam was built
+data("Nile")
+plot(Nile)
+
+## test the null hypothesis that the annual flow remains constant
+## over the years
+fs.nile &lt;- Fstats(Nile ~ 1)
+plot(fs.nile)
+sctest(fs.nile)
+## visualize the breakpoint implied by the argmax of the F statistics
+plot(Nile)
+lines(breakpoints(fs.nile))
+
+## UK Seatbelt data: a SARIMA(1,0,0)(1,0,0)_12 model
+## (fitted by OLS) is used and reveals (at least) two
+## breakpoints - one in 1973 associated with the oil crisis and
+## one in 1983 due to the introduction of compulsory
+## wearing of seatbelts in the UK.
+data("UKDriverDeaths")
+seatbelt &lt;- log10(UKDriverDeaths)
+seatbelt &lt;- cbind(seatbelt, lag(seatbelt, k = -1), lag(seatbelt, k = -12))
+colnames(seatbelt) &lt;- c("y", "ylag1", "ylag12")
+seatbelt &lt;- window(seatbelt, start = c(1970, 1), end = c(1984,12))
+plot(seatbelt[,"y"], ylab = expression(log[10](casualties)))
+
+## compute F statistics for potential breakpoints between
+## 1971(6) (corresponds to from = 0.1) and 1983(6) (corresponds to
+## to = 0.9 = 1 - from, the default)
+## compute F statistics
+fs &lt;- Fstats(y ~ ylag1 + ylag12, data = seatbelt, from = 0.1)
+## this gives the same result
+fs &lt;- Fstats(y ~ ylag1 + ylag12, data = seatbelt, from = c(1971, 6),
+             to = c(1983, 6))
+## plot the F statistics
+plot(fs, alpha = 0.01)
+## plot F statistics with aveF boundary
+plot(fs, aveF = TRUE)
+## perform the expF test
+sctest(fs, type = "expF")
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>strucchange</em> version 1.5-4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

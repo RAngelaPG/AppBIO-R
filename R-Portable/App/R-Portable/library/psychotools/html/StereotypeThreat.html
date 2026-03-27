@@ -1,0 +1,198 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Stereotype Threat in Dutch Differential Aptitude Test</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for StereotypeThreat {psychotools}"><tr><td>StereotypeThreat {psychotools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Stereotype Threat in Dutch Differential Aptitude Test</h2>
+
+<h3>Description</h3>
+
+<p>Cross-section data from Differential Aptitude Test (DAT) among Dutch highschool
+students, along with experimental conditions pertaining to stereotype threat.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>data("StereotypeThreat")</pre>
+
+
+<h3>Format</h3>
+
+<p>A data frame containing 295 observations on 11 variables.
+</p>
+
+<dl>
+<dt>condition</dt><dd><p>Factor indicating experimental condition: <code>"control"</code> or
+stereotype <code>"threat"</code>, for details see below.</p>
+</dd>
+<dt>ethnicity</dt><dd><p>Factor coding ethnicity: Dutch <code>"majority"</code> or <code>"minority"</code>.</p>
+</dd>
+<dt>numerical</dt><dd><p>Number of items solved in numerical ability subtest
+(out of 14 complicated mathematical items).</p>
+</dd>
+<dt>abstract</dt><dd><p>Number of items solved in abstract reasoning subtest
+(out of 18 items with a logical sequence of diagrams).</p>
+</dd>
+<dt>verbal</dt><dd><p>Number of items solved in verbal reasoning subtest
+(out of 16 verbal analogy items).</p>
+</dd>
+<dt>gender</dt><dd><p>Factor indicating gender.</p>
+</dd>
+<dt>age</dt><dd><p>Age in years.</p>
+</dd>
+<dt>vintelligence</dt><dd><p>Numerical coding of the value of one's own intelligence.
+Answer to: How important is your intelligence for you?
+Range is from very important (<code>5</code>) to unimportant (<code>1</code>).</p>
+</dd>
+<dt>vgrades</dt><dd><p>Numerical coding of the value of getting good grades.  
+Answer to: How much do you value getting good school grades?
+Range is from a lot of value (<code>5</code>) to not so much value (<code>1</code>).</p>
+</dd>
+<dt>vprejudice</dt><dd><p>Numerical coding of the answer to: Do you think that people of your group are prejudiced against?
+Range is from certainly (<code>5</code>) to not at all (<code>1</code>).</p>
+</dd>
+<dt>gpa</dt><dd><p>Numerical grade point average on 10-point scale (with 10 being the best grade).
+It has 57 missing values as some schools were either unwilling to share the
+data or did not provide it timely enough.</p>
+</dd>
+</dl>
+
+
+
+<h3>Details</h3>
+
+<p>The data are taken from Study 1 of Wicherts et al. (2005) and have been used to study
+stereotype threat on intelligence test performance among Dutch highschool students.
+</p>
+<p>On average, Dutch minority students attain lower educational levels compared to Dutch
+majority students and studies have shown that minority students are often viewed as
+less smart/educated. Conversely, minorities often feel discriminated against in scholastic
+domains.
+</p>
+<p>Wicherts et al. (2005) administered an intelligence test consisting of three
+subtests (for numerical ability, abstract reasoning, and verbal reasoning) and varied
+the amount of stereotype threat related to ethnic minorities by changing the presentation
+of the test. In the <code>"threat"</code> condition, the questions were declared to be part
+of an intelligence test and also an ethnicity questionnaire was conducted prior to the DAT.
+In the <code>"control"</code> condition, intelligence was not mentioned and no ethnicity
+questionnaire was conducted.
+</p>
+<p>The variables <code>numerical</code>, <code>abstract</code>, and <code>verbal</code> can be used to assess
+ability/intelligence. And the <code>vintelligence</code>, <code>vgrades</code>, <code>vprejudice</code>, and
+<code>gpa</code> variables capture identification with the scholastic domain.
+</p>
+<p>See Wicherts et al. (2005) for details.
+</p>
+
+
+<h3>Source</h3>
+
+<p>Provided by Jelte M. Wicherts.
+</p>
+
+
+<h3>References</h3>
+
+<p>Wicherts JM, Conor VD, Hessen DJ (2005).
+Stereotype Threat and Group Differences in Test Performance: A Question of Measurement Invariance.
+<em>Journal of Personality and Social Psychology</em>, <b>89</b>(5), 696-716.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Data: Load and include/order wrt group variable
+data("StereotypeThreat", package = "psychotools")
+StereotypeThreat &lt;- transform(StereotypeThreat, group = interaction(ethnicity, condition))
+StereotypeThreat &lt;- StereotypeThreat[order(StereotypeThreat$group),]
+
+## Exploratory analysis (Table 2, p. 703)
+tab2 &lt;- with(StereotypeThreat, rbind(
+   "#"         = tapply(numerical, group, length),
+   "Numerical" = tapply(numerical, group, mean),
+   "         " = tapply(numerical, group, sd),
+   "Abstract " = tapply(abstract,  group, mean),
+   "         " = tapply(abstract,  group, sd),
+   "Verbal   " = tapply(verbal,    group, mean),
+   "         " = tapply(verbal,    group, sd)))
+round(tab2, digits = 2)
+
+## Corresponding boxplots
+plot(numerical ~ group, data = StereotypeThreat)
+plot(abstract  ~ group, data = StereotypeThreat)
+plot(verbal    ~ group, data = StereotypeThreat)
+
+## MANOVA (p. 703)
+m &lt;- lm(cbind(numerical, abstract, verbal) ~ ethnicity * condition, data = StereotypeThreat)
+anova(m, update(m, . ~ . - ethnicity:condition))
+## corresponding univariate results
+printCoefmat(t(sapply(summary(m),
+  function(x) x$coefficients["ethnicityminority:conditionthreat", ])))
+
+## MGCFA (Table 3, p. 704)
+## can be replicated using package lavaan
+## Not run: 
+## convenience function for multi-group CFA on this data
+mgcfa &lt;- function(model, ...) cfa(model, data = StereotypeThreat,
+  group = "group", likelihood = "wishart", start = "simple", ...)
+		 
+## list of all 9 models
+m &lt;- vector("list", length = 9)
+names(m) &lt;- c("m2", "m2a", "m3", "m3a", "m4", "m5", "m5a", "m5b", "m6")
+
+## Step 2: Fix loadings across groups
+f &lt;- 'ability =~ abstract + verbal + numerical'
+m$m2 &lt;- mgcfa(f, group.equal = "loadings")
+
+## Step 2a: Free numerical loading in group 4 (minority.threat)
+f &lt;- 'ability =~ abstract + verbal + c(l1, l1, l1, l4) * numerical'
+m$m2a &lt;- mgcfa(f, group.equal = "loadings")
+
+## Step 3: Fix variances across groups
+m$m3 &lt;- mgcfa(f, group.equal = c("loadings", "residuals"))
+
+## Step 3a: Free numerical variance in group 4
+f &lt;- c(f, 'numerical ~~ c(e1, e1, e1, e4) * numerical')
+m$m3a &lt;- mgcfa(f, group.equal = c("loadings", "residuals"))
+
+## Step 4: Fix latent variances within conditions
+f &lt;- c(f, 'ability ~~ c(vmaj, vmin, vmaj, vmin) * ability')
+m$m4 &lt;- mgcfa(f, group.equal = c("loadings", "residuals"))
+
+## Step 5: Fix certain means, free others
+f &lt;- c(f, 'numerical ~ c(na1, na1, na1, na4) * 1')
+m$m5 &lt;- mgcfa(f, group.equal = c("loadings", "residuals", "intercepts"))
+
+## Step 5a: Free ability mean in group majority.control
+f &lt;- c(f, 'abstract ~ c(ar1, ar2, ar2, ar2) * 1')
+m$m5a &lt;- mgcfa(f, group.equal = c("loadings", "residuals", "intercepts"))
+
+## Step 5b: Free also ability mean in group minority.control
+f &lt;- c(f[1:4], 'abstract ~ c(ar1, ar2, ar3, ar3) * 1')
+m$m5b &lt;- mgcfa(f, group.equal = c("loadings", "residuals", "intercepts"))
+
+## Step 6: Different latent mean structure
+f &lt;- c(f, 'ability ~  c(maj, min, maj, min) * 1 + c(0, NA, 0, NA) * 1')
+m$m6 &lt;- mgcfa(f, group.equal = c("loadings", "residuals", "intercepts"))
+
+## Extract measures of fit
+tab &lt;- t(sapply(m, fitMeasures, c("chisq", "df", "pvalue", "rmsea", "cfi")))
+tab &lt;- rbind("1" = c(0, 0, 1, 0, 1), tab)
+tab &lt;- cbind(tab,
+  delta_chisq = c(NA, abs(diff(tab[, "chisq"]))),
+  delta_df = c(NA, diff(tab[, "df"])))
+tab &lt;- cbind(tab, "pvalue2" = pchisq(tab[, "delta_chisq"],
+  abs(tab[, "delta_df"]), lower.tail = FALSE))
+tab &lt;- tab[, c(2, 1, 3, 7, 6, 8, 4, 5)]
+round(tab, digits = 3)
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>psychotools</em> version 0.7-6 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

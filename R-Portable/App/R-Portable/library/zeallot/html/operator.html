@@ -1,0 +1,165 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Multiple assignment operators</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for operator {zeallot}"><tr><td>operator {zeallot}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Multiple assignment operators</h2>
+
+<h3>Description</h3>
+
+<p>Assign values to name(s).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+x %&lt;-% value
+
+value %-&gt;% x
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A name structure, see section below.</p>
+</td></tr>
+<tr valign="top"><td><code>value</code></td>
+<td>
+<p>A list of values, vector of values, or <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> object to assign.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p><code>%&lt;-%</code> and <code>%-&gt;%</code> invisibly return <code>value</code>.
+</p>
+<p>These operators are used primarily for their assignment side-effect.
+<code>%&lt;-%</code> and <code>%-&gt;%</code> assign into the environment in which they
+are evaluated.
+</p>
+
+
+<h3>Name Structure</h3>
+
+<p><strong>The basics</strong>
+</p>
+<p>At its simplest, the name structure is a single variable name, in which
+case <code>%&lt;-%</code> and <code>%-&gt;%</code> perform regular assignment, <code>x
+%&lt;-% list(1, 2, 3)</code> or <code>list(1, 2, 3) %-&gt;% x</code>.
+</p>
+<p>To specify multiple variable names use <code>c()</code>, for example <code>c(x, y, z)
+%&lt;-% c(1, 2, 3)</code>.
+</p>
+<p>When <code>value</code> is neither an atomic vector nor a list, <code>%&lt;-%</code> and
+<code>%-&gt;%</code> will try to destructure <code>value</code> into a list before assigning
+variables, see <code><a href="../../zeallot/help/destructure.html">destructure()</a></code>.
+</p>
+<p><strong>In-place assignment</strong>
+</p>
+<p>One may also assign into a list or environment, <code>c(x, x[[1]]) %&lt;-%
+list(list(), 1)</code>.
+</p>
+<p><strong>Nested names</strong>
+</p>
+<p>One can also nest calls to <code>c()</code>, <code>c(x, c(y, z))</code>. This nested structure is
+used to unpack nested values, <code>c(x, c(y, z)) %&lt;-% list(1, list(2,
+3))</code>.
+</p>
+<p><strong>Collector variables</strong>
+</p>
+<p>To gather extra values from the beginning, middle, or end of <code>value</code> use a
+collector variable. Collector variables are indicated with the <code>..</code>
+prefix, <code>c(..x, y) %&lt;-% list(1, 2, 3, 4)</code>.
+</p>
+<p><strong>Skipping values</strong>
+</p>
+<p>Use <code>.</code> in place of a variable name to skip a value without raising an error
+or assigning the value, <code>c(x, ., z) %&lt;-% list(1, 2, 3)</code>.
+</p>
+<p>Use <code>..</code> to skip multiple values without raising an error or assigning the
+values, <code>c(w, .., z) %&lt;-% list(1, NA, NA, 4)</code>.
+</p>
+<p><strong>Default values</strong>
+</p>
+<p>Use <code>=</code> with a value to specify a default value for a variable,
+<code>c(x, y = NULL) %&lt;-% list(1)</code>.
+</p>
+<p>Unfortunately, using a default value with in-place assignment raises an error
+because of <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>'s syntax, <code>c(x, x[[1]] = 1) %&lt;-% list(list())</code>.
+</p>
+<p><strong>Named assignment</strong>
+</p>
+<p>Use <code>=</code> <em>without</em> a value to assign values by name, <code>c(two=) %&lt;-% list(one = 1, two = 2, three = 3)</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>For more on unpacking custom objects please refer to
+<code><a href="../../zeallot/help/destructure.html">destructure()</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Basic usage
+c(x, y) %&lt;-% list(0, 1)
+
+# Unpack and assign nested values
+c(c(x, y), z) %&lt;-% list(list(2, 3), list(3, 4))
+
+# Assign columns of data frame
+c(eruptions, waiting) %&lt;-% faithful
+
+# Assign specific columns by name
+c(mpg=, hp=, gear=) %&lt;-% mtcars
+
+# Alternatively, assign a column by position
+c(first_col, .., last_col) %&lt;-% mtcars
+
+# Skip initial values, assign final value
+todo_list &lt;- list("1. Make food", "2. Pack lunch", "3. Save world")
+
+c(.., final_todo) %&lt;-% todo_list
+
+# Assign first name, skip middle initial, assign last name
+c(first_name, ., last_name) %&lt;-% c("Ursula", "K", "Le Guin")
+
+# Unpack nested values w/ nested names
+fibs &lt;- list(1, list(2, list(3, list(5))))
+
+c(f2, c(f3, c(f4, c(f5)))) %&lt;-% fibs
+
+# Unpack first numeric, leave rest
+c(f2, ..rest) %&lt;-% unlist(fibs)
+
+# Swap values without using temporary variables
+c(a, b) %&lt;-% c("eh", "bee")
+
+c(a, b) %&lt;-% c(b, a)
+
+# Handle missing values with default values
+parse_time &lt;- function(x) {
+  strsplit(x, " ")[[1]]
+}
+
+c(hour, period = NA) %&lt;-% parse_time("10:00 AM")
+
+c(hour, period = NA) %&lt;-% parse_time("15:00")
+
+# Right operator
+list(1, 2, "a", "b", "c") %-&gt;% c(x, y, ..z)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>zeallot</em> version 0.2.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

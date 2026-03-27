@@ -1,0 +1,134 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Compute the Closeness Centrality Scores of Network Positions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for closeness {sna}"><tr><td>closeness {sna}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Compute the Closeness Centrality Scores of Network Positions </h2>
+
+<h3>Description</h3>
+
+<p><code>closeness</code> takes one or more graphs (<code>dat</code>) and returns the closeness centralities of positions (selected by <code>nodes</code>) within the graphs indicated by <code>g</code>.  Depending on the specified mode, closeness on directed or undirected geodesics will be returned; this function is compatible with <code><a href="../../sna/help/centralization.html">centralization</a></code>, and will return the theoretical maximum absolute deviation (from maximum) conditional on size (which is used by <code><a href="../../sna/help/centralization.html">centralization</a></code> to normalize the observed centralization score).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+closeness(dat, g=1, nodes=NULL, gmode="digraph", diag=FALSE, 
+    tmaxdev=FALSE, cmode="directed", geodist.precomp=NULL, 
+    rescale=FALSE, ignore.eval=TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>dat</code></td>
+<td>
+<p> one or more input graphs. </p>
+</td></tr>
+<tr valign="top"><td><code>g</code></td>
+<td>
+<p> integer indicating the index of the graph for which centralities are to be calculated (or a vector thereof).  By default, <code>g</code>=1. </p>
+</td></tr>
+<tr valign="top"><td><code>nodes</code></td>
+<td>
+<p> list indicating which nodes are to be included in the calculation.  By default, all nodes are included. </p>
+</td></tr>
+<tr valign="top"><td><code>gmode</code></td>
+<td>
+<p> string indicating the type of graph being evaluated.  &quot;digraph&quot; indicates that edges should be interpreted as directed; &quot;graph&quot; indicates that edges are undirected.  <code>gmode</code> is set to &quot;digraph&quot; by default. </p>
+</td></tr>
+<tr valign="top"><td><code>diag</code></td>
+<td>
+<p> boolean indicating whether or not the diagonal should be treated as valid data.  Set this true if and only if the data can contain loops.  <code>diag</code> is <code>FALSE</code> by default. </p>
+</td></tr>
+<tr valign="top"><td><code>tmaxdev</code></td>
+<td>
+<p> boolean indicating whether or not the theoretical maximum absolute deviation from the maximum nodal centrality should be returned.  By default, <code>tmaxdev==FALSE</code>. </p>
+</td></tr>
+<tr valign="top"><td><code>cmode</code></td>
+<td>
+<p> string indicating the type of closeness centrality being computed (distances on directed or undirected pairs, or an alternate measure). </p>
+</td></tr>
+<tr valign="top"><td><code>geodist.precomp</code></td>
+<td>
+<p> a <code><a href="../../sna/help/geodist.html">geodist</a></code> object precomputed for the graph to be analyzed (optional) </p>
+</td></tr>
+<tr valign="top"><td><code>rescale</code></td>
+<td>
+<p> if true, centrality scores are rescaled such that they sum to 1. </p>
+</td></tr>
+<tr valign="top"><td><code>ignore.eval</code></td>
+<td>
+<p> logical; should edge values be ignored when calculating geodesics?</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The closeness of a vertex v is defined as
+</p>
+<p style="text-align: center;"><i>
+C_C(v) = (|V(G)|-1)/sum( d(v,i), i in V(G), i!=v )</i></p>
+
+<p>where <i>d(i,j)</i> is the geodesic distance between i and j (where defined).  Closeness is ill-defined on disconnected graphs; in such cases, this routine substitutes <code>Inf</code>.  It should be understood that this modification is not canonical (though it is common), but can be avoided by not attempting to measure closeness on disconnected graphs in the first place!  Intuitively, closeness provides an index of the extent to which a given vertex has short paths to all other vertices in the graph; this is one reasonable measure of the extent to which a vertex is in the &ldquo;middle&rdquo; of a given structure.
+</p>
+<p>An alternate form of closeness (apparently due to Gil and Schmidt (1996)) is obtained by taking the sum of the inverse distances to each vertex, i.e.
+</p>
+<p style="text-align: center;"><i>
+C_C(v) = sum( 1/d(v,i), i in V(G), i!=v )/(|V(G)|-1).</i></p>
+<p>  This measure correlates well with the standard form of closeness where both are well-defined, but lacks the latter's pathological behavior on disconnected graphs.  Computation of alternate closeness may be performed via the argument <code>cmode="suminvdir"</code> (directed case) and <code>cmode="suminvundir"</code> (undirected case).  The corresponding arguments <code>cmode="directed"</code> and <code>cmode="undirected"</code> return the standard closeness scores in the directed or undirected cases (respectively).  Although treated here as a measure of closeness, this index was originally intended to capture power or efficacy; in its original form, the Gil-Schmidt power index is a renormalized version of the above.  Specifically, let <i>R(v,G)</i> be the set of vertices reachable by <i>v</i> in <i>V \ v</i>.  Then the Gil-Schmidt power index is defined as
+</p>
+<p style="text-align: center;"><i>
+C_GS(v) = sum( 1/d(v,i), i in R(v,G) )/|R(v,G)|,</i></p>
+
+<p>with <i>C_GS</i> defined to be 0 for vertices with no outneighbors.  This may be obtained via the argument <code>cmode="gil-schmidt"</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A vector, matrix, or list containing the closeness scores (depending on the number and size of the input graphs).
+</p>
+
+
+<h3>Note</h3>
+
+<p> Judicious use of <code>geodist.precomp</code> can save a great deal of time when computing multiple path-based indices on the same network. </p>
+
+
+<h3>Author(s)</h3>
+
+<p> Carter T. Butts, <a href="mailto:buttsc@uci.edu">buttsc@uci.edu</a> </p>
+
+
+<h3>References</h3>
+
+<p>Freeman, L.C.  (1979).  &ldquo;Centrality in Social Networks I: Conceptual Clarification.&rdquo; <em>Social Networks</em>, 1, 215-239. 
+</p>
+<p>Gil, J. and Schmidt, S.  (1996).  &ldquo;The Origin of the Mexican Network of Power&rdquo;.  Proceedings of the International Social Network Conference, Charleston, SC, 22-25.
+</p>
+<p>Sinclair, P.A.  (2009).  &ldquo;Network Centralization with the Gil Schmidt Power Centrality Index&rdquo;  <em>Social Networks</em>, 29, 81-92.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../sna/help/centralization.html">centralization</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+g&lt;-rgraph(10)     #Draw a random graph with 10 members
+closeness(g)      #Compute closeness scores
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sna</em> version 2.8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Replace NA with specific values</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for replace_na {sjmisc}"><tr><td>replace_na {sjmisc}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Replace NA with specific values</h2>
+
+<h3>Description</h3>
+
+<p>This function replaces (tagged) NA's of a variable, data frame
+or list of variables with <code>value</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+replace_na(x, ..., value, na.label = NULL, tagged.na = NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A vector or data frame.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Optional, unquoted names of variables that should be selected for
+further processing. Required, if <code>x</code> is a data frame (and no
+vector) and only selected variables from <code>x</code> should be processed.
+You may also use functions like <code>:</code> or tidyselect's
+select-helpers.
+See 'Examples' or <a href="../doc/design_philosophy.html">package-vignette</a>.</p>
+</td></tr>
+<tr valign="top"><td><code>value</code></td>
+<td>
+<p>Value that will replace the <code><a href="../../base/html/NA.html">NA</a></code>'s.</p>
+</td></tr>
+<tr valign="top"><td><code>na.label</code></td>
+<td>
+<p>Optional character vector, used to label the the former NA-value
+(i.e. adding a <code>labels</code> attribute for <code>value</code> to <code>x</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>tagged.na</code></td>
+<td>
+<p>Optional single character, specifies a <code><a href="../../haven/help/tagged_na.html">tagged_na</a></code> value
+that will be replaced by <code>value</code>. Herewith it is possible
+to replace only specific <code>NA</code> values of <code>x</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>While regular <code>NA</code> values can only be <em>completely</em> replaced with
+a single value, <code><a href="../../haven/help/tagged_na.html">tagged_na</a></code> allows to differentiate
+between different qualitative values of <code>NA</code>s.
+Tagged <code>NA</code>s work exactly like regular R missing values
+except that they store one additional byte of information: a tag,
+which is usually a letter (&quot;a&quot; to &quot;z&quot;) or character number (&quot;0&quot; to &quot;9&quot;).
+Therewith it is possible to replace only specific NA values, while
+other NA values are preserved.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>x</code>, where <code>NA</code>'s are replaced with <code>value</code>. If <code>x</code>
+is a data frame, the complete data frame <code>x</code> will be returned,
+with replaced NA's for variables specified in <code>...</code>;
+if <code>...</code> is not specified, applies to all variables in the
+data frame.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Value and variable label attributes are preserved.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../sjlabelled/help/set_na.html">set_na</a></code> for setting <code>NA</code> values, <code><a href="../../sjmisc/help/rec.html">rec</a></code>
+for general recoding of variables and <code><a href="../../sjmisc/help/recode_to.html">recode_to</a></code>
+for re-shifting value ranges.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(sjlabelled)
+data(efc)
+table(efc$e42dep, useNA = "always")
+table(replace_na(efc$e42dep, value = 99), useNA = "always")
+
+# the original labels
+get_labels(replace_na(efc$e42dep, value = 99))
+# NA becomes "99", and is labelled as "former NA"
+get_labels(
+  replace_na(efc$e42dep, value = 99, na.label = "former NA"),
+  values = "p"
+)
+
+dummy &lt;- data.frame(
+  v1 = efc$c82cop1,
+  v2 = efc$c83cop2,
+  v3 = efc$c84cop3
+)
+# show original distribution
+lapply(dummy, table, useNA = "always")
+# show variables, NA's replaced with 99
+lapply(replace_na(dummy, v2, v3, value = 99), table, useNA = "always")
+
+if (require("haven")) {
+  x &lt;- labelled(c(1:3, tagged_na("a", "c", "z"), 4:1),
+                c("Agreement" = 1, "Disagreement" = 4, "First" = tagged_na("c"),
+                  "Refused" = tagged_na("a"), "Not home" = tagged_na("z")))
+  # get current NA values
+  x
+  get_na(x)
+
+  # replace only the NA, which is tagged as NA(c)
+  replace_na(x, value = 2, tagged.na = "c")
+  get_na(replace_na(x, value = 2, tagged.na = "c"))
+
+  table(x)
+  table(replace_na(x, value = 2, tagged.na = "c"))
+
+  # tagged NA also works for non-labelled class
+  # init vector
+  x &lt;- c(1, 2, 3, 4)
+  # set values 2 and 3 as tagged NA
+  x &lt;- set_na(x, na = c(2, 3), as.tag = TRUE)
+  # see result
+  x
+  # now replace only NA tagged with 2 with value 5
+  replace_na(x, value = 5, tagged.na = "2")
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sjmisc</em> version 2.8.11 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

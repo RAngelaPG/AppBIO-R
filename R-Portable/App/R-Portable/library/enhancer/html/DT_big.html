@@ -1,0 +1,88 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Big GxE Quantitative Genetic Simulation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for DT_big {enhancer}"><tr><td>DT_big {enhancer}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Big GxE Quantitative Genetic Simulation
+</h2>
+
+<h3>Description</h3>
+
+<p>A data frame and genetic markers for a population of 1000 individuals evaluated in 
+25 environments and 2 replicates per environment giving a total of 50 K records
+to show how to fit big GxE models with genomic information.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>data("DT_big")</pre>
+
+
+<h3>Format</h3>
+
+<p>The format is:
+chr &quot;DT_big&quot;
+</p>
+
+
+<h3>References</h3>
+
+<p>Giovanny Covarrubias-Pazaran (2024).  lme4breeding: enabling genetic evaluation in the age of genomic data. To be submitted to Bioinformatics.
+</p>
+<p>Douglas Bates, Martin Maechler, Ben Bolker, Steve Walker (2015). Fitting Linear Mixed-Effects Models Using lme4. Journal of Statistical Software, 67(1), 1-48.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+data(DT_big)
+DT = DT_big
+M = apply(M_big,2,as.numeric)
+rownames(M) &lt;- rownames(M_big)
+
+
+
+# compute the relationship matrix
+MMT &lt;- tcrossprod(M)
+m &lt;- sum(diag(MMT))/nrow(MMT)
+MMT &lt;- MMT/m
+MMT &lt;- MMT + diag(1e-05, ncol(MMT), ncol(MMT))
+
+# let's fit the GxE model (diagonal first)
+DT[,"envf_repf"] = paste(DT[,"envf"],DT[,"repf"],sep="_")
+DT=DT[with(DT, order(envf_repf)), ]
+
+
+
+
+
+if(requireNamespace("lme4breeding")){
+library(lme4breeding)
+# fit the models
+mixm2 &lt;- lmeb(value ~ (1|envf_repf) + (0+envf_repf||id), 
+                  data = DT, 
+                  relmat = list(id = MMT), 
+                  control = lmerControl( 
+                    restart_edge = FALSE
+                  ), nIters=1000,
+                  verbose=1L, rotation=TRUE
+)
+
+vc &lt;- VarCorr(mixm2); print(vc,comp=c("Variance"))
+ran2 = ranef(mixm2, condVar=FALSE)
+H0 &lt;- ran2$id
+}
+
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>enhancer</em> version 1.1.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

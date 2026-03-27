@@ -1,0 +1,308 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Stats</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for Stat {ggplot2}"><tr><td>Stat {ggplot2}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Stats</h2>
+
+<h3>Description</h3>
+
+<p>All <code style="white-space: pre;">stat_*()</code> functions (like <code>stat_bin()</code>) return a layer that
+contains a <code style="white-space: pre;">Stat*</code> object (like <code>StatBin</code>). The <code style="white-space: pre;">Stat*</code>
+object is responsible for rendering the data in the plot.
+</p>
+
+
+<h3>Details</h3>
+
+<p>Each of the <code style="white-space: pre;">Stat*</code> objects is a <code><a href="../../ggplot2/help/ggproto.html">ggproto()</a></code> object, descended
+from the top-level <code>Stat</code>, and each implements various methods and
+fields. The object and its parameters are chaperoned by the <a href="../../ggplot2/help/Layer.html">Layer</a> class.
+</p>
+<p>To create a new type of Stat object, you typically will want to
+override one or more of the following:
+</p>
+
+<ul>
+<li><p> The <code>required_aes</code> and <code>default_aes</code> fields.
+</p>
+</li>
+<li><p> One of the <code>compute_layer()</code>, <code>compute_panel()</code> or <code>compute_group()</code>
+functions. Typically it best to implement <code>compute_group()</code> and use the
+higher-up methods when there are substantial performance improvements to
+be gained.
+</p>
+</li>
+<li><p> The <code>finish_layer()</code> method
+</p>
+</li></ul>
+
+
+
+<h3>Fields</h3>
+
+
+<dl>
+<dt><code>required_aes</code></dt><dd><p>A character vector naming aesthetics that are necessary
+to compute the stat.</p>
+</dd>
+<dt><code>non_missing_aes</code></dt><dd><p>A character vector naming aesthetics that will cause
+removal if they have missing values.</p>
+</dd>
+<dt><code>optional_aes</code></dt><dd><p>A character vector naming aesthetics that will be
+accepted by <code>layer()</code>, but are not required or dscribed in the <code>default_aes</code>
+field.</p>
+</dd>
+<dt><code>default_aes</code></dt><dd><p>A <a href="../../ggplot2/help/aes.html">mapping</a> of default values for aesthetics.
+Aesthetics can be set to <code>NULL</code> to be included as optional aesthetic.</p>
+</dd>
+<dt><code>dropped_aes</code></dt><dd><p>A character vector naming aesthetics that can be dropped
+from the data without warning. Typically used for aesthetics that are
+'consumed' during computation like <code>"weight"</code>.</p>
+</dd>
+<dt><code>extra_params</code></dt><dd><p>A character vector of parameter names in addition to
+those imputed from the <code>compute_panel()</code> or <code>compute_groups()</code> methods.
+This field can be set to include parameters for <code>setup_data()</code> methods.
+By default, this only contains <code>"na.rm"</code>.</p>
+</dd>
+<dt><code>retransform</code></dt><dd><p>A scalar boolean: should the values produced by the
+statistic also be transformed in the second pass when recently added
+statistics are trained to the scales</p>
+</dd>
+<dt><code>setup_params</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for modifying or checking the parameters based on the
+data. The default method returns the parameters unaltered.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Stat$setup_params(data, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A data frame with the layer's data.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of current parameters</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A list of parameters</p>
+</dd>
+<dt><code>setup_data</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for modifying or checking the data. The default method
+returns data unaltered.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Stat$setup_data(data, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A data frame with the layer's data.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters coming from the <code>setup_params()</code>
+method</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A data frame with layer data</p>
+</dd>
+<dt><code>compute_layer</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for orchestrating the computation of the statistic. The
+default method splits the data and passes on computation tasks to the
+panel-level <code>compute_panel()</code> method. In addition, the default method
+handles missing values by removing rows that have missing values for the
+aesthetics listed in the <code>required_aes</code> and <code>non_missing_aes</code> fields. It is
+not recommended to use this method as an extension point.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Stat$compute_layer(data, params, layout)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A data frame with the layer's data.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters</p>
+</dd>
+<dt><code>layout</code></dt><dd><p>A pre-trained <code style="white-space: pre;">&lt;Layout&gt;</code> ggproto object.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A data frame with computed data</p>
+</dd>
+<dt><code>compute_panel,compute_group</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method orchestrating the computation of statistics for a single
+panel or group. The default <code>compute_panel()</code> method splits the data into
+groups, and passes on computation tasks to the <code>compute_group()</code> method.
+In addition, <code>compute_panel()</code> is tasked with preserving aesthetics that
+are constant within a group and preserving these if the computation loses
+them. The default <code>compute_group()</code> is not implemented.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Stat$compute_panel(data, scales, ...)
+Stat$compute_group(data, scales, ...)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A data frame with the layer's data.</p>
+</dd>
+<dt><code>scales</code></dt><dd><p>A list of pre-trained <code>x</code> and <code>y</code> scales. Note that the
+position scales are not finalised at this point and reflect the initial
+data range before computing stats.</p>
+</dd>
+<dt><code>...</code></dt><dd><p>Reserved for extensions. By default, this passes parameters
+to the <code>compute_group()</code> method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A data frame with layer data</p>
+</dd>
+<dt><code>finish_layer</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method acting as a hook to modify data after scales have been
+applied, but before geoms have to render. The default is to pass the data
+unaltered. This can be used as an extension point when actual aesthetic
+values rather than values mapped to the aesthetic are needed.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Stat$finish_layer(data, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A data frame with layer data</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A data frame with layer data</p>
+</dd>
+<dt><code>parameters</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for listing out all acceptable parameters for this stat.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Stat$parameters(extra)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>extra</code></dt><dd><p>A boolean: whether to include the <code>extra_params</code> field.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A character vector of parameter names.</p>
+</dd>
+<dt><code>aesthetics</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for listing out all acceptable aesthetics for this stat.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Stat$aesthetics()
+</pre></div>
+<p><strong>Value</strong>
+</p>
+<p>A character vector of aesthetic names.</p>
+</dd>
+</dl>
+
+
+<h3>Conventions</h3>
+
+<p>The object name that a new class is assigned to is typically the same as the
+class name. Stat class names are in UpperCamelCase and start with the <code style="white-space: pre;">Stat*</code>
+prefix, like <code>StatNew</code>.
+</p>
+<p>A constructor function is usually paired wih a Stat class. The constructor
+wraps a call to <code>layer()</code>, where e.g. <code>layer(stat = StatNew)</code>. The
+constructor function name is formatted by taking the Stat class name and
+formatting it with snake_case, so that <code>StatNew</code> becomes <code>stat_new()</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>The <a href="https://ggplot2-book.org/extensions#sec-new-stats">new stats section</a> of the online ggplot2 book..
+</p>
+<p>Run <code>vignette("extending-ggplot2")</code>, in particular the &quot;Creating a
+new stat&quot; section.
+</p>
+<p>Other Layer components: 
+<code><a href="../../ggplot2/help/Geom.html">Geom</a></code>,
+<code><a href="../../ggplot2/help/Layer-class.html">Layer-class</a></code>,
+<code><a href="../../ggplot2/help/Position.html">Position</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Extending the class
+StatKmeans &lt;- ggproto(
+  "StatKmeans", Stat,
+  # Fields
+  required_aes = c("x", "y"),
+  # You can relate computed variables to aesthetics using `after_stat()`
+  # in defaults
+  default_aes = aes(colour = after_stat(cluster)),
+  # Methods
+  compute_panel = function(data, scales, k = 2L) {
+    km &lt;- kmeans(cbind(scale(data$x), scale(data$y)), centers = k)
+    data$cluster &lt;- factor(km$cluster)
+    data
+  }
+)
+
+# Building a constructor
+stat_kmeans &lt;- function(mapping = NULL, data = NULL, geom = "point",
+                        position = "identity", ..., k = 2L, na.rm = FALSE,
+                        show.legend = NA, inherit.aes = TRUE) {
+  layer(
+    mapping = mapping, data = data,
+    geom = geom, stat = StatKmeans, position = position,
+    show.legend = show.legend, inherit.aes = inherit.aes,
+    params = list(na.rm = na.rm, k = k, ...)
+  )
+}
+
+# Use new stat in plot
+ggplot(mpg, aes(displ, hwy)) +
+  stat_kmeans(k = 3)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ggplot2</em> version 4.0.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

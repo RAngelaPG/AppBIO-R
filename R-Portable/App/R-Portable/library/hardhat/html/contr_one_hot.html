@@ -1,0 +1,120 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Contrast function for one-hot encodings</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for contr_one_hot {hardhat}"><tr><td>contr_one_hot {hardhat}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Contrast function for one-hot encodings</h2>
+
+<h3>Description</h3>
+
+<p>This contrast function produces a model matrix that has indicator columns for
+each level of each factor.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+contr_one_hot(n, contrasts = TRUE, sparse = FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>n</code></td>
+<td>
+<p>A vector of character factor levels (of length &gt;=1) or the number
+of unique levels (&gt;= 1).</p>
+</td></tr>
+<tr valign="top"><td><code>contrasts</code></td>
+<td>
+<p>This argument is for backwards compatibility and only the
+default of <code>TRUE</code> is supported.</p>
+</td></tr>
+<tr valign="top"><td><code>sparse</code></td>
+<td>
+<p>This argument is for backwards compatibility and only the
+default of <code>FALSE</code> is supported.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>By default, <code>model.matrix()</code> generates binary indicator variables for
+factor predictors. When the formula does not remove an intercept, an
+incomplete set of indicators are created; no indicator is made for the
+first level of the factor.
+</p>
+<p>For example, <code>species</code> and <code>island</code> both have three levels but
+<code>model.matrix()</code> creates two indicator variables for each:
+</p>
+<div class="sourceCode r"><pre>library(dplyr)
+library(modeldata)
+</pre></div>
+<div class="sourceCode"><pre>## 
+## Attaching package: 'modeldata'
+
+## The following object is masked from 'package:datasets':
+## 
+##     penguins
+</pre></div>
+<div class="sourceCode r"><pre>data(penguins)
+
+levels(penguins$species)
+</pre></div>
+<div class="sourceCode"><pre>## [1] "Adelie"    "Chinstrap" "Gentoo"
+</pre></div>
+<div class="sourceCode r"><pre>levels(penguins$island)
+</pre></div>
+<div class="sourceCode"><pre>## [1] "Biscoe"    "Dream"     "Torgersen"
+</pre></div>
+<div class="sourceCode r"><pre>model.matrix(~ species + island, data = penguins) |&gt; 
+  colnames()
+</pre></div>
+<div class="sourceCode"><pre>## [1] "(Intercept)"      "speciesChinstrap" "speciesGentoo"    "islandDream"     
+## [5] "islandTorgersen"
+</pre></div>
+<p>For a formula with no intercept, the first factor is expanded to
+indicators for <em>all</em> factor levels but all other factors are expanded to
+all but one (as above):
+</p>
+<div class="sourceCode r"><pre>model.matrix(~ 0 + species + island, data = penguins) |&gt; 
+  colnames()
+</pre></div>
+<div class="sourceCode"><pre>## [1] "speciesAdelie"    "speciesChinstrap" "speciesGentoo"    "islandDream"     
+## [5] "islandTorgersen"
+</pre></div>
+<p>For inference, this hybrid encoding can be problematic.
+</p>
+<p>To generate all indicators, use this contrast:
+</p>
+<div class="sourceCode r"><pre># Switch out the contrast method
+old_contr &lt;- options("contrasts")$contrasts
+new_contr &lt;- old_contr
+new_contr["unordered"] &lt;- "contr_one_hot"
+options(contrasts = new_contr)
+
+model.matrix(~ species + island, data = penguins) |&gt; 
+  colnames()
+</pre></div>
+<div class="sourceCode"><pre>## [1] "(Intercept)"      "speciesAdelie"    "speciesChinstrap" "speciesGentoo"   
+## [5] "islandBiscoe"     "islandDream"      "islandTorgersen"
+</pre></div>
+<div class="sourceCode r"><pre>options(contrasts = old_contr)
+</pre></div>
+<p>Removing the intercept here does not affect the factor encodings.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A diagonal matrix that is <code>n</code>-by-<code>n</code>.
+</p>
+
+<hr /><div style="text-align: center;">[Package <em>hardhat</em> version 1.4.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

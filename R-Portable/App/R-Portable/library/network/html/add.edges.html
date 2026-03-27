@@ -1,0 +1,168 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Add Edges to a Network Object</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for add.edges {network}"><tr><td>add.edges {network}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Add Edges to a Network Object</h2>
+
+<h3>Description</h3>
+
+<p>Add one or more edges to an existing network object.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+add.edge(
+  x,
+  tail,
+  head,
+  names.eval = NULL,
+  vals.eval = NULL,
+  edge.check = FALSE,
+  ...
+)
+
+add.edges(x, tail, head, names.eval = NULL, vals.eval = NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>an object of class <code>network</code></p>
+</td></tr>
+<tr valign="top"><td><code>tail</code></td>
+<td>
+<p>for <code>add.edge</code>, a vector of vertex IDs reflecting the tail
+set for the edge to be added; for <code>add.edges</code>, a list of such vectors</p>
+</td></tr>
+<tr valign="top"><td><code>head</code></td>
+<td>
+<p>for <code>add.edge</code>, a vector of vertex IDs reflecting the head
+set for the edge to be added; for <code>add.edges</code>, a list of such vectors</p>
+</td></tr>
+<tr valign="top"><td><code>names.eval</code></td>
+<td>
+<p>for <code>add.edge</code>, an optional list of names for edge
+attributes; for <code>add.edges</code>, a list of length equal to the number of
+edges, with each element containing a list of names for the attributes of
+the corresponding edge</p>
+</td></tr>
+<tr valign="top"><td><code>vals.eval</code></td>
+<td>
+<p>for <code>add.edge</code>, an optional list of edge attribute
+values (matching <code>names.eval</code>); for <code>add.edges</code>, a list of such
+lists</p>
+</td></tr>
+<tr valign="top"><td><code>edge.check</code></td>
+<td>
+<p>logical; should we perform (computationally expensive)
+tests to check for the legality of submitted edges?</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>additional arguments</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The edge checking procedure is very slow, but should always be employed when
+debugging; without it, one cannot guarantee that the network state is
+consistent with network level variables (see
+<code><a href="../../network/help/network.indicators.html">network.indicators</a></code>). For example, by default it is possible to
+add multiple edges to a pair of vertices.
+</p>
+<p>Edges can also be added/removed via the extraction/replacement operators.
+See the associated man page for details.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Invisibly, <code>add.edge</code> and <code>add.edges</code> return pointers to
+their modified arguments; both functions modify their arguments in place..
+</p>
+
+
+<h3>Note</h3>
+
+<p><code>add.edges</code> and <code>add.edge</code> were converted to an S3 generic
+funtions in version 1.9, so they actually call <code>add.edges.network</code> and
+<code>add.edge.network</code> by default, and may call other versions depending on
+context (i.e. when called with a <code>networkDynamic</code> object).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Carter T. Butts <a href="mailto:buttsc@uci.edu">buttsc@uci.edu</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Butts, C. T.  (2008).  &ldquo;network: a Package for Managing
+Relational Data in R.&rdquo; <em>Journal of Statistical Software</em>, 24(2).
+doi: <a href="https://doi.org/10.18637/jss.v024.i02">10.18637/jss.v024.i02</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../network/help/network.html">network</a></code>, <code><a href="../../network/help/add.vertices.html">add.vertices</a></code>,
+<code><a href="../../network/help/network.extraction.html">network.extraction</a></code>, <code><a href="../../network/help/delete.edges.html">delete.edges</a></code>,
+<code><a href="../../network/help/network.edgelist.html">network.edgelist</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+#Initialize a small, empty network
+g&lt;-network.initialize(3)
+
+#Add an edge
+add.edge(g,1,2)
+g
+
+#Can also add edges using the extraction/replacement operators
+#note that replacement operators are much slower than add.edges()
+g[,3]&lt;-1
+g[,]
+
+#Add multiple edges with attributes to a network
+
+# pretend we just loaded in this data.frame from a file
+# Note: network.edgelist() may be simpler for this case
+elData&lt;-data.frame(
+  from_id=c("1","2","3","1","3","1","2"),
+  to_id=c("1", "1", "1", "2", "2", "3", "3"),
+  myEdgeWeight=c(1, 2, 1, 2, 5, 3, 9.5),
+  someLetters=c("B", "W", "L", "Z", "P", "Q", "E"),
+  edgeCols=c("red","green","blue","orange","pink","brown","gray"),
+  stringsAsFactors=FALSE
+)
+
+valueNet&lt;-network.initialize(3,loops=TRUE)
+
+add.edges(valueNet,elData[,1],elData[,2],
+    names.eval=rep(list(list("myEdgeWeight","someLetters","edgeCols")),nrow(elData)), 
+    vals.eval=lapply(1:nrow(elData),function(r){as.list(elData[r,3:5])}))
+
+list.edge.attributes(valueNet)
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>network</em> version 1.20.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

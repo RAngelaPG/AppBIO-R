@@ -1,0 +1,135 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Dual-frame and multi-frame surveys</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for multiframe {survey}"><tr><td>multiframe {survey}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Dual-frame and multi-frame surveys
+</h2>
+
+<h3>Description</h3>
+
+<p>Given a list of samples from K different sampling frames and information
+about which observations are in which frame, constructs an object
+representing the whole multi-frame sample. If an unit is in the
+overlap of multiple frames in the population it is effectively split
+into multiple separate units and so the weight is split if it is
+sampled. To optimise the split of frame weights, see <code><a href="../../survey/help/reweight.html">reweight</a></code>
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+multiframe(designs, overlaps, estimator = c("constant", "expected"), theta = NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>designs</code></td>
+<td>
+
+<p>List of survey design objects
+</p>
+</td></tr>
+<tr valign="top"><td><code>overlaps</code></td>
+<td>
+
+<p>list of matrices. Each matrix has K columns indicating whether the
+observation is in frames 1-K. For the 'constant'-type estimator, this is
+binary. For the <code>expected</code> estimator the entry in row i
+and column k is the weight or probability that observation i would have had if sampled
+from frame k. (weights if all &gt;=1, probabilities if all &lt;=1)
+</p>
+</td></tr>
+<tr valign="top"><td><code>estimator</code></td>
+<td>
+
+<p><code>"constant"</code> specifies Hartley's estimators in which the
+partition of weights is the same for each observation.
+<code>"expected"</code> weights each observation by the reciprocal of the
+expected number of times it is sampled; it is the estimator proposed
+by Bankier and by Kalton and Anderson. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>theta</code></td>
+<td>
+
+<p>Scale factors adding to 1 for splitting the overlap between frames
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>It is not necessary that the frame samples contain exactly the same
+variables or that they are in the same order, although only variables present in all the samples can be
+used.  It is important that factor variables existing across more than
+one frame sample have the same factor levels in all the samples. 
+</p>
+<p>All these estimators assume sampling is independent between frames, and that
+any observation sampled more than once is present in the dataset each time
+it is sampled.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Object of class <code>multiframe</code>
+</p>
+
+
+<h3>References</h3>
+
+<p>Bankier, M. D. (1986) Estimators Based on Several Stratified Samples With Applications to Multiple Frame Surveys. Journal of the American Statistical Association, Vol. 81, 1074 - 1079.
+</p>
+<p>Hartley, H. O. (1962) Multiple Frames Surveys. Proceedings of the American Statistical Association, Social Statistics Sections, 203 - 206.
+Hartley, H. O. (1974) Multiple frame methodology and selected applications. Sankhya C, Vol. 36, 99 - 118.
+</p>
+<p>Kalton, G. and Anderson, D. W. (1986) Sampling Rare Populations. Journal of the Royal Statistical Society, Ser. A, Vol. 149, 65 - 82.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../survey/help/svydesign.html">svydesign</a></code>, <code><a href="../../survey/help/reweight.html">reweight</a></code>
+</p>
+<p>For a simple introduction:
+Metcalf P and Scott AJ (2009) Using multiple frames in health
+surveys. Stat Med 28:1512-1523
+</p>
+<p>For general reference:
+Lohr SL, Rao JNK. Inference from dual frame surveys. Journal of the American Statistical Association 2000; 94:271-280.
+</p>
+<p>Lohr SL, Rao JNK. Estimation in multiple frame surveys. Journal of the American Statistical Association 2006; 101:1019-1030.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(phoneframes)
+A_in_frames&lt;-cbind(1, DatA$Domain=="ab")
+B_in_frames&lt;-cbind(DatB$Domain=="ba",1)
+
+Bdes_pps&lt;-svydesign(id=~1, fpc=~ProbB, data=DatB,pps=ppsmat(PiklB))
+Ades_pps &lt;-svydesign(id=~1, fpc=~ProbA,data=DatA,pps=ppsmat(PiklA))
+
+## optimal constant (Hartley) weighting
+mf_pps&lt;-multiframe(list(Ades_pps,Bdes_pps),list(A_in_frames,B_in_frames),theta=0.74) 
+svytotal(~Lei,mf_pps)
+svymean(~Lei, mf_pps)
+
+svyby(~Lei, ~Size, svymean, design=mf_pps)
+svytable(~Size+I(Lei&gt;20), mf_pps,round=TRUE)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>survey</em> version 4.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

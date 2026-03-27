@@ -1,0 +1,215 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Simulate multiple trajectories from a multi-state Markov...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for simmulti.msm {msm}"><tr><td>simmulti.msm {msm}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Simulate multiple trajectories from a multi-state Markov model with
+arbitrary observation times</h2>
+
+<h3>Description</h3>
+
+<p>Simulate a number of individual realisations from a continuous-time Markov
+process. Observations of the process are made at specified arbitrary times
+for each individual, giving panel-observed data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+simmulti.msm(
+  data,
+  qmatrix,
+  covariates = NULL,
+  death = FALSE,
+  start,
+  ematrix = NULL,
+  misccovariates = NULL,
+  hmodel = NULL,
+  hcovariates = NULL,
+  censor.states = NULL,
+  drop.absorb = TRUE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A data frame with a mandatory column named <code>time</code>,
+representing observation times.  The optional column named <code>subject</code>,
+corresponds to subject identification numbers. If not given, all
+observations are assumed to be on the same individual. Observation times
+should be sorted within individuals.  The optional column named <code>cens</code>
+indicates the times at which simulated states should be censored. If
+<code>cens==0</code> then the state is not censored, and if <code>cens==k</code>, say,
+then all simulated states at that time which are in the set
+<code>censor.states</code> are replaced by <code>k</code>.  Other named columns of the
+data frame represent any covariates, which may be time-constant or
+time-dependent.  Time-dependent covariates are assumed to be constant
+between the observation times.</p>
+</td></tr>
+<tr valign="top"><td><code>qmatrix</code></td>
+<td>
+<p>The transition intensity matrix of the Markov process, with
+any covariates set to zero.  The diagonal of <code>qmatrix</code> is ignored, and
+computed as appropriate so that the rows sum to zero. For example, a
+possible <code>qmatrix</code> for a three state illness-death model with recovery
+is:
+</p>
+<p><code>rbind( c( 0, 0.1, 0.02 ), c( 0.1, 0, 0.01 ), c( 0, 0, 0 ) )</code></p>
+</td></tr>
+<tr valign="top"><td><code>covariates</code></td>
+<td>
+<p>List of linear covariate effects on log transition
+intensities. Each element is a vector of the effects of one covariate on all
+the transition intensities. The intensities are ordered by reading across
+rows of the intensity matrix, starting with the first, counting the positive
+off-diagonal elements of the matrix.
+</p>
+<p>For example, for a multi-state model with three transition intensities, and
+two covariates <code>x</code> and <code>y</code> on each intensity,
+</p>
+<p><code>covariates=list(x = c(-0.3,-0.3,-0.3), y=c(0.1, 0.1, 0.1))</code></p>
+</td></tr>
+<tr valign="top"><td><code>death</code></td>
+<td>
+<p>Vector of indices of the death states.  A death state is an
+absorbing state whose time of entry is known exactly, but the individual is
+assumed to be in an unknown transient state (&quot;alive&quot;) at the previous
+instant.  This is the usual situation for times of death in chronic disease
+monitoring data.  For example, if you specify <code>death = c(4, 5)</code> then
+states 4 and 5 are assumed to be death states.
+</p>
+<p><code>death = TRUE</code> indicates that the final state is a death state, and
+<code>death = FALSE</code> (the default) indicates that there is no death state.</p>
+</td></tr>
+<tr valign="top"><td><code>start</code></td>
+<td>
+<p>A vector with the same number of elements as there are distinct
+subjects in the data, giving the states in which each corresponding
+individual begins.  Or a single number, if all of these are the same.
+Defaults to state 1 for each subject.</p>
+</td></tr>
+<tr valign="top"><td><code>ematrix</code></td>
+<td>
+<p>An optional misclassification matrix for generating observed
+states conditionally on the simulated true states. As defined in
+<code><a href="../../msm/help/msm.html">msm</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>misccovariates</code></td>
+<td>
+<p>Covariate effects on misclassification probabilities
+via multinomial logistic regression. Linear effects operate on the log of
+each probability relative to the probability of classification in the
+correct state. In same format as <code>covariates</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>hmodel</code></td>
+<td>
+<p>An optional hidden Markov model for generating observed
+outcomes conditionally on the simulated true states. As defined in
+<code><a href="../../msm/help/msm.html">msm</a></code>.  Multivariate outcomes (<code>hmmMV</code>) are not supported.</p>
+</td></tr>
+<tr valign="top"><td><code>hcovariates</code></td>
+<td>
+<p>List of the same length as <code>hmodel</code>, defining any
+covariates governing the hidden Markov outcome models.  Unlike in the
+<code>msm</code> function, this should also define the values of the covariate
+effects. Each element of the list is a named vector of the initial values
+for each set of covariates for that state.  For example, for a three-state
+hidden Markov model with two, one and no covariates on the state 1, 2 and 3
+outcome models respectively,
+</p>
+<p><code> hcovariates = list (c(acute=-8, age=0), c(acute=-8), NULL) </code></p>
+</td></tr>
+<tr valign="top"><td><code>censor.states</code></td>
+<td>
+<p>Set of simulated states which should be replaced by a
+censoring indicator at censoring times.  By default this is all transient
+states (representing alive, with unknown state).</p>
+</td></tr>
+<tr valign="top"><td><code>drop.absorb</code></td>
+<td>
+<p>Drop repeated observations in the absorbing state,
+retaining only one.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code><a href="../../msm/help/sim.msm.html">sim.msm</a></code> is called repeatedly to produce a simulated trajectory
+for each individual. The state at each specified observation time is then
+taken to produce a new column <code>state</code>.  The effect of time-dependent
+covariates on the transition intensity matrix for an individual is
+determined by assuming that the covariate is a step function which remains
+constant in between the individual's observation times.  If the subject
+enters an absorbing state, then only the first observation in that state is
+kept in the data frame. Rows corresponding to future observations are
+deleted.  The entry times into states given in <code>death</code> are assumed to
+be known exactly.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data frame with columns, </p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>subject</code></td>
+<td>
+<p>Subject identification
+indicators</p>
+</td></tr> <tr valign="top"><td><code>time</code></td>
+<td>
+<p>Observation times</p>
+</td></tr> <tr valign="top"><td><code>state</code></td>
+<td>
+<p>Simulated (true)
+state at the corresponding time</p>
+</td></tr> <tr valign="top"><td><code>obs</code></td>
+<td>
+<p>Observed outcome at the
+corresponding time, if <code>ematrix</code> or <code>hmodel</code> was supplied</p>
+</td></tr>
+<tr valign="top"><td><code>keep</code></td>
+<td>
+<p>Row numbers of the original data.  Useful when
+<code>drop.absorb=TRUE</code>, to show which rows were not dropped</p>
+</td></tr></table>
+<p> plus any
+supplied covariates.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>C. H. Jackson <a href="mailto:chris.jackson@mrc-bsu.cam.ac.uk">chris.jackson@mrc-bsu.cam.ac.uk</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../msm/help/sim.msm.html">sim.msm</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+### Simulate 100 individuals with common observation times
+sim.df &lt;- data.frame(subject = rep(1:100, rep(13,100)), time = rep(seq(0, 24, 2), 100))
+qmatrix &lt;- rbind(c(-0.11,   0.1,  0.01 ),
+                 c(0.05,   -0.15,  0.1 ),
+                 c(0.02,   0.07, -0.09))
+simmulti.msm(sim.df, qmatrix)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>msm</em> version 1.8.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

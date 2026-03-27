@@ -1,0 +1,115 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Update chart flow with proxy</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for bb_proxy_flow {billboarder}"><tr><td>bb_proxy_flow {billboarder}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Update chart flow with proxy</h2>
+
+<h3>Description</h3>
+
+<p>Update chart flow with proxy
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+bb_proxy_flow(proxy, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>proxy</code></td>
+<td>
+<p>A <code>billboardProxy</code> <code>htmlwidget</code> object.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Arguments passed to the flow API, see <a href="https://naver.github.io/billboard.js/release/latest/doc/Chart.html#flow">https://naver.github.io/billboard.js/release/latest/doc/Chart.html#flow</a>.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A <code>billboardProxy</code> <code>htmlwidget</code> object.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+if (interactive()) {
+  library(shiny)
+  library(billboarder)
+  
+  ui &lt;- fluidPage(
+    tags$h3("Proxy flow"),
+    actionButton(
+      inputId = "next_data",
+      label = "Add data",
+      icon = icon("arrow-right")
+    ),
+    billboarderOutput(outputId = "chart1"),
+    
+    tags$h4("Real time chart"),
+    billboarderOutput(outputId = "chart2")
+  )
+  
+  server &lt;- function(input, output, session) {
+    
+    
+    time_data &lt;- reactiveValues(df = data.frame(
+      x = Sys.Date() + 1:20,
+      y = round(rnorm(20) * 10)
+    ))
+    
+    output$chart1 &lt;- renderBillboarder({
+      billboarder() %&gt;% 
+        bb_linechart(data = isolate(time_data$df))
+    })
+    
+    observeEvent(input$next_data, {
+      time_data$df$x &lt;- time_data$df$x + 21
+      time_data$df$y &lt;- round(rnorm(20) * 10)
+    })
+    
+    observe({
+      billboarderProxy("chart1") %&gt;% 
+        bb_proxy_flow(json = as.list(time_data$df), duration = 1500)
+    })
+    
+    
+    
+    output$chart2 &lt;- renderBillboarder({
+      df &lt;- data.frame(
+        x = Sys.time() - 1:20 * 2,
+        y = round(rnorm(20) * 10)
+      )
+      billboarder() %&gt;% 
+        bb_linechart(data = df) %&gt;% 
+        bb_x_axis(tick = list(format = "%H:%M", fit = FALSE))
+    })
+    
+    observe({
+      invalidateLater(2000)
+      billboarderProxy("chart2") %&gt;% 
+        bb_proxy_flow(json = list(
+          x = list(format(Sys.time())),
+          y = list(round(rnorm(1) * 10))
+        ), data = list(x = "x"))
+    })
+    
+  }
+  
+  shinyApp(ui, server)
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>billboarder</em> version 0.5.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

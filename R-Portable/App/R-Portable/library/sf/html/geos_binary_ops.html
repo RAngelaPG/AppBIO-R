@@ -1,0 +1,146 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Geometric operations on pairs of simple feature geometry sets</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for geos_binary_ops {sf}"><tr><td>geos_binary_ops {sf}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Geometric operations on pairs of simple feature geometry sets</h2>
+
+<h3>Description</h3>
+
+<p>Perform geometric set operations with simple feature geometry collections
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+st_intersection(x, y, ...)
+
+## S3 method for class 'sfc'
+st_intersection(x, y, ...)
+
+## S3 method for class 'sf'
+st_intersection(x, y, ...)
+
+st_difference(x, y, ...)
+
+## S3 method for class 'sfc'
+st_difference(x, y, ...)
+
+st_sym_difference(x, y, ...)
+
+st_snap(x, y, tolerance)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>object of class <code>sf</code>, <code>sfc</code> or <code>sfg</code></p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>object of class <code>sf</code>, <code>sfc</code> or <code>sfg</code></p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>arguments passed on to <a href="../../s2/help/s2_options.html">s2_options</a></p>
+</td></tr>
+<tr valign="top"><td><code>tolerance</code></td>
+<td>
+<p>tolerance values used for <code>st_snap</code>; numeric value or object of class <code>units</code>; may have tolerance values for each feature in <code>x</code></p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>When using GEOS and not using s2, a spatial index is built on argument <code>x</code>; see <a href="https://r-spatial.org/r/2017/06/22/spatial-index.html">https://r-spatial.org/r/2017/06/22/spatial-index.html</a>. The reference for the STR tree algorithm is: Leutenegger, Scott T., Mario A. Lopez, and Jeffrey Edgington. &quot;STR: A simple and efficient algorithm for R-tree packing.&quot; Data Engineering, 1997. Proceedings. 13th international conference on. IEEE, 1997. For the pdf, search Google Scholar.
+</p>
+<p>When called with missing <code>y</code>, the <code>sfc</code> method for <code>st_intersection</code> returns all non-empty intersections of the geometries of <code>x</code>; an attribute <code>idx</code> contains a list-column with the indexes of contributing geometries.
+</p>
+<p>when called with a missing <code>y</code>, the <code>sf</code> method for <code>st_intersection</code> returns an <code>sf</code> object with attributes taken from the contributing feature with lowest index; two fields are added: <code>n.overlaps</code> with the number of overlapping features in <code>x</code>, and a list-column <code>origins</code> with indexes of all overlapping features.
+</p>
+<p>When <code>st_difference</code> is called with a single argument,
+overlapping areas are erased from geometries that are indexed at greater
+numbers in the argument to <code>x</code>; geometries that are empty
+or contained fully inside geometries with higher priority are removed entirely.
+The <code>st_difference.sfc</code> method with a single argument returns an object with
+an <code>"idx"</code> attribute with the original index for returned geometries.
+</p>
+<p><code>st_snap</code> snaps the vertices and segments of a geometry to another geometry's vertices. If <code>y</code> contains more than one geometry, its geometries are merged into a collection before snapping to that collection.
+</p>
+<p>(from the GEOS docs:) &quot;A snap distance tolerance is used to control where snapping is performed. Snapping one geometry to another can improve robustness for overlay operations by eliminating nearly-coincident edges (which cause problems during noding and intersection calculation). Too much snapping can result in invalid topology being created, so the number and location of snapped vertices is decided using heuristics to determine when it is safe to snap. This can result in some potential snaps being omitted, however.&quot;
+</p>
+
+
+<h3>Value</h3>
+
+<p>The intersection, difference or symmetric difference between two sets of geometries.
+The returned object has the same class as that of the first argument (<code>x</code>) with the non-empty geometries resulting from applying the operation to all geometry pairs in <code>x</code> and <code>y</code>. In case <code>x</code> is of class <code>sf</code>, the matching attributes of the original object(s) are added. The <code>sfc</code> geometry list-column returned carries an attribute <code>idx</code>, which is an <code>n</code>-by-2 matrix with every row the index of the corresponding entries of <code>x</code> and <code>y</code>, respectively.
+</p>
+
+
+<h3>Note</h3>
+
+<p>To find whether pairs of simple feature geometries intersect, use
+the function <code><a href="../../sf/help/st_intersects.html">st_intersects</a></code> instead of <code>st_intersection</code>.
+</p>
+<p>When using GEOS and not using s2 polygons contain their boundary. When using s2 this is determined by the <code>model</code> defaults of <a href="../../s2/help/s2_options.html">s2_options</a>, which can be overridden via the ... argument, e.g. <code>model = "closed"</code> to force DE-9IM compliant behaviour of polygons (and reproduce GEOS results).
+</p>
+
+
+<h3>See Also</h3>
+
+<p><a href="../../sf/help/st_union.html">st_union</a> for the union of simple features collections; <a href="../../base/html/sets.html">intersect</a> and <a href="../../base/html/sets.html">setdiff</a> for the base R set operations.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+set.seed(131)
+library(sf)
+m = rbind(c(0,0), c(1,0), c(1,1), c(0,1), c(0,0))
+p = st_polygon(list(m))
+n = 100
+l = vector("list", n)
+for (i in 1:n)
+  l[[i]] = p + 10 * runif(2)
+s = st_sfc(l)
+plot(s, col = sf.colors(categorical = TRUE, alpha = .5))
+title("overlapping squares")
+d = st_difference(s) # sequential differences: s1, s2-s1, s3-s2-s1, ...
+plot(d, col = sf.colors(categorical = TRUE, alpha = .5))
+title("non-overlapping differences")
+i = st_intersection(s) # all intersections
+plot(i, col = sf.colors(categorical = TRUE, alpha = .5))
+title("non-overlapping intersections")
+summary(lengths(st_overlaps(s, s))) # includes self-counts!
+summary(lengths(st_overlaps(d, d)))
+summary(lengths(st_overlaps(i, i)))
+sf = st_sf(s)
+i = st_intersection(sf) # all intersections
+plot(i["n.overlaps"])
+summary(i$n.overlaps - lengths(i$origins))
+# A helper function that erases all of y from x:
+st_erase = function(x, y) st_difference(x, st_union(st_combine(y)))
+poly = st_polygon(list(cbind(c(0, 0, 1, 1, 0), c(0, 1, 1, 0, 0))))
+lines = st_multilinestring(list(
+ cbind(c(0, 1), c(1, 1.05)),
+ cbind(c(0, 1), c(0, -.05)),
+ cbind(c(1, .95, 1), c(1.05, .5, -.05))
+))
+snapped = st_snap(poly, lines, tolerance=.1)
+plot(snapped, col='red')
+plot(poly, border='green', add=TRUE)
+plot(lines, lwd=2, col='blue', add=TRUE)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sf</em> version 1.1-0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

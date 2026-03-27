@@ -1,0 +1,171 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Performs the Shapiro-Wilk test of normality</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for normality.tbl_dbi {dlookr}"><tr><td>normality.tbl_dbi {dlookr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Performs the Shapiro-Wilk test of normality</h2>
+
+<h3>Description</h3>
+
+<p>The normality() performs Shapiro-Wilk test of normality 
+of numerical(INTEGER, NUMBER, etc.) column of the DBMS table through tbl_dbi.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'tbl_dbi'
+normality(.data, ..., sample = 5000, in_database = FALSE, collect_size = Inf)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>.data</code></td>
+<td>
+<p>a tbl_dbi.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>one or more unquoted expressions separated by commas.
+You can treat variable names like they are positions.
+Positive values select variables; negative values to drop variables.
+If the first expression is negative, normality() will automatically start with all variables.
+These arguments are automatically quoted and evaluated in a context where column names
+represent column positions.
+They support unquoting and splicing.</p>
+</td></tr>
+<tr valign="top"><td><code>sample</code></td>
+<td>
+<p>the number of samples to perform the test.</p>
+</td></tr>
+<tr valign="top"><td><code>in_database</code></td>
+<td>
+<p>Specifies whether to perform in-database operations. 
+If TRUE, most operations are performed in the DBMS. if FALSE, 
+table data is taken in R and operated in-memory. Not yet supported in_database = TRUE.</p>
+</td></tr>
+<tr valign="top"><td><code>collect_size</code></td>
+<td>
+<p>a integer. The number of data samples from the DBMS to R. 
+Applies only if in_database = FALSE.
+</p>
+<p>See vignette(&quot;EDA&quot;) for an introduction to these concepts.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This function is useful when used with the <code><a href="../../dplyr/help/group_by.html">group_by</a></code>
+function of the dplyr package. If you want to test by level of the categorical
+data you are interested in, rather than the whole observation,
+you can use group_tf as the group_by function.
+This function is computed <code><a href="../../stats/html/shapiro.test.html">shapiro.test</a></code> function.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of the same class as .data.
+</p>
+
+
+<h3>Normality test information</h3>
+
+<p>The information derived from the numerical data test is as follows.
+</p>
+
+<ul>
+<li><p> statistic : the value of the Shapiro-Wilk statistic.
+</p>
+</li>
+<li><p> p_value : an approximate p-value for the test. This is said in
+Roystion(1995) to be adequate for p_value &lt; 0.1.
+</p>
+</li>
+<li><p> sample : the numer of samples to perform the test.
+The number of observations supported by the stats::shapiro.test function is 3 to 5000.
+</p>
+</li></ul>
+
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../dlookr/help/normality.data.frame.html">normality.data.frame</a></code>, <code><a href="../../dlookr/help/diagnose_numeric.tbl_dbi.html">diagnose_numeric.tbl_dbi</a></code>, <code><a href="../../dlookr/help/describe.tbl_dbi.html">describe.tbl_dbi</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# If you have the 'DBI' and 'RSQLite' packages installed, perform the code block:
+if (FALSE) {
+library(dplyr)
+
+# connect DBMS
+con_sqlite &lt;- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+
+# copy heartfailure to the DBMS with a table named TB_HEARTFAILURE
+copy_to(con_sqlite, heartfailure, name = "TB_HEARTFAILURE", overwrite = TRUE)
+
+# Using pipes ---------------------------------
+# Normality test of all numerical variables
+con_sqlite %&gt;% 
+  tbl("TB_HEARTFAILURE") %&gt;% 
+  normality()
+
+# Positive values select variables, and In-memory mode and collect size is 200
+con_sqlite %&gt;% 
+  tbl("TB_HEARTFAILURE") %&gt;% 
+  normality(platelets, sodium, collect_size  = 200)
+
+# Positions values select variables
+con_sqlite %&gt;% 
+  tbl("TB_HEARTFAILURE") %&gt;% 
+  normality(1)
+
+# Using pipes &amp; dplyr -------------------------
+# Test all numerical variables by 'smoking' and 'death_event',
+# and extract only those with 'smoking' variable level is "Yes".
+con_sqlite %&gt;% 
+  tbl("TB_HEARTFAILURE") %&gt;% 
+  group_by(smoking, death_event) %&gt;%
+  normality() %&gt;%
+  filter(smoking == "Yes")
+
+# extract only those with 'sex' variable level is "Male",
+# and test 'sodium' by 'smoking' and 'death_event'
+con_sqlite %&gt;% 
+  tbl("TB_HEARTFAILURE") %&gt;% 
+  filter(sex == "Male") %&gt;%
+  group_by(smoking, death_event) %&gt;%
+  normality(sodium)
+
+# Test log(sodium) variables by 'smoking' and 'death_event',
+# and extract only p.value greater than 0.01.
+
+# SQLite extension functions for log
+RSQLite::initExtension(con_sqlite)
+
+con_sqlite %&gt;% 
+  tbl("TB_HEARTFAILURE") %&gt;% 
+  mutate(log_sodium = log(sodium)) %&gt;%
+  group_by(smoking, death_event) %&gt;%
+  normality(log_sodium) %&gt;%
+  filter(p_value &gt; 0.01)
+ 
+# Disconnect DBMS   
+DBI::dbDisconnect(con_sqlite)
+}
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>dlookr</em> version 0.6.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

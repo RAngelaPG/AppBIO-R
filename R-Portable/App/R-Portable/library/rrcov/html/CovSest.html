@@ -1,0 +1,265 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: S Estimates of Multivariate Location and Scatter</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for CovSest {rrcov}"><tr><td>CovSest {rrcov}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> S Estimates of Multivariate Location and Scatter </h2>
+
+<h3>Description</h3>
+
+<p>Computes S-Estimates of multivariate location and scatter based on Tukey's
+biweight function using a fast algorithm similar to the one proposed by
+Salibian-Barrera and Yohai (2006) for the case of regression. Alternativley, the
+Ruppert's SURREAL algorithm, bisquare or Rocke type estimation can be used.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+    CovSest(x, bdp = 0.5, arp = 0.1, eps = 1e-5, maxiter = 120,
+        nsamp = 500, seed = NULL, trace = FALSE, tolSolve = 1e-14,
+        scalefn, maxisteps=200, 
+        initHsets = NULL, save.hsets = missing(initHsets) || is.null(initHsets),
+        method = c("sfast", "surreal", "bisquare", "rocke", "suser", "sdet"), 
+        control, t0, S0, initcontrol)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p> a matrix or data frame. </p>
+</td></tr>
+<tr valign="top"><td><code>bdp</code></td>
+<td>
+<p>a numeric value specifying the required
+breakdown point.  Allowed values are between
+<code>(n - p)/(2 * n)</code> and 1 and the default is <code>bdp=0.5</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>arp</code></td>
+<td>
+<p>a numeric value specifying the asympthotic
+rejection point (for the Rocke type S estimates),
+i.e. the fraction of points receiving zero
+weight (see Rocke (1996)).  Default is <code>arp=0.1</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>eps</code></td>
+<td>
+<p>a numeric value specifying the
+relative precision of the solution of the S-estimate
+(bisquare and Rocke type). Default is to <code>eps=1e-5</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>maxiter</code></td>
+<td>
+<p>maximum number of iterations allowed
+in the computation of the S-estimate (bisquare and Rocke type).
+Default is <code>maxiter=120</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>nsamp</code></td>
+<td>
+<p>the number of random subsets considered. The default is different for the different methods: 
+(i) for <code>sfast</code> it is <code>nsamp = 20</code>, 
+(ii) for <code>surreal</code> it is <code>nsamp = 600*p</code> and 
+(iii) for <code>bisquare</code> or  <code>rocke</code> it is <code>nsamp = 500</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>seed</code></td>
+<td>
+<p>starting value for random generator. Default is <code>seed = NULL</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>trace</code></td>
+<td>
+<p>whether to print intermediate results. Default is <code>trace = FALSE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>tolSolve</code></td>
+<td>
+<p>numeric tolerance to be used for inversion
+(<code><a href="../../Matrix/html/solve-methods.html">solve</a></code>) of the covariance matrix in
+<code><a href="../../stats/html/mahalanobis.html">mahalanobis</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>scalefn</code></td>
+<td>
+<p><code><a href="../../base/html/function.html">function</a></code> to compute a robust scale
+estimate or character string specifying a rule determining such a
+function. Used for computing the &quot;deterministic&quot; S-estimates (<code>method="sdet"</code>).
+If <code>scalefn</code> is missing or is <code>NULL</code>, 
+the function is selected depending on the data 
+set size, following the recomendation of Hubert et al. (2012) - 
+<code><a href="../../robustbase/help/Qn.html">Qn</a></code> if <code>n &lt;= 1000</code> and <code><a href="../../robustbase/help/scaleTau2.html">scaleTau2</a></code> otherwise.</p>
+</td></tr>
+<tr valign="top"><td><code>maxisteps</code></td>
+<td>
+<p>maximal number of concentration steps in the
+deterministic S-estimates; should not be reached.</p>
+</td></tr>
+<tr valign="top"><td><code>initHsets</code></td>
+<td>
+<p>NULL or a <i>K x n</i> integer matrix of initial
+subsets of observations of size (specified by the indices in
+<code>1:n</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>save.hsets</code></td>
+<td>
+<p>(for deterministic S-estimates) logical indicating if the
+initial subsets should be returned as <code>initHsets</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p> Which algorithm to use: 'sfast'=C implementation of FAST-S, 'surreal'=SURREAL, 
+'bisquare', 'rocke'. The method 'suser' currently calls the R implementation of FAST-S 
+but in the future will allow the user to supply own <code>rho</code> function.
+The method 'sdet' invokes the deterministic algorihm of Hubert et al. (2012).</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+<p> a control object (S4) of class <code><a href="../../rrcov/help/CovControlSest-class.html">CovControlSest-class</a></code>
+containing estimation options - same as these provided in the fucntion
+specification. If the control object is supplied, the parameters from it
+will be used. If parameters are passed also in the invocation statement, they will
+override the corresponding elements of the control object.</p>
+</td></tr>
+<tr valign="top"><td><code>t0</code></td>
+<td>
+<p> optional initial HBDP estimate for the center </p>
+</td></tr>
+<tr valign="top"><td><code>S0</code></td>
+<td>
+<p> optional initial HBDP estimate for the covariance matrix </p>
+</td></tr>
+<tr valign="top"><td><code>initcontrol</code></td>
+<td>
+<p> optional control object to be used for computing the initial HBDP estimates </p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Computes multivariate S-estimator of location and scatter. The computation will be
+performed by one of the following algorithms:
+</p>
+
+<dl>
+<dt>FAST-S</dt><dd><p>An algorithm similar to the one proposed by Salibian-Barrera and Yohai (2006) for the case of regression</p>
+</dd>
+<dt>SURREAL</dt><dd><p>Ruppert's SURREAL algorithm when <code>method</code> is set to 'surreal'</p>
+</dd>
+<dt>BISQUARE</dt><dd><p>Bisquare S-Estimate with <code>method</code> set to 'bisquare'</p>
+</dd>
+<dt>ROCKE</dt><dd><p>Rocke type S-Estimate with <code>method</code> set to 'rocke'</p>
+</dd>
+</dl>
+
+<p>Except for the last algorithm, <em>ROCKE</em>, all other use Tukey biweight loss function. 
+The tuning parameters used in the loss function (as determined by bdp) are 
+returned in the slots <code>cc</code> and <code>kp</code> of the result object. They can be computed 
+by the internal function <code>.csolve.bw.S(bdp, p)</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An S4 object of class <code><a href="../../rrcov/help/CovSest-class.html">CovSest-class</a></code> which is a subclass of the
+virtual class <code><a href="../../rrcov/help/CovRobust-class.html">CovRobust-class</a></code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Valentin Todorov <a href="mailto:valentin.todorov@chello.at">valentin.todorov@chello.at</a>,
+Matias Salibian-Barrera <a href="mailto:matias@stat.ubc.ca">matias@stat.ubc.ca</a> and
+Victor Yohai <a href="mailto:vyohai@dm.uba.ar">vyohai@dm.uba.ar</a>.  See also the code from
+Kristel Joossens, K.U. Leuven, Belgium and Ella Roelant, Ghent University, Belgium.
+</p>
+
+
+<h3>References</h3>
+
+<p>M. Hubert, P. Rousseeuw and T. Verdonck (2012) A deterministic algorithm 
+for robust location and scatter.
+<em>Journal of Computational and Graphical Statistics</em> <b>21</b>(3), 618&ndash;637.
+</p>
+<p>M. Hubert, P. Rousseeuw, D. Vanpaemel and T. Verdonck (2015) 
+The DetS and DetMM estimators for multivariate location and scatter.
+<em>Computational Statistics and Data Analysis</em> <b>81</b>, 64&ndash;75.
+</p>
+<p>H.P. Lopuhaä (1989) On the Relation between S-estimators and M-estimators of
+Multivariate Location and Covariance.
+<em>Annals of Statistics</em> <b>17</b> 1662&ndash;1683.
+</p>
+<p>D. Ruppert (1992) Computing S Estimators for Regression and Multivariate
+Location/Dispersion.
+<em>Journal of Computational and Graphical Statistics</em> <b>1</b> 253&ndash;270.
+</p>
+<p>M. Salibian-Barrera and V. Yohai (2006) A fast algorithm for S-regression
+estimates, <em>Journal of Computational and Graphical Statistics</em>, <b>15</b>,
+414&ndash;427.
+</p>
+<p>R. A. Maronna, D. Martin and V. Yohai (2006). <em>Robust Statistics: Theory and Methods</em>.
+Wiley, New York.
+</p>
+<p>Todorov V &amp; Filzmoser P (2009), An Object Oriented Framework for Robust Multivariate Analysis. 
+<em>Journal of Statistical Software</em>, <b>32</b>(3), 1&ndash;47.
+doi: <a href="https://doi.org/10.18637/jss.v032.i03">10.18637/jss.v032.i03</a>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+library(rrcov)
+data(hbk)
+hbk.x &lt;- data.matrix(hbk[, 1:3])
+cc &lt;- CovSest(hbk.x)
+cc
+
+## summry and different types of plots
+summary(cc)                         
+plot(cc)                            
+plot(cc, which="dd")
+plot(cc, which="pairs")
+plot(cc, which="xydist")
+
+## the following four statements are equivalent
+c0 &lt;- CovSest(hbk.x)
+c1 &lt;- CovSest(hbk.x, bdp = 0.25)
+c2 &lt;- CovSest(hbk.x, control = CovControlSest(bdp = 0.25))
+c3 &lt;- CovSest(hbk.x, control = new("CovControlSest", bdp = 0.25))
+
+## direct specification overrides control one:
+c4 &lt;- CovSest(hbk.x, bdp = 0.40,
+             control = CovControlSest(bdp = 0.25))
+c1
+summary(c1)
+plot(c1)
+
+## Use the SURREAL algorithm of Ruppert
+cr &lt;- CovSest(hbk.x, method="surreal")
+cr
+
+## Use Bisquare estimation
+cr &lt;- CovSest(hbk.x, method="bisquare")
+cr
+
+## Use Rocke type estimation
+cr &lt;- CovSest(hbk.x, method="rocke")
+cr
+
+## Use Deterministic estimation
+cr &lt;- CovSest(hbk.x, method="sdet")
+cr
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rrcov</em> version 1.7-7 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

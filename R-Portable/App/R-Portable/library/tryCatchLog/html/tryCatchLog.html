@@ -1,0 +1,269 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Try an expression with condition logging and error handling</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for tryCatchLog {tryCatchLog}"><tr><td>tryCatchLog {tryCatchLog}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Try an expression with condition logging and error handling</h2>
+
+<h3>Description</h3>
+
+<p>This function evaluates an expression passed in the <code>expr</code> parameter,
+logs all conditions and executes the condition handlers passed in <code>...</code> (if any).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+tryCatchLog(
+  expr,
+  ...,
+  execution.context.msg = "",
+  finally = NULL,
+  write.error.dump.file = getOption("tryCatchLog.write.error.dump.file", FALSE),
+  write.error.dump.folder = getOption("tryCatchLog.write.error.dump.folder", "."),
+  silent.warnings = getOption("tryCatchLog.silent.warnings", FALSE),
+  silent.messages = getOption("tryCatchLog.silent.messages", FALSE),
+  include.full.call.stack = getOption("tryCatchLog.include.full.call.stack", TRUE),
+  include.compact.call.stack = getOption("tryCatchLog.include.compact.call.stack", TRUE),
+  logged.conditions = getOption("tryCatchLog.logged.conditions", NULL)
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>expr</code></td>
+<td>
+<p>R expression to be evaluated</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>condition handler functions (as in <code><a href="../../base/html/conditions.html">tryCatch</a></code>).
+The following condition names are mainly used in R:
+<code>error</code>, <code>warning</code>, <code>message</code> and <code>interrupt</code>.
+A handler for user-defined conditions can be established for the
+generic <code>condition</code> super class.
+All condition handlers are passed to <code><a href="../../base/html/conditions.html">tryCatch</a></code> as is
+(no filtering, wrapping or changing of semantics).</p>
+</td></tr>
+<tr valign="top"><td><code>execution.context.msg</code></td>
+<td>
+<p>a text identifier (eg. the PID or a variable value) that will be added to msg.text
+for catched conditions. This makes it easier to identify the runtime state that caused
+a condition esp. in parallel execution scenarios.
+The value must be of length 1 and will be coerced to character.
+Expressions are not allowed.
+The added output has the form: <code>{execution.context.msg: your_value}</code></p>
+</td></tr>
+<tr valign="top"><td><code>finally</code></td>
+<td>
+<p>expression to be evaluated at the end (after executing the expressiond
+and calling the matching handler).</p>
+</td></tr>
+<tr valign="top"><td><code>write.error.dump.file</code></td>
+<td>
+<p><code>TRUE</code>: Saves a dump of the workspace and the call stack named
+<code>dump_&lt;YYYYMMDD&gt;_at_&lt;HHMMSS.sss&gt;_PID_&lt;process id&gt;.rda</code>.
+This dump file name pattern shall ensure unique file names in parallel processing scenarios.</p>
+</td></tr>
+<tr valign="top"><td><code>write.error.dump.folder</code></td>
+<td>
+<p><code>path</code>: Saves the dump of the workspace in a specific folder instead of the working directory</p>
+</td></tr>
+<tr valign="top"><td><code>silent.warnings</code></td>
+<td>
+<p><code>TRUE</code>: Warnings are logged only, but not propagated to the caller.<br />
+<code>FALSE</code>: Warnings are logged and treated according to the global
+setting in <code><a href="../../base/html/options.html">getOption</a>("warn")</code>. See also <code><a href="../../base/html/warning.html">warning</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>silent.messages</code></td>
+<td>
+<p><code>TRUE</code>: Messages are logged, but not propagated to the caller.<br />
+<code>FALSE</code>: Messages are logged and propagated to the caller.</p>
+</td></tr>
+<tr valign="top"><td><code>include.full.call.stack</code></td>
+<td>
+<p>Flag of type <code><a href="../../base/html/logical.html">logical</a></code>:
+Shall the full call stack be included in the log output? Since the full
+call stack may be very long and the compact call stack has enough details
+normally the full call stack can be omitted by passing <code>FALSE</code>.
+The default value can be changed globally by setting the option <code>tryCatchLog.include.full.call.stack</code>.
+The full call stack can always be found via <code><a href="../../tryCatchLog/help/last.tryCatchLog.result.html">last.tryCatchLog.result</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>include.compact.call.stack</code></td>
+<td>
+<p>Flag of type <code><a href="../../base/html/logical.html">logical</a></code>:
+Shall the compact call stack (including only calls with source code references)
+be included in the log output? Note: If you ommit both the full and compact
+call stacks the message text will be output without call stacks.
+The default value can be changed globally by setting the option <code>tryCatchLog.include.compact.call.stack</code>.
+The compact call stack can always be found via <code><a href="../../tryCatchLog/help/last.tryCatchLog.result.html">last.tryCatchLog.result</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>logged.conditions</code></td>
+<td>
+<p><code>NULL</code>: Conditions are not logged.<br />
+<code>vector of strings</code>: Only conditions whose class name is contained in this vector are logged.<br />
+<code>NA</code>: All conditions are logged.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The <code>finally</code> expression is then always evaluated at the end.
+</p>
+<p>Condition handlers work as in base R's <code><a href="../../base/html/conditions.html">tryCatch</a></code>.
+</p>
+<p>Conditions are also logged including the function call stack
+with file names and line numbers (if available).
+</p>
+<p>By default the maximum number of source code rows that are printed per call in the full stack trace
+is 10. You can change this via the option <code>tryCatchLog.max.lines.per.call</code> (see example).
+</p>
+<p>This function shall overcome some drawbacks of the standard <code><a href="../../base/html/conditions.html">tryCatch</a></code> function.<br />
+For more details see <a href="https://github.com/aryoda/tryCatchLog">https://github.com/aryoda/tryCatchLog</a>.
+</p>
+<p>If the package <span class="pkg">futile.logger</span> is installed it will be used for writing logging output,
+otherwise an internal basic logging output function is used.
+</p>
+<p>Before you call <code>tryCatchLog</code> for the first time you should initialize
+the logging framework you are using (e. g.<span class="pkg">futile.logger</span> to control
+the log output (log to console or file etc.):
+</p>
+<pre>  library(futile.logger)
+  flog.appender(appender.file("my_app.log"))
+  flog.threshold(INFO)    # TRACE, DEBUG, INFO, WARN, ERROR, FATAL</pre>
+<p>If you are using the <span class="pkg">futile.logger</span> package <code>tryCatchLog</code> calls
+these log functions for the different R conditions to log them:
+</p>
+
+<ol>
+<li><p> error     -&gt; <code><a href="../../futile.logger/help/flog.error.html">flog.error</a></code>
+</p>
+</li>
+<li><p> warning   -&gt; <code><a href="../../futile.logger/help/flog.warn.html">flog.warn</a></code>
+</p>
+</li>
+<li><p> message   -&gt; <code><a href="../../futile.logger/help/flog.info.html">flog.info</a></code>
+</p>
+</li>
+<li><p> interrupt -&gt; <code><a href="../../futile.logger/help/flog.info.html">flog.info</a></code>
+</p>
+</li></ol>
+
+<p><strong>'tryCatchLog' does log all conditions (incl. user-defined conditions).</strong>
+</p>
+<p>Since the interrupt condition does not have an error message attribute <code>tryCatchLog</code>
+uses &quot;User-requested interrupt&quot; as message in the logs.
+</p>
+<p>The log contains the call stack with the file names and line numbers (if available).
+</p>
+<p>R does track source code references of scripts only if you set the option <code>keep.source</code> to TRUE via
+<code>options(keep.source = TRUE)</code>. Without this option this function cannot enrich source code references.
+</p>
+<p>If you use <code>Rscript</code> to start a non-interactive R script as batch job you
+have to set this option since it is FALSE by default. You can add this option to your
+<a href="../../base/html/Startup.html">.Rprofile</a> file or use a startup R script that sets this option and sources your
+actual R script then.
+</p>
+<p>By default, most packages are built without source reference information.
+Setting the environment variable <code>R_KEEP_PKG_SOURCE=yes</code> before installing a source package
+will tell R to keep the source references. You can also use <code>options(keep.source.pkgs = TRUE)</code>
+before you install a package.
+</p>
+<p>Setting the parameter <code>tryCatchLog.write.error.dump.file</code> to TRUE allows a post-mortem analysis of the program state
+that led to the error. The dump contains the workspace and in the variable &quot;last.dump&quot;
+the call stack (<code><a href="../../base/html/sys.parent.html">sys.frames</a></code>). This feature is very helpful for non-interactive R scripts (&quot;batches&quot;).
+</p>
+<p>Setting the parameter <code>tryCatchLog.write.error.dump.folder</code> to a specific path allows to save the dump in a specific folder.
+If not set, the dump will be saved in the working directory.
+</p>
+<p>To start a post-mortem analysis after an error open a new R session and enter:
+<code>load("dump_20161016_164050.rda")   # replace the dump file name with your real file name
+            debugger(last.dump)</code>
+</p>
+<p>Note that the dump does <b>not</b> contain the loaded packages when the dump file was created
+and a dump loaded into memory does therefore <b>not</b> use exactly the same search path.
+This means:
+</p>
+
+<ol>
+<li><p>the program state is not exactly reproducible if objects are stored within a package namespace
+</p>
+</li>
+<li><p>you cannot step through your source code in a reproducible way after loading the image
+if your source code calls functions of non-default packages
+</p>
+</li></ol>
+
+
+
+<h3>Value</h3>
+
+<p>the value of the expression passed in as parameter &quot;expr&quot;
+</p>
+
+
+<h3>Best practices</h3>
+
+<p>To <b>avoid that too many dump files filling your disk space</b> you should omit the <code>write.error.dump.file</code>
+parameter and instead set its default value using the option <code>tryCatchLog.write.error.dump.file</code> in your
+<a href="../../base/html/Startup.html">.Rprofile</a> file instead (or in a startup R script that sources your actual script).
+In case of an error (that you can reproduce) you set the option to <code>TRUE</code> and re-run your script.
+Then you are able to examine the program state that led to the error by debugging the saved dump file.
+</p>
+<p>To see the <b>source code references (source file names and line numbers)</b> in the stack traces you must
+set this option before executing your code:<br />
+<code>options(keep.source = TRUE)</code>
+</p>
+<p>You can <b>execute your code as batch with <code><a href="../../utils/html/Rscript.html">Rscript</a></code> using this shell script command</b>:<br />
+<code>Rscript -e "options(keep.source = TRUE); source('my_main_function.R')"</code>
+</p>
+
+
+<h3>References</h3>
+
+<p><a href="http://adv-r.had.co.nz/beyond-exception-handling.html">http://adv-r.had.co.nz/beyond-exception-handling.html</a><br />
+<a href="https://stackoverflow.com/questions/39964040/r-catch-errors-and-continue-execution-after-logging-the-stacktrace-no-tracebac">https://stackoverflow.com/questions/39964040/r-catch-errors-and-continue-execution-after-logging-the-stacktrace-no-tracebac</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../tryCatchLog/help/tryLog.html">tryLog</a></code>, <code><a href="../../utils/html/recover.html">limitedLabels</a></code>, <code><a href="../../tryCatchLog/help/get.pretty.call.stack.html">get.pretty.call.stack</a></code>,
+<code><a href="../../tryCatchLog/help/last.tryCatchLog.result.html">last.tryCatchLog.result</a></code>, <code><a href="../../tryCatchLog/help/set.logging.functions.html">set.logging.functions</a></code>,
+<code><a href="../../base/html/conditions.html">tryCatch</a></code>, <code><a href="../../base/html/conditions.html">withCallingHandlers</a></code>, <code><a href="../../base/html/conditions.html">signalCondition</a></code>,
+<code><a href="../../base/html/options.html">getOption</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+tryCatchLog(log(-1))   # logs a warning (logarithm of a negative number is not possible)
+tryLog(log(-1), execution.context.msg = Sys.getpid())
+
+# set and unset an option
+options("tryCatchLog.write.error.dump.folder" = "my_log")
+options("tryCatchLog.write.error.dump.folder" = NULL)
+
+options(tryCatchLog.max.lines.per.call = 30)
+
+## Not run: 
+# Use case for "execution.context.msg" argument: Loops and parallel execution
+library(foreach)       # support parallel execution (requires an parallel execution plan)
+options(tryCatchLog.include.full.call.stack = FALSE) # reduce the ouput for demo purposes
+res &lt;- foreach(i = 1:12) %dopar% {
+         tryCatchLog(log(10 - i), execution.context.msg = i)
+}
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>tryCatchLog</em> version 1.3.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Identify clusters in a collection of positions or intervals</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for clusters {intervals}"><tr><td>clusters {intervals}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Identify clusters in a collection of positions or intervals</h2>
+
+<h3>Description</h3>
+
+<p>This function uses tools in the <span class="pkg">intervals</span> package to quickly
+identify clusters &ndash; contiguous collections of positions or intervals
+which are separated by no more than a given distance from their
+neighbors to either side.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S4 method for signature 'numeric'
+clusters(x, w, which = FALSE, check_valid = TRUE)
+
+## S4 method for signature 'Intervals_virtual'
+clusters(x, w, which = FALSE, check_valid = TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>An appropriate object.</p>
+</td></tr>
+<tr valign="top"><td><code>w</code></td>
+<td>
+
+<p>Maximum permitted distance between a cluster member and its
+neighbors to either side.
+</p>
+</td></tr>
+<tr valign="top"><td><code>which</code></td>
+<td>
+
+<p>Should indices into the <code>x</code> object be returned instead of
+actual subsets?
+</p>
+</td></tr>
+<tr valign="top"><td><code>check_valid</code></td>
+<td>
+
+<p>Should <code><a href="../../methods/html/validObject.html">validObject</a></code> be called before passing to
+compiled code? Also see <code><a href="../../intervals/help/interval_overlap.html">interval_overlap</a></code> and
+<code><a href="../../intervals/help/reduce.html">reduce</a></code>.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>A cluster is defined to be a maximal collection, with at least two
+members, of components of <code>x</code> which are separated by no more than
+<code>w</code>. Note that when <code>x</code> represents intervals, an interval
+must actually <em>contain a point</em> at distance <code>w</code> or less from
+a neighboring interval to be assigned to the same cluster. If the ends
+of both intervals in question are open and exactly at distance
+<code>w</code>, they will not be deemed to be cluster co-members. See the
+example below.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list whose components are the clusters. Each component is thus a
+subset of <code>x</code>, or, if <code>which == TRUE</code>, a vector of
+indices into the <code>x</code> object. (The indices correspond to row
+numbers when <code>x</code> is of class <code>"Intervals_virtual"</code>.)
+</p>
+
+
+<h3>Note</h3>
+
+<p>Implementation is by a call to <code><a href="../../intervals/help/reduce.html">reduce</a></code> followed by a call
+to <code><a href="../../intervals/help/interval_overlap.html">interval_overlap</a></code>. The <code>clusters</code> methods are
+included to illustrate the utility of the core functions in the
+<span class="pkg">intervals</span> package, although they are also useful in their own
+right.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Numeric method
+w &lt;- 20
+x &lt;- sample( 1000, 100 )
+c1 &lt;- clusters( x, w )
+
+# Check results
+sapply( c1, function( x ) all( diff(x) &lt;= w ) )
+d1 &lt;- diff( sort(x) )
+all.equal(
+          as.numeric( d1[ d1 &lt;= w ] ),
+          unlist( sapply( c1, diff ) )
+          )
+
+# Intervals method, starting with a reduced object so we know that all
+# intervals are disjoint and sorted.
+B &lt;- 100
+left &lt;- runif( B, 0, 1e4 )
+right &lt;- left + rexp( B, rate = 1/10 )
+y &lt;- reduce( Intervals( cbind( left, right ) ) )
+
+gaps &lt;- function(x) x[-1,1] - x[-nrow(x),2]
+hist( gaps(y), breaks = 30 )
+
+w &lt;- 200
+c2 &lt;- clusters( y, w )
+head( c2 )
+sapply( c2, function(x) all( gaps(x) &lt;= w ) )
+
+# Clusters and open end points. See "Details".
+z &lt;- Intervals(
+               matrix( 1:4, 2, 2, byrow = TRUE ),
+               closed = c( TRUE, FALSE )
+               )
+z
+clusters( z, 1 )
+closed(z)[1] &lt;- FALSE
+z
+clusters( z, 1 )
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>intervals</em> version 0.15.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

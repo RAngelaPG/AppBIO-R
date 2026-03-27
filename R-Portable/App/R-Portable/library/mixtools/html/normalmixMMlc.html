@@ -1,0 +1,299 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: EC-MM Algorithm for Mixtures of Univariate Normals with...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for normalmixMMlc {mixtools}"><tr><td>normalmixMMlc {mixtools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>EC-MM Algorithm for Mixtures of Univariate Normals 
+with linear constraints</h2>
+
+<h3>Description</h3>
+
+<p>Return EC-MM (see below) algorithm output for mixtures of normal distributions
+with linear constraints on the means and variances parameters,
+as in Chauveau and Hunter (2013).
+The linear constraint for the means is of the form
+<i>&mu; = M &beta; + C</i>, where <i>M</i> and <i>C</i> are matrix 
+and vector specified as parameters.
+The linear constraints for the variances are actually specified on
+the inverse variances, by <i>&pi; = A &gamma;</i>, where <i>&pi;</i>
+is the vector of inverse variances, and <i>A</i> is a matrix
+specified as a parameter (see below).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+normalmixMMlc(x, lambda = NULL, mu = NULL, sigma = NULL, k = 2,
+              mean.constr = NULL, mean.lincstr = NULL, 
+              mean.constant = NULL, var.lincstr = NULL, 
+              gparam = NULL, epsilon = 1e-08, maxit = 1000, 
+              maxrestarts=20, verb = FALSE) 
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A vector of length n consisting of the data.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>Initial value of mixing proportions.  Automatically 
+repeated as necessary 
+to produce a vector of length <code>k</code>, then normalized to sum to 1.
+If <code>NULL</code>, then <code>lambda</code> is random from a uniform Dirichlet
+distribution (i.e., its entries are uniform random and then it is 
+normalized to sum to 1).</p>
+</td></tr>
+<tr valign="top"><td><code>mu</code></td>
+<td>
+<p>Starting value of vector of component means.
+If non-NULL and a vector,
+<code>k</code> is set to <code>length(mu)</code>.  If NULL, then the initial value
+is randomly generated from a normal distribution with center(s) determined
+by binning the data.</p>
+</td></tr>
+<tr valign="top"><td><code>sigma</code></td>
+<td>
+<p>Starting value of vector of component standard deviations 
+for algorithm.  
+Obsolete for linear constraints on the inverse variances;
+use <code>gparam</code> instead to specify a starting value.</p>
+</td></tr>
+<tr valign="top"><td><code>k</code></td>
+<td>
+<p>Number of components.  Initial value ignored unless <code>mu</code> 
+and <code>sigma</code> are both NULL.</p>
+</td></tr>
+<tr valign="top"><td><code>mean.constr</code></td>
+<td>
+<p>First, simplest way to define 
+equality constraints on the mean parameters, given as
+a vector of length <code>k</code>, as in <code><a href="../../mixtools/help/normalmixEM.html">normalmixEM</a></code>.  
+Each vector entry specifies the constraints,
+if any, on the corresponding mean parameter:  If <code>NA</code>, the corresponding
+parameter is unconstrained.  If numeric, the corresponding
+parameter is fixed at that value.  If a character string consisting of
+a single character preceded by a coefficient, such as <code>"0.5a"</code>
+or <code>"-b"</code>, all parameters using the same single character in their
+constraints will fix these parameters equal to the coefficient times
+some the same free parameter.  For instance, if 
+<code>mean.constr = c(NA, 0, "a", "-a")</code>, then the first mean parameter
+is unconstrained, the second is fixed at zero, and the third and forth
+are constrained to be equal and opposite in sign.
+Note: if there are no linear constraints for the means, it is
+more efficient to use directly <code><a href="../../mixtools/help/normalmixEM.html">normalmixEM</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>mean.lincstr</code></td>
+<td>
+<p>Matrix <i>M</i> <i>(k,p)</i> in the linear constraint for the means
+equation <i>&mu; = M &beta; + C</i>, with <i>p &le; k</i>.</p>
+</td></tr>
+<tr valign="top"><td><code>mean.constant</code></td>
+<td>
+<p>Vector of <i>k</i> constants <i>C</i> 
+in the linear constraint for the means
+equation <i>&mu; = M &beta; + C</i>.</p>
+</td></tr>
+<tr valign="top"><td><code>var.lincstr</code></td>
+<td>
+<p>Matrix <i>A</i> <i>(k,q)</i> in the linear constraint for the
+inverse variances equation <i>&pi; = A &gamma;</i>, with <i>q &le; k</i>.</p>
+</td></tr>
+<tr valign="top"><td><code>gparam</code></td>
+<td>
+<p>Vector of <i>q</i> starting values
+for the <i>&gamma;</i> parameter in the
+linear constraint for the inverse variances;
+see <code>var.lincstr</code>.  If NULL, a vector of randomly generated
+standard exponential variables is used.</p>
+</td></tr>
+<tr valign="top"><td><code>epsilon</code></td>
+<td>
+<p>The convergence criterion.  
+Convergence is declared when the change in 
+the observed data log-likelihood increases by less than epsilon.</p>
+</td></tr>
+<tr valign="top"><td><code>maxit</code></td>
+<td>
+<p>The maximum allowed number of iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>maxrestarts</code></td>
+<td>
+<p>The maximum number of restarts allowed in case of a problem
+with the particular starting values chosen due to one of the variance
+estimates getting too small
+(each restart uses randomly chosen
+starting values).  It is well-known that when each component of a normal
+mixture may have its own mean and variance, the likelihood has no maximizer;
+in such cases, we hope to find a &quot;nice&quot; local maximum with this algorithm
+instead, but occasionally the algorithm finds a &quot;not nice&quot; solution and
+one of the variances goes to zero, driving the likelihood to infinity.</p>
+</td></tr>
+<tr valign="top"><td><code>verb</code></td>
+<td>
+<p>If TRUE, then various updates are printed during each 
+iteration of the algorithm.</p>
+</td></tr> 
+</table>
+
+
+<h3>Details</h3>
+
+<p>This is a specific &quot;EC-MM&quot; algorithm for normal mixtures 
+with linear constraints on the means and variances parameters.
+EC-MM here means that this algorithm is similar to 
+an ECM algorithm as in Meng and Rubin (1993), 
+except that it uses conditional MM 
+(Minorization-Maximization)-steps
+instead of simple M-steps. Conditional means that it 
+alternates between maximizing with respect to the <code>mu</code>
+and <code>lambda</code> while holding <code>sigma</code> fixed, and maximizing with
+respect to <code>sigma</code> and <code>lambda</code> while holding <code>mu</code>
+fixed.  This ECM generalization of EM is forced in the case of linear constraints because there is no closed-form EM algorithm.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>normalmixMMlc</code> returns a list of class <code>mixEM</code> with items:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>The raw data.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>The final mixing proportions.</p>
+</td></tr>
+<tr valign="top"><td><code>mu</code></td>
+<td>
+<p>The final mean parameters.</p>
+</td></tr>
+<tr valign="top"><td><code>sigma</code></td>
+<td>
+<p>The final standard deviation(s)</p>
+</td></tr>
+<tr valign="top"><td><code>scale</code></td>
+<td>
+<p>Scale factor for the component standard deviations, if applicable.</p>
+</td></tr>
+<tr valign="top"><td><code>loglik</code></td>
+<td>
+<p>The final log-likelihood.</p>
+</td></tr>
+<tr valign="top"><td><code>posterior</code></td>
+<td>
+<p>An nxk matrix of posterior probabilities for
+observations.</p>
+</td></tr>
+<tr valign="top"><td><code>all.loglik</code></td>
+<td>
+<p>A vector of each iteration's log-likelihood.  This vector
+includes both the initial and the final values; thus, the number of iterations 
+is one less than its length.</p>
+</td></tr>
+<tr valign="top"><td><code>restarts</code></td>
+<td>
+<p>The number of times the algorithm restarted due to unacceptable choice of initial values.</p>
+</td></tr>
+<tr valign="top"><td><code>beta</code></td>
+<td>
+<p>The final <i>&beta;</i> parameter estimate.</p>
+</td></tr>
+<tr valign="top"><td><code>gamma</code></td>
+<td>
+<p>The final <i>&gamma;</i> parameter estimate.</p>
+</td></tr>
+<tr valign="top"><td><code>ft</code></td>
+<td>
+<p>A character vector giving the name of the function.</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Didier Chauveau</p>
+
+
+<h3>References</h3>
+
+
+<ul>
+<li><p> McLachlan, G. J. and Peel, D. (2000) <em>Finite Mixture Models</em>, 
+John Wiley &amp; Sons, Inc.
+</p>
+</li>
+<li><p> Meng, X.-L. and Rubin, D. B. (1993) Maximum Likelihood Estimation
+Via the ECM Algorithm:  A General Framework, <em>Biometrika</em> 80(2):
+267-278.
+</p>
+</li>
+<li><p> Chauveau, D. and Hunter, D.R. (2013)
+ECM and MM algorithms for mixtures with constrained parameters,
+<em>preprint <a href="https://hal.science/hal-00625285">https://hal.science/hal-00625285</a></em>.
+</p>
+</li>
+<li><p> Thomas, H., Lohaus, A., and Domsch, H. (2011) Stable Unstable Reliability
+Theory, <em>British Journal of Mathematical and Statistical Psychology</em>
+65(2): 201-221.
+</p>
+</li></ul>
+
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../mixtools/help/normalmixEM.html">normalmixEM</a></code>, <code><a href="../../mixtools/help/mvnormalmixEM.html">mvnormalmixEM</a></code>, 
+<code><a href="../../mixtools/help/normalmixEM2comp.html">normalmixEM2comp</a></code>, <code><a href="../../mixtools/help/tauequivnormalmixEM.html">tauequivnormalmixEM</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Analyzing synthetic data as in the tau equivalent model  
+## From Thomas et al (2011), see also Chauveau and Hunter (2013)
+## a 3-component mixture of normals with linear constraints.
+lbd &lt;- c(0.6,0.3,0.1); m &lt;- length(lbd)
+sigma &lt;- sig0 &lt;- sqrt(c(1,9,9))
+# means constaints mu = M beta
+M &lt;- matrix(c(1,1,1,0,-1,1), 3, 2)
+beta &lt;- c(1,5) # unknown constrained mean
+mu0 &lt;- mu &lt;- as.vector(M %*% beta)
+# linear constraint on the inverse variances pi = A.g
+A &lt;- matrix(c(1,1,1,0,1,0), m, 2, byrow=TRUE)
+iv0 &lt;- 1/(sig0^2)
+g0 &lt;- c(iv0[2],iv0[1] - iv0[2]) # gamma^0 init 
+
+# simulation and EM fits
+set.seed(50); n=100; x &lt;- rnormmix(n,lbd,mu,sigma)
+s &lt;- normalmixEM(x,mu=mu0,sigma=sig0,maxit=2000) # plain EM
+# EM with var and mean linear constraints
+sc &lt;- normalmixMMlc(x, lambda=lbd, mu=mu0, sigma=sig0,
+					mean.lincstr=M, var.lincstr=A, gparam=g0)
+# plot and compare both estimates
+dnormmixt &lt;- function(t, lam, mu, sig){
+	m &lt;- length(lam); f &lt;- 0
+	for (j in 1:m) f &lt;- f + lam[j]*dnorm(t,mean=mu[j],sd=sig[j])
+	f}
+t &lt;- seq(min(x)-2, max(x)+2, len=200)
+hist(x, freq=FALSE, col="lightgrey", 
+		ylim=c(0,0.3), ylab="density",main="")
+lines(t, dnormmixt(t, lbd, mu, sigma), col="darkgrey", lwd=2) # true
+lines(t, dnormmixt(t, s$lambda, s$mu, s$sigma), lty=2) 
+lines(t, dnormmixt(t, sc$lambda, sc$mu, sc$sigma), col=1, lty=3)
+legend("topleft", c("true","plain EM","constr EM"), 
+	col=c("darkgrey",1,1), lty=c(1,2,3), lwd=c(2,1,1))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mixtools</em> version 2.0.0.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

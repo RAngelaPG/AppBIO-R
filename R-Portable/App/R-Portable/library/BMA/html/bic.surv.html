@@ -1,0 +1,290 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Bayesian Model Averaging for Survival models.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for bic.surv {BMA}"><tr><td>bic.surv {BMA}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Bayesian Model Averaging for Survival models.</h2>
+
+<h3>Description</h3>
+
+<p>Bayesian Model Averaging for Cox proportional hazards models for
+censored survival data. This accounts for the model uncertainty inherent
+in the variable selection problem by averaging over the best models in
+the model class according to approximate posterior model probability.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+bic.surv(x, ...)
+
+## S3 method for class 'matrix'
+bic.surv(x, surv.t, cens, strict = FALSE, 
+      OR = 20, maxCol = 30, prior.param = c(rep(0.5, ncol(x))), 
+      OR.fix = 2, nbest = 150, factor.type = TRUE, 
+      factor.prior.adjust = FALSE, call = NULL, ...)
+
+## S3 method for class 'data.frame'
+bic.surv(x, surv.t, cens, 
+      strict = FALSE, OR = 20, maxCol = 30, 
+      prior.param = c(rep(0.5, ncol(x))), OR.fix = 2, 
+      nbest = 150, factor.type = TRUE, 
+      factor.prior.adjust = FALSE, call = NULL, ...)
+
+## S3 method for class 'formula'
+bic.surv(f, data, strict = FALSE, 
+     OR = 20, maxCol = 30, prior.param = c(rep(0.5, ncol(x))), 
+     OR.fix = 2, nbest = 150, factor.type = TRUE, 
+     factor.prior.adjust = FALSE, call = NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>a matrix or data frame of independent variables.</p>
+</td></tr>
+<tr valign="top"><td><code>surv.t</code></td>
+<td>
+<p>a vector of values for the dependent variable.</p>
+</td></tr>
+<tr valign="top"><td><code>cens</code></td>
+<td>
+<p>a vector of indicators of censoring (0=censored 1=uncensored)</p>
+</td></tr>
+<tr valign="top"><td><code>f</code></td>
+<td>
+<p>a survival model formula</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>a data frame containing the variables in the model.</p>
+</td></tr>
+<tr valign="top"><td><code>strict</code></td>
+<td>
+<p> logical indicating whether models with more likely submodels are eliminated. 
+<code>FALSE</code> returns all models whose posterior model probability is within a factor of <code>1/OR</code> of that of the best model.</p>
+</td></tr>
+<tr valign="top"><td><code>OR</code></td>
+<td>
+<p> a number specifying the maximum ratio for excluding models in Occam's window </p>
+</td></tr>
+<tr valign="top"><td><code>maxCol</code></td>
+<td>
+<p> a number specifying the maximum number of columns in design matrix (including intercept) to be kept. </p>
+</td></tr>
+<tr valign="top"><td><code>prior.param</code></td>
+<td>
+<p>a vector of prior probabilities that parameters are non-zero. Default puts a prior of .5 on all parameters.  Setting to 1 forces the variable into the model.   </p>
+</td></tr>
+<tr valign="top"><td><code>OR.fix</code></td>
+<td>
+<p>width of the window which keeps models after the leaps approximation is done.  
+Because the leaps and bounds gives only an approximation to BIC, there is a need to increase the window at 
+this first &quot;cut&quot; so as to ensure that no good models are deleted. 
+The level of this cut is at <code>1/(OR^OR.fix)</code>; the default value for <code>OR.fix</code> is 2.</p>
+</td></tr>
+<tr valign="top"><td><code>nbest</code></td>
+<td>
+<p>a value specifying the number of models of each size returned to bic.glm by the modified leaps algorithm.</p>
+</td></tr>
+<tr valign="top"><td><code>factor.type</code></td>
+<td>
+<p>a logical value specifying how variables of class &quot;factor&quot; are handled. 
+A factor variable with d levels is turned into (d-1) dummy variables using a treatment contrast.  
+If <code>factor.type = TRUE</code>, models will contain either all or none of these dummy variables.  
+If <code>factor.type = FALSE</code>, models are free  to select the dummy variables independently.  
+In this case, factor.prior.adjust determines the prior on these variables.</p>
+</td></tr>
+<tr valign="top"><td><code>factor.prior.adjust</code></td>
+<td>
+<p>a logical value specifying if the prior distribution on
+dummy variables for factors should be adjusted when <code>factor.type=FALSE</code>.
+When <code>factor.prior.adjust=FALSE</code>, all dummy variables for variable 
+<code>i</code> have prior equal to <code>prior.param[i]</code>.
+Note that this makes the prior probability of the union of these variables much higher than <code>prior.param[i]</code>.  
+Setting <code>factor.prior.adjust=T</code> corrects for this so that the union of the dummies equals <code>prior.param[i]</code>
+(and hence the deletion of the factor has a prior of <code>1-prior.param[i]</code>).  
+This adjustment changes the individual priors on each dummy variable to <code>1-(1-pp[i])^(1/(k+1))</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>used internally</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>unused</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Bayesian Model Averaging accounts for the model uncertainty inherent in the variable selection problem by averaging over the best models in the model class according to approximate posterior model probability.  
+<code>bic.surv</code> averages of Cox regression models.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>bic.surv</code> returns an object of class <code>bic.surv</code>
+</p>
+<p>The function <code>summary</code> is used to print a summary of the results. 
+The function <code>plot</code> is used to plot posterior distributions for the 
+coefficients. 
+The function <code>imageplot</code> generates an image of the models which were 
+averaged over.
+</p>
+<p>An object of class <code>bic.glm</code> is a list containing at least the following 
+components:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>postprob</code></td>
+<td>
+<p>the posterior probabilities of the models selected</p>
+</td></tr>
+<tr valign="top"><td><code>label</code></td>
+<td>
+<p>labels identifying the models selected</p>
+</td></tr>
+<tr valign="top"><td><code>bic</code></td>
+<td>
+<p>values of BIC for the models</p>
+</td></tr>
+<tr valign="top"><td><code>size</code></td>
+<td>
+<p>the number of independent variables in each of the models</p>
+</td></tr>
+<tr valign="top"><td><code>which</code></td>
+<td>
+<p>a logical matrix with one row per model and one column per variable indicating whether that variable is in the model</p>
+</td></tr>
+<tr valign="top"><td><code>probne0</code></td>
+<td>
+<p>the posterior probability that each variable is non-zero (in percent)</p>
+</td></tr>
+<tr valign="top"><td><code>postmean</code></td>
+<td>
+<p>the posterior mean of each coefficient (from model averaging)</p>
+</td></tr>
+<tr valign="top"><td><code>postsd</code></td>
+<td>
+<p>the posterior standard deviation of each coefficient (from model averaging) </p>
+</td></tr>
+<tr valign="top"><td><code>condpostmean</code></td>
+<td>
+<p>the posterior mean of each coefficient conditional on the variable being included in the model</p>
+</td></tr>
+<tr valign="top"><td><code>condpostsd</code></td>
+<td>
+<p>the posterior standard deviation of each coefficient conditional on the variable being included in the model</p>
+</td></tr>
+<tr valign="top"><td><code>mle</code></td>
+<td>
+<p>matrix with one row per model and one column per variable giving the maximum likelihood estimate of each coefficient for each model</p>
+</td></tr>
+<tr valign="top"><td><code>se</code></td>
+<td>
+<p>matrix with one row per model and one column per variable giving the standard error of each coefficient for each model</p>
+</td></tr>
+<tr valign="top"><td><code>reduced</code></td>
+<td>
+<p>a logical indicating whether any variables were dropped before model averaging</p>
+</td></tr>
+<tr valign="top"><td><code>dropped</code></td>
+<td>
+<p>a vector containing the names of those variables dropped before model averaging</p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>the matched call that created the bma.lm object</p>
+</td></tr>
+</table>
+
+
+<h3>Note</h3>
+
+<p>If more than <code>maxcol</code> variables are supplied, then bic.surv does 
+stepwise elimination of variables until <code>maxcol</code> variables are reached.
+Many thanks to Sanford Weisberg for making source code for leaps available.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Chris Volinsky 
+<a href="mailto:volinsky@research.att.com">volinsky@research.att.com</a>;
+Adrian Raftery 
+<a href="mailto:raftery@uw.edu">raftery@uw.edu</a>;
+Ian Painter 
+<a href="mailto:ian.painter@gmail.com">ian.painter@gmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+ 
+<p>Volinsky, C.T., Madigan, D., Raftery, A.E. and Kronmal, R.A. (1997). 
+&quot;Bayesian Model Averaging in Proportional Hazard Models:  
+Assessing the Risk of a Stroke.&quot;  Applied Statistics 46: 433-448
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../BMA/help/summary.bic.surv.html">summary.bic.surv</a></code>, 
+<code><a href="../../BMA/help/print.bic.surv.html">print.bic.surv</a></code>, 
+<code><a href="../../BMA/help/plot.bic.surv.html">plot.bic.surv</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## Not run: 
+## veteran data
+library(survival)
+data(cancer)
+
+test.bic.surv&lt;- bic.surv(Surv(time,status) ~ ., data = veteran, 
+                         factor.type = TRUE)
+summary(test.bic.surv, conditional=FALSE, digits=2)
+plot(test.bic.surv)
+
+imageplot.bma(test.bic.surv)
+
+## End(Not run)
+
+## pbc data
+
+x&lt;- pbc[1:312,]
+surv.t&lt;- x$time
+cens&lt;- as.numeric((x$status == 2))
+
+x&lt;- x[,c("age", "albumin", "alk.phos", "ascites", "bili", "edema", 
+         "hepato", "platelet", "protime", "sex", "ast", "spiders", 
+         "stage", "trt", "copper")]
+
+## Not run: 
+x$bili&lt;- log(x$bili)
+x$alb&lt;- log(x$alb)
+x$protime&lt;- log(x$protime)
+x$copper&lt;- log(x$copper)
+x$ast&lt;- log(x$ast)
+
+test.bic.surv&lt;- bic.surv(x, surv.t, cens, 
+                         factor.type=FALSE, strict=FALSE)
+summary(test.bic.surv)
+
+## End(Not run)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>BMA</em> version 3.18.21 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

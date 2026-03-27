@@ -1,0 +1,174 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Analyze pathfile-strings</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for splitPathFile {ff}"><tr><td>splitPathFile {ff}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Analyze pathfile-strings
+</h2>
+
+<h3>Description</h3>
+
+<p><code>splitPathFile</code> splits a vector of pathfile-strings into path- and file-components without loss of information.
+<code>unsplitPathFile</code> restores the original pathfile-string vector.
+<code>standardPathFile</code> standardizes a vector of pathfile-strings: backslashes are replaced by slashes, except for the first two leading backslashes indicating a network share.
+<code>tempPathFile</code> returns  - similar to <code><a href="../../base/html/tempfile.html">tempfile</a></code> - a vector of filenames given path(s) and file-prefix(es) and an optional extension.
+<code>fftempfile</code> returns  - similar to <code>tempPathFile</code> - a vector of filenames following a vector of pathfile patterns that are intrepreted in a ff-specific way.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+splitPathFile(x)
+unsplitPathFile(splitted)
+standardPathFile(x)
+tempPathFile(splitted=NULL, path=splitted$path, prefix=splitted$file, extension=NULL)
+fftempfile(x)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p> a character vector of pathfile strings </p>
+</td></tr>
+<tr valign="top"><td><code>splitted</code></td>
+<td>
+<p> a return value from <code>splitPathFile</code> </p>
+</td></tr>
+<tr valign="top"><td><code>path</code></td>
+<td>
+<p> a character vector of path components </p>
+</td></tr>
+<tr valign="top"><td><code>prefix</code></td>
+<td>
+<p> a character vector of file components </p>
+</td></tr>
+<tr valign="top"><td><code>extension</code></td>
+<td>
+<p> optional extension like &quot;csv&quot; (or NULL) </p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code><a href="../../base/html/basename.html">dirname</a></code> and <code><a href="../../base/html/basename.html">basename</a></code> remove trailing file separators and therefore cannot distinguish pathfile string that contains ONLY a path from a pathfile string that contains a path AND file.
+Therefore <code><a href="../../base/html/file.path.html">file.path</a>(dirname(pathfile), basename(pathfile))</code> cannot always restore the original pathfile string.
+<br />
+<code>splitPathFile</code> decomposes each pathfile string into three parts: a path BEFORE the last file separator, the file separator, the filename component AFTER the last file separator.
+If there is no file separator in the string, <code>splitPathFile</code> tries to guess whether the string is a path or a file component: &quot;.&quot;, &quot;..&quot; and &quot;~&quot; are recognized as path components.
+No tilde expansion is done, see <code><a href="../../base/html/path.expand.html">path.expand</a></code>.
+Backslashes are converted to the current <code><a href="../../base/html/Platform.html">.Platform</a>$file.sep</code> using <code>splitPathFile</code> except for the first two leading backslashes indicating a network share.
+<br />
+<code>unsplitPathFile</code> restores the original pathfile-string vector up to translated backslashes.
+<br />
+<code>tempPathFile</code> internally uses <code><a href="../../base/html/tempfile.html">tempfile</a></code> to create its filenames, if an extension is given it repeats filename creation until none of them corresponds to an existing file.
+<br />
+<code>fftempfile</code> takes a path-prefix pattern as input, splits it,
+will replace an empty path by <code>getOption("fftempdir")</code> and will use <code>getOption("ffextension")</code> as extension.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with components
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>path</code></td>
+<td>
+<p> a character vector of path components </p>
+</td></tr>
+<tr valign="top"><td><code>fsep</code></td>
+<td>
+<p> a character vector of file separators or &quot;&quot; </p>
+</td></tr>
+<tr valign="top"><td><code>file</code></td>
+<td>
+<p> a character vector of file components </p>
+</td></tr>
+</table>
+
+
+<h3>Note</h3>
+
+<p>There is no gurantee that the path and file components contain valid path- or file-names. Like <code><a href="../../base/html/basename.html">basename</a></code>,  <code>splitPathFile</code> can return &quot;.&quot;, &quot;..&quot; or even &quot;&quot;, however, all these make sense as a prefix in tempPathFile.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Jens Oehlschlägel
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../base/html/tempfile.html">tempfile</a></code>, <code><a href="../../base/html/basename.html">dirname</a></code>, <code><a href="../../base/html/basename.html">basename</a></code>, <code><a href="../../base/html/file.path.html">file.path</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+  pathfile &lt;- c("", ".", "/.", "./", "./.", "/"
+  , "a", "a/", "/a", "a/a", "./a", "a/.", "c:/a/b/c", "c:/a/b/c/"
+  , "..", "../", "/..", "../..", "//", "\\\\a\\", "\\\\a/"
+  , "\\\\a/b", "\\\\a/b/", "~", "~/", "~/a", "~/a/")
+  splitted &lt;- splitPathFile(pathfile)
+  restored &lt;- unsplitPathFile(splitted)
+  stopifnot(all(gsub("\\\\","/",restored)==gsub("\\\\","/",pathfile)))
+
+  dirnam &lt;- dirname(pathfile)
+  basnam &lt;- basename(pathfile)
+
+  db  &lt;- file.path(dirnam,basnam)
+  ident = gsub("\\\\","/",db) == gsub("\\\\","/",pathfile)
+  sum(!ident)
+
+  do.call("data.frame", c(list(ident=ident, pathfile=pathfile
+   , dirnam=dirnam, basnam=basnam), splitted))
+
+  ## Not run: 
+    message("show the difference between tempfile and fftempfile")
+    do.call("data.frame", c(list(ident=ident, pathfile=pathfile, dirnam=dirnam, basnam=basnam)
+, splitted, list(filename=tempPathFile(splitted), fftempfile=fftempfile(pathfile))))
+
+    message("for a single string splitPathFile is slower, 
+for vectors of strings it scales much better than dirname+basename")
+
+    system.time(for (i in 1:1000){
+      d &lt;- dirname(pathfile)
+      b &lt;- basename(pathfile)
+    })
+    system.time(for (i in 1:1000){
+      s &lt;- splitPathFile(pathfile)
+    })
+
+    len &lt;- c(1,10,100,1000)
+    timings &lt;- matrix(0, 2, length(len), dimnames=list(c("dir.base.name", "splitPathFile"), len))
+    for (j in seq(along=len)){
+      l &lt;- len[j]
+      r &lt;- 10000 / l
+      x &lt;- rep("\\\\a/b/", l)
+      timings[1,j] &lt;- system.time(for (i in 1:r){
+          d &lt;- dirname(x)
+          b &lt;- basename(x)
+        })[3]
+      timings[2,j] &lt;- system.time(for (i in 1:r){
+          s &lt;- splitPathFile(x)
+        })[3]
+    }
+    timings
+  
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ff</em> version 4.5.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

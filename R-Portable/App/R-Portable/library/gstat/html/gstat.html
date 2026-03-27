@@ -1,0 +1,322 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Create gstat objects, or subset it</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for gstat {gstat}"><tr><td>gstat {gstat}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Create gstat objects, or subset it </h2>
+
+<h3>Description</h3>
+
+<p>Function that creates gstat objects; objects that hold all the information
+necessary for univariate or multivariate geostatistical prediction
+(simple, ordinary or universal (co)kriging), or its conditional or
+unconditional Gaussian or indicator simulation equivalents. Multivariate
+gstat object can be subsetted. </p>
+
+
+<h3>Usage</h3>
+
+<pre>
+gstat(g, id, formula, locations, data, model = NULL, beta,
+	nmax = Inf, nmin = 0, omax = 0, maxdist = Inf, force = FALSE,
+	dummy = FALSE, set, fill.all = FALSE,
+	fill.cross = TRUE, variance = "identity", weights = NULL, merge, 
+	degree = 0, vdist = FALSE, lambda = 1.0)
+## S3 method for class 'gstat'
+print(x, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>g</code></td>
+<td>
+<p> gstat object to append to; if missing, a new gstat object
+is created </p>
+</td></tr>
+<tr valign="top"><td><code>id</code></td>
+<td>
+<p> identifier of new variable; if missing, <code>varn</code> is used with
+<code>n</code> the number for this variable. If a cross variogram is entered,
+<code>id</code> should be a vector with the two <code>id</code> values , e.g. 
+<code>c("zn", "cd")</code>, further only supplying arguments <code>g</code> 
+and <code>model</code>. It is advisable not to use expressions, such
+as <code>log(zinc)</code>, as identifiers, as this may lead to complications 
+later on. </p>
+</td></tr>
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p> formula that defines the dependent variable as a linear
+model of independent variables; suppose the dependent variable has name
+<code>z</code>, for ordinary and simple kriging use the formula <code>z~1</code>;
+for simple kriging also define <code>beta</code> (see below); for universal
+kriging, suppose <code>z</code> is linearly dependent on <code>x</code> and <code>y</code>,
+use the formula <code>z~x+y</code></p>
+</td></tr>
+<tr valign="top"><td><code>locations</code></td>
+<td>
+<p> formula with only independent variables that define the
+spatial data locations (coordinates), e.g. <code>~x+y</code>; if <code>data</code>
+has a <code>coordinates</code> method to extract its coordinates this argument 
+can be ignored (see package sp for classes for point or grid data). </p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p> data frame; contains the dependent variable, independent
+variables, and locations. </p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p> variogram model for this <code>id</code>; defined by a call to 
+<a href="../../gstat/help/vgm.html">vgm</a>; see argument <code>id</code> to see how cross variograms are entered </p>
+</td></tr>
+<tr valign="top"><td><code>beta</code></td>
+<td>
+<p> for simple kriging (and simulation based on simple
+kriging): vector with the trend coefficients (including intercept);
+if no independent variables are defined the model only contains an
+intercept and this should be the expected value; for cross 
+variogram computations: mean parameters to be used instead of the 
+OLS estimates </p>
+</td></tr>
+<tr valign="top"><td><code>nmax</code></td>
+<td>
+<p> for local kriging: the number of nearest observations that
+should be used for a kriging prediction or simulation, where nearest
+is defined in terms of the space of the spatial locations </p>
+</td></tr>
+<tr valign="top"><td><code>nmin</code></td>
+<td>
+<p> for local kriging: if the number of nearest observations
+within distance <code>maxdist</code> is less than <code>nmin</code>, a missing 
+value will be generated, unless <code>force==TRUE</code>; see <code>maxdist</code> </p>
+</td></tr>
+<tr valign="top"><td><code>omax</code></td>
+<td>
+<p> maximum number of observations to select per octant (3D) or
+quadrant (2D); only relevant if <code>maxdist</code> has been defined as well </p>
+</td></tr>
+<tr valign="top"><td><code>maxdist</code></td>
+<td>
+<p> for local kriging: only observations within a distance
+of <code>maxdist</code> from the prediction location are used for prediction
+or simulation; if combined with <code>nmax</code>, both criteria apply </p>
+</td></tr>
+<tr valign="top"><td><code>force</code></td>
+<td>
+<p> for local kriging, force neighbourhood selection: in case
+<code>nmin</code> is given, search beyond <code>maxdist</code> until <code>nmin</code>
+neighbours are found. A missing value is returned if this is not possible. </p>
+</td></tr>
+<tr valign="top"><td><code>dummy</code></td>
+<td>
+<p> logical; if TRUE, consider this data as a dummy variable
+(only necessary for unconditional simulation) </p>
+</td></tr>
+<tr valign="top"><td><code>set</code></td>
+<td>
+<p> named list with optional parameters to be passed to
+gstat (only <code>set</code> commands of gstat are allowed, and not all of
+them may be relevant; see the manual for gstat stand-alone, URL below ) </p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p> gstat object to print </p>
+</td></tr>
+<tr valign="top"><td><code>fill.all</code></td>
+<td>
+<p> logical; if TRUE, fill all of the direct variogram and,
+depending on the value of <code>fill.cross</code> also all cross
+variogram model slots in <code>g</code> with the given variogram model </p>
+</td></tr>
+<tr valign="top"><td><code>fill.cross</code></td>
+<td>
+<p> logical; if TRUE, fill all of the cross variograms, if
+FALSE fill only all direct variogram model slots in <code>g</code> with the 
+given variogram model (only if <code>fill.all</code> is used)</p>
+</td></tr>
+<tr valign="top"><td><code>variance</code></td>
+<td>
+<p> character; variance function to transform to non-stationary
+covariances; &quot;identity&quot; does not transform, other options are &quot;mu&quot; (Poisson)
+and &quot;mu(1-mu)&quot; (binomial) </p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p> numeric vector; if present, covariates are present,
+and variograms are missing weights are passed to OLS prediction routines
+resulting in WLS; if variograms are given, weights should be 1/variance, 
+where variance specifies location-specific measurement error; see references 
+section below </p>
+</td></tr>
+<tr valign="top"><td><code>merge</code></td>
+<td>
+<p> either character vector of length 2, indicating two ids 
+that share a common mean; the more general gstat merging of any two
+coefficients across variables is obtained when a list is passed, with
+each element a character vector of length 4, in the form 
+<code>c("id1", 1,"id2", 2)</code>. This merges the first parameter 
+for variable <code>id1</code> to the second of variable <code>id2</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>degree</code></td>
+<td>
+<p>order of trend surface in the location, between 0 and 3</p>
+</td></tr>
+<tr valign="top"><td><code>vdist</code></td>
+<td>
+<p>logical; if TRUE, instead of Euclidian distance 
+variogram distance is used for selecting the nmax nearest neighbours,
+after observations within distance maxdist (Euclidian/geographic) have been 
+pre-selected </p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>test feature; doesn't do anything (yet)</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p> arguments that are passed to the printing of variogram
+models only</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p> to print the full contents of the object <code>g</code> returned,
+use <code>as.list(g)</code> or <code>print.default(g)</code> </p>
+
+
+<h3>Value</h3>
+
+<p>an object of class <code>gstat</code>, which inherits from <code>list</code>.
+Its components are: 
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>list; each element is a list with the <code>formula</code>, 
+<code>locations</code>, <code>data</code>, <code>nvars</code>, <code>beta</code>, etc., for a 
+variable</p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>list; each element contains a variogram model; names are
+those of the elements of <code>data</code>; cross variograms have names of
+the pairs of data elements, separated by a <code>.</code> (e.g.: 
+<code>var1.var2</code></p>
+</td></tr></table>
+<p>)
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>set</code></td>
+<td>
+<p>list; named list, corresponding to set <code>name</code>=<code>value</code>;
+gstat commands (look up the set command in the gstat manual for a full list)</p>
+</td></tr>
+</table>
+
+
+<h3>Note</h3>
+
+ 
+<p>The function currently copies the data objects into the gstat object, so
+this may become a large object. I would like to copy only the name of the
+data frame, but could not get this to work. Any help is appreciated.  
+</p>
+<p>Subsetting (see examples) is done using the <code>id</code>'s of the variables,
+or using numeric subsets. Subsetted gstat objects only contain cross
+variograms if (i) the original gstat object contained them and (ii) the
+order of the subset indexes increases, numerically, or given the order
+they have in the gstat object.
+</p>
+<p>The merge item may seem obscure. Still, for colocated cokriging, it is
+needed. See texts by Goovaerts, Wackernagel, Chiles and Delfiner, or
+look for standardised ordinary kriging in the 1992 Deutsch and Journel
+or Isaaks and Srivastava. In these cases, two variables share a common
+mean parameter. Gstat generalises this case: any two variables may share
+any of the regression coefficients; allowing for instance analysis of
+covariance models, when variograms were left out (see e.g. R. Christensen's
+&ldquo;Plane answers&rdquo; book on linear models). The tests directory of the
+package contains examples in file merge.R. There is also <code>demo(pcb)</code>
+which merges slopes across years, but with year-dependent intercept.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Edzer Pebesma </p>
+
+
+<h3>References</h3>
+
+<p>Pebesma, E.J., 2004. Multivariable geostatistics in S: the gstat package.
+Computers and Geosciences, 30: 683-691.
+</p>
+<p>for kriging with known, varying measurement errors (<code>weights</code>), see e.g.
+Delhomme, J.P.  Kriging in the hydrosciences.  Advances in Water
+Resources, 1(5):251-266, 1978; see also the section Kriging with known
+measurement errors in the gstat user's manual.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><a href="../help/predict.html">predict</a>, <a href="../../gstat/help/krige.html">krige</a> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(sp)
+data(meuse)
+coordinates(meuse) = ~x+y
+# let's do some manual fitting of two direct variograms and a cross variogram
+g &lt;- gstat(id = "ln.zinc", formula = log(zinc)~1, data = meuse)
+g &lt;- gstat(g, id = "ln.lead", formula = log(lead)~1, data = meuse)
+# examine variograms and cross variogram:
+plot(variogram(g))
+# enter direct variograms:
+g &lt;- gstat(g, id = "ln.zinc", model = vgm(.55, "Sph", 900, .05))
+g &lt;- gstat(g, id = "ln.lead", model = vgm(.55, "Sph", 900, .05))
+# enter cross variogram:
+g &lt;- gstat(g, id = c("ln.zinc", "ln.lead"), model = vgm(.47, "Sph", 900, .03))
+# examine fit:
+plot(variogram(g), model = g$model, main = "models fitted by eye")
+# see also demo(cokriging) for a more efficient approach
+g["ln.zinc"]
+g["ln.lead"]
+g[c("ln.zinc", "ln.lead")]
+g[1]
+g[2]
+
+# Inverse distance interpolation with inverse distance power set to .5:
+# (kriging variants need a variogram model to be specified)
+data(meuse.grid)
+gridded(meuse.grid) = ~x+y
+meuse.gstat &lt;- gstat(id = "zinc", formula = zinc ~ 1, data = meuse, 
+	nmax = 7, set = list(idp = .5))
+meuse.gstat
+z &lt;- predict(meuse.gstat, meuse.grid)
+spplot(z["zinc.pred"])
+# see demo(cokriging) and demo(examples) for further examples, 
+# and the manuals for predict and image
+
+# local universal kriging
+gmeuse &lt;- gstat(id = "log_zinc", formula = log(zinc)~sqrt(dist), data = meuse)
+# variogram of residuals
+vmeuse.res &lt;- fit.variogram(variogram(gmeuse), vgm(1, "Exp", 300, 1))
+# prediction from local neighbourhoods within radius of 170 m or at least 10 points
+gmeuse &lt;- gstat(id = "log_zinc", formula = log(zinc)~sqrt(dist),
+	data = meuse, maxdist=170, nmin=10, force=TRUE, model=vmeuse.res)
+predmeuse &lt;- predict(gmeuse, meuse.grid)
+spplot(predmeuse)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>gstat</em> version 2.1-5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

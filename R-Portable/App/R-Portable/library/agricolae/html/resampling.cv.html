@@ -1,0 +1,106 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Resampling to find the optimal number of markers</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for resampling.cv {agricolae}"><tr><td>resampling.cv {agricolae}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Resampling to find the optimal number of markers </h2>
+
+<h3>Description</h3>
+
+<p>This process finds the curve of CV for a different number of markers which
+allows us to determine the number of optimal markers for a given relative 
+variability.
+A method of the curvature.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+resampling.cv(A, size, npoints)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>A</code></td>
+<td>
+<p> data frame or matrix of binary data </p>
+</td></tr>
+<tr valign="top"><td><code>size</code></td>
+<td>
+<p> number of re-samplings </p>
+</td></tr>
+<tr valign="top"><td><code>npoints</code></td>
+<td>
+<p> Number of points to consider the model </p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>lm(formula = CV ~ I(1/marker))<br />
+Table with variation coefficient by number of markers
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Felipe de Mendiburu </p>
+
+
+<h3>References</h3>
+
+<p>Efron, B., Tibshirani, R. (1993) An Introduction to the Boostrap. Chapman and Hall/CRC </p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../agricolae/help/cv.similarity.html">cv.similarity</a></code>, <code><a href="../../agricolae/help/similarity.html">similarity</a> </code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(agricolae)
+#example table of molecular markers
+data(markers)
+study&lt;-resampling.cv(markers,size=1,npoints=15)
+#
+# Results of the model
+summary(study$model)
+coef&lt;-coef(study$model)
+py&lt;-predict(study$model)
+Rsq&lt;-summary(study$model)$"r.squared"
+table.cv &lt;- data.frame(study$table.cv,estimate=py)
+print(table.cv)
+
+# Plot CV
+#startgraph
+limy&lt;-max(table.cv[,2])+10
+plot(table.cv[,c(1,2)],col="red",frame=FALSE,xlab="number of markers",
+ylim=c(10,limy), ylab="CV",cex.main=0.8,main="Estimation of the number of markers")
+ty&lt;-quantile(table.cv[,2],1)
+tx&lt;-median(table.cv[,1])
+tz&lt;-quantile(table.cv[,2],0.95)
+text(tx,ty, cex=0.8,as.expression(substitute(CV == a + frac(b,markers),
+list(a=round(coef[1],2),b=round(coef[2],2)))) )
+text(tx,tz,cex=0.8,as.expression(substitute(R^2==r,list(r=round(Rsq,3)))))
+
+# Plot CV = a + b/n.markers
+fy&lt;-function(x,a,b) a+b/x
+x&lt;-seq(2,max(table.cv[,1]),length=50)
+y &lt;- coef[1] + coef[2]/x
+lines(x,y,col="blue")
+#grid(col="brown")
+rug(table.cv[,1])
+#endgraph
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>agricolae</em> version 1.3-7 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

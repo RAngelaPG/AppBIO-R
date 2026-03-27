@@ -1,0 +1,414 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Two Scatter Matrices ICS Transformation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for ICS-S3 {ICS}"><tr><td>ICS-S3 {ICS}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Two Scatter Matrices ICS Transformation</h2>
+
+<h3>Description</h3>
+
+<p>Transforms the data via two scatter matrices to an invariant coordinate
+system or independent components, depending on the underlying assumptions.
+Function <code>ICS()</code> is intended as a replacement for <code><a href="../../ICS/help/ics.html">ics</a>()</code>
+and <code><a href="../../ICS/help/ics2.html">ics2</a>()</code>, and it combines their functionality into a single
+function. Importantly, the results are returned as an
+<code><a href="../../base/help/class.html">S3</a></code> object rather than an
+<code><a href="../../methods/help/Classes_Details.html">S4</a></code> object. Furthermore, <code>ICS()</code>
+implements recent improvements, such as a numerically stable algorithm based
+on the QR algorithm for a common family of scatter pairs.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+ICS(
+  X,
+  S1 = ICS_cov,
+  S2 = ICS_cov4,
+  S1_args = list(),
+  S2_args = list(),
+  algorithm = c("whiten", "standard", "QR"),
+  center = FALSE,
+  fix_signs = c("scores", "W"),
+  na.action = na.fail
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>X</code></td>
+<td>
+<p>a numeric matrix or data frame containing the data to be
+transformed.</p>
+</td></tr>
+<tr valign="top"><td><code>S1</code></td>
+<td>
+<p>a numeric matrix containing the first scatter matrix, an object
+of class <code>"ICS_scatter"</code> (that typically contains the location vector
+and scatter matrix as <code>location</code> and <code>scatter</code> components), or a
+function that returns either of those options. The default is function
+<code><a href="../../ICS/help/ICS_cov.html">ICS_cov</a>()</code> for the sample covariance matrix.</p>
+</td></tr>
+<tr valign="top"><td><code>S2</code></td>
+<td>
+<p>a numeric matrix containing the second scatter matrix, an object
+of class <code>"ICS_scatter"</code> (that typically contains the location vector
+and scatter matrix as <code>location</code> and <code>scatter</code> components), or a
+function that returns either of those options. The default is function
+<code><a href="../../ICS/help/ICS_cov4.html">ICS_cov4</a>()</code> for the covariance matrix based on fourth order
+moments.</p>
+</td></tr>
+<tr valign="top"><td><code>S1_args</code></td>
+<td>
+<p>a list containing additional arguments for <code>S1</code> (only
+relevant if <code>S1</code> is a function).</p>
+</td></tr>
+<tr valign="top"><td><code>S2_args</code></td>
+<td>
+<p>a list containing additional arguments for <code>S2</code> (only
+relevant if <code>S2</code> is a function).</p>
+</td></tr>
+<tr valign="top"><td><code>algorithm</code></td>
+<td>
+<p>a character string specifying with which algorithm
+the invariant coordinate system is computed. Possible values are
+<code>"whiten"</code>, <code>"standard"</code> or <code>"QR"</code>.
+See &lsquo;Details&rsquo; for more information.</p>
+</td></tr>
+<tr valign="top"><td><code>center</code></td>
+<td>
+<p>a logical indicating whether the invariant coordinates should
+be centered with respect to first locattion or not (default to <code>FALSE</code>).
+Centering is only applicable if the
+first scatter object contains a location component, otherwise this is set to
+<code>FALSE</code>. Note that this only affects the scores of the invariant
+components (output component <code>scores</code>), but not the generalized
+kurtosis values (output component <code>gen_kurtosis</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>fix_signs</code></td>
+<td>
+<p>a character string specifying how to fix the signs of the
+invariant coordinates. Possible values are <code>"scores"</code> to fix the signs
+based on (generalized) skewness values of the coordinates, or <code>"W"</code> to
+fix the signs based on the coefficient matrix of the linear transformation.
+See &lsquo;Details&rsquo; for more information.</p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+<p>a function to handle missing values in the data (default
+to <code><a href="../../stats/help/na.fail.html">na.fail</a></code>, see its help file for alternatives).</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>For a given scatter pair <i>S1</i> and <i>S2</i>, a matrix
+<i>Z</i> (in which the columns contain the scores of the respective invariant
+coordinates) and a matrix <i>W</i> (in which the rows contain the
+coefficients of the linear transformation to the respective invariant
+coordinates) are found such that:
+</p>
+
+<ul>
+<li><p> The columns of <i>Z</i> are whitened with respect to
+<i>S1</i>. That is, <i>S1(Z) = I</i>, where <i>I</i>
+denotes the identity matrix.
+</p>
+</li>
+<li><p> The columns of <i>Z</i> are uncorrelated with respect to
+<i>S2</i>. That is, <i>S2(Z) = D</i>, where <i>D</i>
+is a diagonal matrix.
+</p>
+</li>
+<li><p> The columns of <i>Z</i> are ordered according to their generalized
+kurtosis.
+</p>
+</li></ul>
+
+<p>Given those criteria, <i>W</i> is unique up to sign changes in its rows. The
+argument <code>fix_signs</code> provides two ways to ensure uniqueness of <i>W</i>:
+</p>
+
+<ul>
+<li><p> If argument <code>fix_signs</code> is set to <code>"scores"</code>, the signs
+in <i>W</i> are fixed such that the generalized skewness values of all
+components are positive. If <code>S1</code> and <code>S2</code> provide location
+components, which are denoted by <i>T1</i> and <i>T2</i>,
+the generalized skewness values are computed as
+<i>T1(Z) - T2(Z)</i>.
+Otherwise, the skewness is computed by subtracting the column medians of
+<i>Z</i> from the corresponding column means so that all components are
+right-skewed. This way of fixing the signs is preferred in an invariant
+coordinate selection framework.
+</p>
+</li>
+<li><p> If argument <code>fix_signs</code> is set to <code>"W"</code>, the signs in
+<i>W</i> are fixed independently of <i>Z</i> such that the maximum element
+in each row of <i>W</i> is positive and that each row has norm 1. This is
+the usual way of fixing the signs in an independent component analysis
+framework.
+</p>
+</li></ul>
+
+<p>In principal, the order of <i>S1</i> and <i>S2</i> does not
+matter if both are true scatter matrices. Changing their order will just
+reverse the order of the components and invert the corresponding
+generalized kurtosis values.
+</p>
+<p>The same does not hold when at least one of them is a shape matrix rather
+than a true scatter matrix. In that case, changing their order will also
+reverse the order of the components, but the ratio of the generalized
+kurtosis values is no longer 1 but only a constant. This is due to the fact
+that when shape matrices are used, the generalized kurtosis values are only
+relative ones.
+</p>
+<p>Different algorithms are available to compute the invariant coordinate
+system of a data frame <i>X_n</i> with <i>n</i> observations:
+</p>
+
+<ul>
+<li> <p><strong>&quot;whiten&quot;</strong>: whitens the data <i>X_n</i> with respect to the first
+scatter matrix before computing the second scatter matrix. If <code>S2</code> is not a function, whitening is not applicable.
+</p>
+
+<ul>
+<li><p> whiten the data <i>X_n</i> with respect to the first
+scatter matrix: <i>Y_n =  X_n S_1(X_n)^{-1/2}</i>
+</p>
+</li>
+<li><p> compute <i>S_2</i> for the uncorrelated data: <i>S_2(Y_n)</i>
+</p>
+</li>
+<li><p> perform the eigendecomposition of <i>S_2(Y_n)</i>: <i>S_2(Y_n) = UDU'</i>
+</p>
+</li>
+<li><p> compute <i>W</i>: <i>W = U' S_1(X_n)^{-1/2}</i>
+</p>
+</li></ul>
+
+</li>
+<li> <p><strong>&quot;standard&quot;</strong>: performs the spectral decomposition of the
+symmetric matrix  <i>M(X_n)</i>
+</p>
+
+<ul>
+<li><p> compute <i>M(X_n) = S_1(X_n)^{-1/2} S_2(X_n) S_1(X_n)^{-1/2}</i>
+</p>
+</li>
+<li><p> perform the eigendecomposition of <i>M(X_n)</i>: <i>M(X_n) = UDU'</i>
+</p>
+</li>
+<li><p> compute <i>W</i>: <i>W = U' S_1(X_n)^{-1/2}</i>
+</p>
+</li></ul>
+
+</li>
+<li> <p><strong>&quot;QR&quot;</strong>: numerically stable algorithm based on the QR algorithm for a
+common family of scatter pairs: if <code>S1</code> is <code><a href="../../ICS/help/ICS_cov.html">ICS_cov</a>()</code>
+or <code><a href="../../stats/help/cov.html">cov</a>()</code>, and if <code>S2</code> is one of
+<code><a href="../../ICS/help/ICS_cov4.html">ICS_cov4</a>()</code>, <code><a href="../../ICS/help/ICS_covW.html">ICS_covW</a>()</code>
+, <code><a href="../../ICS/help/ICS_covAxis.html">ICS_covAxis</a>()</code>, <code><a href="../../ICS/help/cov4.html">cov4</a>()</code>,
+<code><a href="../../ICS/help/covW.html">covW</a>()</code>, or <code><a href="../../ICS/help/covAxis.html">covAxis</a>()</code>.
+For other scatter pairs, the QR algorithm is not
+applicable.   See Archimbaud et al. (2023)
+for details. Note that the QR algorithm requires LAPACK version
+<i>&gt;=</i> 3.11.0 to attain better numerical stability.
+</p>
+</li></ul>
+
+<p>The &quot;whiten&quot; algorithm is the most natural version and therefore the default. The option &quot;standard&quot;
+should be only used if the scatters provided are not functions but precomputed matrices.
+The option &quot;QR&quot; is mainly of interest when there are numerical issues when &quot;whiten&quot; is used and the
+scatter combination allows its usage.
+</p>
+<p>Note that when the purpose of ICS is outlier detection the package <a href="../../ICSOutlier/help/ICSOutlier.html">ICSOutlier</a>
+provides additional functionalities as does the package <code>ICSClust</code> in case the
+goal of ICS is dimension reduction prior clustering.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>"ICS"</code> with the following components:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>gen_kurtosis</code></td>
+<td>
+<p>a numeric vector containing the generalized kurtosis
+values of the invariant coordinates.</p>
+</td></tr>
+<tr valign="top"><td><code>W</code></td>
+<td>
+<p>a numeric matrix in which each row contains the coefficients of the
+linear transformation to the corresponding invariant coordinate.</p>
+</td></tr>
+<tr valign="top"><td><code>scores</code></td>
+<td>
+<p>a numeric matrix in which each column contains the scores of
+the corresponding invariant coordinate.</p>
+</td></tr>
+<tr valign="top"><td><code>gen_skewness</code></td>
+<td>
+<p>a numeric vector containing the (generalized) skewness
+values of the invariant coordinates (only returned if
+<code>fix_signs = "scores"</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>S1_label</code></td>
+<td>
+<p>a character string providing a label for the first scatter
+matrix to be used by various methods.</p>
+</td></tr>
+<tr valign="top"><td><code>S2_label</code></td>
+<td>
+<p>a character string providing a label for the second scatter
+matrix to be used by various methods.</p>
+</td></tr>
+<tr valign="top"><td><code>S1_args</code></td>
+<td>
+<p>a list containing additional arguments used to compute
+<code>S1</code> (if a function was supplied).</p>
+</td></tr>
+<tr valign="top"><td><code>S2_args</code></td>
+<td>
+<p>a list containing additional arguments used to compute
+<code>S2</code> (if a function was supplied).</p>
+</td></tr>
+<tr valign="top"><td><code>algorithm</code></td>
+<td>
+<p>a character string specifying how the invariant
+coordinate is computed.</p>
+</td></tr>
+<tr valign="top"><td><code>center</code></td>
+<td>
+<p>a logical indicating whether or not the data were centered
+with respect to the first location vector before computing the invariant
+coordinates.</p>
+</td></tr>
+<tr valign="top"><td><code>fix_signs</code></td>
+<td>
+<p>a character string specifying how the signs of the
+invariant coordinates were fixed.</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Andreas Alfons and Aurore Archimbaud, based on code for
+<code><a href="../../ICS/help/ics.html">ics</a>()</code> and <code><a href="../../ICS/help/ics2.html">ics2</a>()</code> by Klaus Nordhausen
+</p>
+
+
+<h3>References</h3>
+
+<p>Tyler, D.E., Critchley, F., Duembgen, L. and Oja, H. (2009) Invariant
+Co-ordinate Selection. <em>Journal of the Royal Statistical Society,
+Series B</em>, <b>71</b>(3), 549&ndash;592. doi: <a href="https://doi.org/10.1111/j.1467-9868.2009.00706.x">10.1111/j.1467-9868.2009.00706.x</a>.
+</p>
+<p>Archimbaud, A., Drmac, Z., Nordhausen, K., Radojcic, U. and Ruiz-Gazen, A.
+(2023) Numerical Considerations and a New Implementation for Invariant
+Coordinate Selection. <em>SIAM Journal on Mathematics of Data Science</em>,
+<b>5</b>(1), 97&ndash;121. doi: <a href="https://doi.org/10.1137/22M1498759">10.1137/22M1498759</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../ICS/help/gen_kurtosis.html">gen_kurtosis</a>()</code>, <code><a href="../../ICS/help/coef.ICS.html">coef</a>()</code>,
+<code><a href="../../ICS/help/components.html">components</a>()</code>, <code><a href="../../ICS/help/fitted.ICS.html">fitted</a>()</code>, and
+<code><a href="../../ICS/help/plot.ICS.html">plot</a>()</code> methods
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# import data
+data("iris")
+X &lt;- iris[,-5]
+
+# run ICS
+out_ICS &lt;- ICS(X)
+out_ICS
+summary(out_ICS)
+
+# extract generalized eigenvalues
+gen_kurtosis(out_ICS)
+# Plot
+screeplot(out_ICS)
+
+# extract the components
+components(out_ICS)
+components(out_ICS, select = 1:2)
+
+# Plot
+plot(out_ICS)
+
+# equivalence with previous functions
+out_ics &lt;- ics(X, S1 = cov, S2 = cov4, stdKurt = FALSE)
+out_ics
+out_ics2 &lt;- ics2(X, S1 = MeanCov, S2 = Mean3Cov4)
+out_ics2
+out_ICS
+
+
+# example using two functions
+X1 &lt;- rmvnorm(250, rep(0,8), diag(c(rep(1,6),0.04,0.04)))
+X2 &lt;- rmvnorm(50, c(rep(0,6),2,0), diag(c(rep(1,6),0.04,0.04)))
+X3 &lt;- rmvnorm(200, c(rep(0,7),2), diag(c(rep(1,6),0.04,0.04)))
+X.comps &lt;- rbind(X1,X2,X3)
+A &lt;- matrix(rnorm(64),nrow=8)
+X &lt;- X.comps %*% t(A)
+ics.X.1 &lt;- ICS(X)
+summary(ics.X.1)
+plot(ics.X.1)
+# compare to
+pairs(X)
+pairs(princomp(X,cor=TRUE)$scores)
+
+
+# slow:
+if (require("ICSNP")) {
+  ics.X.2 &lt;- ICS(X, S1 = tyler.shape, S2 = duembgen.shape,
+  S1_args = list(location=0))
+  summary(ics.X.2)
+  plot(ics.X.2)
+  # example using three pictures
+  library(pixmap)
+  fig1 &lt;- read.pnm(system.file("pictures/cat.pgm", package = "ICS")[1],
+                   cellres = 1)
+  fig2 &lt;- read.pnm(system.file("pictures/road.pgm", package = "ICS")[1],
+                   cellres = 1)
+  fig3 &lt;- read.pnm(system.file("pictures/sheep.pgm", package = "ICS")[1],
+                   cellres = 1)
+  p &lt;- dim(fig1@grey)[2]
+  fig1.v &lt;- as.vector(fig1@grey)
+  fig2.v &lt;- as.vector(fig2@grey)
+  fig3.v &lt;- as.vector(fig3@grey)
+  X &lt;- cbind(fig1.v, fig2.v, fig3.v)
+  A &lt;- matrix(rnorm(9), ncol = 3)
+  X.mixed &lt;- X %*% t(A)
+  ICA.fig &lt;- ICS(X.mixed)
+  par.old &lt;- par()
+  par(mfrow=c(3,3), omi = c(0.1,0.1,0.1,0.1), mai = c(0.1,0.1,0.1,0.1))
+  plot(fig1)
+  plot(fig2)
+  plot(fig3)
+  plot(pixmapGrey(X.mixed[,1], ncol = p, cellres = 1))
+  plot(pixmapGrey(X.mixed[,2], ncol = p, cellres = 1))
+  plot(pixmapGrey(X.mixed[,3], ncol = p, cellres = 1))
+  plot(pixmapGrey(components(ICA.fig)[,1], ncol = p, cellres = 1))
+  plot(pixmapGrey(components(ICA.fig)[,2], ncol = p, cellres = 1))
+  plot(pixmapGrey(components(ICA.fig)[,3], ncol = p, cellres = 1))
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ICS</em> version 1.4-2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

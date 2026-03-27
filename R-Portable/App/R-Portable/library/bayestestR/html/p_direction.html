@@ -1,0 +1,426 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Probability of Direction (pd)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for p_direction {bayestestR}"><tr><td>p_direction {bayestestR}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Probability of Direction (pd)</h2>
+
+<h3>Description</h3>
+
+<p>Compute the <strong>Probability of Direction</strong> (<em><strong>pd</strong></em>, also known as the Maximum
+Probability of Effect - <em>MPE</em>). This can be interpreted as the probability
+that a parameter (described by its posterior distribution) is strictly
+positive or negative (whichever is the most probable). Although differently
+expressed, this index is fairly similar (<em>i.e.</em>, is strongly correlated) to
+the frequentist <strong>p-value</strong> (see details).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+p_direction(x, ...)
+
+pd(x, ...)
+
+## S3 method for class 'numeric'
+p_direction(
+  x,
+  method = "direct",
+  null = 0,
+  as_p = FALSE,
+  remove_na = TRUE,
+  ...
+)
+
+## S3 method for class 'data.frame'
+p_direction(
+  x,
+  method = "direct",
+  null = 0,
+  as_p = FALSE,
+  remove_na = TRUE,
+  rvar_col = NULL,
+  ...
+)
+
+## S3 method for class 'brmsfit'
+p_direction(
+  x,
+  effects = "fixed",
+  component = "conditional",
+  parameters = NULL,
+  method = "direct",
+  null = 0,
+  as_p = FALSE,
+  remove_na = TRUE,
+  ...
+)
+
+## S3 method for class 'get_predicted'
+p_direction(
+  x,
+  method = "direct",
+  null = 0,
+  as_p = FALSE,
+  remove_na = TRUE,
+  use_iterations = FALSE,
+  verbose = TRUE,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A vector representing a posterior distribution, a data frame of
+posterior draws (samples be parameter). Can also be a Bayesian model.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Currently not used.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>Can be <code>"direct"</code> or one of methods of <code><a href="../../bayestestR/help/estimate_density.html">estimate_density()</a></code>,
+such as <code>"kernel"</code>, <code>"logspline"</code> or <code>"KernSmooth"</code>. See details.</p>
+</td></tr>
+<tr valign="top"><td><code>null</code></td>
+<td>
+<p>The value considered as a &quot;null&quot; effect. Traditionally 0, but
+could also be 1 in the case of ratios of change (OR, IRR, ...).</p>
+</td></tr>
+<tr valign="top"><td><code>as_p</code></td>
+<td>
+<p>If <code>TRUE</code>, the p-direction (pd) values are converted to a
+frequentist p-value using <code><a href="../../bayestestR/help/pd_to_p.html">pd_to_p()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>remove_na</code></td>
+<td>
+<p>Should missing values be removed before computation? Note
+that <code>Inf</code> (infinity) are <em>not</em> removed.</p>
+</td></tr>
+<tr valign="top"><td><code>rvar_col</code></td>
+<td>
+<p>A single character - the name of an <code>rvar</code> column in the data
+frame to be processed. See example in <code><a href="../../bayestestR/help/p_direction.html">p_direction()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>effects</code></td>
+<td>
+<p>Should variables for fixed effects (<code>"fixed"</code>), random effects
+(<code>"random"</code>) or both (<code>"all"</code>) be returned? Only applies to mixed models. May
+be abbreviated.
+</p>
+<p>For models of from packages <strong>brms</strong> or <strong>rstanarm</strong> there are additional
+options:
+</p>
+
+<ul>
+<li> <p><code>"fixed"</code> returns fixed effects.
+</p>
+</li>
+<li> <p><code>"random_variance"</code> return random effects parameters (variance and
+correlation components, e.g. those parameters that start with <code>sd_</code> or
+<code>cor_</code>).
+</p>
+</li>
+<li> <p><code>"grouplevel"</code> returns random effects group level estimates, i.e. those
+parameters that start with <code>r_</code>.
+</p>
+</li>
+<li> <p><code>"random"</code> returns both <code>"random_variance"</code> and <code>"grouplevel"</code>.
+</p>
+</li>
+<li> <p><code>"all"</code> returns fixed effects and random effects variances.
+</p>
+</li>
+<li> <p><code>"full"</code> returns all parameters.
+</p>
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>component</code></td>
+<td>
+<p>Which type of parameters to return, such as parameters for
+the conditional model, the zero-inflated part of the model, the dispersion
+term, etc. See details in section <em>Model Components</em>. May be abbreviated.
+Note that the <em>conditional</em> component also refers to the <em>count</em> or <em>mean</em>
+component - names may differ, depending on the modeling package. There are
+three convenient shortcuts (not applicable to <em>all</em> model classes):
+</p>
+
+<ul>
+<li> <p><code>component = "all"</code> returns all possible parameters.
+</p>
+</li>
+<li><p> If <code>component = "location"</code>, location parameters such as <code>conditional</code>,
+<code>zero_inflated</code>, <code>smooth_terms</code>, or <code>instruments</code> are returned (everything
+that are fixed or random effects - depending on the <code>effects</code> argument -
+but no auxiliary parameters).
+</p>
+</li>
+<li><p> For <code>component = "distributional"</code> (or <code>"auxiliary"</code>), components like
+<code>sigma</code>, <code>dispersion</code>, <code>beta</code> or <code>precision</code> (and other auxiliary
+parameters) are returned.
+</p>
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>parameters</code></td>
+<td>
+<p>Regular expression pattern that describes the parameters
+that should be returned. Meta-parameters (like <code>lp__</code> or <code>prior_</code>) are
+filtered by default, so only parameters that typically appear in the
+<code>summary()</code> are returned. Use <code>parameters</code> to select specific parameters
+for the output.</p>
+</td></tr>
+<tr valign="top"><td><code>use_iterations</code></td>
+<td>
+<p>Logical, if <code>TRUE</code> and <code>x</code> is a <code>get_predicted</code> object,
+(returned by <code><a href="../../insight/help/get_predicted.html">insight::get_predicted()</a></code>), the function is applied to the
+iterations instead of the predictions. This only applies to models that return
+iterations for predicted values (e.g., <code>brmsfit</code> models).</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>Toggle off warnings.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>Values between 0.5 and 1 <em>or</em> between 0 and 1 (see above) corresponding to
+the probability of direction (pd).
+</p>
+
+
+<h3>What is the <em>pd</em>?</h3>
+
+<p>The Probability of Direction (pd) is an index of effect existence, representing
+the certainty with which an effect goes in a particular direction (i.e., is
+positive or negative / has a sign), typically ranging from 0.5 to 1 (but see
+next section for cases where it can range between 0 and 1). Beyond
+its simplicity of interpretation, understanding and computation, this index
+also presents other interesting properties:
+</p>
+
+<ul>
+<li><p> Like other posterior-based indices, <em>pd</em> is solely based on the posterior
+distributions and does not require any additional information from the data
+or the model (e.g., such as priors, as in the case of Bayes factors).
+</p>
+</li>
+<li><p> It is robust to the scale of both the response variable and the predictors.
+</p>
+</li>
+<li><p> It is strongly correlated with the frequentist p-value, and can thus
+be used to draw parallels and give some reference to readers non-familiar
+with Bayesian statistics (Makowski et al., 2019).
+</p>
+</li></ul>
+
+
+
+<h3>Relationship with the p-value</h3>
+
+<p>In most cases, it seems that the <em>pd</em> has a direct correspondence with the
+frequentist one-sided <em>p</em>-value through the formula (for two-sided <em>p</em>):
+p = 2 * (1 - p<sub>d</sub>)
+Thus, a two-sided p-value of respectively <code>.1</code>, <code>.05</code>, <code>.01</code> and <code>.001</code> would
+correspond approximately to a <em>pd</em> of <code style="white-space: pre;">95%</code>, <code style="white-space: pre;">97.5%</code>, <code style="white-space: pre;">99.5%</code> and <code style="white-space: pre;">99.95%</code>.
+See <code><a href="../../bayestestR/help/pd_to_p.html">pd_to_p()</a></code> for details.
+</p>
+
+
+<h3>Possible Range of Values</h3>
+
+<p>The largest value <em>pd</em> can take is 1 - the posterior is strictly directional.
+However, the smallest value <em>pd</em> can take depends on the parameter space
+represented by the posterior.
+</p>
+<p><strong>For a continuous parameter space</strong>, exact values of 0 (or any point null
+value) are not possible, and so 100% of the posterior has <em>some</em> sign, some
+positive, some negative. Therefore, the smallest the <em>pd</em> can be is 0.5 -
+with an equal posterior mass of positive and negative values. Values close to
+0.5 <em>cannot</em> be used to support the null hypothesis (that the parameter does
+<em>not</em> have a direction) is a similar why to how large p-values cannot be used
+to support the null hypothesis (see <code><a href="../../bayestestR/help/pd_to_p.html">pd_to_p()</a></code>; Makowski et al., 2019).
+</p>
+<p><strong>For a discrete parameter space or a parameter space that is a mixture
+between discrete and continuous spaces</strong>, exact values of 0 (or any point
+null value) <em>are</em> possible! Therefore, the smallest the <em>pd</em> can be is 0 -
+with 100% of the posterior mass on 0. Thus values close to 0 can be used to
+support the null hypothesis (see van den Bergh et al., 2021).
+</p>
+<p>Examples of posteriors representing discrete parameter space:
+</p>
+
+<ul>
+<li><p> When a parameter can only take discrete values.
+</p>
+</li>
+<li><p> When a mixture prior/posterior is used (such as the spike-and-slab prior;
+see van den Bergh et al., 2021).
+</p>
+</li>
+<li><p> When conducting Bayesian model averaging (e.g., <code><a href="../../bayestestR/help/weighted_posteriors.html">weighted_posteriors()</a></code> or
+<code>brms::posterior_average</code>).
+</p>
+</li></ul>
+
+
+
+<h3>Methods of computation</h3>
+
+<p>The <em>pd</em> is defined as:
+</p>
+<p style="text-align: center;"><i>pd = max(mean(x &lt; null), mean(x &gt; null))</i></p>
+
+<p>The most simple and direct way to compute the <em>pd</em> is to compute the
+proportion of positive (or larger than <code>null</code>) posterior samples, the
+proportion of negative (or smaller than <code>null</code>) posterior samples, and take
+the larger of the two. This &quot;simple&quot; method is the most straightforward, but
+its precision is directly tied to the number of posterior draws.
+</p>
+<p>The second approach relies on <a href="../../bayestestR/help/estimate_density.html">density estimation</a>: It starts by
+estimating the continuous-smooth density function (for which many methods are
+available), and then computing the <a href="../../bayestestR/help/area_under_curve.html">area under the curve</a>
+(AUC) of the density curve on either side of <code>null</code> and taking the maximum
+between them. Note the this approach assumes a continuous density function,
+and so <strong>when the posterior represents a (partially) discrete parameter
+space, only the direct method <em>must</em> be used</strong> (see above).
+</p>
+
+
+<h3>Model components</h3>
+
+<p>Possible values for the <code>component</code> argument depend on the model class.
+Following are valid options:
+</p>
+
+<ul>
+<li> <p><code>"all"</code>: returns all model components, applies to all models, but will only
+have an effect for models with more than just the conditional model
+component.
+</p>
+</li>
+<li> <p><code>"conditional"</code>: only returns the conditional component, i.e. &quot;fixed
+effects&quot; terms from the model. Will only have an effect for models with
+more than just the conditional model component.
+</p>
+</li>
+<li> <p><code>"smooth_terms"</code>: returns smooth terms, only applies to GAMs (or similar
+models that may contain smooth terms).
+</p>
+</li>
+<li> <p><code>"zero_inflated"</code> (or <code>"zi"</code>): returns the zero-inflation component.
+</p>
+</li>
+<li> <p><code>"location"</code>: returns location parameters such as <code>conditional</code>,
+<code>zero_inflated</code>, or <code>smooth_terms</code> (everything that are fixed or random
+effects - depending on the <code>effects</code> argument - but no auxiliary
+parameters).
+</p>
+</li>
+<li> <p><code>"distributional"</code> (or <code>"auxiliary"</code>): components like <code>sigma</code>,
+<code>dispersion</code>, <code>beta</code> or <code>precision</code> (and other auxiliary parameters) are
+returned.
+</p>
+</li></ul>
+
+<p>For models of class <code>brmsfit</code> (package <strong>brms</strong>), even more options are
+possible for the <code>component</code> argument, which are not all documented in detail
+here. See also <a href="https://easystats.github.io/insight/reference/find_parameters.BGGM.html"><code>?insight::find_parameters</code></a>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>There is also a <a href="https://easystats.github.io/see/articles/bayestestR.html"><code>plot()</code>-method</a> implemented in the <a href="https://easystats.github.io/see/"><span class="pkg">see</span>-package</a>.
+</p>
+
+
+<h3>References</h3>
+
+
+<ul>
+<li><p> Makowski, D., Ben-Shachar, M. S., Chen, S. A., &amp; Lüdecke, D. (2019).
+Indices of effect existence and significance in the Bayesian framework.
+Frontiers in psychology, 10, 2767. doi: <a href="https://doi.org/10.3389/fpsyg.2019.02767">10.3389/fpsyg.2019.02767</a>
+</p>
+</li>
+<li><p> van den Bergh, D., Haaf, J. M., Ly, A., Rouder, J. N., &amp; Wagenmakers, E. J.
+(2021). A cautionary note on estimating effect size. Advances in Methods
+and Practices in Psychological Science, 4(1). doi: <a href="https://doi.org/10.1177/2515245921992035">10.1177/2515245921992035</a>
+</p>
+</li></ul>
+
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../bayestestR/help/pd_to_p.html">pd_to_p()</a></code> to convert between Probability of Direction (pd) and p-value.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+library(bayestestR)
+
+# Simulate a posterior distribution of mean 1 and SD 1
+# ----------------------------------------------------
+posterior &lt;- rnorm(1000, mean = 1, sd = 1)
+p_direction(posterior)
+p_direction(posterior, method = "kernel")
+
+# Simulate a dataframe of posterior distributions
+# -----------------------------------------------
+df &lt;- data.frame(replicate(4, rnorm(100)))
+p_direction(df)
+p_direction(df, method = "kernel")
+
+
+# rstanarm models
+# -----------------------------------------------
+model &lt;- rstanarm::stan_glm(mpg ~ wt + cyl,
+  data = mtcars,
+  chains = 2, refresh = 0
+)
+p_direction(model)
+p_direction(model, method = "kernel")
+
+# emmeans
+# -----------------------------------------------
+p_direction(emmeans::emtrends(model, ~1, "wt", data = mtcars))
+
+# brms models
+# -----------------------------------------------
+model &lt;- brms::brm(mpg ~ wt + cyl, data = mtcars)
+p_direction(model)
+p_direction(model, method = "kernel")
+
+# BayesFactor objects
+# -----------------------------------------------
+bf &lt;- BayesFactor::ttestBF(x = rnorm(100, 1, 1))
+p_direction(bf)
+p_direction(bf, method = "kernel")
+
+
+
+# Using "rvar_col"
+x &lt;- data.frame(mu = c(0, 0.5, 1), sigma = c(1, 0.5, 0.25))
+x$my_rvar &lt;- posterior::rvar_rng(rnorm, 3, mean = x$mu, sd = x$sigma)
+x
+p_direction(x, rvar_col = "my_rvar")
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>bayestestR</em> version 0.17.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

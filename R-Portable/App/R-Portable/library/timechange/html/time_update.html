@@ -1,0 +1,153 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Update components of a date-time object</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for time_update {timechange}"><tr><td>time_update {timechange}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Update components of a date-time object</h2>
+
+<h3>Description</h3>
+
+<p>Update components of a date-time object
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+time_update(
+  time,
+  updates = NULL,
+  year = NULL,
+  month = NULL,
+  yday = NULL,
+  mday = NULL,
+  wday = NULL,
+  hour = NULL,
+  minute = NULL,
+  second = NULL,
+  tz = NULL,
+  roll_month = "preday",
+  roll_dst = c("boundary", "post"),
+  week_start = getOption("timechange.week_start", 1),
+  exact = FALSE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>time</code></td>
+<td>
+<p>a date-time object</p>
+</td></tr>
+<tr valign="top"><td><code>updates</code></td>
+<td>
+<p>a named list of components</p>
+</td></tr>
+<tr valign="top"><td><code>year, month, yday, wday, mday, hour, minute, second</code></td>
+<td>
+<p>components of the date-time to be
+updated. All components except <code>second</code> will be converted to integer. Components
+are replicated according to <code>vctrs</code> semantics, i.e. vectors must be either of
+length 1 or same length as <code>time</code> vector.</p>
+</td></tr>
+<tr valign="top"><td><code>tz</code></td>
+<td>
+<p>time zone component (a singleton character vector)</p>
+</td></tr>
+<tr valign="top"><td><code>roll_month</code></td>
+<td>
+<p>controls how addition of months and years behaves when standard
+arithmetic rules exceed limits of the resulting date's month. Possible values are
+&quot;preday&quot;, &quot;boundary&quot;, &quot;postday&quot;, &quot;full&quot; and &quot;NA&quot;. See &quot;Details&quot; or
+<code style="white-space: pre;">[(timechange::time_add())</code> for further details.</p>
+</td></tr>
+<tr valign="top"><td><code>roll_dst</code></td>
+<td>
+<p>is a string vector of length one or two. When two values are
+supplied they specify how to roll date-times when they fall into &quot;skipped&quot; and
+&quot;repeated&quot; DST transitions respectively. A single value is replicated to the
+length of two. Possible values are:
+</p>
+<div class="sourceCode"><pre>* `pre` - Use the time before the transition boundary.
+* `boundary` - Use the time exactly at the boundary transition.
+* `post` - Use the time after the boundary transition.
+* `xfirst` - crossed-first: First time which occurred when crossing the
+   boundary. For addition with positive units pre interval is crossed first and
+   post interval last. With negative units post interval is crossed first, pre -
+   last. For subtraction the logic is reversed.
+* `xlast` - crossed-last.
+* `NA` - Produce NAs when the resulting time falls inside the problematic interval.
+</pre></div>
+<p>For example 'roll_dst = c(&quot;NA&quot;, &quot;pre&quot;) indicates that for skipped intervals
+return NA and for repeated times return the earlier time.
+</p>
+<p>When multiple units are supplied the meaning of &quot;negative period&quot; is determined by
+the largest unit. For example <code>time_add(t, days = -1, hours = 2, roll_dst = "xfirst")</code> would operate as if with negative period, thus crossing the boundary
+from the &quot;post&quot; to &quot;pre&quot; side and &quot;xfirst&quot; and hence resolving to &quot;post&quot;
+time. As this might result in confusing behavior. See examples.
+</p>
+<p>&quot;xfirst&quot; and &quot;xlast&quot; make sense for addition and subtraction only. An error is
+raised if an attempt is made to use them with other functions.</p>
+</td></tr>
+<tr valign="top"><td><code>week_start</code></td>
+<td>
+<p>first day of the week (default is 1, Monday). Set
+<code>timechange.week_start</code> option to change this globally.</p>
+</td></tr>
+<tr valign="top"><td><code>exact</code></td>
+<td>
+<p>logical (TRUE), whether the update should be exact. If set to <code>FALSE</code> no
+rolling or unit-recycling is allowed and <code>NA</code> is produced whenever the units of the
+end date-time don't match the provided units. This can occur when an end date falls
+into a gap (e.g. DST or Feb.29) or when large components (e.g. <code>hour = 25</code>) are
+supplied and result in crossing boundaries of higher units. When <code>exact = TRUE</code>,
+<code>roll_month</code> and <code>roll_dst</code> arguments are ignored.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A date-time with the requested elements updated.  Retain its original class
+unless the original class is <code>Date</code> and at least one of the <code>hour</code>, <code>minute</code>,
+<code>second</code> or <code>tz</code> is supplied, in which case a <code>POSIXct</code> object is returned.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code style="white-space: pre;">[time_add()]</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+date &lt;- as.Date("2009-02-10")
+time_update(date, year = 2010, month = 1, mday = 1)
+time_update(date, year = 2010, month = 13, mday = 1)
+time_update(date, minute = 10, second = 3)
+time_update(date, minute = 10, second = 3, tz = "America/New_York")
+
+time &lt;- as.POSIXct("2015-02-03 01:02:03", tz = "America/New_York")
+time_update(time, month = 2, mday = 31, roll_month = "preday")
+time_update(time, month = 2, mday = 31, roll_month = "boundary")
+time_update(time, month = 2, mday = 31, roll_month = "postday")
+time_update(time, month = 2, mday = 31, exact = TRUE)
+time_update(time, month = 2, mday = 31, exact = FALSE)
+
+## DST skipped
+time &lt;- as.POSIXct("2015-02-03 01:02:03", tz = "America/New_York")
+time_update(time, year = 2016, yday = 10)
+time_update(time, year = 2016, yday = 10, tz = "Europe/Amsterdam")
+time_update(time, second = 30,  tz = "America/New_York")
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>timechange</em> version 0.4.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

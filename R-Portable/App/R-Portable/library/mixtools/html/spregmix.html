@@ -1,0 +1,222 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: EM-like Algorithm for Semiparametric Mixtures of Regressions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for spregmix {mixtools}"><tr><td>spregmix {mixtools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>EM-like Algorithm for Semiparametric Mixtures of Regressions</h2>
+
+<h3>Description</h3>
+
+<p>Returns parameter estimates for finite mixtures of linear
+regressions with unspecified error structure.  Based on 
+Hunter and Young (2012).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+spregmix(lmformula, bw = NULL, constbw = FALSE,
+         bwmult = 0.9, z.hat = NULL, symm = TRUE, betamethod = "LS",
+         m = ifelse(is.null(z.hat), 2, ncol(z.hat)),
+         epsilon = 1e-04, maxit = 1000, verbose = FALSE, 
+         ...) 
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>lmformula</code></td>
+<td>
+<p>Formula for a linear model, in the same format used by
+<code><a href="../../stats/html/lm.html">lm</a></code>.  Additional parameters may be passed to <code><a href="../../stats/html/lm.html">lm</a></code>
+via the <code>...</code> argument.</p>
+</td></tr>
+<tr valign="top"><td><code>bw</code></td>
+<td>
+<p>Initial bandwidth value.  If NULL, this will be chosen automatically
+by the algorithm.</p>
+</td></tr>
+<tr valign="top"><td><code>constbw</code></td>
+<td>
+<p>Logical:  If TRUE, the bandwidth is held constant throughout the
+algorithm; if FALSE, it adapts at each iteration according to the rules
+given in Hunter and Young (2012).</p>
+</td></tr>
+<tr valign="top"><td><code>bwmult</code></td>
+<td>
+
+<p>Whenever it is updated automatically,
+the bandwidth is equal to <code>bwmult</code> divided by 
+the fifth root of <i>n</i> times the smaller of s and IQR/1.34, 
+where s and IQR are estimates of the standard deviation and interquartile 
+range of the residuals, as explained in Hunter and Young (2012).
+The value of 0.9 gives the rule of Silverman (1986) and
+the value of 1.06 gives the rule of Scott (1992).
+Larger values lead to greater smoothing, whereas smaller values lead to less 
+smoothing.  </p>
+</td></tr>
+<tr valign="top"><td><code>z.hat</code></td>
+<td>
+<p>Initial nxm matrix of posterior probabilities.  If NULL, this
+is initialized randomly.  As long as a parametric estimation method like least
+squares is used to estimate <code>beta</code> in each M-step, the <code>z.hat</code>
+values are the only values necessary to begin the EM iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>symm</code></td>
+<td>
+<p>Logical:  If TRUE, the error density is assumed symmetric
+about zero.  If FALSE, it is not.  WARNING:  If FALSE, the intercept parameter
+is not uniquely identifiable if it is included in the linear model.</p>
+</td></tr>
+<tr valign="top"><td><code>betamethod</code></td>
+<td>
+<p>Method of calculating beta coefficients in the
+M-step.  Current possible values are &quot;LS&quot; for least-squares; 
+&quot;L1&quot; for least absolute deviation; &quot;NP&quot; for fully nonparametric; 
+and &quot;transition&quot; for a transition
+from least squares to fully nonparametric. If something other than
+these four possibilities is used, then &quot;NP&quot; is assumed. For details
+of these methods, see Hunter and Young (2012).</p>
+</td></tr>
+<tr valign="top"><td><code>m</code></td>
+<td>
+<p>Number of components in the mixture.</p>
+</td></tr>
+<tr valign="top"><td><code>epsilon</code></td>
+<td>
+<p>Convergence is declared if the largest change in any lambda or
+beta coordinate is smaller than <code>epsilon</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>maxit</code></td>
+<td>
+<p>The maximum number of iterations; if convergence is never declared
+based on comparison with <code>epsilon</code>, then the algorithm stops after
+<code>maxit</code> iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>Logical: If TRUE, then various updates are printed during 
+each iteration of the algorithm.</p>
+</td></tr> 
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Additional parameters passed to the 
+<code><a href="../../stats/html/model.frame.html">model.frame</a></code> and <code><a href="../../stats/html/model.matrix.html">model.matrix</a></code> functions,
+which are used to obtain the response and predictor of the regression.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p><code>regmixEM</code> returns a list of class <code>npEM</code> with items:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>The set of predictors (which includes a column of 1's if <code>addintercept</code> = TRUE).</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>The response values.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>The mixing proportions for every iteration in the form of a 
+matrix with m columns and (#iterations) rows</p>
+</td></tr>
+<tr valign="top"><td><code>beta</code></td>
+<td>
+<p>The final regression coefficients.</p>
+</td></tr>
+<tr valign="top"><td><code>posterior</code></td>
+<td>
+<p>An nxm matrix of posterior probabilities for
+observations.</p>
+</td></tr>
+<tr valign="top"><td><code>np.stdev</code></td>
+<td>
+<p>Nonparametric estimate of the standard deviation, as given
+in Hunter and Young (2012)</p>
+</td></tr>
+<tr valign="top"><td><code>bandwidth</code></td>
+<td>
+<p>Final value of the bandwidth</p>
+</td></tr>
+<tr valign="top"><td><code>density.x</code></td>
+<td>
+<p>Points at which the error density is estimated</p>
+</td></tr>
+<tr valign="top"><td><code>density.y</code></td>
+<td>
+<p>Values of the error density at the points <code>density.x</code></p>
+</td></tr>
+<tr valign="top"><td><code>symmetric</code></td>
+<td>
+<p>Logical:  Was the error density assumed symmetric?</p>
+</td></tr>
+<tr valign="top"><td><code>loglik</code></td>
+<td>
+<p>A quantity similar to a log-likelihood, computed just like 
+a standard loglikelihood would be, conditional on the component density 
+functions being equal to the final density estimates.</p>
+</td></tr>
+<tr valign="top"><td><code>ft</code></td>
+<td>
+<p>A character vector giving the name of the function.</p>
+</td></tr>
+</table>
+
+
+<h3>References</h3>
+
+<p>Hunter, D. R. and Young, D. S. (2012) Semi-parametric Mixtures of Regressions,
+Journal of Nonparametric Statistics 24(1): 19-38.
+</p>
+<p>Scott, D. W. (1992) <em>Multivariate Density Estimation</em>,
+John Wiley &amp; Sons Inc., New York.
+</p>
+<p>Silverman, B. W. (1986). <em>Density Estimation for Statistics and Data 
+Analysis</em>, Chapman &amp; Hall, London.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../mixtools/help/regmixEM.html">regmixEM</a></code>, <code><a href="../../mixtools/help/spEMsymloc.html">spEMsymloc</a></code>, <code><a href="../../stats/html/lm.html">lm</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(tonedata)
+## By default, the bandwidth will adapt and the error density is assumed symmetric
+set.seed(100)
+a=spregmix(tuned~stretchratio, bw=.2, data=tonedata, verb=TRUE)
+
+## Look at the sp mixreg solution:
+plot(tonedata)
+abline(a=a$beta[1,1],b=a$beta[2,1], col=2)
+abline(a=a$beta[1,2],b=a$beta[2,2], col=3)
+
+## Look at the nonparametric KD-based estimate of the error density, 
+## constrained to be zero-symmetric:
+plot(xx&lt;-a$density.x, yy&lt;-a$density.y, type="l")
+## Compare to a normal density with mean 0 and NP-estimated stdev:
+z &lt;- seq(min(xx), max(xx), len=200)
+lines(z, dnorm(z, sd=sqrt((a$np.stdev)^2+a$bandwidth^2)), col=2, lty=2)
+# Add bandwidth^2 to variance estimate to get estimated var of KDE
+
+## Now add the sp mixreg estimate without assuming symmetric errors:
+b=spregmix(tuned~stretchratio, bw=.2, , symm=FALSE, data=tonedata, verb=TRUE)
+lines(b$density.x, b$density.y, col=3)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mixtools</em> version 2.0.0.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

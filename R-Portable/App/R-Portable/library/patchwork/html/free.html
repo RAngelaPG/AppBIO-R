@@ -1,4 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Free a plot from alignment</title>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Free a plot from various alignments</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
 <link rel="stylesheet" type="text/css" href="R.css" />
@@ -6,29 +6,26 @@
 
 <table width="100%" summary="page for free {patchwork}"><tr><td>free {patchwork}</td><td style="text-align: right;">R Documentation</td></tr></table>
 
-<h2>Free a plot from alignment</h2>
+<h2>Free a plot from various alignments</h2>
 
 <h3>Description</h3>
 
-<p>While the purpose of patchwork is often to align plots by their panels,
+<p>While the purpose of patchwork is often to align plots by their various parts,
 sometimes this doesn't cut it and we want to compose plots without alignment.
 The <code>free()</code> function tells patchwork to treat the content (which can either
 be a ggplot or a patchwork) specially and not align it with the remaining
-panels in the composition. It works much like using <code><a href="../../patchwork/help/wrap_elements.html">wrap_elements()</a></code> but has
-a few niceties. For starter, it is less verbose, both with a shorter name,
-but also without the need to use the <code>full</code> argument rather than the first.
-Second, A plot wrapped with <code>free()</code> retains all of it's behavior from
-before. You can still add stuff to it, change it's theme, etc., but more
-importantly you can still collect guides and recurse tags as usual. A further
-nicety is that margins of the plot behave as expected and is aligned with the
-other plots in the composition.
+plots in the composition. <code>free()</code> has various modes to control what type of
+&quot;non-alignment&quot; is applied (see Details). Further you can control which side
+of the plot the non-alignment is applied to. You can stack <code>free()</code> calls if
+you e.g. want the top part to not align to the panel and the left part to not
+align to the labels.
 </p>
 
 
 <h3>Usage</h3>
 
 <pre>
-free(x)
+free(x, type = c("panel", "label", "space"), side = "trbl")
 </pre>
 
 
@@ -39,7 +36,32 @@ free(x)
 <td>
 <p>A ggplot or patchwork object</p>
 </td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>Which type of freeing should be applied. See the Details section</p>
+</td></tr>
+<tr valign="top"><td><code>side</code></td>
+<td>
+<p>Which side should the freeing be applied to. A string containing
+one or more of &quot;t&quot;, &quot;r&quot;, &quot;b&quot;, and &quot;l&quot;</p>
+</td></tr>
 </table>
+
+
+<h3>Details</h3>
+
+<p><code>free()</code> has multiple modes depending on what you are needing:
+</p>
+<p>The default <code>"panel"</code> will allow the panel area to ignore alginment with the
+remaining plots and expand as much as needed to fill any empty space.
+</p>
+<p>The <code>"label"</code> type will instead free the axis label to keep its proximity to
+the axis, even if a longer axis text from another plot would push them apart.
+</p>
+<p>The <code>"space"</code> type also keeps axis and title together, but will instead not
+reserve any space for it. This allows the axis to occupy space in an
+otherwise empty area without making additional space available for itself.
+</p>
 
 
 <h3>Value</h3>
@@ -68,13 +90,27 @@ p2 &lt;- ggplot(mtcars) + geom_point(aes(mpg, disp))
 
 p1 / p2
 
-# We can fix this be using free
+# We can fix this be using free (here, with the default "panel" type)
 free(p1) / p2
+
+# If we still want the panels to be aligned to the right, we can choose to
+# free only the left side
+free(p1, side = "l") / p2
 
 # We can still collect guides like before
 free(p1) / p2 + plot_layout(guides = "collect")
 
+# We could use "label" to fix the layout in a different way
+p1 / free(p2, "label")
+
+# Another issue is that long labels are not using already available free
+# space.
+plot_spacer() + p1 + p2 + p2
+
+# This can be fixed with the "space" type
+plot_spacer() + free(p1, "space", "l") + p2 + p2
+
 </pre>
 
-<hr /><div style="text-align: center;">[Package <em>patchwork</em> version 1.2.0 <a href="00Index.html">Index</a>]</div>
+<hr /><div style="text-align: center;">[Package <em>patchwork</em> version 1.3.2 <a href="00Index.html">Index</a>]</div>
 </div></body></html>

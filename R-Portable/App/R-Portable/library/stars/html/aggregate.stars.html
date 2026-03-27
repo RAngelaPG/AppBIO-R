@@ -1,0 +1,145 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: spatially or temporally aggregate stars object</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for aggregate.stars {stars}"><tr><td>aggregate.stars {stars}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>spatially or temporally aggregate stars object</h2>
+
+<h3>Description</h3>
+
+<p>spatially or temporally aggregate stars object, returning a data cube with lower spatial or temporal resolution
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'stars'
+aggregate(
+  x,
+  by,
+  FUN,
+  ...,
+  drop = FALSE,
+  join = st_intersects,
+  as_points = any(st_dimension(by) == 2, na.rm = TRUE),
+  rightmost.closed = FALSE,
+  left.open = FALSE,
+  exact = FALSE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>object of class <code>stars</code> with information to be aggregated</p>
+</td></tr>
+<tr valign="top"><td><code>by</code></td>
+<td>
+<p>object of class <code>sf</code> or <code>sfc</code> for spatial aggregation, for temporal aggregation a vector with time values (<code>Date</code>, <code>POSIXct</code>, or <code>CFTime</code>) that is interpreted as a sequence of left-closed, right-open time intervals or a string like &quot;months&quot;, &quot;5 days&quot; or the like (see <a href="../../base/html/cut.POSIXt.html">cut.POSIXt</a>), or a function that cuts time into intervals; if by is an object of class <code>stars</code>, it is converted to sfc by <code>st_as_sfc(by, as_points = FALSE)</code> thus ignoring its time component. Note: each pixel is assigned to only a single group (in the order the groups occur) so non-overlapping spatial features and temporal windows are recommended.</p>
+</td></tr>
+<tr valign="top"><td><code>FUN</code></td>
+<td>
+<p>aggregation function, such as <code>mean</code></p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>arguments passed on to <code>FUN</code>, such as <code>na.rm=TRUE</code></p>
+</td></tr>
+<tr valign="top"><td><code>drop</code></td>
+<td>
+<p>logical; ignored</p>
+</td></tr>
+<tr valign="top"><td><code>join</code></td>
+<td>
+<p>function; function used to find matches of <code>x</code> to <code>by</code></p>
+</td></tr>
+<tr valign="top"><td><code>as_points</code></td>
+<td>
+<p>see <a href="../help/st_as_sf.html">st_as_sf</a>: shall raster pixels be taken as points, or small square polygons?</p>
+</td></tr>
+<tr valign="top"><td><code>rightmost.closed</code></td>
+<td>
+<p>see <a href="../../base/html/findInterval.html">findInterval</a></p>
+</td></tr>
+<tr valign="top"><td><code>left.open</code></td>
+<td>
+<p>logical; used for time intervals, see <a href="../../base/html/findInterval.html">findInterval</a> and <a href="../../base/html/cut.POSIXt.html">cut.POSIXt</a></p>
+</td></tr>
+<tr valign="top"><td><code>exact</code></td>
+<td>
+<p>logical; if <code>TRUE</code>, use <a href="../../exactextractr/help/coverage_fraction.html">coverage_fraction</a> to compute exact overlap fractions of polygons with raster cells</p>
+</td></tr>
+</table>
+
+
+<h3>See Also</h3>
+
+<p><a href="../../sf/help/aggregate.html">aggregate</a>, <a href="../../sf/help/st_interpolate_aw.html">st_interpolate_aw</a>, <a href="../../stars/help/st_extract.html">st_extract</a>, https://github.com/r-spatial/stars/issues/317
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# aggregate time dimension in format Date
+tif = system.file("tif/L7_ETMs.tif", package = "stars")
+t1 = as.Date("2018-07-31")
+x = read_stars(c(tif, tif, tif, tif), along = list(time = c(t1, t1+1, t1+2, t1+3)))[,1:30,1:30]
+st_get_dimension_values(x, "time")
+x_agg_time = aggregate(x, by = t1 + c(0, 2, 4), FUN = max) 
+
+# aggregate time dimension in format Date - interval
+by_t = "2 days"
+x_agg_time2 = aggregate(x, by = by_t, FUN = max) 
+st_get_dimension_values(x_agg_time2, "time")
+#TBD:
+#x_agg_time - x_agg_time2
+
+# aggregate time dimension in format POSIXct
+x = st_set_dimensions(x, 4, values = as.POSIXct(c("2018-07-31", 
+                                                  "2018-08-01", 
+                                                  "2018-08-02", 
+                                                  "2018-08-03")), 
+                      names = "time")
+by_t = as.POSIXct(c("2018-07-31", "2018-08-02"))
+x_agg_posix = aggregate(x, by = by_t, FUN = max)
+st_get_dimension_values(x_agg_posix, "time")
+#TBD:
+# x_agg_time - x_agg_posix
+aggregate(x, "2 days", mean)
+if (require(ncmeta, quietly = TRUE)) {
+ # Spatial aggregation, see https://github.com/r-spatial/stars/issues/299
+ prec_file = system.file("nc/test_stageiv_xyt.nc", package = "stars")
+ prec = read_ncdf(prec_file, curvilinear = c("lon", "lat"))
+ prec_slice = dplyr::slice(prec, index = 17, along = "time")
+ nc = sf::read_sf(system.file("gpkg/nc.gpkg", package = "sf"), "nc.gpkg")
+ nc = st_transform(nc, st_crs(prec_slice))
+ agg = aggregate(prec_slice, st_geometry(nc), mean)
+ plot(agg)
+}
+
+# example of using a function for "by": aggregate by month-of-year
+d = c(10, 10, 150)
+a = array(rnorm(prod(d)), d) # pure noise
+times = Sys.Date() + seq(1, 2000, length.out = d[3])
+m = as.numeric(format(times, "%m"))
+signal = rep(sin(m / 12 * pi), each = prod(d[1:2])) # yearly period
+s = (st_as_stars(a) + signal) %&gt;%
+      st_set_dimensions(3, values = times)
+f = function(x, format = "%B") {
+	  months = format(as.Date(paste0("01-", 1:12, "-1970")), format)
+	  factor(format(x, format), levels = months)
+}
+agg = aggregate(s, f, mean)
+plot(agg)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>stars</em> version 0.7-1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

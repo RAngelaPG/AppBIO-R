@@ -1,0 +1,83 @@
+---
+title: "BreedBase Example"
+author: "Khaled Al-Shamaa"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{BreedBase Example}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## QBMS
+This R package assists breeders in linking data systems with their analytic pipelines, a crucial step in digitizing breeding processes. It supports querying and retrieving phenotypic and genotypic data from systems like [EBS](https://ebs.excellenceinbreeding.org/), [BMS](https://bmspro.io/), [BreedBase](https://breedbase.org), and [GIGWA](https://github.com/SouthGreenPlatform/Gigwa2) (using [BrAPI](https://brapi.org/) calls). Extra helper functions support environmental data sources, including [TerraClimate](https://www.climatologylab.org/terraclimate.html) and FAO [HWSDv2](https://gaez.fao.org/pages/hwsd) soil database.
+
+## BreedBase
+[Breedbase](https://breedbase.org/) is a comprehensive breeding management and analysis software. It can be used to design field layouts, collect phenotypic information using tablets, support the collection of genotyping samples in a field, store large amounts of high density genotypic information, and provide Genomic Selection related analyses and predictions.
+
+## BrAPI
+The Breeding API ([BrAPI](https://brapi.org/)) project is an effort to enable interoperability among plant breeding databases. BrAPI is a standardized RESTful web service API specification for communicating plant breeding data. This community driven standard is free to be used by anyone interested in plant breeding data management.
+
+>*You can find a set of Breedbase based servers available for several crops and accessible with no authentication required are listed at the BrAPI website on the following page under the group of **Boyce Thompson Institute (BTI)**, discovery and innovation in the life sciences: [https://brapi.org/servers](https://brapi.org/servers).*
+
+## _Example_
+```r
+# load the QBMS library
+library(QBMS)
+
+# Cassava BreedBase server
+set_qbms_config("https://cassavabase.org/", no_auth = TRUE, engine = "breedbase")
+
+# login("username", "password")
+
+# list supported crops in the current BreedBase server
+list_crops()
+
+# list all breeding programs in the selected crop
+list_programs()
+
+# select a breeding program by name
+set_program("IITA")
+
+# list all folders in the selected program
+list_trials()
+
+# select a specific folder by name, choose the last/final folder that contains 
+# your experiments in any nested folder structure
+set_trial("20_Abuja")
+
+# list all studies/experiments in the selected folder
+list_studies()
+
+# select a specific study/experiment by name
+set_study("20NCRP12yrtAB")
+
+# another option, select a specific study/experiment by location name (first match)
+# studies <- list_studies()
+# set_study(studies[studies$locationName == "Abuja", "studyName"][1])
+
+# retrieve general information, data, and germplasm list 
+# of the selected study/experiment
+info <- get_study_info()
+data <- get_study_data()
+
+# not effecient call at the BreedBase backend BrAPI endpoint
+germplasm <- get_germplasm_list()
+
+# get observation variable ontology in the selected study/experiment
+ontology <- get_trial_obs_ontology()
+
+# replace long trait names with short ones from the ontology 
+fields <- colnames(data) 
+
+for (i in 1:length(fields)) {
+  j <- which(ontology$name %in% fields[i])
+  if (length(j) > 0) fields[i] <- ontology$synonyms[[j]][1]
+}
+
+colnames(data) <- fields
+
+# retrieve all studies/experiments data in the selected folder
+MET <- get_trial_data()
+
+```

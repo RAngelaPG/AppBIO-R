@@ -1,0 +1,204 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Bootstrap resampling for multi-state models</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for boot.msm {msm}"><tr><td>boot.msm {msm}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Bootstrap resampling for multi-state models</h2>
+
+<h3>Description</h3>
+
+<p>Draw a number of bootstrap resamples, refit a <code><a href="../../msm/help/msm.html">msm</a></code> model to the
+resamples, and calculate statistics on the refitted models.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+boot.msm(
+  x,
+  stat = pmatrix.msm,
+  B = 1000,
+  file = NULL,
+  cores = NULL,
+  remove.errors = TRUE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A fitted msm model, as output by <code><a href="../../msm/help/msm.html">msm</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>stat</code></td>
+<td>
+<p>A function to call on each refitted msm model. By default this
+is <code><a href="../../msm/help/pmatrix.msm.html">pmatrix.msm</a></code>, returning the transition probability matrix in
+one time unit. If <code>NULL</code> then no function is computed.</p>
+</td></tr>
+<tr valign="top"><td><code>B</code></td>
+<td>
+<p>Number of bootstrap resamples.</p>
+</td></tr>
+<tr valign="top"><td><code>file</code></td>
+<td>
+<p>Name of a file in which to save partial results after each
+replicate. This is saved using <code><a href="../../base/html/save.html">save</a></code> and can be restored using
+<code><a href="../../base/html/load.html">load</a></code>, producing an object called <code>boot.list</code> containing
+the partial results.  Not supported when using parallel processing.</p>
+</td></tr>
+<tr valign="top"><td><code>cores</code></td>
+<td>
+<p>Number of processor cores to use for parallel processing.
+Requires the <span class="pkg">doParallel</span> package to be installed.  If not specified,
+parallel processing is not used. If <code>cores</code> is set to the string
+<code>"default"</code>, the default methods of <code><a href="../../parallel/help/makeCluster.html">makeCluster</a></code>
+(on Windows) or <code><a href="../../doParallel/help/registerDoParallel.html">registerDoParallel</a></code> (on Unix-like)
+are used.</p>
+</td></tr>
+<tr valign="top"><td><code>remove.errors</code></td>
+<td>
+<p>If <code>TRUE</code> then bootstrap refits which resulted in an
+error are removed from the returned list, and a message is returned which states the
+proportion of failed fits and the first error message.  If <code>FALSE</code>, then 
+the error message for failed refits is placed in the
+corresponding component of the returned list.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The bootstrap datasets are computed by resampling independent pairs of
+observations at successive times (for non-hidden models without censoring),
+or independent individual series (for hidden models or models with
+censoring).  Therefore this approach doesn't work if, for example, the data
+for a HMM consist of a series of observations from just one individual, and
+is inaccurate for small numbers of independent transitions or individuals.
+</p>
+<p>Confidence intervals or standard errors for the corresponding statistic can
+be calculated by summarising the returned list of <code>B</code> replicated
+outputs.  This is currently implemented for most the output functions
+<code><a href="../../msm/help/qmatrix.msm.html">qmatrix.msm</a></code>, <code><a href="../../msm/help/ematrix.msm.html">ematrix.msm</a></code>,
+<code><a href="../../msm/help/qratio.msm.html">qratio.msm</a></code>, <code><a href="../../msm/help/pmatrix.msm.html">pmatrix.msm</a></code>,
+<code><a href="../../msm/help/pmatrix.piecewise.msm.html">pmatrix.piecewise.msm</a></code>, <code><a href="../../msm/help/totlos.msm.html">totlos.msm</a></code> and
+<code><a href="../../msm/help/prevalence.msm.html">prevalence.msm</a></code>.  For other outputs, users will have to write
+their own code to summarise the output of <code><a href="../../msm/help/boot.msm.html">boot.msm</a></code>.
+</p>
+<p>Most of <span class="pkg">msm</span>'s output functions present confidence intervals based on
+asymptotic standard errors calculated from the Hessian. These are expected
+to be underestimates of the true standard errors (Cramer-Rao lower bound).
+Some of these functions use a further approximation, the delta method (see
+<code><a href="../../msm/help/deltamethod.html">deltamethod</a></code>) to obtain standard errors of transformed
+parameters. Bootstrapping should give a more accurate estimate of the
+uncertainty.
+</p>
+<p>An alternative method which is less accurate though faster than
+bootstrapping, but more accurate than the delta method, is to draw a sample
+from the asymptotic multivariate normal distribution implied by the maximum
+likelihood estimates (and covariance matrix), and summarise the transformed
+estimates.  See <code><a href="../../msm/help/pmatrix.msm.html">pmatrix.msm</a></code>.
+</p>
+<p>All objects used in the original call to <code><a href="../../msm/help/msm.html">msm</a></code> which produced
+<code>x</code>, such as the <code>qmatrix</code>, should be in the working environment,
+or else <code>boot.msm</code> will produce an &ldquo;object not found&rdquo; error.
+This enables <code>boot.msm</code> to refit the original model to the replicate
+datasets.  However there is currently a limitation.  In the original call to
+<code>msm</code>, the <code>"formula"</code> argument should be specified directly, as,
+for example,
+</p>
+<p><code>msm(state ~ time, data = ...)</code>
+</p>
+<p>and not, for example,
+</p>
+<p><code>form = data$state ~ data$time</code>
+</p>
+<p><code>msm(formula=form, data = ...)</code>
+</p>
+<p>otherwise <code>boot.msm</code> will be unable to draw the replicate datasets.
+</p>
+<p><code>boot.msm</code> will also fail with an incomprehensible error if the
+original call to msm used a used-defined object whose name is the same as a
+built-in R object, or an object in any other loaded package.  For example,
+if you have called a Q matrix <code>q</code>, when <code>q()</code> is the built-in
+function for quitting R.
+</p>
+<p>If <code>stat</code> is <code>NULL</code>, then <code>B</code> different <code>msm</code> model
+objects will be stored in memory. This is unadvisable, as <code>msm</code> objects
+tend to be large, since they contain the original data used for the
+<code>msm</code> fit, so this will be wasteful of memory.
+</p>
+<p>To specify more than one statistic, write a function consisting of a list of
+different function calls, for example,
+</p>
+<p><code>stat = function(x) list (pmatrix.msm(x, t=1), pmatrix.msm(x, t=2))</code>
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with <code>B</code> components, containing the result of calling
+function <code>stat</code> on each of the refitted models.  If <code>stat</code> is
+<code>NULL</code>, then each component just contains the refitted model.  If one
+of the <code>B</code> model fits was unsuccessful and resulted in an error, then
+the corresponding list component will contain the error message.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>C.H.Jackson &lt;chris.jackson@mrc-bsu.cam.ac.uk&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Efron, B. and Tibshirani, R.J. (1993) <em>An Introduction to
+the Bootstrap</em>, Chapman and Hall.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../msm/help/qmatrix.msm.html">qmatrix.msm</a></code>, <code><a href="../../msm/help/qratio.msm.html">qratio.msm</a></code>,
+<code><a href="../../msm/help/sojourn.msm.html">sojourn.msm</a></code>, <code><a href="../../msm/help/ematrix.msm.html">ematrix.msm</a></code>,
+<code><a href="../../msm/help/pmatrix.msm.html">pmatrix.msm</a></code>, <code><a href="../../msm/help/pmatrix.piecewise.msm.html">pmatrix.piecewise.msm</a></code>,
+<code><a href="../../msm/help/totlos.msm.html">totlos.msm</a></code>, <code><a href="../../msm/help/prevalence.msm.html">prevalence.msm</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## Not run: 
+  ## Psoriatic arthritis example
+  data(psor)
+  psor.q &lt;- rbind(c(0,0.1,0,0),c(0,0,0.1,0),c(0,0,0,0.1),c(0,0,0,0))
+  psor.msm &lt;- msm(state ~ months, subject=ptnum, data=psor, qmatrix =
+    psor.q, covariates = ~ollwsdrt+hieffusn,
+    constraint = list(hieffusn=c(1,1,1),ollwsdrt=c(1,1,2)),
+    control = list(REPORT=1,trace=2), method="BFGS")
+  ## Bootstrap the baseline transition intensity matrix.  This will take a long time.
+  q.list &lt;- boot.msm(psor.msm, function(x)x$Qmatrices$baseline)
+  ## Manipulate the resulting list of matrices to calculate bootstrap standard errors.
+  apply(array(unlist(q.list), dim=c(4,4,5)), c(1,2), sd)
+  ## Similarly calculate a bootstrap 95% confidence interval
+  apply(array(unlist(q.list), dim=c(4,4,5)), c(1,2),
+        function(x)quantile(x, c(0.025, 0.975)))
+  ## Bootstrap standard errors are larger than the asymptotic standard
+  ## errors calculated from the Hessian
+  psor.msm$QmatricesSE$baseline
+
+## End(Not run)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>msm</em> version 1.8.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

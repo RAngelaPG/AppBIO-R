@@ -1,0 +1,232 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Model-based Recursive Partitioning</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mob {party}"><tr><td>mob {party}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Model-based Recursive Partitioning</h2>
+
+<h3>Description</h3>
+
+<p>MOB is an algorithm for model-based recursive partitioning yielding
+a tree with fitted models associated with each terminal node.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+mob(formula, weights, data = list(), na.action = na.omit, model = glinearModel,
+  control = mob_control(), ...)
+
+## S3 method for class 'mob'
+predict(object, newdata = NULL, type = c("response", "node"), ...)
+## S3 method for class 'mob'
+summary(object, node = NULL, ...)
+## S3 method for class 'mob'
+coef(object, node = NULL, ...)
+## S3 method for class 'mob'
+sctest(x, node = NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>A symbolic description of the model to be fit. This
+should be of type <code>y ~ x1 + ... + xk | z1 + ... + zl</code> where
+the variables before the <code>|</code> are passed to the <code>model</code> and
+the variables after the <code>|</code> are used for partitioning.</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>An optional vector of weights to be used in the fitting
+process. Only non-negative integer valued weights are allowed (default = 1).</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A data frame containing the variables in the model.</p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+<p>A function which indicates what should happen when the data
+contain <code>NA</code>s, defaulting to <code><a href="../../stats/html/na.fail.html">na.omit</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>A model of class <code>"StatModel"</code>. See details
+for requirements.</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+<p>A list with control parameters as returned by
+<code><a href="../../party/help/mob_control.html">mob_control</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Additional arguments passed to the <code>fit</code> call for
+the <code>model</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>object, x</code></td>
+<td>
+<p>A fitted <code>mob</code> object.</p>
+</td></tr>
+<tr valign="top"><td><code>newdata</code></td>
+<td>
+<p>A data frame with new inputs, by default the learning data
+is used.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>A character string specifying whether the response should be
+predicted (inherited from the <code>predict</code> method for the <code>model</code>)
+or the ID of the associated terminal node.</p>
+</td></tr>
+<tr valign="top"><td><code>node</code></td>
+<td>
+<p>A vector of node IDs for which the corresponding method should
+be applied.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Model-based partitioning fits a model tree using the following algorithm:
+</p>
+
+<ol>
+<li> <p><code>fit</code> a <code>model</code> (default: a generalized linear model
+<code>"StatModel"</code> with formula <code>y ~ x1 + ... + xk</code>
+for the observations in the current node.
+</p>
+</li>
+<li><p> Assess the stability of the model parameters with respect to each
+of the partitioning variables <code>z1</code>, ..., <code>zl</code>. If
+there is some overall instability, choose the variable <code>z</code>
+associated with the smallest <i>p</i> value for partitioning, otherwise
+stop. For performing the parameter instability fluctuation test,
+a <code><a href="../../sandwich/help/estfun.html">estfun</a></code> method and a <code><a href="../../party/help/weights.html">weights</a></code> method is
+needed.
+</p>
+</li>
+<li><p> Search for the locally optimal split in <code>z</code> by minimizing the
+objective function of the <code>model</code>. Typically, this will be
+something like <code><a href="../../stats/html/deviance.html">deviance</a></code> or the negative <code><a href="../../stats/html/logLik.html">logLik</a></code>
+and can be specified in <code><a href="../../party/help/mob_control.html">mob_control</a></code>.
+</p>
+</li>
+<li><p> Re-fit the <code>model</code> in both children, using <code><a href="../../party/help/reweight.html">reweight</a></code>
+and repeat from step 2.
+</p>
+</li></ol>
+
+<p>More details on the conceptual design of the algorithm can be found in 
+<a href="#reference+mob.Rd+party+3A+3Azeileis+2Bhothorn+2Bhornik+3A2005" class="citation">Zeileis, Hothorn, and Hornik (2008)</a> and some illustrations are provided in
+<code>vignette("MOB")</code>.  
+</p>
+<p>For the fitted MOB tree, several standard methods are inherited if they are
+available for fitted <code>model</code>s, such as <code>print</code>, <code>predict</code>,
+<code>residuals</code>, <code>logLik</code>, <code>deviance</code>, <code>weights</code>, <code>coef</code> and
+<code>summary</code>. By default, the latter four return the result (deviance, weights,
+coefficients, summary) for all terminal nodes, but take a <code>node</code> argument
+that can be set to any node ID. The <code>sctest</code> method extracts the results
+of the parameter stability tests (aka structural change tests) for any given
+node, by default for all nodes. Some examples are given below.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>mob</code> inheriting from <code><a href="../../party/help/BinaryTree-class.html">BinaryTree-class</a></code>.
+Every node of the tree is additionally associated with a fitted model.
+</p>
+
+
+<h3>References</h3>
+
+<span id="reference+mob.Rd+party+3A+3Azeileis+2Bhothorn+2Bhornik+3A2005"></span><p>Zeileis A., Hothorn T., Hornik K. (2008).
+&ldquo;Model-Based Recursive Partitioning.&rdquo;
+<em>Journal of Computational and Graphical Statistics</em>, <b>17</b>(2), 492&ndash;514.
+doi: <a href="https://doi.org/10.1198/106186008X319331">10.1198/106186008X319331</a>.</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../party/help/plot.mob.html">plot.mob</a></code>, <code><a href="../../party/help/mob_control.html">mob_control</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+set.seed(290875)
+
+if(require("mlbench")) {
+
+## recursive partitioning of a linear regression model
+## load data
+data("BostonHousing", package = "mlbench")
+## and transform variables appropriately (for a linear regression)
+BostonHousing$lstat &lt;- log(BostonHousing$lstat)
+BostonHousing$rm &lt;- BostonHousing$rm^2
+## as well as partitioning variables (for fluctuation testing)
+BostonHousing$chas &lt;- factor(BostonHousing$chas, levels = 0:1, 
+                             labels = c("no", "yes"))
+BostonHousing$rad &lt;- factor(BostonHousing$rad, ordered = TRUE)
+
+## partition the linear regression model medv ~ lstat + rm
+## with respect to all remaining variables:
+fmBH &lt;- mob(medv ~ lstat + rm | zn + indus + chas + nox + age + 
+                                dis + rad + tax + crim + b + ptratio,
+  control = mob_control(minsplit = 40), data = BostonHousing, 
+  model = linearModel)
+
+## print the resulting tree
+fmBH
+## or better visualize it
+plot(fmBH)
+
+## extract coefficients in all terminal nodes
+coef(fmBH)
+## look at full summary, e.g., for node 7
+summary(fmBH, node = 7)
+## results of parameter stability tests for that node
+sctest(fmBH, node = 7)
+## -&gt; no further significant instabilities (at 5% level)
+
+## compute mean squared error (on training data)
+mean((BostonHousing$medv - fitted(fmBH))^2)
+mean(residuals(fmBH)^2)
+deviance(fmBH)/sum(weights(fmBH))
+
+## evaluate logLik and AIC
+logLik(fmBH)
+AIC(fmBH)
+## (Note that this penalizes estimation of error variances, which
+## were treated as nuisance parameters in the fitting process.)
+
+
+## recursive partitioning of a logistic regression model
+## load data
+data("PimaIndiansDiabetes", package = "mlbench")
+## partition logistic regression diabetes ~ glucose 
+## wth respect to all remaining variables
+fmPID &lt;- mob(diabetes ~ glucose | pregnant + pressure + triceps + 
+                                  insulin + mass + pedigree + age,
+  data = PimaIndiansDiabetes, model = glinearModel, 
+  family = binomial())
+
+## fitted model
+coef(fmPID)
+plot(fmPID)
+plot(fmPID, tp_args = list(cdplot = TRUE))
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>party</em> version 1.3-19 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

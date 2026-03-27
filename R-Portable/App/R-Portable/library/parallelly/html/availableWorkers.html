@@ -1,0 +1,226 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Get Set of Available Workers</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for availableWorkers {parallelly}"><tr><td>availableWorkers {parallelly}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Get Set of Available Workers</h2>
+
+<h3>Description</h3>
+
+<p>Get Set of Available Workers
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+availableWorkers(
+  constraints = NULL,
+  methods = getOption2("parallelly.availableWorkers.methods", c("mc.cores",
+    "BiocParallel", "_R_CHECK_LIMIT_CORES_", "Bioconductor", "LSF", "PJM", "PBS", "SGE",
+    "Slurm", "custom", "cgroups.cpuset", "cgroups.cpuquota", "cgroups2.cpu.max", "nproc",
+    "system", "fallback")),
+  na.rm = TRUE,
+  logical = getOption2("parallelly.availableCores.logical", TRUE),
+  default = getOption2("parallelly.localhost.hostname", "localhost"),
+  which = c("auto", "min", "max", "all"),
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>constraints</code></td>
+<td>
+<p>An optional character specifying under what
+constraints (&quot;purposes&quot;) we are requesting the values.
+Using <code>constraints = "connections"</code>, will append <code>"connections"</code> to
+the <code>methods</code> argument.</p>
+</td></tr>
+<tr valign="top"><td><code>methods</code></td>
+<td>
+<p>A character vector specifying how to infer the number
+of available cores.</p>
+</td></tr>
+<tr valign="top"><td><code>na.rm</code></td>
+<td>
+<p>If TRUE, only non-missing settings are considered/returned.</p>
+</td></tr>
+<tr valign="top"><td><code>logical</code></td>
+<td>
+<p>Passed as-is to <code><a href="../../parallelly/help/availableCores.html">availableCores()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>default</code></td>
+<td>
+<p>The default set of workers.</p>
+</td></tr>
+<tr valign="top"><td><code>which</code></td>
+<td>
+<p>A character specifying which set / sets to return.
+If <code>"auto"</code> (default), the first non-empty set found.
+If <code>"min"</code>, the minimum value is returned.
+If <code>"max"</code>, the maximum value is returned (be careful!)
+If <code>"all"</code>, all values are returned.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Additional named arguments pass to <code><a href="../../parallelly/help/availableCores.html">availableCores()</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The default set of workers for each method is
+<code>rep("localhost", times = availableCores(methods = method, logical = logical))</code>,
+which means that each will at least use as many parallel workers on the
+current machine that <code><a href="../../parallelly/help/availableCores.html">availableCores()</a></code> allows for that method.
+</p>
+<p>In addition, the following settings (&quot;methods&quot;) are also acknowledged:
+</p>
+
+<ul>
+<li> <p><code>"LSF"</code> -
+Query Platform Load Sharing Facility (LSF)/OpenLava environment variable
+<span class="env">LSB_HOSTS</span>.
+</p>
+</li>
+<li> <p><code>"PJM"</code> -
+Query Fujitsu Technical Computing Suite (that we choose to shorten
+as &quot;PJM&quot;) the hostname file given by environment variable
+<span class="env">PJM_O_NODEINF</span>.
+The <span class="env">PJM_O_NODEINF</span> file lists the hostnames of the nodes allotted.
+This function returns those hostnames each repeated <code>availableCores()</code>
+times, where <code>availableCores()</code> reflects <span class="env">PJM_VNODE_CORE</span>.
+For example, for <code style="white-space: pre;">pjsub -L vnode=2 -L vnode-core=8 hello.sh</code>, the
+<span class="env">PJM_O_NODEINF</span> file gives two hostnames, and <span class="env">PJM_VNODE_CORE</span>
+gives eight cores per host, resulting in a character vector of 16
+hostnames (for two unique hostnames).
+</p>
+</li>
+<li> <p><code>"PBS"</code> -
+Query TORQUE/PBS environment variable <span class="env">PBS_NODEFILE</span>.
+If this is set and specifies an existing file, then the set
+of workers is read from that file, where one worker (node)
+is given per line.
+An example of a job submission that results in this is
+<code style="white-space: pre;">qsub -l nodes=4:ppn=2</code>, which requests four nodes each
+with two cores.
+</p>
+</li>
+<li> <p><code>"SGE"</code> -
+Query the &quot;Grid Engine&quot; scheduler environment variable <span class="env">PE_HOSTFILE</span>.
+An example of a job submission that results in this is
+<code style="white-space: pre;">qsub -pe mpi 8</code> (or <code style="white-space: pre;">qsub -pe ompi 8</code>), which
+requests eight cores on a any number of machines.
+Known Grid Engine schedulers are
+Oracle Grid Engine (OGE; acquired Sun Microsystems in 2010),
+Univa Grid Engine (UGE; fork of open-source SGE 6.2u5),
+Altair Grid Engine (AGE; acquires Univa Corporation in 2020),
+Son of Grid Engine (SGE aka SoGE; open-source fork of SGE 6.2u5), and
+</p>
+</li>
+<li> <p><code>"Slurm"</code> -
+Query Slurm environment variable <span class="env">SLURM_JOB_NODELIST</span> (fallback
+to legacy <span class="env">SLURM_NODELIST</span>) and parse set of nodes.
+Then query Slurm environment variable <span class="env">SLURM_JOB_CPUS_PER_NODE</span>
+(fallback <span class="env">SLURM_TASKS_PER_NODE</span>) to infer how many CPU cores
+Slurm have allotted to each of the nodes.  If <span class="env">SLURM_CPUS_PER_TASK</span>
+is set, which is always a scalar, then that is respected too, i.e.
+if it is smaller, then that is used for all nodes.
+For example, if <code>SLURM_NODELIST="n1,n[03-05]"</code> (expands to
+<code>c("n1", "n03", "n04", "n05")</code>) and <code>SLURM_JOB_CPUS_PER_NODE="2(x2),3,2"</code>
+(expands to <code>c(2, 2, 3, 2)</code>), then
+<code>c("n1", "n1", "n03", "n03", "n04", "n04", "n04", "n05", "n05")</code> is
+returned.  If in addition, <code>SLURM_CPUS_PER_TASK=1</code>, which can happen
+depending on hyperthreading configurations on the Slurm cluster, then
+<code>c("n1", "n03", "n04", "n05")</code> is returned.
+</p>
+</li>
+<li> <p><code>"custom"</code> -
+If option
+<code><a href="../../parallelly/help/parallelly.options.html">parallelly.availableWorkers.custom</a></code>
+is set and a function,
+then this function will be called (without arguments) and it's value
+will be coerced to a character vector, which will be interpreted as
+hostnames of available workers.
+It is safe for this custom function to call <code>availableWorkers()</code>; if
+done, the custom function will <em>not</em> be recursively called.
+</p>
+</li></ul>
+
+
+
+<h3>Value</h3>
+
+<p>Return a character vector of workers, which typically consists
+of names of machines / compute nodes, but may also be IP numbers.
+</p>
+
+
+<h3>Known limitations</h3>
+
+<p><code>availableWorkers(methods = "Slurm")</code> will expand <span class="env">SLURM_JOB_NODELIST</span>
+using <code>scontrol show hostnames "$SLURM_JOB_NODELIST"</code>, if available.
+If not available, then it attempts to parse the compressed nodelist based
+on a best-guess understanding on what the possible syntax may be.
+One known limitation is that &quot;multi-dimensional&quot; ranges are not supported,
+e.g. <code>"a[1-2]b[3-4]"</code> is expanded by <code>scontrol</code> to
+<code>c("a1b3", "a1b4", "a2b3", "a2b4")</code>.  If <code>scontrol</code> is not
+available, then any components that failed to be parsed are dropped with
+an informative warning message.  If no components could be parsed, then
+the result of <code>methods = "Slurm"</code> will be empty.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>To get the number of available workers on the current machine,
+see <code><a href="../../parallelly/help/availableCores.html">availableCores()</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+message(paste("Available workers:",
+        paste(sQuote(availableWorkers()), collapse = ", ")))
+
+## Not run: 
+options(mc.cores = 2L)
+message(paste("Available workers:",
+        paste(sQuote(availableWorkers()), collapse = ", ")))
+
+## End(Not run)
+
+## Not run: 
+## Always use two workers on host 'n1' and one on host 'n2'
+options(parallelly.availableWorkers.custom = function() {
+  c("n1", "n1", "n2")
+})
+message(paste("Available workers:",
+        paste(sQuote(availableWorkers()), collapse = ", ")))
+
+## End(Not run)
+
+## Not run: 
+## A 50% random subset of the available workers.
+## Note that it is safe to call availableWorkers() here.
+options(parallelly.availableWorkers.custom = function() {
+  workers &lt;- parallelly::availableWorkers()
+  sample(workers, size = 0.50 * length(workers))
+})
+message(paste("Available workers:",
+        paste(sQuote(availableWorkers()), collapse = ", ")))
+
+## End(Not run)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>parallelly</em> version 1.46.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

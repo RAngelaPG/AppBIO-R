@@ -1,0 +1,201 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Assemble label and map it</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for use_label {ggpmisc}"><tr><td>use_label {ggpmisc}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Assemble label and map it</h2>
+
+<h3>Description</h3>
+
+<p>Assemble model-fit-derived text or expressions and map them to
+the <code>label</code> aesthetic.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+use_label(..., labels = NULL, other.mapping = NULL, sep = "*\", \"*")
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>character Strings giving the names of the label components in the
+order they will be included in the combined label.</p>
+</td></tr>
+<tr valign="top"><td><code>labels</code></td>
+<td>
+<p>character A vector with the name of the label components. If
+provided, values passed through <code>...</code> are ignored.</p>
+</td></tr>
+<tr valign="top"><td><code>other.mapping</code></td>
+<td>
+<p>An unevaluated expression constructed with function
+<code><a href="../../ggplot2/help/aes.html">aes</a></code> to be included in the returned value.</p>
+</td></tr>
+<tr valign="top"><td><code>sep</code></td>
+<td>
+<p>character A string used as separator when pasting the label
+components together.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Statistics <code><a href="../../ggpmisc/help/stat_poly_eq.html">stat_poly_eq</a></code>, <code><a href="../../ggpmisc/help/stat_ma_eq.html">stat_ma_eq</a></code>,
+<code><a href="../../ggpmisc/help/stat_quant_eq.html">stat_quant_eq</a></code> and <code><a href="../../ggpmisc/help/stat_correlation.html">stat_correlation</a></code> return
+multiple text strings to be used individually or assembled into longer
+character strings depending on the labels actually desired. Assembling and
+mapping them requires verbose R code and familiarity with R expression
+syntax. Function <code>use_label()</code> automates these two tasks and accepts
+abbreviated familiar names for the parameters in addition to the name of
+the columns in the data object returned by the statistics. The default
+separator is that for expressions.
+</p>
+<p>The statistics return variables with names ending in <code>.label</code>. This
+ending can be omitted, as well as <code>.value</code> for <code>f.value.label</code>,
+<code>t.value.label</code>, <code>z.value.label</code>, <code>S.value.label</code> and
+<code>p.value.label</code>. <code>R2</code> can be used in place of <code>rr</code>.
+Furthermore, case is ignored.
+Thus, <code>use_label("eq", "R2")</code> is equivalent to
+<code>aes(label = paste(after_stat(eq.label), after_stat(rr.label), sep = ", "))</code>
+</p>
+<p>Function <code>use_label()</code> calls <code>aes()</code> to create a mapping for
+the <code>label</code> aesthetic, but it can in addition combine this mapping
+with other mappings created with <code>aes()</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A mapping to the <code>label</code> aesthetic and optionally additional
+mappings as an unevaluated R expression, built using function
+<code><a href="../../ggplot2/help/aes.html">aes</a></code>, ready to be passed as argument to the
+<code>mapping</code> parameter of the supported statistics.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Function <code>use_label()</code> can be only used to generate an argument
+passed to formal parameter <code>mapping</code> of the statistics
+<code><a href="../../ggpmisc/help/stat_poly_eq.html">stat_poly_eq</a></code>, <code><a href="../../ggpmisc/help/stat_ma_eq.html">stat_ma_eq</a></code>,
+<code><a href="../../ggpmisc/help/stat_quant_eq.html">stat_quant_eq</a></code> and <code><a href="../../ggpmisc/help/stat_correlation.html">stat_correlation</a></code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../ggpmisc/help/stat_poly_eq.html">stat_poly_eq</a></code>, <code><a href="../../ggpmisc/help/stat_ma_eq.html">stat_ma_eq</a></code>,
+<code><a href="../../ggpmisc/help/stat_quant_eq.html">stat_quant_eq</a></code> and <code><a href="../../ggpmisc/help/stat_correlation.html">stat_correlation</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# generate artificial data
+set.seed(4321)
+x &lt;- 1:100
+y &lt;- (x + x^2 + x^3) + rnorm(length(x), mean = 0, sd = mean(x^3) / 4)
+my.data &lt;- data.frame(x = x,
+                      y = y * 1e-5,
+                      group = c("A", "B"),
+                      y2 = y * 1e-5 + c(2, 0))
+
+# give a name to a formula
+formula &lt;- y ~ poly(x, 3, raw = TRUE)
+
+# default label constructed by use_label()
+ggplot(data = my.data,
+       mapping = aes(x = x, y = y2, colour = group)) +
+  geom_point() +
+  stat_poly_line(formula = formula) +
+  stat_poly_eq(mapping = use_label(),
+               formula = formula)
+
+# user specified label components
+ggplot(data = my.data,
+       mapping = aes(x = x, y = y2, colour = group)) +
+  geom_point() +
+  stat_poly_line(formula = formula) +
+  stat_poly_eq(mapping = use_label("eq", "F"),
+              formula = formula)
+
+# user specified label components and separator
+ggplot(data = my.data,
+       mapping = aes(x = x, y = y2, colour = group)) +
+  geom_point() +
+  stat_poly_line(formula = formula) +
+  stat_poly_eq(mapping = use_label("R2", "F", sep = "*\" with \"*"),
+               formula = formula)
+
+# combine the mapping to the label aesthetic with other mappings
+ggplot(data = my.data,
+       mapping = aes(x = x, y = y2)) +
+  geom_point(mapping = aes(colour = group)) +
+  stat_poly_line(mapping = aes(colour = group), formula = formula) +
+  stat_poly_eq(mapping = use_label("grp", "eq", "F",
+                                   aes(grp.label = group)),
+              formula = formula)
+
+# combine other mappings with default labels
+ggplot(data = my.data,
+       mapping = aes(x = x, y = y2)) +
+  geom_point(mapping = aes(colour = group)) +
+  stat_poly_line(mapping = aes(colour = group), formula = formula) +
+  stat_poly_eq(mapping = use_label(aes(colour = group)),
+              formula = formula)
+
+# example with other available components
+ggplot(data = my.data,
+       mapping = aes(x = x, y = y2, colour = group)) +
+  geom_point() +
+  stat_poly_line(formula = formula) +
+  stat_poly_eq(mapping = use_label("eq", "adj.R2", "n"),
+               formula = formula)
+
+# multiple labels
+ggplot(data = my.data,
+       mapping = aes(x, y2, colour = group)) +
+  geom_point() +
+  stat_poly_line(formula = formula) +
+  stat_poly_eq(mapping = use_label("R2", "F", "P", "AIC", "BIC"),
+               formula = formula) +
+  stat_poly_eq(mapping = use_label(c("eq", "n")),
+               formula = formula,
+               label.y = "bottom",
+               label.x = "right")
+
+# quantile regression
+ggplot(data = my.data,
+       mapping = aes(x, y)) +
+  stat_quant_band(formula = formula) +
+  stat_quant_eq(mapping = use_label("eq", "n"),
+                formula = formula) +
+  geom_point()
+
+# major axis regression
+ggplot(data = my.data, aes(x = x, y = y)) +
+  stat_ma_line() +
+  stat_ma_eq(mapping = use_label("eq", "n")) +
+  geom_point()
+
+# correlation
+ggplot(data = my.data,
+       mapping = aes(x = x, y = y)) +
+  stat_correlation(mapping = use_label("r", "t", "p")) +
+  geom_point()
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ggpmisc</em> version 0.6.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

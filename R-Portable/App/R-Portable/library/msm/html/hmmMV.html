@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Multivariate hidden Markov models</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for hmmMV {msm}"><tr><td>hmmMV {msm}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Multivariate hidden Markov models</h2>
+
+<h3>Description</h3>
+
+<p>Constructor for a a multivariate hidden Markov model (HMM) where each of the
+<code>n</code> variables observed at the same time has a (potentially different)
+standard univariate distribution conditionally on the underlying state.  The
+<code>n</code> outcomes are independent conditionally on the hidden state.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+hmmMV(...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>The number of arguments supplied should equal the maximum number
+of observations made at one time.  Each argument represents the univariate
+distribution of that outcome conditionally on the hidden state, and should
+be the result of calling a univariate hidden Markov model constructor (see
+<code><a href="../../msm/help/hmm-dists.html">hmm-dists</a></code>).</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>If a particular state in a HMM has such an outcome distribution, then a call
+to <code><a href="../../msm/help/hmmMV.html">hmmMV</a></code> is supplied as the corresponding element of the
+<code>hmodel</code> argument to <code><a href="../../msm/help/msm.html">msm</a></code>.  See Example 2 below.
+</p>
+<p>A multivariate HMM where multiple outcomes at the same time are generated
+from the <em>same</em> distribution is specified in the same way as the
+corresponding univariate model, so that <code><a href="../../msm/help/hmmMV.html">hmmMV</a></code> is not required.
+The outcome data are simply supplied as a matrix instead of a vector.  See
+Example 1 below.
+</p>
+<p>The outcome data for such models are supplied as a matrix, with number of
+columns equal to the maximum number of arguments supplied to the
+<code><a href="../../msm/help/hmmMV.html">hmmMV</a></code> calls for each state.  If some but not all of the
+variables are missing (<code>NA</code>) at a particular time, then the observed
+data at that time still contribute to the likelihood.  The missing data are
+assumed to be missing at random.  The Viterbi algorithm may be used to
+predict the missing values given the fitted model and the observed data.
+</p>
+<p>Typically the outcome model for each state will be from the same family or
+set of families, but with different parameters.  Theoretically, different
+numbers of distributions may be supplied for different states.  If a
+particular state has fewer outcomes than the maximum, then the data for that
+state are taken from the first columns of the response data matrix.  However
+this is not likely to be a useful model, since the number of observations
+will probably give information about the underlying state, violating the
+missing at random assumption.
+</p>
+<p>Models with outcomes that are dependent conditionally on the hidden state
+(e.g. correlated multivariate normal observations) are not currently
+supported.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of objects, each of class <code>hmmdist</code> as returned by the
+univariate HMM constructors documented in <code><a href="../../msm/help/hmm-dists.html">hmm-dists</a></code>.  The
+whole list has class <code>hmmMVdist</code>, which inherits from <code>hmmdist</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>C. H. Jackson <a href="mailto:chris.jackson@mrc-bsu.cam.ac.uk">chris.jackson@mrc-bsu.cam.ac.uk</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Jackson, C. H., Su, L., Gladman, D. D. and Farewell, V. T.
+(2015) On modelling minimal disease activity.  Arthritis Care and Research
+(early view).
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../msm/help/hmm-dists.html">hmm-dists</a></code>,<code><a href="../../msm/help/msm.html">msm</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## Simulate data from a Markov model 
+nsubj &lt;- 30; nobspt &lt;- 5
+sim.df &lt;- data.frame(subject = rep(1:nsubj, each=nobspt),
+                     time = seq(0, 20, length=nobspt))
+set.seed(1)
+two.q &lt;- rbind(c(-0.1, 0.1), c(0, 0))
+dat &lt;- simmulti.msm(sim.df[,1:2], qmatrix=two.q, drop.absorb=FALSE)
+
+### EXAMPLE 1
+## Generate two observations at each time from the same outcome
+## distribution:
+## Bin(40, 0.1) for state 1, Bin(40, 0.5) for state 2
+dat$obs1[dat$state==1] &lt;- rbinom(sum(dat$state==1), 40, 0.1)
+dat$obs2[dat$state==1] &lt;- rbinom(sum(dat$state==1), 40, 0.1)
+dat$obs1[dat$state==2] &lt;- rbinom(sum(dat$state==2), 40, 0.5)
+dat$obs2[dat$state==2] &lt;- rbinom(sum(dat$state==2), 40, 0.5)
+dat$obs &lt;- cbind(obs1 = dat$obs1, obs2 = dat$obs2)
+
+## Fitted model should approximately recover true parameters 
+msm(obs ~ time, subject=subject, data=dat, qmatrix=two.q,
+    hmodel = list(hmmBinom(size=40, prob=0.2),
+                  hmmBinom(size=40, prob=0.2)))
+
+### EXAMPLE 2
+## Generate two observations at each time from different
+## outcome distributions:
+## Bin(40, 0.1) and Bin(40, 0.2) for state 1, 
+dat$obs1 &lt;- dat$obs2 &lt;- NA
+dat$obs1[dat$state==1] &lt;- rbinom(sum(dat$state==1), 40, 0.1)
+dat$obs2[dat$state==1] &lt;- rbinom(sum(dat$state==1), 40, 0.2)
+
+## Bin(40, 0.5) and Bin(40, 0.6) for state 2
+dat$obs1[dat$state==2] &lt;- rbinom(sum(dat$state==2), 40, 0.6)
+dat$obs2[dat$state==2] &lt;- rbinom(sum(dat$state==2), 40, 0.5)
+dat$obs &lt;- cbind(obs1 = dat$obs1, obs2 = dat$obs2)
+
+## Fitted model should approximately recover true parameters 
+msm(obs ~ time, subject=subject, data=dat, qmatrix=two.q,   
+    hmodel = list(hmmMV(hmmBinom(size=40, prob=0.3),
+                        hmmBinom(size=40, prob=0.3)),                 
+                 hmmMV(hmmBinom(size=40, prob=0.3),
+                       hmmBinom(size=40, prob=0.3))),
+    control=list(maxit=10000))
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>msm</em> version 1.8.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

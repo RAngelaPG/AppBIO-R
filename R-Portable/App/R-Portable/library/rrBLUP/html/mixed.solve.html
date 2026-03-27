@@ -1,0 +1,185 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Mixed-model solver</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mixed.solve {rrBLUP}"><tr><td>mixed.solve {rrBLUP}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Mixed-model solver
+</h2>
+
+<h3>Description</h3>
+
+<p>Calculates maximum-likelihood (ML/REML) solutions for mixed models of the form
+</p>
+<p style="text-align: center;"><i>y = X &beta; + Z u + \varepsilon</i></p>
+
+<p>where <i>&beta;</i> is a vector of fixed effects and <i>u</i> is a vector of random effects with 
+<i>Var[u] = K &sigma;^2_u</i>.  The residual variance is <i>Var[\varepsilon] = I &sigma;^2_e</i>.  This class
+of mixed models, in which there is a single variance component other than the residual error,
+has a close relationship with ridge regression (ridge parameter <i>&lambda; = &sigma;_e^2 / &sigma;^2_u</i>).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+mixed.solve(y, Z=NULL, K=NULL, X=NULL, method="REML", 
+        bounds=c(1e-09, 1e+09), SE=FALSE, return.Hinv=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>y</code></td>
+<td>
+
+<p>Vector (<i>n \times 1</i>) of observations.  Missing values (NA) are omitted, along with the corresponding rows of X and Z. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>Z</code></td>
+<td>
+
+<p>Design matrix (<i>n \times m</i>) for the random effects.  If not passed, assumed to be the identity matrix.
+</p>
+</td></tr>
+<tr valign="top"><td><code>K</code></td>
+<td>
+
+<p>Covariance matrix (<i>m \times m</i>) for random effects; must be positive semi-definite.  If not passed, assumed to 
+be the identity matrix.
+</p>
+</td></tr>
+<tr valign="top"><td><code>X</code></td>
+<td>
+
+<p>Design matrix (<i>n \times p</i>) for the fixed effects.  If not passed, a vector of 1's is used
+to model the intercept.  X must be full column rank (implies <i>&beta;</i> is estimable).
+</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+
+<p>Specifies whether the full (&quot;ML&quot;) or restricted (&quot;REML&quot;) maximum-likelihood method is used.
+</p>
+</td></tr>
+<tr valign="top"><td><code>bounds</code></td>
+<td>
+
+<p>Array with two elements specifying the lower and upper bound for the ridge parameter.
+</p>
+</td></tr>
+<tr valign="top"><td><code>SE</code></td>
+<td>
+
+<p>If TRUE, standard errors are calculated.
+</p>
+</td></tr>
+<tr valign="top"><td><code>return.Hinv</code></td>
+<td>
+
+<p>If TRUE, the function returns the inverse of <i>H = Z K Z' + &lambda; I</i>.  This is useful for <code><a href="../../rrBLUP/help/GWAS.html">GWAS</a></code>.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This function can be used to predict marker effects or breeding values (see examples).  The numerical method 
+is based on the spectral decomposition of <i>Z K Z'</i> and <i>S Z K Z' S</i>, where <i>S = I - X (X' X)^{-1} X'</i> is 
+the projection operator for the nullspace of <i>X</i> (Kang et al., 2008). This algorithm generates the inverse phenotypic covariance matrix <i>V^{-1}</i>, which can then be used to calculate the BLUE and BLUP solutions for the fixed and random effects, respectively, using standard formulas (Searle et al. 1992):
+</p>
+<p style="text-align: center;"><i>BLUE(&beta;) = &beta;^* = (X'V^{-1}X)^{-1}X'V^{-1}y</i></p>
+
+<p style="text-align: center;"><i>BLUP(u) = u^* = &sigma;^2_u KZ'V^{-1}(y-X&beta;^*)</i></p>
+
+<p>The standard errors are calculated as the square root of the diagonal elements of the following matrices (Searle et al. 1992):
+</p>
+<p style="text-align: center;"><i>Var[&beta;^*] = (X'V^{-1}X)^{-1}</i></p>
+
+<p style="text-align: center;"><i>Var[u^*-u] = K &sigma;^2_u - &sigma;^4_u KZ'V^{-1}ZK + &sigma;^4_u KZ'V^{-1}XVar[&beta;^*]X'V^{-1}ZK</i></p>
+
+<p>For marker effects where K = I, the function will run faster if K is not passed than if the user passes the identity matrix.
+</p>
+
+
+<h3>Value</h3>
+
+<p>If SE=FALSE, the function returns a list containing
+</p>
+
+<dl>
+<dt>$Vu</dt><dd><p>estimator for <i>&sigma;^2_u</i></p>
+</dd>
+<dt>$Ve</dt><dd><p>estimator for <i>&sigma;^2_e</i></p>
+</dd>
+<dt>$beta</dt><dd><p>BLUE(<i>&beta;</i>)</p>
+</dd>
+<dt>$u</dt><dd><p>BLUP(<i>u</i>)</p>
+</dd>
+<dt>$LL</dt><dd><p>maximized log-likelihood (full or restricted, depending on method)</p>
+</dd>
+</dl>
+
+<p>If SE=TRUE, the list also contains
+</p>
+
+<dl>
+<dt>$beta.SE</dt><dd><p>standard error for <i>&beta;</i></p>
+</dd>
+<dt>$u.SE</dt><dd><p>standard error for <i>u^*-u</i></p>
+</dd>
+</dl>
+
+<p>If return.Hinv=TRUE, the list also contains
+</p>
+
+<dl>
+<dt>$Hinv</dt><dd><p>the inverse of <i>H</i></p>
+</dd>
+</dl>
+
+
+
+<h3>References</h3>
+
+<p>Kang et al. 2008. Efficient control of population structure in model organism association mapping. 
+Genetics 178:1709-1723.
+</p>
+<p>Endelman, J.B. 2011. Ridge regression and other kernels for genomic selection with R package rrBLUP. Plant Genome 4:250-255.
+</p>
+<p>Searle, S.R., G. Casella and C.E. McCulloch. 1992. Variance Components. John Wiley, Hoboken.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+#random population of 200 lines with 1000 markers
+M &lt;- matrix(rep(0,200*1000),200,1000)
+for (i in 1:200) {
+  M[i,] &lt;- ifelse(runif(1000)&lt;0.5,-1,1)
+}
+
+#random phenotypes
+u &lt;- rnorm(1000)
+g &lt;- as.vector(crossprod(t(M),u))
+h2 &lt;- 0.5  #heritability
+y &lt;- g + rnorm(200,mean=0,sd=sqrt((1-h2)/h2*var(g)))
+
+#predict marker effects
+ans &lt;- mixed.solve(y,Z=M)  #By default K = I
+accuracy &lt;- cor(u,ans$u)
+
+#predict breeding values
+ans &lt;- mixed.solve(y,K=A.mat(M))
+accuracy &lt;- cor(g,ans$u)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rrBLUP</em> version 4.6.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

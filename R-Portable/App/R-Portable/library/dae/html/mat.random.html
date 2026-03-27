@@ -1,0 +1,126 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Calculates the variance matrix for the random effects from a...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mat.random {dae}"><tr><td>mat.random {dae}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Calculates the variance matrix for the random effects from a mixed model, based  on a supplied formula or a matrix.</h2>
+
+<h3>Description</h3>
+
+<p>For <code>n</code> observations, compute the variance matrix of the random effects. 
+The <code><a href="../../base/html/matrix.html">matrix</a></code> can be specified using a <code><a href="../../stats/html/formula.html">formula</a></code> 
+for the <code>random</code> effects and a <code><a href="../../base/html/list.html">list</a></code> of values of the  
+variance components for the terms specified in the <code>random</code> <code><a href="../../stats/html/formula.html">formula</a></code>. 
+If a  <code><a href="../../base/html/matrix.html">matrix</a></code> specifying the variances of 
+the nuisance random effects is supplied then it is returned as the value 
+from the function.</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+mat.random(random, G, design, keep.order = TRUE)</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>random</code></td>
+<td>
+<p>A <code><a href="../../stats/html/formula.html">formula</a></code> or a <code><a href="../../base/html/matrix.html">matrix</a></code>. If a 
+<code><a href="../../stats/html/formula.html">formula</a></code>, it specifies the random effects from which 
+the <code><a href="../../base/html/matrix.html">matrix</a></code> for the contribution of the random effects 
+to the variance matrix can be generated. If it is a <code><a href="../../base/html/matrix.html">matrix</a></code>, 
+it must be an <code>n x n</code> <code><a href="../../base/html/matrix.html">matrix</a></code> and will be passed 
+through as the required variance matrix for the random effects. 
+The default is 0, which implies that there are no random effects.</p>
+</td></tr>
+<tr valign="top"><td><code>G</code></td>
+<td>
+<p>This term only needs to be set if <code>random</code> is a 
+<code><a href="../../stats/html/formula.html">formula</a></code>. Then it is set to a <code><a href="../../base/html/list.html">list</a></code>, in which 
+each component is either a single value or a <code><a href="../../base/html/matrix.html">matrix</a></code>; 
+there needs to be a component for each term in the expanded 
+<code><a href="../../stats/html/formula.html">formula</a></code>, with the order of the terms and components 
+matching. If it is a single value, a diagonal matrix of dimension 
+equal to the product of the numbers of levels of the factors in 
+its term. If it is a matrix, its dimension must be equal to the 
+product of the numbers of levels of the factors in its term.</p>
+</td></tr>
+<tr valign="top"><td><code>design</code></td>
+<td>
+<p>A <code><a href="../../base/html/data.frame.html">data.frame</a></code> containing the design to be used in an 
+experiment and for which the variane matrix is required. It is not required  
+when the only <code><a href="../../stats/html/formula.html">formula</a></code> specified is an intercept-only 
+<code><a href="../../stats/html/formula.html">formula</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>keep.order</code></td>
+<td>
+<p>A <code><a href="../../base/html/logical.html">logical</a></code> indicating whether the terms should keep 
+their position in the expanded <code>formula</code> projector, or 
+reordered so that main effects precede two-factor 
+interactions, which precede three-factor interactions and 
+so on.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>If <i>Zi</i> is the is incidence matrix for the <code>random</code> nuisance effects 
+in  <i>ui</i> for a term in <code>random</code> and <i>ui</i> has 
+variance matrix  <i>Gi</i> so that the contribution of the random effectst to 
+the variance matrix for <i>Y</i> is  
+<i>Vu = sum(Zi %*% Gi%*% t(Zi))</i>.   
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>n x n</code> <code><a href="../../base/html/matrix.html">matrix</a></code> containing the variance matrix for the random effects.</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Chris Brien</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../dae/help/mat.Vpredicts.html">mat.Vpredicts</a></code>.</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Reduced example from Smith et al. (2015)
+## Generate two-phase design
+mill.fac &lt;- fac.gen(list(Mrep = 2, Mday = 2, Mord = 3))
+field.lay &lt;- fac.gen(list(Frep = 2, Fplot = 4))
+field.lay$Variety &lt;- factor(c("D","E","Y","W","G","D","E","M"), 
+                            levels = c("Y","W","G","M","D","E"))
+start.design &lt;- cbind(mill.fac, field.lay[c(3,4,5,8,1,7,3,4,5,8,6,2),])
+rownames(start.design) &lt;- NULL
+
+## Set gammas
+terms &lt;- c("Variety", "Frep", "Frep:Fplot", "Mrep", "Mrep:Mday", "Mrep:Mday:Mord")
+gammas &lt;- c(1, 0.1, 0.2, 0.3, 0.2, 1)
+names(gammas) &lt;- terms
+
+## Specify matrices to calculate the variance matrix of the predicted fixed Variety effects 
+Vu &lt;- with(start.design, fac.vcmat(Mrep, gammas["Mrep"]) + 
+                         fac.vcmat(fac.combine(list(Mrep,Mday)), gammas["Mrep:Mday"]) + 
+                         fac.vcmat(Frep, gammas["Frep"]) + 
+                         fac.vcmat(fac.combine(list(Frep,Fplot)), gammas["Frep:Fplot"]))
+
+## Calculate the variance matrix of the predicted random Variety effects using formulae
+Vu &lt;- mat.random(random = ~ -1 + Mrep/Mday + Frep/Fplot, 
+                 G = as.list(gammas[c(4,5,2,3)]), 
+                 design = start.design)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>dae</em> version 3.2.32 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

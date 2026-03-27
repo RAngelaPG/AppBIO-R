@@ -1,0 +1,131 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Find Eigenvector Centrality Scores of Network Positions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for evcent {sna}"><tr><td>evcent {sna}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Find Eigenvector Centrality Scores of Network Positions </h2>
+
+<h3>Description</h3>
+
+<p><code>evcent</code> takes one or more graphs (<code>dat</code>) and returns the eigenvector centralities of positions (selected by <code>nodes</code>) within the graphs indicated by <code>g</code>.  This function is compatible with <code><a href="../../sna/help/centralization.html">centralization</a></code>, and will return the theoretical maximum absolute deviation (from maximum) conditional on size (which is used by <code><a href="../../sna/help/centralization.html">centralization</a></code> to normalize the observed centralization score).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+evcent(dat, g=1, nodes=NULL, gmode="digraph", diag=FALSE,
+    tmaxdev=FALSE, rescale=FALSE, ignore.eval=FALSE, tol=1e-10,
+    maxiter=1e5, use.eigen=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>dat</code></td>
+<td>
+<p> one or more input graphs. </p>
+</td></tr>
+<tr valign="top"><td><code>g</code></td>
+<td>
+<p> integer indicating the index of the graph for which centralities are to be calculated (or a vector thereof).  By default, <code>g</code>=1. </p>
+</td></tr>
+<tr valign="top"><td><code>nodes</code></td>
+<td>
+<p> vector indicating which nodes are to be included in the calculation.  By default, all nodes are included. </p>
+</td></tr>
+<tr valign="top"><td><code>gmode</code></td>
+<td>
+<p> string indicating the type of graph being evaluated.  &quot;digraph&quot; indicates that edges should be interpreted as directed; &quot;graph&quot; indicates that edges are undirected.  This is currently ignored. </p>
+</td></tr>
+<tr valign="top"><td><code>diag</code></td>
+<td>
+<p> boolean indicating whether or not the diagonal should be treated as valid data.  Set this true if and only if the data can contain loops.  <code>diag</code> is <code>FALSE</code> by default. </p>
+</td></tr>
+<tr valign="top"><td><code>tmaxdev</code></td>
+<td>
+<p> boolean indicating whether or not the theoretical maximum absolute deviation from the maximum nodal centrality should be returned.  By default, <code>tmaxdev==FALSE</code>. </p>
+</td></tr>
+<tr valign="top"><td><code>rescale</code></td>
+<td>
+<p> if true, centrality scores are rescaled such that they sum to 1. </p>
+</td></tr>
+<tr valign="top"><td><code>ignore.eval</code></td>
+<td>
+<p> logical; should edge values be ignored?</p>
+</td></tr>
+<tr valign="top"><td><code>tol</code></td>
+<td>
+<p> convergence tolerance for the eigenvector computation.</p>
+</td></tr>
+<tr valign="top"><td><code>maxiter</code></td>
+<td>
+<p> maximum iterations for eigenvector calculation.</p>
+</td></tr>
+<tr valign="top"><td><code>use.eigen</code></td>
+<td>
+<p> logical; should we use R's <code><a href="../../base/html/eigen.html">eigen</a></code> routine instead of the (faster but less robust) internal method?</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Eigenvector centrality scores correspond to the values of the first eigenvector of the graph adjacency matrix; these scores may, in turn, be interpreted as arising from a reciprocal process in which the centrality of each actor is proportional to the sum of the centralities of those actors to whom he or she is connected.  In general, vertices with high eigenvector centralities are those which are connected to many other vertices which are, in turn, connected to many others (and so on).  (The perceptive may realize that this implies that the largest values will be obtained by individuals in large cliques (or high-density substructures).  This is also intelligible from an algebraic point of view, with the first eigenvector being closely related to the best rank-1 approximation of the adjacency matrix (a relationship which is easy to see in the special case of a diagonalizable symmetric real matrix via the <i>SLS^-1</i> decomposition).) 
+</p>
+<p>By default, a sparse-graph power method is used to obtain the principal eigenvector.  This procedure scales well, but may not converge in some cases.  In the event that the convergence objective set by <code>tol</code> is not obtained, <code>evcent</code> will return a warning message.  Correctives in this case include increasing <code>maxiter</code>, or setting <code>use.eigen</code> to <code>TRUE</code>.  The latter will cause <code>evcent</code> to use R's standard <code><a href="../../base/html/eigen.html">eigen</a></code> method to calculate the principal eigenvector; this is far slower for sparse graphs, but is also more robust.
+</p>
+<p>The simple eigenvector centrality is generalized by the Bonacich power centrality measure; see <code><a href="../../sna/help/bonpow.html">bonpow</a></code> for more details.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A vector, matrix, or list containing the centrality scores (depending on the number and size of the input graphs).
+</p>
+
+
+<h3>WARNING </h3>
+
+<p><code>evcent</code> will not symmetrize your data before extracting eigenvectors; don't send this routine asymmetric matrices unless you really mean to do so.</p>
+
+
+<h3>Note</h3>
+
+<p> The theoretical maximum deviation used here is not obtained with the star network, in general.  For symmetric data, the maximum occurs for an empty graph with one complete dyad; the maximum deviation for asymmetric data is generated by the outstar.  UCINET V seems not to adjust for this fact, which can cause some oddities in their centralization scores (and results in a discrepancy in centralizations between the two packages). </p>
+
+
+<h3>Author(s)</h3>
+
+<p> Carter T. Butts <a href="mailto:buttsc@uci.edu">buttsc@uci.edu</a> </p>
+
+
+<h3>References</h3>
+
+<p> Bonacich, P.  (1987).  &ldquo;Power and Centrality: A Family of Measures.&rdquo; <em>American Journal of Sociology</em>, 92, 1170-1182.
+</p>
+<p>Katz, L.  (1953).  &ldquo;A New Status Index Derived from Sociometric Analysis.&rdquo;  <em>Psychometrika</em>, 18, 39-43.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../sna/help/centralization.html">centralization</a></code>, <code><a href="../../sna/help/bonpow.html">bonpow</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+#Generate some test data
+dat&lt;-rgraph(10,mode="graph")
+#Compute eigenvector centrality scores
+evcent(dat)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sna</em> version 2.8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

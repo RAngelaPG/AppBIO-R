@@ -10,7 +10,7 @@
 
 <h3>Description</h3>
 
-<p>Similar to <code>read.table</code> but faster and more convenient. All controls such as <code>sep</code>, <code>colClasses</code> and <code>nrows</code> are automatically detected.
+<p>Similar to <code><a href="../../utils/help/read.csv.html">read.csv()</a></code> and <code><a href="../../utils/help/read.delim.html">read.delim()</a></code> but faster and more convenient. All controls such as <code>sep</code>, <code>colClasses</code> and <code>nrows</code> are automatically detected.
 </p>
 <p><code>bit64::integer64</code>, <code><a href="../../data.table/help/IDate.html">IDate</a></code>, and <code><a href="../../base/html/DateTimeClasses.html">POSIXct</a></code> types are also detected and read directly without needing to read as character before converting.
 </p>
@@ -21,7 +21,7 @@
 <h3>Usage</h3>
 
 <pre>
-fread(input, file, text, cmd, sep="auto", sep2="auto", dec=".", quote="\"",
+fread(input, file, text, cmd, sep="auto", sep2="auto", dec="auto", quote="\"",
 nrows=Inf, header="auto",
 na.strings=getOption("datatable.na.strings","NA"),  # due to change to ""; see NEWS
 stringsAsFactors=FALSE, verbose=getOption("datatable.verbose", FALSE),
@@ -29,14 +29,15 @@ skip="__auto__", select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64", "integer64"),
 col.names,
 check.names=FALSE, encoding="unknown",
-strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE,
+strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, comment.char="",
 key=NULL, index=NULL,
 showProgress=getOption("datatable.showProgress", interactive()),
 data.table=getOption("datatable.fread.datatable", TRUE),
 nThread=getDTthreads(verbose),
-logical01=getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
+logical01=getOption("datatable.logical01", FALSE),
+logicalYN=getOption("datatable.logicalYN", FALSE),
 keepLeadingZeros = getOption("datatable.keepLeadingZeros", FALSE),
-yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC"
+yaml=FALSE, tmpdir=tempdir(), tz="UTC"
 )
 </pre>
 
@@ -113,7 +114,7 @@ If type coercion results in an error, introduces <code>NA</code>s, or would resu
 </td></tr>
 <tr valign="top"><td><code>dec</code></td>
 <td>
-<p> The decimal separator as in <code>utils::read.csv</code>. If not &quot;.&quot; (default) then usually &quot;,&quot;. See details. </p>
+<p> The decimal separator as in <code>utils::read.csv</code>. When <code>"auto"</code> (the default), an attempt is made to decide whether <code>"."</code> or <code>","</code> is more suitable for this input. See details. </p>
 </td></tr>
 <tr valign="top"><td><code>col.names</code></td>
 <td>
@@ -133,19 +134,23 @@ If type coercion results in an error, introduces <code>NA</code>s, or would resu
 </td></tr>
 <tr valign="top"><td><code>strip.white</code></td>
 <td>
-<p> default is <code>TRUE</code>. Strips leading and trailing whitespaces of unquoted fields. If <code>FALSE</code>, only header trailing spaces are removed. </p>
+<p> Logical, default <code>TRUE</code>, in which case leading and trailing whitespace is stripped from unquoted <code>"character"</code> fields. <code>"numeric"</code> fields are always stripped of leading and trailing whitespace.</p>
 </td></tr>
 <tr valign="top"><td><code>fill</code></td>
 <td>
-<p>logical (default is <code>FALSE</code>). If <code>TRUE</code> then in case the rows have unequal length, blank fields are implicitly filled.</p>
+<p>logical or integer (default is <code>FALSE</code>). If <code>TRUE</code> then in case the rows have unequal length, number of columns is estimated and blank fields are implicitly filled. If an integer is provided it is used as an upper bound for the number of columns. If <code>fill=Inf</code> then the whole file is read for detecting the number of columns. </p>
 </td></tr>
 <tr valign="top"><td><code>blank.lines.skip</code></td>
 <td>
 <p><code>logical</code>, default is <code>FALSE</code>. If <code>TRUE</code> blank lines in the input are ignored.</p>
 </td></tr>
+<tr valign="top"><td><code>comment.char</code></td>
+<td>
+<p>Character vector of length one containing a single character of an empty string. Any text after the comment character in a line is ignored, including skipping comment-only lines. Use <code>""</code> to turn off the interpretation of comments altogether.</p>
+</td></tr>
 <tr valign="top"><td><code>key</code></td>
 <td>
-<p>Character vector of one or more column names which is passed to <code><a href="../../data.table/help/setkey.html">setkey</a></code>. It may be a single comma separated string such as <code>key="x,y,z"</code>, or a vector of names such as <code>key=c("x","y","z")</code>. Only valid when argument <code>data.table=TRUE</code>. Where applicable, this should refer to column names given in <code>col.names</code>. </p>
+<p>Character vector of one or more column names which is passed to <code><a href="../../data.table/help/setkey.html">setkey</a></code>. Only valid when argument <code>data.table=TRUE</code>. Where applicable, this should refer to column names given in <code>col.names</code>. </p>
 </td></tr>
 <tr valign="top"><td><code>index</code></td>
 <td>
@@ -167,6 +172,10 @@ If type coercion results in an error, introduces <code>NA</code>s, or would resu
 <td>
 <p>If TRUE a column containing only 0s and 1s will be read as logical, otherwise as integer.</p>
 </td></tr>
+<tr valign="top"><td><code>logicalYN</code></td>
+<td>
+<p>If TRUE a column containing only Ys and Ns will be read as logical, otherwise as character.</p>
+</td></tr>
 <tr valign="top"><td><code>keepLeadingZeros</code></td>
 <td>
 <p>If TRUE a column containing numeric data with leading zeros will be read as character, otherwise leading zeros will be removed and converted to numeric.</p>
@@ -175,17 +184,13 @@ If type coercion results in an error, introduces <code>NA</code>s, or would resu
 <td>
 <p> If <code>TRUE</code>, <code>fread</code> will attempt to parse (using <code><a href="../../yaml/help/yaml.load.html">yaml.load</a></code>) the top of the input as YAML, and further to glean parameters relevant to improving the performance of <code>fread</code> on the data itself. The entire YAML section is returned as parsed into a <code>list</code> in the <code>yaml_metadata</code> attribute. See <code>Details</code>. </p>
 </td></tr>
-<tr valign="top"><td><code>autostart</code></td>
-<td>
-<p> Deprecated and ignored with warning. Please use <code>skip</code> instead. </p>
-</td></tr>
 <tr valign="top"><td><code>tmpdir</code></td>
 <td>
 <p> Directory to use as the <code>tmpdir</code> argument for any <code>tempfile</code> calls, e.g. when the input is a URL or a shell command. The default is <code>tempdir()</code> which can be controlled by setting <code>TMPDIR</code> before starting the R session; see <code><a href="../../base/help/tempfile.html">base::tempdir</a></code>. </p>
 </td></tr>
 <tr valign="top"><td><code>tz</code></td>
 <td>
-<p> Relevant to datetime values which have no Z or UTC-offset at the end, i.e. <em>unmarked</em> datetime, as written by <code><a href="../../utils/help/write.table.html">utils::write.csv</a></code>. The default <code>tz="UTC"</code> reads unmarked datetime as UTC POSIXct efficiently. <code>tz=""</code> reads unmarked datetime as type character (slowly) so that <code>as.POSIXct</code> can interpret (slowly) the character datetimes in local timezone; e.g. by using <code>"POSIXct"</code> in <code>colClasses=</code>. Note that <code>fwrite()</code> by default writes datetime in UTC including the final Z and therefore <code>fwrite</code>'s output will be read by <code>fread</code> consistently and quickly without needing to use <code>tz=</code> or <code>colClasses=</code>. If the <code>TZ</code> environment variable is set to <code>"UTC"</code> (or <code>""</code> on non-Windows where unset vs &lsquo;&quot;&quot;' is significant) then the R session&rsquo;s timezone is already UTC and <code>tz=""</code> will result in unmarked datetimes being read as UTC POSIXct. For more information, please see the news items from v1.13.0 and v1.14.0. </p>
+<p> Relevant to datetime values which have no Z or UTC-offset at the end, i.e. <em>unmarked</em> datetime, as written by <code><a href="../../utils/help/write.table.html">utils::write.csv</a></code>. The default <code>tz="UTC"</code> reads unmarked datetime as UTC POSIXct efficiently. <code>tz=""</code> reads unmarked datetime as type character (slowly) so that <code>as.POSIXct</code> can interpret (slowly) the character datetimes in local timezone; e.g. by using <code>"POSIXct"</code> in <code>colClasses=</code>. Note that <code>fwrite()</code> by default writes datetime in UTC including the final Z and therefore <code>fwrite</code>'s output will be read by <code>fread</code> consistently and quickly without needing to use <code>tz=</code> or <code>colClasses=</code>. If the <code>TZ</code> environment variable is set to <code>"UTC"</code> (or <code>""</code> on non-Windows where unset vs <code>""</code> is significant) then the R session's timezone is already UTC and <code>tz=""</code> will result in unmarked datetimes being read as UTC POSIXct. For more information, please see the news items from v1.13.0 and v1.14.0. </p>
 </td></tr>
 </table>
 
@@ -194,7 +199,7 @@ If type coercion results in an error, introduces <code>NA</code>s, or would resu
 
 <p>A sample of 10,000 rows is used for a very good estimate of column types. 100 contiguous rows are read from 100 equally spaced points throughout the file including the beginning, middle and the very end. This results in a better guess when a column changes type later in the file (e.g. blank at the beginning/only populated near the end, or 001 at the start but 0A0 later on). This very good type guess enables a single allocation of the correct type up front once for speed, memory efficiency and convenience of avoiding the need to set <code>colClasses</code> after an error. Even though the sample is large and jumping over the file, it is almost instant regardless of the size of the file because a lazy on-demand memory map is used. If a jump lands inside a quoted field containing newlines, each newline is tested until 5 lines are found following it with the expected number of fields. The lowest type for each column is chosen from the ordered list: <code>logical</code>, <code>integer</code>, <code>integer64</code>, <code>double</code>, <code>character</code>. Rarely, the file may contain data of a higher type in rows outside the sample (referred to as an out-of-sample type exception). In this event <code>fread</code> will <em>automatically</em> reread just those columns from the beginning so that you don't have the inconvenience of having to set <code>colClasses</code> yourself; particularly helpful if you have a lot of columns. Such columns must be read from the beginning to correctly distinguish &quot;00&quot; from &quot;000&quot; when those have both been interpreted as integer 0 due to the sample but 00A occurs out of sample. Set <code>verbose=TRUE</code> to see a detailed report of the logic deployed to read your file.
 </p>
-<p>There is no line length limit, not even a very large one. Since we are encouraging <code>list</code> columns (i.e. <code>sep2</code>) this has the potential to encourage longer line lengths. So the approach of scanning each line into a buffer first and then rescanning that buffer is not used. There are no buffers used in <code>fread</code>'s C code at all. The field width limit is limited by R itself: the maximum width of a character string (currently 2^31-1 bytes, 2GB).
+<p>There is no line length limit, not even a very large one. Since we are encouraging <code>list</code> columns (i.e. <code>sep2</code>) this has the potential to encourage longer line lengths. So the approach of scanning each line into a buffer first and then rescanning that buffer is not used. There are no buffers used in <code>fread</code>'s C code at all. The field width limit is limited by R itself: the maximum width of a character string (currently 2^31-1 bytes, 2GiB).
 </p>
 <p>The filename extension (such as .csv) is irrelevant for &quot;auto&quot; <code>sep</code> and <code>sep2</code>. Separator detection is entirely driven by the file contents. This can be useful when loading a set of different files which may not be named consistently, or may not have the extension .csv despite being csv. Some datasets have been collected over many years, one file per day for example. Sometimes the file name format has changed at some point in the past or even the format of the file itself. So the idea is that you can loop <code>fread</code> through a set of files and as long as each file is regular and delimited, <code>fread</code> can read them all. Whether they all stack is another matter but at least each one is read quickly without you needing to vary <code>colClasses</code> in <code>read.table</code> or <code>read.csv</code>.
 </p>
@@ -202,9 +207,9 @@ If type coercion results in an error, introduces <code>NA</code>s, or would resu
 </p>
 <p><b>Line endings:</b> All known line endings are detected automatically: <code>\n</code> (*NIX including Mac), <code>\r\n</code> (Windows CRLF), <code>\r</code> (old Mac) and <code>\n\r</code> (just in case). There is no need to convert input files first. <code>fread</code> running on any architecture will read a file from any architecture. Both <code>\r</code> and <code>\n</code> may be embedded in character strings (including column names) provided the field is quoted.
 </p>
-<p><b>Decimal separator and locale:</b> <code>fread(...,dec=",")</code> should just work. <code>fread</code> uses C function <code>strtod</code> to read numeric data; e.g., <code>1.23</code> or <code>1,23</code>. <code>strtod</code> retrieves the decimal separator (<code>.</code> or <code>,</code> usually) from the locale of the R session rather than as an argument passed to the <code>strtod</code> function. So for <code>fread(...,dec=",")</code> to work, <code>fread</code> changes this (and only this) R session's locale temporarily to a locale which provides the desired decimal separator.
+<p><b>Decimal separator:</b> <code>dec</code> is used to parse numeric fields as the separator between integral and fractional parts. When <code>dec='auto'</code>, during column type detection, when a field is a candidate for being numeric (i.e., parsing as lower types has already failed), <code>dec='.'</code> is tried, and, if it fails to create a numeric field, <code>dec=','</code> is tried. At the end of the sample lines, if more were successfully parsed with <code>dec=','</code>, <code>dec</code> is set to <code>','</code>; otherwise, <code>dec</code> is set to <code>'.'</code>.
 </p>
-<p>On Windows, &quot;French_France.1252&quot; is tried which should be available as standard (any locale with comma decimal separator would suffice) and on unix &quot;fr_FR.utf8&quot; (you may need to install this locale on unix). <code>fread()</code> is very careful to set the locale back again afterwards, even if the function fails with an error. The choice of locale is determined by <code>options()$datatable.fread.dec.locale</code>. This may be a <em>vector</em> of locale names and if so they will be tried in turn until the desired <code>dec</code> is obtained; thus allowing more than two different decimal separators to be selected. This is a new feature in v1.9.6 and is experimental. In case of problems, turn it off with <code>options(datatable.fread.dec.experiment=FALSE)</code>.
+<p>Automatic detection of <code>sep</code> occurs <em>prior</em> to column type detection &ndash; as such, it is possible that <code>sep</code> has been inferred to be <code>','</code>, in which case <code>dec</code> is set to <code>'.'</code>.
 </p>
 <p><b>Quotes:</b>
 </p>
@@ -253,6 +258,19 @@ If type coercion results in an error, introduces <code>NA</code>s, or would resu
 </p>
 <p>When <code>input</code> begins with http://, https://, ftp://, ftps://, or file://, <code>fread</code> detects this and <em>downloads</em> the target to a temporary file (at <code>tempfile()</code>) before proceeding to read the file as usual. URLS (ftps:// and https:// as well as ftp:// and http://) paths are downloaded with <code>download.file</code> and <code>method</code> set to <code>getOption("download.file.method")</code>, defaulting to <code>"auto"</code>; and file:// is downloaded with <code>download.file</code> with <code>method="internal"</code>. NB: this implies that for file://, even files found on the current machine will be &quot;downloaded&quot; (i.e., hard-copied) to a temporary file. See <code><a href="../../utils/html/download.file.html">download.file</a></code> for more details.
 </p>
+<p><b>Automatic Decompression:</b>
+</p>
+<p>In many cases, <code>fread</code> can automatically detect and decompress files with common compression extensions directly, without needing an explicit connection object or shell commands. This works by checking the file extension.
+</p>
+
+<ul>
+<li> <p><code>.gz</code> and <code>.bz2</code> are supported out of the box.
+</p>
+</li>
+<li> <p><code>.zip</code> is also supported. If the archive contains a single data file, <code>fread</code> will read it. If the archive contains multiple files, <code>fread</code> will produce an error.
+</p>
+</li></ul>
+
 <p><b>Shell commands:</b>
 </p>
 <p><code>fread</code> accepts shell commands for convenience. The input command is run and its output written to a file in <code>tmpdir</code> (<code><a href="../../base/html/tempfile.html">tempdir</a>()</code> by default) to which <code>fread</code> is applied &quot;as normal&quot;. The details are platform dependent &ndash; <code>system</code> is used on UNIX environments, <code>shell</code> otherwise; see <code><a href="../../base/help/system.html">system</a></code>.
@@ -270,7 +288,6 @@ If type coercion results in an error, introduces <code>NA</code>s, or would resu
 <p>Background :<br />
 <a href="https://cran.r-project.org/doc/manuals/R-data.html">https://cran.r-project.org/doc/manuals/R-data.html</a><br />
 <a href="https://stackoverflow.com/questions/1727772/quickly-reading-very-large-tables-as-dataframes-in-r">https://stackoverflow.com/questions/1727772/quickly-reading-very-large-tables-as-dataframes-in-r</a><br />
-<a href="https://cerebralmastication.com/2009/11/loading-big-data-into-r/">https://cerebralmastication.com/2009/11/loading-big-data-into-r/</a><br />
 <a href="https://stackoverflow.com/questions/9061736/faster-than-scan-with-rcpp">https://stackoverflow.com/questions/9061736/faster-than-scan-with-rcpp</a><br />
 <a href="https://stackoverflow.com/questions/415515/how-can-i-read-and-manipulate-csv-file-data-in-c">https://stackoverflow.com/questions/415515/how-can-i-read-and-manipulate-csv-file-data-in-c</a><br />
 <a href="https://stackoverflow.com/questions/9352887/strategies-for-reading-in-csv-files-in-pieces">https://stackoverflow.com/questions/9352887/strategies-for-reading-in-csv-files-in-pieces</a><br />
@@ -280,9 +297,9 @@ If type coercion results in an error, introduces <code>NA</code>s, or would resu
 <a href="https://stackoverflow.com/a/9818473/403310">https://stackoverflow.com/a/9818473/403310</a><br />
 <a href="https://stackoverflow.com/questions/9608950/reading-huge-files-using-memory-mapped-files">https://stackoverflow.com/questions/9608950/reading-huge-files-using-memory-mapped-files</a>
 </p>
-<p>finagler = &quot;to get or achieve by guile or manipulation&quot; <a href="https://dictionary.reference.com/browse/finagler">https://dictionary.reference.com/browse/finagler</a>
+<p>finagle = &quot;to obtain (something) by indirect or involved means&quot;, <a href="https://www.merriam-webster.com/dictionary/finagler">https://www.merriam-webster.com/dictionary/finagler</a>
 </p>
-<p>On YAML, see <a href="https://yaml.org/">https://yaml.org/</a>; on csvy, see <a href="https://github.com/csvy">https://github.com/csvy</a>.
+<p>On YAML, see <a href="https://yaml.org/">https://yaml.org/</a>.
 </p>
 
 
@@ -379,8 +396,8 @@ DT[2,e:=+Inf]
 DT[3,e:=-Inf]
 
 write.table(DT,"test.csv",sep=",",row.names=FALSE,quote=FALSE)
-cat("File size (MB):", round(file.info("test.csv")$size/1024^2),"\n")
-# 50 MB (1e6 rows x 6 columns)
+cat("File size (MiB):", round(file.info("test.csv")$size/1024^2),"\n")
+# 50 MiB (1e6 rows x 6 columns)
 
 system.time(DF1 &lt;-read.csv("test.csv",stringsAsFactors=FALSE))
 # 5.4 sec (first time in fresh R session)
@@ -405,13 +422,15 @@ l = vector("list",10)
 for (i in 1:10) l[[i]] = DT
 DTbig = rbindlist(l)
 tables()
-write.table(DTbig,"testbig.csv",sep=",",row.names=FALSE,quote=FALSE)
-# 500MB csv (10 million rows x 6 columns)
+write.table(DTbig, "testbig.csv", sep=",", row.names=FALSE, quote=FALSE)
+# ~500MiB csv (10 million rows x 6 columns)
 
-system.time(DF &lt;- read.table("testbig.csv",header=TRUE,sep=",",
-    quote="",stringsAsFactors=FALSE,comment.char="",nrows=1e7,
-    colClasses=c("integer","integer","numeric",
-                 "character","numeric","integer")))
+system.time({
+  DF &lt;- read.table("testbig.csv", header=TRUE, sep=",",
+    quote="", stringsAsFactors=FALSE, comment.char="", nrows=1e7,
+    colClasses=c("integer", "integer", "numeric",
+                 "character", "numeric", "integer"))
+})
 # 17.0 sec (varies)
 
 system.time(DT &lt;- fread("testbig.csv"))
@@ -431,5 +450,5 @@ fread("https://github.com/Rdatatable/data.table/raw/1.14.0/inst/tests/issue_785_
 ## End(Not run)
 </pre>
 
-<hr /><div style="text-align: center;">[Package <em>data.table</em> version 1.15.4 <a href="00Index.html">Index</a>]</div>
+<hr /><div style="text-align: center;">[Package <em>data.table</em> version 1.18.2.1 <a href="00Index.html">Index</a>]</div>
 </div></body></html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Edgeset Constructors for Network Objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for edgeset.constructors {network}"><tr><td>edgeset.constructors {network}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Edgeset Constructors for Network Objects</h2>
+
+<h3>Description</h3>
+
+<p>These functions convert relational data in matrix form to
+network edge sets.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+network.bipartite(x, g, ignore.eval = TRUE, names.eval = NULL, ...)
+
+network.adjacency(x, g, ignore.eval = TRUE, names.eval = NULL, ...)
+
+network.edgelist(x, g, ignore.eval = TRUE, names.eval = NULL, ...)
+
+network.incidence(x, g, ignore.eval = TRUE, names.eval = NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>a matrix containing edge information</p>
+</td></tr>
+<tr valign="top"><td><code>g</code></td>
+<td>
+<p>an object of class <code>network</code></p>
+</td></tr>
+<tr valign="top"><td><code>ignore.eval</code></td>
+<td>
+<p>logical; ignore edge value information in x?</p>
+</td></tr>
+<tr valign="top"><td><code>names.eval</code></td>
+<td>
+<p>a name for the edge attribute under which to store edge
+values, if any</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>possible additional arguments (such as <code>edge.check</code>)</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Each of the above functions takes a <code>network</code> and a matrix
+as input, and modifies the supplied <code>network</code> object by adding the
+appropriate edges.  <code>network.adjacency</code> takes <code>x</code> to be an
+adjacency matrix; <code>network.edgelist</code> takes <code>x</code> to be an edgelist
+matrix; and <code>network.incidence</code> takes <code>x</code> to be an incidence
+matrix.  <code>network.bipartite</code> takes <code>x</code> to be a two-mode
+adjacency matrix where rows and columns reflect each respective mode
+(conventionally, actors and events); If <code>ignore.eval==FALSE</code>,
+(non-zero) edge values are stored as edgewise attributes with name
+<code>names.eval</code>.  The <code>edge.check</code> argument can be added via
+<code>...</code> and will be passed to <code><a href="../../network/help/add.edges.html">add.edges</a></code>.
+</p>
+<p>Edgelist matrices to be used with <code>network.edgelist</code> should have one
+row per edge, with the first two columns indicating the sender and
+receiver of each edge (respectively).  Edge values may be provided in
+additional columns. The edge attributes will be created with names
+corresponding to the column names unless alternate names are provided via
+<code>names.eval</code>. The vertices specified in the first two columns, which
+can be characters, are added to the network in default sort order. The
+edges are added in the order specified by the edgelist matrix.
+</p>
+<p>Incidence matrices should contain one row per vertex, with one column per
+edge. A non-zero entry in the matrix means that the edge with the id
+corresponding to the column index will have an incident vertex with an
+id corresponding to the row index. In the directed case, negative cell
+values are taken to indicate tail vertices, while positive values
+indicate head vertices.
+</p>
+<p>Results similar to <code>network.adjacency</code> can also be obtained by means
+of extraction/replacement operators.  See the associated man page for
+details.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Invisibly, an object of class <code>network</code>; these functions modify
+their argument in place.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Carter T. Butts <a href="mailto:buttsc@uci.edu">buttsc@uci.edu</a> and David Hunter
+<a href="mailto:dhunter@stat.psu.edu">dhunter@stat.psu.edu</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Butts, C. T.  (2008).  &ldquo;network: a Package for Managing
+Relational Data in R.&rdquo;  <em>Journal of Statistical Software</em>, 24(2).
+doi: <a href="https://doi.org/10.18637/jss.v024.i02">10.18637/jss.v024.i02</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../network/help/loading.attributes.html">loading.attributes</a></code>, <code><a href="../../network/help/network.html">network</a></code>,
+<code><a href="../../network/help/network.initialize.html">network.initialize</a></code>, <code><a href="../../network/help/add.edges.html">add.edges</a></code>,
+<code><a href="../../network/help/network.extraction.html">network.extraction</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+#Create an arbitrary adjacency matrix
+m&lt;-matrix(rbinom(25,1,0.5),5,5)
+diag(m)&lt;-0
+
+g&lt;-network.initialize(5)    #Initialize the network
+network.adjacency(m,g)      #Import the edge data
+
+#Do the same thing, using replacement operators
+g&lt;-network.initialize(5)
+g[,]&lt;-m
+
+# load edges from a data.frame via network.edgelist
+edata &lt;-data.frame(
+  tails=c(1,2,3),
+  heads=c(2,3,1),
+  love=c('yes','no','maybe'),
+  hate=c(3,-5,2),
+  stringsAsFactors=FALSE
+  )
+
+g&lt;-network.edgelist(edata,network.initialize(4),ignore.eval=FALSE)
+as.sociomatrix(g,attrname='hate')
+g%e%'love'
+
+# load edges from an incidence matrix
+inci&lt;-matrix(c(1,1,0,0, 0,1,1,0, 1,0,1,0),ncol=3,byrow=FALSE)
+inci
+g&lt;-network.incidence(inci,network.initialize(4,directed=FALSE))
+as.matrix(g)
+
+
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>network</em> version 1.20.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

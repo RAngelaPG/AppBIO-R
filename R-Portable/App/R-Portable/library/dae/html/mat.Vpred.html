@@ -1,0 +1,140 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Calculates the variances of a set of predicted effects from a...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mat.Vpred {dae}"><tr><td>mat.Vpred {dae}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Calculates the variances of a set of predicted effects from a mixed model</h2>
+
+<h3>Description</h3>
+
+<p>For <code>n</code> observations, <code>w</code> effects to be predicted, 
+<code>f</code> nuiscance fixed effects and <code>r</code> nuisance random effects, 
+the variances of a set of predicted effects is calculated using  
+the incidence matrix for the effects to be predicted and, optionally, 
+a variance matrix of the effects, an incidence matrix for the 
+nuisance fixed factors and covariates, the variance matrix of the nuisance 
+random effects in the mixed model and the residual variance matrix.
+</p>
+<p>This function has been superseded by <code><a href="../../dae/help/mat.Vpredicts.html">mat.Vpredicts</a></code>, which 
+allows the use of both matrices and <code><a href="../../stats/html/formula.html">formula</a></code>e.</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+mat.Vpred(W, Gg = 0, X = matrix(1, nrow = nrow(W), ncol = 1), Vu = 0, R, eliminate)</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>W</code></td>
+<td>
+<p>The <code>n x w</code> incidence <code><a href="../../base/html/matrix.html">matrix</a></code> for the <code>w</code> effects 
+to be predicted.</p>
+</td></tr>
+<tr valign="top"><td><code>Gg</code></td>
+<td>
+<p>The <code>w x w</code> variance <code><a href="../../base/html/matrix.html">matrix</a></code> of the <code>w</code> effects 
+to be predicted. 
+If the effects to be predicted are fixed, set to 0.</p>
+</td></tr>
+<tr valign="top"><td><code>X</code></td>
+<td>
+<p>The <code>n x f</code> incidence <code><a href="../../base/html/matrix.html">matrix</a></code> for the <code>f</code> nuisance 
+fixed factors and covariates. The default is a column vector of ones.</p>
+</td></tr>
+<tr valign="top"><td><code>Vu</code></td>
+<td>
+<p>The <code>n x r</code> variance <code><a href="../../base/html/matrix.html">matrix</a></code> of the <code>r</code> nuisance 
+random effects. If there are none, set to zero.</p>
+</td></tr>
+<tr valign="top"><td><code>R</code></td>
+<td>
+<p>The residual variance <code><a href="../../base/html/matrix.html">matrix</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>eliminate</code></td>
+<td>
+<p>The <code>n x n</code> <code><a href="../../dae/help/projector.html">projector</a></code> onto the subspace 
+corresponding to the effects to be eliminated from the information matrix 
+prior to inverting it to form the variance <code><a href="../../base/html/matrix.html">matrix</a></code> of the 
+predicted effects. It is only appropriate to use this option when the 
+effects to be predicted are fixed.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Firstly the information matrix is calculated as <br />
+<code>A &lt;- t(W) %*% Vinv %*% W + ginv(Gg) - A%*%ginv(t(X)%*%Vinv%*%X)%*%t(A)</code>, 
+where <code>Vinv &lt;- ginv(Vu + R)</code>, <code>A = t(W) %*% Vinv %*% X</code> and ginv(B) is the unique Moore-Penrose inverse of B formed using the eigendecomposition of B.
+</p>
+<p>If <code>eliminate</code> is set and the effects to be predicted are fixed then the reduced information matrix is calculated as <code>A &lt;- (I - eliminate) Vinv (I - eliminate)</code>.
+</p>
+<p>Finally, the variance of the predicted effects is calculated: <code>Vpred &lt;- ginv(A)</code>.</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>w x w</code> <code><a href="../../base/html/matrix.html">matrix</a></code> containing the variances and covariances of the 
+predicted effects.</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Chris Brien</p>
+
+
+<h3>References</h3>
+
+<p>Smith, A. B., D. G. Butler, C. R. Cavanagh and B. R. Cullis (2015). 
+Multi-phase variety trials using both composite and individual replicate 
+samples: a model-based design approach. 
+<em>Journal of Agricultural Science</em>, <b>153</b>, 1017-1029.</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../dae/help/designAmeasures.html">designAmeasures</a></code>, <code><a href="../../dae/help/mat.Vpredicts.html">mat.Vpredicts</a></code>.</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Reduced example from Smith et al. (2015)
+## Generate two-phase design
+mill.fac &lt;- fac.gen(list(Mrep = 2, Mday = 2, Mord = 3))
+field.lay &lt;- fac.gen(list(Frep = 2, Fplot = 4))
+field.lay$Variety &lt;- factor(c("D","E","Y","W","G","D","E","M"), 
+                            levels = c("Y","W","G","M","D","E"))
+start.design &lt;- cbind(mill.fac, field.lay[c(3,4,5,8,1,7,3,4,5,8,6,2),])
+rownames(start.design) &lt;- NULL
+
+## Set up matrices
+n &lt;- nrow(start.design)
+W &lt;- model.matrix(~ -1+ Variety, start.design)
+ng &lt;- ncol(W)
+Gg&lt;- diag(1, ng)
+Vu &lt;- with(start.design, fac.vcmat(Mrep, 0.3) + 
+                         fac.vcmat(fac.combine(list(Mrep, Mday)), 0.2) + 
+                         fac.vcmat(Frep, 0.1) + 
+                         fac.vcmat(fac.combine(list(Frep, Fplot)), 0.2))
+R &lt;- diag(1, n)
+  
+## Calculate the variance matrix of the predicted random Variety effects
+Vp &lt;- mat.Vpred(W = W, Gg = Gg, Vu = Vu, R = R)
+designAmeasures(Vp)
+
+## Calculate the variance matrix of the predicted fixed Variety effects, 
+## elminating the grand mean
+Vp.reduc &lt;- mat.Vpred(W = W, Gg = 0, Vu = Vu, R = R, 
+                      eliminate = projector(matrix(1, nrow = n, ncol = n)/n))
+designAmeasures(Vp.reduc)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>dae</em> version 3.2.32 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

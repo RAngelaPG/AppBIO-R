@@ -1,0 +1,252 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: ECM Algorithm for Mixtures of Regressions with Changepoints</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for segregmixEM {mixtools}"><tr><td>segregmixEM {mixtools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>ECM Algorithm for Mixtures of Regressions with Changepoints</h2>
+
+<h3>Description</h3>
+
+<p>Returns ECM algorithm output for mixtures of multiple regressions with
+changepoints and arbitrarily many components.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+segregmixEM(y, x, lambda = NULL, beta = NULL, sigma = NULL, 
+            k = 2, seg.Z, psi, psi.locs = NULL, delta = NULL, 
+            epsilon = 1e-08, maxit = 10000, verb = FALSE,
+            max.restarts = 15)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>An n-vector of response values.</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>An nxp matrix of predictors.  Note that this model assumes the presence of an intercept.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>Initial value of mixing proportions.  Entries should sum to
+1.  This determines number of components.  If NULL, then <code>lambda</code> is
+random from uniform Dirichlet and the number of
+components is determined by <code>beta</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>beta</code></td>
+<td>
+<p>Initial value of <code>beta</code> parameters.  This is a list of length <code>k</code> such that each element must contain a vector having length consistent with the defined changepoint structure. See <code>seg.Z</code>, <code>psi</code>, and <code>psi.loc</code> below. If NULL, then <code>beta</code> has standard normal entries according to a binning method done on the data.  If both
+<code>lambda</code> and <code>beta</code> are NULL, then number of components is determined by <code>sigma</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>sigma</code></td>
+<td>
+<p>A vector of standard deviations.  If NULL, then 1/<code>sigma</code>^2 has
+random standard exponential entries according to a binning method done on the data.
+If <code>lambda</code>, <code>beta</code>, and <code>sigma</code> are
+NULL, then number of components is determined by <code>k</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>k</code></td>
+<td>
+<p>Number of components.  Ignored unless all of <code>lambda</code>, <code>beta</code>, 
+and <code>sigma</code> are NULL.</p>
+</td></tr>
+<tr valign="top"><td><code>seg.Z</code></td>
+<td>
+<p>A list of length <code>k</code> whose elements are right-hand side formulas, which are additive linear models of the predictors that have changepoints in their respective components.  See below for more details.</p>
+</td></tr>
+<tr valign="top"><td><code>psi</code></td>
+<td>
+<p>A kxp matrix specifying the number of changepoints for each predictor in each component. See below for more details.</p>
+</td></tr>
+<tr valign="top"><td><code>psi.locs</code></td>
+<td>
+<p>A list of length <code>k</code> that has initial estimates for the changepoint locations.  Each element of the list must have length equal to the number of chanegpoints specified in the corresponding row of the <code>psi</code> matrix.  For components with no changepoints, simply set that element equal to NULL. See below for more details.</p>
+</td></tr>
+<tr valign="top"><td><code>delta</code></td>
+<td>
+<p>An optional list of values quantifying the amount of separation at each changepoint if assuming discontinuities at the changepoints.  This has the same dimensions as <code>psi.locs</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>epsilon</code></td>
+<td>
+<p>The convergence criterion.</p>
+</td></tr>
+<tr valign="top"><td><code>maxit</code></td>
+<td>
+<p>The maximum number of iterations.</p>
+</td></tr> 
+<tr valign="top"><td><code>verb</code></td>
+<td>
+<p>If TRUE, then various updates are printed during each iteration of the algorithm.</p>
+</td></tr> 
+<tr valign="top"><td><code>max.restarts</code></td>
+<td>
+<p>The number of times to try restarting the ECM algorithm if estimation problems occur - such as choice of poor initial values or a poorly chosen changepoint structure.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>seg.Z</code> is defined as a list of right-hand side linear model formulas that are used to identify which predictors have changepoints in each component.  For example, suppose you have a dataframe with three predictors: <code>V1</code>, <code>V2</code>, <code>V3</code>.  Suppose now that you wish to model a 3-component mixture of regressions with changepoints structure such that the first component has changepoints in V1 and V2, the second component has changepoints in <code>V3</code>, and the third component has no changepoints.  Then you would define <code>seg.Z = list(~V1+V2, ~V3, NULL)</code>.  Note that you MUST place the variables in order with respect to how they appear in the predictor matrix <code>x</code>.
+</p>
+<p><code>psi</code> is a kxp matrix specifying the number of changepoints for each predictor in each component.  For the example given above, suppose there are three changepoints for <code>V1</code>, two changepoints for <code>V2</code>, and four changepoints for <code>V3</code>.  Then you would define <code>psi = rbind(c(3, 2, 0), c(0, 0, 4), c(0, 0, 0))</code>.
+</p>
+<p><code>psi.locs</code> is a list of length k whose elements give the initial locations of the changepoints for each component.  Each element of the list must have length equal to the total number of changepoints for that component's regression equation.  For the example given above, in component 1, assume that the three changepoints for <code>V1</code> are at 3, 7, and 10 and the two changepoints for <code>V1</code> are at 5, 20, and 30.  In component 2, assume that the four changepoints for <code>V3</code> are at 2, 4, 6, and 8.  Then you would define <code>psi.locs = list(c(3, 7, 10, 5, 20, 30), c(2, 4, 6, 8), NULL)</code>.  Note that the order of the changepoints is determined by first sorting the predictors by how they appear in the formulas in <code>seg.Z</code> and then sorting in increasing order within each predictor.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>segregmixEM</code> returns a list of class <code>segregmixEM</code> with items:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>The set of predictors.</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>The response values.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>The final mixing proportions.</p>
+</td></tr>
+<tr valign="top"><td><code>beta</code></td>
+<td>
+<p>The final regression coefficients.</p>
+</td></tr>
+<tr valign="top"><td><code>sigma</code></td>
+<td>
+<p>The final standard deviations.</p>
+</td></tr>
+<tr valign="top"><td><code>seg.Z</code></td>
+<td>
+<p>The list of right-hand side formulas as defined by the user.</p>
+</td></tr>
+<tr valign="top"><td><code>psi.locs</code></td>
+<td>
+<p>A list of length k with the final estimates for the changepoint locations.</p>
+</td></tr>
+<tr valign="top"><td><code>delta</code></td>
+<td>
+<p>A list of the delta values that were optionally specified by the user.</p>
+</td></tr>
+<tr valign="top"><td><code>loglik</code></td>
+<td>
+<p>The final log-likelihood.</p>
+</td></tr>
+<tr valign="top"><td><code>posterior</code></td>
+<td>
+<p>An nxk matrix of posterior probabilities for
+observations.</p>
+</td></tr>
+<tr valign="top"><td><code>all.loglik</code></td>
+<td>
+<p>A vector of each iteration's log-likelihood.</p>
+</td></tr>
+<tr valign="top"><td><code>restarts</code></td>
+<td>
+<p>The number of times the algorithm restarted due to unacceptable choice of initial values.</p>
+</td></tr>
+<tr valign="top"><td><code>ft</code></td>
+<td>
+<p>A character vector giving the name of the function.</p>
+</td></tr>
+</table>
+
+
+<h3>Note</h3>
+
+<p>As of version 0.4.6, this more general function has replaced the now defunct <code>regmixEM.chgpt</code> and associated internal functions.
+</p>
+
+
+<h3>References</h3>
+
+<p>Young, D. S. (2014) Mixtures of Regressions with Changepoints, <em>Statistics and Computing</em>, <b>24(2)</b>, 265&ndash;281.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../mixtools/help/regmixEM.html">regmixEM</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+## Simulated example.
+
+set.seed(100)
+x &lt;- 1:20
+y1 &lt;- 3 + x + rnorm(20)
+y2 &lt;- 3 - x - 5*(x - 15)*(x &gt; 15) + rnorm(20)
+y &lt;- c(y1, y2)
+x &lt;- c(x, x)
+
+set.seed(100)
+be &lt;- list(c(3, -1, -5), c(3, 1))
+s &lt;- c(1, 1)
+psi.locs &lt;- list(comp.1 = list(x = 15), comp.2 = NULL)
+out &lt;- segregmixEM(y, cbind(1,x), verb = TRUE, k = 2,
+                   beta = be, sigma = s, lambda = c(1, 1)/2, 
+                   seg.Z = list(~x, NULL), psi = rbind(1, 0),
+                   psi.locs = psi.locs, epsilon = 0.9)
+
+z &lt;- seq(0, 21, len = 40)
+plot(x, y, col = apply(out$post, 1, which.max) + 1, pch = 19, 
+	   cex.lab = 1.4, cex = 1.4)
+b &lt;- out$beta
+d &lt;- out$psi.locs
+lines(z, b[[1]][1] + b[[1]][2] * z + b[[1]][3] * 
+      (z - d[[1]][[1]]) * (z &gt; d[[1]][[1]]) , col = 2, lwd = 2)
+lines(z, b[[2]][1] + b[[2]][2] * z, col = 3, lwd = 2)
+abline(v = out$psi.locs[[1]][1], col = 2, lty = 2)
+
+## End(Not run)
+
+## Not run: 
+## Example using the NOdata.
+ 
+data(NOdata)
+attach(NOdata)
+
+set.seed(100)
+be &lt;- list(c(1.30, -0.13, 0.08), c(0.56, 0.09))
+s &lt;- c(0.02, 0.04)
+psi.locs &lt;- list(comp.1 = list(NO = 1.57), comp.2 = NULL)
+out &lt;- segregmixEM(Equivalence, cbind(NO), verb = TRUE, k = 2,
+                   beta = be, sigma = s, lambda = c(1, 1)/2, 
+                   seg.Z = list(~NO, NULL), psi = rbind(1, 0),
+                   psi.locs = psi.locs, epsilon = 0.1)
+
+z &lt;- seq(0, 5, len = 1000)
+plot(NOdata, col = apply(out$post, 1, which.max) + 1, pch = 19, 
+	   cex.lab = 1.4, cex = 1.4, ylab = "Equivalence Ratio")
+b &lt;- out$beta
+d &lt;- out$psi.locs
+lines(z, b[[1]][1] + b[[1]][2] * z + b[[1]][3] * 
+      (z - d[[1]][[1]]) * (z &gt; d[[1]][[1]]) , col = 2, lwd = 2)
+lines(z, b[[2]][1] + b[[2]][2] * z, col = 3, lwd = 2)
+abline(v = out$psi.locs[[1]][1], col = 2, lty = 2)
+
+detach(NOdata)
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mixtools</em> version 2.0.0.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

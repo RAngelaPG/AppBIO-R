@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Estimation of class prior probabilities by EM algorithm</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for classPriorProbs {mclust}"><tr><td>classPriorProbs {mclust}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Estimation of class prior probabilities by EM algorithm</h2>
+
+<h3>Description</h3>
+
+<p>A simple procedure to improve the estimation of class prior probabilities when the training data does not reflect the true a priori probabilities of the target classes. The EM algorithm used is described in Saerens et al (2002).</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+classPriorProbs(object, newdata = object$data, 
+                itmax = 1e3, eps = sqrt(.Machine$double.eps))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+
+<p>an object of class <code>'MclustDA'</code> resulting from a call to <code><a href="../../mclust/help/MclustDA.html">MclustDA</a></code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>newdata</code></td>
+<td>
+
+<p>a data frame or matrix giving the data. If missing the train data obtained from the call to <code><a href="../../mclust/help/MclustDA.html">MclustDA</a></code> are used.
+</p>
+</td></tr>
+<tr valign="top"><td><code>itmax</code></td>
+<td>
+
+<p>an integer value specifying the maximal number of EM iterations.
+</p>
+</td></tr>
+<tr valign="top"><td><code>eps</code></td>
+<td>
+
+<p>a scalar specifying the tolerance associated with deciding when to 
+terminate the EM iterations. 
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The estimation procedure employes an EM algorithm as described in Saerens et al (2002). 
+</p>
+
+
+<h3>Value</h3>
+
+<p>A vector of class prior estimates which can then be used in the <code><a href="../../mclust/help/predict.MclustDA.html">predict.MclustDA</a></code> to improve predictions.</p>
+
+
+<h3>References</h3>
+
+<p>Saerens, M., Latinne, P. and Decaestecker, C. (2002) Adjusting the outputs of a classifier to new a priori probabilities: a simple procedure, <em>Neural computation</em>, 14 (1), 21&ndash;41.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../mclust/help/MclustDA.html">MclustDA</a></code>, <code><a href="../../mclust/help/predict.MclustDA.html">predict.MclustDA</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# generate data from a mixture f(x) = 0.9 * N(0,1) + 0.1 * N(3,1)
+n &lt;- 10000
+mixpro &lt;- c(0.9, 0.1)
+class &lt;- factor(sample(0:1, size = n, prob = mixpro, replace = TRUE))
+x &lt;- ifelse(class == 1, rnorm(n, mean = 3, sd = 1), 
+                        rnorm(n, mean = 0, sd = 1))
+
+hist(x[class==0], breaks = 11, xlim = range(x), main = "", xlab = "x", 
+     col = adjustcolor("dodgerblue2", alpha.f = 0.5), border = "white")
+hist(x[class==1], breaks = 11, add = TRUE,
+     col = adjustcolor("red3", alpha.f = 0.5), border = "white")
+box()
+
+# generate training data from a balanced case-control sample, i.e.
+# f(x) = 0.5 * N(0,1) + 0.5 * N(3,1)
+n_train &lt;- 1000
+class_train &lt;- factor(sample(0:1, size = n_train, prob = c(0.5, 0.5), replace = TRUE))
+x_train &lt;- ifelse(class_train == 1, rnorm(n_train, mean = 3, sd = 1), 
+                                    rnorm(n_train, mean = 0, sd = 1))
+
+hist(x_train[class_train==0], breaks = 11, xlim = range(x_train), 
+     main = "", xlab = "x", 
+     col = adjustcolor("dodgerblue2", alpha.f = 0.5), border = "white")
+hist(x_train[class_train==1], breaks = 11, add = TRUE,
+     col = adjustcolor("red3", alpha.f = 0.5), border = "white")
+box()
+
+# fit a MclustDA model
+mod &lt;- MclustDA(x_train, class_train)
+summary(mod, parameters = TRUE)
+
+# test set performance
+pred &lt;- predict(mod, newdata = x)
+classError(pred$classification, class)$error
+BrierScore(pred$z, class)
+
+# compute performance over a grid of prior probs
+priorProp &lt;- seq(0.01, 0.99, by = 0.01)
+CE &lt;- BS &lt;- rep(as.double(NA), length(priorProp))
+for(i in seq(priorProp))
+{
+  pred &lt;- predict(mod, newdata = x, prop = c(1-priorProp[i], priorProp[i]))
+  CE[i] &lt;- classError(pred$classification, class = class)$error
+  BS[i] &lt;- BrierScore(pred$z, class)
+}
+
+# estimate the optimal class prior probs
+(priorProbs &lt;- classPriorProbs(mod, x))
+pred &lt;- predict(mod, newdata = x, prop = priorProbs)
+# compute performance at the estimated class prior probs
+classError(pred$classification, class = class)$error
+BrierScore(pred$z, class)
+
+matplot(priorProp, cbind(CE,BS), type = "l", lty = 1, lwd = 2,
+        xlab = "Class prior probability", ylab = "", ylim = c(0,max(CE,BS)), 
+        panel.first = 
+          { abline(h = seq(0,1,by=0.05), col = "grey", lty = 3)
+            abline(v = seq(0,1,by=0.05), col = "grey", lty = 3) 
+          })
+abline(v = mod$prop[2], lty = 2)              # training prop
+abline(v = mean(class==1), lty = 4)           # test prop (usually unknown) 
+abline(v = priorProbs[2], lty = 3, lwd = 2)      # estimated prior probs
+legend("topleft", legend = c("ClassError", "BrierScore"),
+       col = 1:2, lty = 1, lwd = 2, inset = 0.02)
+
+# Summary of results:
+priorProp[which.min(CE)] # best prior of class 1 according to classification error
+priorProp[which.min(BS)] # best prior of class 1 according to Brier score
+priorProbs               # optimal estimated class prior probabilities
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mclust</em> version 6.1.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

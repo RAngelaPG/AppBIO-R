@@ -1,0 +1,139 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Freshwater fish zoogeography in west Africa</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for westafrica {ade4}"><tr><td>westafrica {ade4}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Freshwater fish zoogeography in west Africa</h2>
+
+<h3>Description</h3>
+
+<p>This data set contains informations about faunal similarities between river basins in West africa.  
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>data(westafrica)</pre>
+
+
+<h3>Format</h3>
+
+<p><code>westafrica</code> is a list containing the following objects : 
+</p>
+
+<dl>
+<dt>tab</dt><dd><p>: a data frame with absence/presence of 268 species (rows) at 33 embouchures (columns)</p>
+</dd>
+<dt>spe.names</dt><dd><p>: a vector of string of characters with the name of species</p>
+</dd>
+<dt>spe.binames</dt><dd><p>: a data frame with the genus and species (columns) of the 256 species (rows)</p>
+</dd>
+<dt>riv.names</dt><dd><p>: a vector of string of characters with the name of rivers</p>
+</dd>
+<dt>atlantic</dt><dd><p>: a data frame with the coordinates of a polygon that represents the limits of atlantic (see example)</p>
+</dd>
+<dt>riv.xy</dt><dd><p>: a data frame with the coordinates of embouchures</p>
+</dd>
+<dt>lines</dt><dd><p>: a data frame with the coordinates of lines to complete the representation (see example)</p>
+</dd>
+<dt>cadre</dt><dd><p>: a data frame with the coordinates of points used to make the representation (see example)</p>
+</dd>   
+</dl>
+
+
+<h3>Source</h3>
+
+<p>Data provided by B. Hugueny <a href="mailto:hugueny@mnhn.fr">hugueny@mnhn.fr</a>.
+</p>
+<p>Paugy, D., Traoré, K. and Diouf, P.F. (1994) Faune ichtyologique des eaux douces d'Afrique de l'Ouest. 
+In <em>Diversité biologique des poissons des eaux douces et saumâtres d'Afrique. Synthèses géographiques</em>, 
+Teugels, G.G., Guégan, J.F. and Albaret, J.J. (Editors). Annales du Musée Royal de l'Afrique Centrale,  
+Zoologie, <b>275</b>, Tervuren, Belgique, 35&ndash;66.
+</p>
+<p>Hugueny, B. (1989) <em>Biogéographie et structure des peuplements de Poissons d'eau douce de l'Afrique de l'ouest : 
+approches quantitatives</em>. Thèse de doctorat, Université Paris 7.
+</p>
+
+
+<h3>References</h3>
+
+<p>Hugueny, B., and Lévêque, C. (1994) Freshwater fish zoogeography in west Africa: 
+faunal similarities between river basins. <em>Environmental Biology of Fishes</em>, <b>39</b>, 365&ndash;380.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(westafrica)
+
+if(!adegraphicsLoaded()) {
+  s.label(westafrica$cadre, xlim = c(30, 500), ylim = c(50, 290),
+    cpoi = 0, clab = 0, grid = FALSE, addax = 0)
+  old.par &lt;- par(no.readonly = TRUE)
+  par(mar = c(0.1, 0.1, 0.1, 0.1))
+  rect(30, 0, 500, 290)
+  polygon(westafrica$atlantic, col = "lightblue")
+  points(westafrica$riv.xy, pch = 20, cex = 1.5)
+  apply(westafrica$lines, 1, function(x) segments(x[1], x[2], x[3], x[4], lwd = 1))
+  apply(westafrica$riv.xy,1, function(x) segments(x[1], x[2], x[3], x[4], lwd = 1))
+  text(c(175, 260, 460, 420), c(275, 200, 250, 100), c("Senegal", "Niger", "Niger", "Volta"))
+  par(srt = 270)
+  text(westafrica$riv.xy$x2, westafrica$riv.xy$y2-10, westafrica$riv.names, adj = 0, cex = 0.75)
+  par(old.par)
+  rm(old.par)
+}
+
+# multivariate analysis
+afri.w &lt;- data.frame(t(westafrica$tab))
+afri.dist &lt;- dist.binary(afri.w,1)
+afri.pco &lt;- dudi.pco(afri.dist, scannf = FALSE, nf = 3)
+if(adegraphicsLoaded()) {
+  G1 &lt;- s1d.barchart(afri.pco$li[, 1:3], p1d.horizontal = FALSE, plabels.cex = 0)
+} else {
+  par(mfrow = c(3, 1))
+  barplot(afri.pco$li[, 1])
+  barplot(afri.pco$li[, 2])
+  barplot(afri.pco$li[, 3])
+}
+
+if(requireNamespace("spdep", quietly = TRUE) &amp; requireNamespace("adespatial", quietly = TRUE)) {
+  # multivariate spatial analysis
+  afri.neig &lt;- neig(n.line = 33)
+  afri.nb &lt;- neig2nb(afri.neig)
+  afri.listw &lt;- spdep::nb2listw(afri.nb)
+  afri.ms &lt;- adespatial::multispati(afri.pco, afri.listw, scannf = FALSE, nfposi = 6, nfnega = 0)
+  
+  if(adegraphicsLoaded()) {
+    G2 &lt;- s1d.barchart(afri.ms$li[, 1:3], p1d.horizontal = FALSE, plabels.cex = 0)
+    
+    g31 &lt;- s.label(afri.ms$li, plabels.cex = 0.75, ppoints.cex = 0, nb = afri.nb, plot = FALSE)
+    g32 &lt;- s.value(afri.ms$li, afri.ms$li[, 3], plot = FALSE)
+    g33 &lt;- s.value(afri.ms$li, afri.ms$li[, 4], plot = FALSE)
+    g34 &lt;- s.value(afri.ms$li, afri.ms$li[, 5], plot = FALSE)
+    G3 &lt;- ADEgS(list(g31, g32, g33, g34), layout = c(2, 2))
+    
+  } else {
+    par(mfrow = c(3, 1))
+    barplot(afri.ms$li[, 1])
+    barplot(afri.ms$li[, 2])
+    barplot(afri.ms$li[, 3])
+    
+    par(mfrow = c(2, 2))
+    s.label(afri.ms$li, clab = 0.75, cpoi = 0, neig = afri.neig, cneig = 1.5)
+    s.value(afri.ms$li, afri.ms$li[, 3])
+    s.value(afri.ms$li, afri.ms$li[, 4])
+    s.value(afri.ms$li, afri.ms$li[, 5])
+  }
+  summary(afri.ms)
+}
+
+par(mfrow = c(1, 1))
+plot(hclust(afri.dist, "ward.D"), h = -0.2)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ade4</em> version 1.7-23 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

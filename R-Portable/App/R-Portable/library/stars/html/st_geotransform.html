@@ -1,0 +1,86 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: get or set the geotransform, or rotation matrix</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for st_geotransform {stars}"><tr><td>st_geotransform {stars}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>get or set the geotransform, or rotation matrix</h2>
+
+<h3>Description</h3>
+
+<p>get or set the geotransform, or rotation matrix
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+st_geotransform(x, ...)
+
+st_geotransform(x) &lt;- value
+
+## S3 replacement method for class 'stars'
+st_geotransform(x) &lt;- value
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>object of class stars or dimensions</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>ignored</p>
+</td></tr>
+<tr valign="top"><td><code>value</code></td>
+<td>
+<p>length 6 numeric vector, or 2 x 2 (scaled) rotation matrix</p>
+</td></tr>
+</table>
+
+
+<h3>Examples</h3>
+
+<pre>
+# using the "classical" rotation matrix, see https://en.wikipedia.org/wiki/Rotation_matrix :
+rot = function(theta, dxdy = c(1., -1.)) {
+   th = theta / 180 * pi
+   matrix(c(cos(th), sin(th), -sin(th), cos(th)), 2, 2) %*% 
+		   matrix(c(dxdy[2], 0, 0, dxdy[1]), 2, 2)
+}
+l = st_downsample(st_as_stars(L7_ETMs), 9) # save time in plotting
+st_geotransform(l) = rot(20, c(28.5, 28.5)) # clockwise, 20 degrees, scale by cell size
+plot(l[,,,1])
+m = rot(20, c(1, 2))
+g = expand.grid(x = 0:4, y = 0:4)
+plot(g[1:2], asp = 1)
+text(g[,1], g[,2], labels = seq_along(g[,1]), pos = 4)
+g = t(m %*% t(as.matrix(g)))
+points(g, col = 'red')
+text(g[,1], g[,2], labels = seq_along(g[,1]), pos = 4, col = 'red')
+
+m = matrix(1:20, 4)
+s0 = st_as_stars(m)
+s = s0
+# dy &gt; 0, clockwise rotation:
+st_geotransform(s) = rot(10, c(1,1))
+plot(s0, reset = FALSE)
+plot(s, add = TRUE)
+# dy &lt; 0, counter clockwise rotation, + expansion in x-direction:
+layout(1)
+s0 = st_as_stars(st_bbox(s0), dx = 1)
+s0$values = 1:20
+s0
+plot(s0, reset = FALSE)
+s = s0
+st_geotransform(s) = rot(10, c(2,1))
+plot(s, add = TRUE)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>stars</em> version 0.7-1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

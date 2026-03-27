@@ -22,7 +22,9 @@
 namespace boost {
 namespace beast {
 
-/** Stream wrapper to improve write performance.
+/** (Deprecated: This wrapper is no longer needed; Asio linearizes
+    scatter/gather I/O in ssl::stream.) Stream wrapper to improve write
+    performance.
 
     This wrapper flattens writes for buffer sequences having length
     greater than 1 and total size below a predefined amount, using
@@ -93,7 +95,7 @@ class flat_stream
     NextLayer stream_;
     flat_buffer buffer_;
 
-    BOOST_STATIC_ASSERT(has_get_executor<NextLayer>::value);
+    BOOST_CORE_STATIC_ASSERT(has_get_executor<NextLayer>::value);
 
     struct ops;
 

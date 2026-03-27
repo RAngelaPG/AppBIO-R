@@ -1,3 +1,7 @@
+# httr 1.4.8
+
+* Fixes for `R CMD check`
+
 # httr 1.4.7
 
 * Add support for seeking in uploads (#741).

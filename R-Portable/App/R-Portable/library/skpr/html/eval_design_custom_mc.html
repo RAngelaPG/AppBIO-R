@@ -1,0 +1,216 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Monte Carlo power evaluation for experimental designs with...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for eval_design_custom_mc {skpr}"><tr><td>eval_design_custom_mc {skpr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Monte Carlo power evaluation for experimental designs with user-supplied libraries</h2>
+
+<h3>Description</h3>
+
+<p>Evaluates the power of an experimental design, given its run matrix and the
+statistical model to be fit to the data, using monte carlo simulation. Simulated data is fit using a
+user-supplied fitting library and power is estimated by the fraction of times a parameter is significant. Returns
+a data frame of parameter powers.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+eval_design_custom_mc(
+  design,
+  model = NULL,
+  alpha = 0.05,
+  nsim,
+  rfunction,
+  fitfunction,
+  pvalfunction,
+  anticoef,
+  effectsize = 2,
+  contrasts = contr.sum,
+  coef_function = coef,
+  calceffect = FALSE,
+  detailedoutput = FALSE,
+  parameternames = NULL,
+  advancedoptions = NULL,
+  progress = TRUE,
+  parallel = FALSE,
+  parallel_pkgs = NULL,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>design</code></td>
+<td>
+<p>The experimental design. Internally, <code>eval_design_custom_mc</code> rescales each numeric column
+to the range -1 to 1.</p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>The model used in evaluating the design. If this is missing and the design
+was generated with skpr, the generating model will be used. It can be a subset of the model used to
+generate the design, or include higher order effects not in the original design generation. It cannot include
+factors that are not present in the experimental design.</p>
+</td></tr>
+<tr valign="top"><td><code>alpha</code></td>
+<td>
+<p>Default <code>0.05</code>. The type-I error. p-values less than this will be counted as significant.</p>
+</td></tr>
+<tr valign="top"><td><code>nsim</code></td>
+<td>
+<p>The number of simulations.</p>
+</td></tr>
+<tr valign="top"><td><code>rfunction</code></td>
+<td>
+<p>Random number generator function. Should be a function of the form f(X, b), where X is the
+model matrix and b are the anticipated coefficients.</p>
+</td></tr>
+<tr valign="top"><td><code>fitfunction</code></td>
+<td>
+<p>Function used to fit the data. Should be of the form f(formula, X, contrasts)
+where X is the model matrix. If contrasts do not need to be specified for the user supplied
+library, that argument can be ignored.</p>
+</td></tr>
+<tr valign="top"><td><code>pvalfunction</code></td>
+<td>
+<p>Function that returns a vector of p-values from the object returned from the fitfunction.</p>
+</td></tr>
+<tr valign="top"><td><code>anticoef</code></td>
+<td>
+<p>The anticipated coefficients for calculating the power. If missing, coefficients will be
+automatically generated based on <code>effectsize</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>effectsize</code></td>
+<td>
+<p>The signal-to-noise ratio. Default 2. For a gaussian model, and for
+continuous factors, this specifies the difference in response between the highest
+and lowest levels of a factor (which are +1 and -1 after normalization).
+More precisely: If you do not specify <code>anticoef</code>, the anticipated coefficients will be
+half of <code>effectsize</code>. If you do specify <code>anticoef</code>, <code>effectsize</code> will be ignored.</p>
+</td></tr>
+<tr valign="top"><td><code>contrasts</code></td>
+<td>
+<p>Default <code>contr.sum</code>. Function used to generate the contrasts encoding for categorical variables. If the user has specified their own contrasts
+for a categorical factor using the contrasts function, those will be used. Otherwise, skpr will use contr.sum.</p>
+</td></tr>
+<tr valign="top"><td><code>coef_function</code></td>
+<td>
+<p>Function that, when applied to a fitfunction return object, returns the estimated coefficients.</p>
+</td></tr>
+<tr valign="top"><td><code>calceffect</code></td>
+<td>
+<p>Default <code>FALSE</code>. Calculates effect power for a Type-III Anova (using the car package) using a Wald test.
+this ratio can be a vector specifying the variance ratio for each subplot. Otherwise, it will use a single value for all strata. To work, the
+fit returned by <code>fitfunction</code> must have a method compatable with the car package.</p>
+</td></tr>
+<tr valign="top"><td><code>detailedoutput</code></td>
+<td>
+<p>Default <code>FALSE</code>. If <code>TRUE</code>, return additional information about evaluation in results.</p>
+</td></tr>
+<tr valign="top"><td><code>parameternames</code></td>
+<td>
+<p>Vector of parameter names if the coefficients do not correspond simply to the columns in the model matrix
+(e.g. coefficients from an MLE fit).</p>
+</td></tr>
+<tr valign="top"><td><code>advancedoptions</code></td>
+<td>
+<p>Default <code>NULL</code>. Named list of advanced options. <code>advancedoptions$anovatype</code> specifies the Anova type in the car package (default type <code>III</code>),
+user can change to type <code>II</code>). <code>advancedoptions$anovatest</code> specifies the test statistic if the user does not want a <code>Wald</code> test&ndash;other options are likelyhood-ratio <code>LR</code> and F-test <code>F</code>.
+<code>advancedoptions$progressBarUpdater</code> is a function called in non-parallel simulations that can be used to update external progress bar.<code>advancedoptions$GUI</code> turns off some warning messages when in the GUI.
+If <code>advancedoptions$save_simulated_responses = TRUE</code>, the dataframe will have an attribute <code>simulated_responses</code> that contains the simulated responses from the power evaluation. <code>advancedoptions$ci_error_conf</code> will
+set the confidence level for power intervals, which are printed when <code>detailedoutput = TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>progress</code></td>
+<td>
+<p>Default <code>TRUE</code>. Whether to include a progress bar.</p>
+</td></tr>
+<tr valign="top"><td><code>parallel</code></td>
+<td>
+<p>Default <code>FALSE</code>. If <code>TRUE</code>, the power simulation will use all but one of the available cores.
+If the user wants to set the number of cores manually, they can do this by setting <code>options("cores")</code> to the desired number (e.g. <code>options("cores" = parallel::detectCores())</code>).
+NOTE: If you have installed BLAS libraries that include multicore support (e.g. Intel MKL that comes with Microsoft R Open), turning on parallel could result in reduced performance.</p>
+</td></tr>
+<tr valign="top"><td><code>parallel_pkgs</code></td>
+<td>
+<p>A vector of strings listing the external packages to be included in each parallel worker.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Additional arguments.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A data frame consisting of the parameters and their powers. The parameter estimates from the simulations are
+stored in the 'estimates' attribute.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+#To demonstrate how a user can use their own libraries for Monte Carlo power generation,
+#We will recreate eval_design_survival_mc using the eval_design_custom_mc framework.
+
+#To begin, first let us generate the same design and random generation function shown in the
+#eval_design_survival_mc examples:
+
+basicdesign = expand.grid(a = c(-1, 1), b = c("a","b","c"))
+design = gen_design(candidateset = basicdesign, model = ~a + b + a:b, trials = 100,
+                         optimality = "D", repeats = 100)
+
+#Random number generating function
+
+rsurvival = function(X, b) {
+ Y = rexp(n = nrow(X), rate = exp(-(X %*% b)))
+ censored = Y &gt; 1
+ Y[censored] = 1
+ return(survival::Surv(time = Y, event = !censored, type = "right"))
+}
+
+#We now need to tell the package how we want to fit our data,
+#given the formula and the model matrix X (and, if needed, the list of contrasts).
+#If the contrasts aren't required, "contrastslist" should be set to NULL.
+#This should return some type of fit object.
+
+fitsurv = function(formula, X, contrastslist = NULL) {
+ return(survival::survreg(formula, data = X, dist = "exponential"))
+}
+
+
+#We now need to tell the package how to extract the p-values from the fit object returned
+#from the fit function. This is how to extract the p-values from the survreg fit object:
+
+pvalsurv = function(fit) {
+ return(summary(fit)$table[, 4])
+}
+
+#And now we evaluate the design, passing the fitting function and p-value extracting function
+#in along with the standard inputs for eval_design_mc.
+#This has the exact same behavior as eval_design_survival_mc for the exponential distribution.
+eval_design_custom_mc(design = design, model = ~a + b + a:b,
+                     alpha = 0.05, nsim = 100,
+                     fitfunction = fitsurv, pvalfunction = pvalsurv,
+                     rfunction = rsurvival, effectsize = 1)
+#We can also use skpr's framework for parallel computation to automatically parallelize this
+#to speed up computation
+## Not run: eval_design_custom_mc(design = design, model = ~a + b + a:b,
+                         alpha = 0.05, nsim = 1000,
+                         fitfunction = fitsurv, pvalfunction = pvalsurv,
+                         rfunction = rsurvival, effectsize = 1,
+                         parallel = TRUE, parallel_pkgs = "survival")
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>skpr</em> version 1.9.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

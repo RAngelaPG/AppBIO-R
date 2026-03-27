@@ -1,0 +1,325 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Summarize group balances</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for summarize_balances {groupdata2}"><tr><td>summarize_balances {groupdata2}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Summarize group balances</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental"><img src="../help/figures/lifecycle-experimental.svg" alt='[Experimental]' /></a>
+</p>
+<p>Summarize the balances of numeric, categorical, and ID columns
+in and between groups in one or more group columns.
+</p>
+<p>This tool allows you to quickly and thoroughly assess the balance
+of different columns between groups. This is for instance useful
+after creating groups with <code><a href="../help/fold.html">fold()</a></code>,
+<code><a href="../help/partition.html">partition()</a></code>, or
+<code><a href="../help/collapse_groups.html">collapse_groups()</a></code> to
+check how well they did and to compare multiple
+groupings.
+</p>
+<p>The output contains:
+</p>
+
+<ol>
+<li> <p><code>`Groups`</code>: a summary per group (per grouping column).
+</p>
+</li>
+<li> <p><code>`Summary`</code>: statistical descriptors of the group summaries.
+</p>
+</li>
+<li> <p><code>`Normalized Summary`</code>: statistical descriptors of a set of
+&quot;normalized&quot; group summaries. (Disabled by default)
+</p>
+</li></ol>
+
+<p>When comparing how balanced the grouping columns are, we can use
+the standard deviations of the group summary columns. The lower a standard
+deviation is, the more similar the groups are in that column. To quickly
+extract these standard deviations, ordered by an aggregated rank,
+use <code><a href="../help/ranked_balances.html">ranked_balances()</a></code> on the
+<code>"Summary" data.frame</code> in the output.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+summarize_balances(
+  data,
+  group_cols,
+  cat_cols = NULL,
+  num_cols = NULL,
+  id_cols = NULL,
+  summarize_size = TRUE,
+  include_normalized = FALSE,
+  rank_weights = NULL,
+  cat_levels_rank_weights = NULL,
+  num_normalize_fn = function(x) {
+     rearrr::min_max_scale(x, old_min = quantile(x,
+    0.025), old_max = quantile(x, 0.975), new_min = 0, new_max = 1)
+ }
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p><code>data.frame</code> with group columns to summarize
+by.
+</p>
+<p>Can be <em>grouped</em> (see <code><a href="../../dplyr/help/group_by.html">dplyr::group_by()</a></code>),
+in which case the function is applied group-wise. This is not to
+be confused with <code>`group_cols`</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>group_cols</code></td>
+<td>
+<p>Names of columns with group identifiers to summarize columns
+in <code>`data`</code> by.</p>
+</td></tr>
+<tr valign="top"><td><code>cat_cols</code></td>
+<td>
+<p>Names of categorical columns to summarize.
+</p>
+<p>Each categorical level is counted per group.
+</p>
+<p>To distinguish between levels with the same name from different
+<code>`cat_col`</code> columns, we prefix the count column name for each
+categorical level with parts of the name of the categorical column.
+This amount can be controlled with <code>`max_cat_prefix_chars`</code>.
+</p>
+<p>Normalization when <code>`include_normalized`</code> is enabled:
+The counts of each categorical level is normalized with <code>log(1 + count)</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>num_cols</code></td>
+<td>
+<p>Names of numerical columns to summarize.
+</p>
+<p>For each column, the <code>mean</code> and <code>sum</code> is calculated per group.
+</p>
+<p>Normalization when <code>`include_normalized`</code> is enabled:
+Each column is normalized with <code>`num_normalize_fn`</code> before
+calculating the <code>mean</code> and <code>sum</code> per group.</p>
+</td></tr>
+<tr valign="top"><td><code>id_cols</code></td>
+<td>
+<p>Names of <code>factor</code> columns with IDs to summarize.
+</p>
+<p>The number of unique IDs are counted per group.
+</p>
+<p>Normalization when <code>`include_normalized`</code> is enabled:
+The count of unique IDs is normalized with <code>log(1 + count)</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>summarize_size</code></td>
+<td>
+<p>Whether to summarize the number of rows per group.</p>
+</td></tr>
+<tr valign="top"><td><code>include_normalized</code></td>
+<td>
+<p>Whether to calculate and include the
+normalized summary in the output.</p>
+</td></tr>
+<tr valign="top"><td><code>rank_weights</code></td>
+<td>
+<p>A named <code>vector</code> with weights for averaging the rank columns when calculating the <code>`SD_rank`</code> column.
+The name is one of the balancing columns and the number is its weight. Non-specified columns are given the weight <code>1</code>.
+The weights are automatically scaled to sum to 1.
+</p>
+<p>When summarizing size (see <code>`summarize_size`</code>), name its weight <code>"size"</code>.
+</p>
+<p>E.g. <code>c("size" = 1, "a_cat_col" = 2, "a_num_col" = 4, "an_id_col" = 2)</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>cat_levels_rank_weights</code></td>
+<td>
+<p>Weights for averaging ranks of the categorical levels in <code>`cat_cols`</code>.
+Given as a named <code>list</code> with a named <code>vector</code> for each column in <code>`cat_cols`</code>.
+Non-specified levels are given the weight <code>1</code>.
+The weights are automatically scaled to sum to 1.
+</p>
+<p>E.g. <code>list("a_cat_col" = c("a" = 3, "b" = 5), "b_cat_col" = c("1" = 3, "2" = 9))</code></p>
+</td></tr>
+<tr valign="top"><td><code>num_normalize_fn</code></td>
+<td>
+<p>Function for normalizing the <code>`num_cols`</code> columns before
+calculating normalized group summaries.
+</p>
+<p>Only used when <code>`include_normalized`</code> is enabled.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p><code>list</code> with two/three <code>data.frames</code>:
+</p>
+
+
+<h4>Groups</h4>
+
+<p>A summary per group.
+</p>
+<p><code>`cat_cols`</code>: Each level has its own column with the count
+of the level per group.
+</p>
+<p><code>`num_cols`</code>: The <code>mean</code> and <code>sum</code> per group.
+</p>
+<p><code>`id_cols`</code>: The count of unique IDs per group.
+</p>
+
+
+
+<h4>Summary</h4>
+
+<p>Statistical descriptors of the columns in <code>`Groups`</code>.
+</p>
+<p>Contains the <code>mean</code>, <code>median</code>, standard deviation (<code>SD</code>),
+interquartile range (<code>IQR</code>), <code>min</code>, and <code>max</code> measures.
+</p>
+<p>Especially the standard deviations and IQR measures can tell us about how
+balanced the groups are. When comparing multiple <code>`group_cols`</code>,
+the group column with the lowest <code>SD</code> and <code>IQR</code>
+can be considered the most balanced.
+</p>
+
+
+
+<h4>Normalized Summary</h4>
+
+<p>(Disabled by default)
+</p>
+<p>Same statistical descriptors as in <code>`Summary`</code> but for a
+&quot;normalized&quot; version of the group summaries. The motivation
+is that these normalized measures can more easily be compared
+or combined to a single &quot;balance score&quot;.
+</p>
+<p>First, we normalize each balance column:
+</p>
+<p><code>`cat_cols`</code>: The level counts in the original group summaries are
+normalized with with <code>log(1 + count)</code>. This eases comparison
+of the statistical descriptors (especially standard deviations)
+of levels with very different count scales.
+</p>
+<p><code>`num_cols`</code>: The numeric columns are normalized prior to
+summarization by group, using the <code>`num_normalize_fn`</code> function.
+By default this applies MinMax scaling to columns such that ~95% of the values
+are expected to be in the <code>[0, 1]</code> range.
+</p>
+<p><code>`id_cols`</code>: The counts of unique IDs in the original group summaries are
+normalized with <code>log(1 + count)</code>.
+</p>
+<p>Contains the <code>mean</code>, <code>median</code>, standard deviation (<code>SD</code>),
+interquartile range (<code>IQR</code>), <code>min</code>, and <code>max</code> measures.
+</p>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Ludvig Renbo Olsen, <a href="mailto:r-pkgs@ludvigolsen.dk">r-pkgs@ludvigolsen.dk</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other summarization functions: 
+<code><a href="../../groupdata2/help/ranked_balances.html">ranked_balances</a>()</code>,
+<code><a href="../../groupdata2/help/summarize_group_cols.html">summarize_group_cols</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Attach packages
+library(groupdata2)
+library(dplyr)
+
+set.seed(1)
+
+# Create data frame
+df &lt;- data.frame(
+  "participant" = factor(rep(c("1", "2", "3", "4", "5", "6"), 3)),
+  "age" = rep(sample(c(1:100), 6), 3),
+  "diagnosis" = factor(rep(c("a", "b", "a", "a", "b", "b"), 3)),
+  "score" = sample(c(1:100), 3 * 6)
+)
+df &lt;- df %&gt;% arrange(participant)
+df$session &lt;- rep(c("1", "2", "3"), 6)
+
+# Using fold()
+
+## Without balancing
+set.seed(1)
+df_folded &lt;- fold(data = df, k = 3)
+
+# Check the balances of the various columns
+# As we have not used balancing in `fold()`
+# we should not expect it to be amazingly balanced
+df_folded %&gt;%
+  dplyr::ungroup() %&gt;%
+  summarize_balances(
+    group_cols = ".folds",
+    num_cols = c("score", "age"),
+    cat_cols = "diagnosis",
+    id_cols = "participant"
+  )
+
+## With balancing
+set.seed(1)
+df_folded &lt;- fold(
+  data = df,
+  k = 3,
+  cat_col = "diagnosis",
+  num_col = 'score',
+  id_col = 'participant'
+)
+
+# Now the balance should be better
+# although it may be difficult to get a good balance
+# the 'score' column when also balancing on 'diagnosis'
+# and keeping all rows per participant in the same fold
+df_folded %&gt;%
+  dplyr::ungroup() %&gt;%
+  summarize_balances(
+    group_cols = ".folds",
+    num_cols = c("score", "age"),
+    cat_cols = "diagnosis",
+    id_cols = "participant"
+  )
+
+# Comparing multiple grouping columns
+# Create 3 fold column that only balance "score"
+set.seed(1)
+df_folded &lt;- fold(
+  data = df,
+  k = 3,
+  num_fold_cols = 3,
+  num_col = 'score'
+)
+
+# Summarize all three grouping cols at once
+(summ &lt;- df_folded %&gt;%
+  dplyr::ungroup() %&gt;%
+  summarize_balances(
+    group_cols = paste0(".folds_", 1:3),
+    num_cols = c("score")
+  )
+)
+
+# Extract the across-group standard deviations
+# The group column with the lowest standard deviation(s)
+# is the most balanced group column
+summ %&gt;% ranked_balances()
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>groupdata2</em> version 2.0.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

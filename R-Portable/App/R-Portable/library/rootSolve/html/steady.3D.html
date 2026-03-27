@@ -1,0 +1,320 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Steady-state solver for 3-Dimensional ordinary differential...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for steady.3D {rootSolve}"><tr><td>steady.3D {rootSolve}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Steady-state solver for 3-Dimensional ordinary differential equations
+</h2>
+
+<h3>Description</h3>
+
+<p>Estimates the steady-state condition for a system of ordinary differential
+equations that result from 3-Dimensional partial differential equation
+models that have been converted to ODEs by numerical differencing.
+</p>
+<p>It is assumed that exchange occurs only between adjacent layers.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+steady.3D(y, time = 0, func, parms = NULL, nspec = NULL, 
+          dimens, names = NULL, method = "stodes", 
+          jactype = NULL, cyclicBnd = NULL, times = time, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>y </code></td>
+<td>
+<p>the initial guess of (state) values for the ODE system, a vector.
+</p>
+</td></tr>
+<tr valign="top"><td><code>time, times </code></td>
+<td>
+<p>time for which steady-state is wanted; the default is <code>times=0</code>.
+(note- since version 1.7, 'times' has been added as an alias to 'time').
+</p>
+</td></tr>
+<tr valign="top"><td><code>func </code></td>
+<td>
+<p>either an <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>-function that computes the values of the
+derivatives in the ode system (the model defininition) at time <code>time</code>,
+or a character string giving the name of a compiled function in a
+dynamically loaded shared library.
+If <code>func</code>  is an <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>-function, it must be defined as:
+<code>yprime = func(t, y, parms,...)</code>.  <code>t</code> is the current time point
+in the integration, <code>y</code> is the current estimate of the variables
+in the ODE system.  If the initial values <code>y</code> has a names
+attribute, the names will be available inside <code>func</code>. <code>parms</code> is
+a vector or list of parameters; ... (optional) are any other arguments
+passed to the function.
+</p>
+<p>The return value of <code>func</code> should be a list, whose first element is a
+vector containing the derivatives of <code>y</code> with respect to
+<code>time</code>, and whose next elements are global values whose steady-state
+value is also required.
+</p>
+<p>The derivatives
+should be specified in the same order as the state variables <code>y</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>parms </code></td>
+<td>
+<p>parameters passed to <code>func</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>nspec </code></td>
+<td>
+<p>the number of *species* (components) in the model.
+</p>
+</td></tr>
+<tr valign="top"><td><code>dimens </code></td>
+<td>
+<p>a 3-valued vector with the dimensionality of the model,
+i.e. the number of *boxes* in x-, y- and z- direction.
+</p>
+</td></tr>
+<tr valign="top"><td><code>method </code></td>
+<td>
+<p>the solution method, one of &quot;stodes&quot;, or &quot;runsteady&quot;.
+When <code>method</code> = 'runsteady', then solver <code>lsodes</code>, the sparse solver is used by default, 
+unless argument <code>jactype</code> is set to <code>"2D"</code>, in which case <code>lsode</code> will be used (likely less efficient).
+in which case <code>lsodes</code> is used and the structure of the jacobian is determined by the solver.
+</p>
+</td></tr>
+<tr valign="top"><td><code>jactype </code></td>
+<td>
+<p>the jacobian type - default is a regular 2-D structure where layers only interact with adjacent layers in both directions. 
+If the structure does not comply with this, the jacobian can be set equal to <code>'sparse'</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>cyclicBnd </code></td>
+<td>
+<p>if not <code>NULL</code> then a number or a 3-valued vector
+with the dimensions where a cyclic boundary is used - <code>1</code>: x-dimension,
+<code>2</code>: y-dimension; <code>3</code>: z-dimension;see details.
+</p>
+</td></tr>
+<tr valign="top"><td><code>names </code></td>
+<td>
+<p>the names of the components; used to label the output, 
+and for plotting.
+</p>
+</td></tr>
+<tr valign="top"><td><code>... </code></td>
+<td>
+<p>additional arguments passed to function <a href="../../rootSolve/help/stodes.html">stodes</a>.
+See note.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This is the method of choice to find the steady-state for 
+3-dimensional models, that are only subjected to transport between 
+adjacent layers.
+</p>
+<p>Based on the dimension of the problem, the method first calculates the
+sparsity pattern of the Jacobian, under the assumption 
+that transport is only occurring between adjacent layers.
+Then <code>stodes</code> is called to find the steady-state.
+</p>
+<p>In some cases, a cyclic boundary condition exists. This is when the first
+boxes in x-, y-, or z-direction interact with the last boxes.
+In this case, there will be extra non-zero fringes in the Jacobian which
+need to be taken into account. The occurrence of cyclic boundaries can be
+toggled on by specifying argument <code>cyclicBnd</code>. For innstance,
+<code>cyclicBnd = 1</code> indicates that a cyclic boundary is required only for
+the x-direction, whereas <code>cyclicBnd = c(1,2)</code> imposes a cyclic boundary
+for both x- and y-direction. The default is no cyclic boundaries.
+</p>
+<p>As <code>stodes</code> is used, it will probably be necessary to specify the
+length of the real work array, <code>lrw</code>.
+</p>
+<p>Although a reasonable guess of <code>lrw</code> is made, it may occur that this
+will be too low.
+In this case, <code>steady.3D</code> will return with an error message telling
+the size of the work array actually needed. In the second try then, set
+<code>lrw</code> equal to this number.
+</p>
+<p>As <code>stodes</code> is used, it will probably be necessary to specify the
+length of the real work array, <code>lrw</code>.
+</p>
+<p>Although a reasonable guess of <code>lrw</code> is made, it may occur that this
+will be too low.
+In this case, <code>steady.2D</code> will return with an error message telling
+that there was insufficient storage. In the second try then, increase
+<code>lrw</code>. you may need to experiment to find suitable value. The smaller the better.
+</p>
+<p>The error message that says to increase <code>lrw</code> may look like this:
+</p>
+<pre>   
+ In stodes(y = y, time = time, func = func, parms = parms, nnz = c(nspec,  :
+  insufficient storage in nnfc
+</pre>      
+<p>See <code>stodes</code> for the additional options.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list containing
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>y </code></td>
+<td>
+<p> a vector with the state variable values from the last iteration
+during estimation of steady-state condition of the system of equations.
+</p>
+</td></tr>
+<tr valign="top"><td><code>... </code></td>
+<td>
+<p> the &quot;global&quot; values returned.
+</p>
+</td></tr>
+</table>
+<p>The output will have the attribute <code>steady</code>, which returns <code>TRUE</code>,
+if steady-state has been reached and the attribute
+</p>
+<p><code>precis</code> with the precision attained during each iteration.
+Another attribute, called <code>dims</code> returns a.o. the length of the work 
+array actually required. 
+This can be specified with input argument <code>lrw</code>. See note and first example.
+</p>
+
+
+<h3>Note</h3>
+
+<p>It is advisable though not mandatory to specify BOTH <code>nspec</code> and
+<code>dimens</code>. In this case, the solver can check whether the input makes
+sense (as nspec*dimens[1]*dimens[2]*dimens[3] = length(y))
+</p>
+<p>do NOT use this method for problems that are not 3D.
+</p>
+<p>It is likely that the estimated length of the work array (argument <code>lrw</code>),
+required for the solver <a href="../../rootSolve/help/stodes.html">stodes</a> will be too small. 
+If that is the case, the solver will return with an error
+saying to increase <code>lrw</code>. The current value of the work array can be 
+found via the <code>attributes</code> of the output. See first example.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Karline Soetaert &lt;karline.soetaert@nioz.nl&gt;
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../rootSolve/help/steady.html">steady</a></code>, for a general interface to most of the steady-state
+solvers
+</p>
+<p><code><a href="../../rootSolve/help/steady.band.html">steady.band</a></code>, to find the steady-state of ODE models with a
+banded Jacobian
+</p>
+<p><code><a href="../../rootSolve/help/steady.1D.html">steady.1D</a></code>, <code><a href="../../rootSolve/help/steady.2D.html">steady.2D</a></code>,
+steady-state solvers for 1-D and 2-D
+partial differential equations.
+</p>
+<p><code><a href="../../rootSolve/help/stode.html">stode</a></code>, iterative steady-state solver for ODEs with full
+or banded Jacobian.
+</p>
+<p><code><a href="../../rootSolve/help/stodes.html">stodes</a></code>, iterative steady-state solver for ODEs with arbitrary
+sparse Jacobian.
+</p>
+<p><code><a href="../../rootSolve/help/runsteady.html">runsteady</a></code>, steady-state solver by dynamically running to
+steady-state
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## =======================================================================
+## Diffusion in 3-D; imposed boundary conditions
+## =======================================================================
+diffusion3D &lt;- function(t, Y, par)   {
+   yy    &lt;- array(dim=c(n,n,n),data=Y)  # vector to 3-D array
+   dY   &lt;- -r*yy        # consumption
+   BND   &lt;- rep(1,n)   # boundary concentration
+   for (i in 1:n) {
+     y &lt;- yy[i,,]
+     #diffusion in X-direction; boundaries=imposed concentration
+     Flux &lt;- -Dy * rbind(y[1,]-BND,(y[2:n,]-y[1:(n-1),]),BND-y[n,])/dy
+     dY[i,,]   &lt;- dY[i,,] - (Flux[2:(n+1),]-Flux[1:n,])/dy
+
+     #diffusion in Y-direction
+     Flux &lt;- -Dz * cbind(y[,1]-BND,(y[,2:n]-y[,1:(n-1)]),BND-y[,n])/dz
+     dY[i,,]    &lt;- dY[i,,] - (Flux[,2:(n+1)]-Flux[,1:n])/dz
+   }
+   for (j in 1:n) {
+     y &lt;- yy[,j,]
+     #diffusion in X-direction; boundaries=imposed concentration
+     Flux &lt;- -Dx * rbind(y[1,]-BND,(y[2:n,]-y[1:(n-1),]),BND-y[n,])/dx
+     dY[,j,]   &lt;- dY[,j,] - (Flux[2:(n+1),]-Flux[1:n,])/dx
+
+     #diffusion in Y-direction
+     Flux &lt;- -Dz * cbind(y[,1]-BND,(y[,2:n]-y[,1:(n-1)]),BND-y[,n])/dz
+     dY[,j,]    &lt;- dY[,j,] - (Flux[,2:(n+1)]-Flux[,1:n])/dz
+   }
+   for (k in 1:n) {
+     y &lt;- yy[,,k]
+     #diffusion in X-direction; boundaries=imposed concentration
+     Flux &lt;- -Dx * rbind(y[1,]-BND,(y[2:n,]-y[1:(n-1),]),BND-y[n,])/dx
+     dY[,,k]   &lt;- dY[,,k] - (Flux[2:(n+1),]-Flux[1:n,])/dx
+
+     #diffusion in Y-direction
+     Flux &lt;- -Dy * cbind(y[,1]-BND,(y[,2:n]-y[,1:(n-1)]),BND-y[,n])/dy
+     dY[,,k]    &lt;- dY[,,k] - (Flux[,2:(n+1)]-Flux[,1:n])/dy
+   }
+   return(list(as.vector(dY)))
+}
+
+  # parameters
+  dy    &lt;- dx &lt;- dz &lt;-1   # grid size
+  Dy    &lt;- Dx &lt;- Dz &lt;-1   # diffusion coeff, X- and Y-direction
+  r     &lt;- 0.025     # consumption rate
+
+  n  &lt;- 10
+  y  &lt;- array(dim=c(n, n, n), data = 10.)
+
+  # stodes is used, so we should specify the size of the work array (lrw)
+  # We take a rather large value initially
+
+  print(system.time(
+  ST3 &lt;- steady.3D(y, func =diffusion3D, parms = NULL, pos = TRUE,
+                   dimens = c(n, n, n), lrw = 100000,
+                   atol = 1e-10, rtol = 1e-10, ctol = 1e-10, 
+                   verbose = TRUE)
+  ))
+
+  # the actual size of lrw is in the attributes()$dims vector.     
+  # it is best to set lrw as small as possible 
+  attributes(ST3)     
+
+  # image plot
+  y &lt;- array(dim=c(n, n, n), data = ST3$y)
+  filled.contour(y[ , ,n/2], color.palette = terrain.colors)
+    
+  # rootSolve's image plot, looping over 3rd dimension
+  image(ST3, mfrow = c(4,3))
+
+  # loop over 1st dimension, contours, legends added
+  image(ST3, mfrow = c(2, 2), add.contour = TRUE, legend = TRUE,
+        dimselect = list(x = c(1, 4, 8, 10)))
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rootSolve</em> version 1.8.2.4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

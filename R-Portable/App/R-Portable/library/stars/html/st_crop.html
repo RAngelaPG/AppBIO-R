@@ -1,0 +1,148 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: crop a stars object</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for st_crop {stars}"><tr><td>st_crop {stars}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>crop a stars object</h2>
+
+<h3>Description</h3>
+
+<p>crop a stars object
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'mdim'
+st_crop(x, y, ...)
+
+## S3 method for class 'stars_proxy'
+st_crop(
+  x,
+  y,
+  ...,
+  crop = TRUE,
+  epsilon = sqrt(.Machine$double.eps),
+  collect = TRUE
+)
+
+## S3 method for class 'stars'
+st_crop(
+  x,
+  y,
+  ...,
+  crop = TRUE,
+  epsilon = sqrt(.Machine$double.eps),
+  as_points = all(st_dimension(y) == 2, na.rm = TRUE),
+  normalize = FALSE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>object of class <code>stars</code></p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>object of class <code>sf</code>, <code>sfc</code> or <code>bbox</code>; see Details below.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>ignored</p>
+</td></tr>
+<tr valign="top"><td><code>crop</code></td>
+<td>
+<p>logical; if <code>TRUE</code>, the spatial extent of the returned object is cropped to still cover <code>obj</code>, if <code>FALSE</code>, the extent remains the same but cells outside <code>y</code> are given <code>NA</code> values.</p>
+</td></tr>
+<tr valign="top"><td><code>epsilon</code></td>
+<td>
+<p>numeric; factor to shrink the bounding box of <code>y</code> towards its center before cropping.</p>
+</td></tr>
+<tr valign="top"><td><code>collect</code></td>
+<td>
+<p>logical; if <code>TRUE</code>, repeat cropping on <code>stars</code> object, i.e. after data has been read</p>
+</td></tr>
+<tr valign="top"><td><code>as_points</code></td>
+<td>
+<p>logical; only relevant if <code>y</code> is of class <code>sf</code> or <code>sfc</code>: if <code>FALSE</code>, treat <code>x</code> as a set of points, else as a set of small polygons. Default: <code>TRUE</code> if <code>y</code> is two-dimensional, else <code>FALSE</code>; see Details</p>
+</td></tr>
+<tr valign="top"><td><code>normalize</code></td>
+<td>
+<p>logical; if <code>TRUE</code> then pass the cropped object to <code><a href="../../sf/help/st_normalize.html">st_normalize</a></code> before returning. This typically changes the 'offset' field and resets the 'from' field to 1, and changes the bounding box of the returned object accordingly.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>for raster <code>x</code>, <code>st_crop</code> selects cells that intersect with <code>y</code>. 
+For intersection, are raster cells interpreted as points or as small polygons? 
+If <code>y</code> is of class <code>stars</code>, <code>x</code> raster cells are interpreted as points; if <code>y</code> is of class <code>bbox</code>, <code>x</code> cells are interpreted as cells (small polygons). Otherwise, if <code>as_points</code> is not given, cells are interpreted as points if <code>y</code> has a two-dimensional geometry.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+l7 = read_stars(system.file("tif/L7_ETMs.tif", package = "stars"))
+d = st_dimensions(l7)
+
+# area around cells 3:10 (x) and 4:11 (y):
+offset = c(d[["x"]]$offset, d[["y"]]$offset)
+res = c(d[["x"]]$delta, d[["y"]]$delta)
+bb = st_bbox(c(xmin = offset[1] + 2 * res[1],
+	ymin = offset[2] + 11 * res[2],
+	xmax = offset[1] + 10 * res[1],
+	ymax = offset[2] +  3 * res[2]), crs = st_crs(l7))
+l7[bb]
+# equivalent:
+st_crop(l7, bb)
+
+plot(l7[,1:13,1:13,1], reset = FALSE)
+image(l7[bb,,,1], add = TRUE, col = sf.colors())
+plot(st_as_sfc(bb), add = TRUE, border = 'green', lwd = 2)
+
+# slightly smaller bbox:
+bb = st_bbox(c(xmin = offset[1] + 2.1 * res[1],
+	ymin = offset[2] + 10.9 * res[2],
+	xmax = offset[1] +  9.9 * res[1],
+	ymax = offset[2] +  3.1 * res[2]), crs = st_crs(l7))
+l7[bb]
+
+plot(l7[,1:13,1:13,1], reset = FALSE)
+image(l7[bb,,,1], add = TRUE, col = sf.colors())
+plot(st_as_sfc(bb), add = TRUE, border = 'green', lwd = 2)
+
+# slightly larger bbox:
+bb = st_bbox(c(xmin = offset[1] + 1.9 * res[1],
+	ymin = offset[2] + 11.1 * res[2],
+	xmax = offset[1] + 10.1 * res[1],
+	ymax = offset[2] +  2.9 * res[2]), crs = st_crs(l7))
+l7[bb]
+
+plot(l7[,1:13,1:13,1], reset = FALSE)
+image(l7[bb,,,1], add = TRUE, col = sf.colors())
+plot(st_as_sfc(bb), add = TRUE, border = 'green', lwd = 2)
+
+# half a cell size larger bbox:
+bb = st_bbox(c(xmin = offset[1] + 1.49 * res[1],
+	ymin = offset[2] + 11.51 * res[2],
+	xmax = offset[1] + 10.51 * res[1],
+	ymax = offset[2] +  2.49 * res[2]), crs = st_crs(l7))
+l7[bb]
+
+plot(l7[,1:13,1:13,1], reset = FALSE)
+image(l7[bb,,,1], add = TRUE, col = sf.colors())
+plot(st_as_sfc(bb), add = TRUE, border = 'green', lwd = 2)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>stars</em> version 0.7-1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

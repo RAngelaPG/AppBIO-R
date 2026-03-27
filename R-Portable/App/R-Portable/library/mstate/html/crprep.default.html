@@ -1,0 +1,275 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Function to create weighted data set for competing risks...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for crprep.default {mstate}"><tr><td>crprep.default {mstate}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Function to create weighted data set for competing risks analyses</h2>
+
+<h3>Description</h3>
+
+<p>This function converts a dataset that is in short format (one subject per
+line) into a counting process format with time-varying weights that correct
+for right censored and left truncated data. With this data set, analyses
+based on the subdistribution hazard can be performed.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## Default S3 method:
+crprep(
+  Tstop,
+  status,
+  data,
+  trans = 1,
+  cens = 0,
+  Tstart = 0,
+  id,
+  strata,
+  keep,
+  shorten = TRUE,
+  rm.na = TRUE,
+  origin = 0,
+  prec.factor = 1000,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>Tstop</code></td>
+<td>
+<p>Either 1) a vector containing the time at which the follow-up
+is ended, or 2) a character string indicating the column name in <code>data</code>
+that contains the end times (see Details).</p>
+</td></tr>
+<tr valign="top"><td><code>status</code></td>
+<td>
+<p>Either 1) a vector describing status at end of follow-up,
+having the same length as <code>Tstop</code>, or 2) a character string indicating
+the column name that contains this information.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>Data frame in which to interpret <code>Tstart</code>, <code>status</code>,
+<code>Tstart</code>, <code>id</code>, <code>strata</code> and <code>keep</code>, if given as
+character value (specification 2, &quot;by name&quot;).</p>
+</td></tr>
+<tr valign="top"><td><code>trans</code></td>
+<td>
+<p>Values of <code>status</code> for which weights are to be calculated.</p>
+</td></tr>
+<tr valign="top"><td><code>cens</code></td>
+<td>
+<p>Value that denotes censoring in <code>status</code> column.</p>
+</td></tr>
+<tr valign="top"><td><code>Tstart</code></td>
+<td>
+<p>Either 1) a vector containing the time at which the follow-up
+is started, having the same length as <code>Tstop</code>, or 2) a character string
+indicating the column name that contains the entry times, or 3) one numeric
+value in case it is the same for every subject. Default is 0.</p>
+</td></tr>
+<tr valign="top"><td><code>id</code></td>
+<td>
+<p>Either 1) a vector, having the same length as <code>Tstop</code>,
+containing the subject identifiers, or 2) a character string indicating the
+column name containing these subject identifiers. If not provided, a column
+<code>id</code> is created with subjects having values 1,...,n.</p>
+</td></tr>
+<tr valign="top"><td><code>strata</code></td>
+<td>
+<p>Either 1) a vector of the same length as <code>Tstop</code>, or 2) a
+character string indicating the column name that contains this information.
+Weights are calculated for per value in this vector.</p>
+</td></tr>
+<tr valign="top"><td><code>keep</code></td>
+<td>
+<p>Either 1) a data frame or matrix or a numeric or factor vector
+containing covariate(s) that need to be retained in the output dataset.
+Number of rows/length should correspond with <code>Tstop</code>, or 2) a character
+vector containing the column names of these covariates in <code>data</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>shorten</code></td>
+<td>
+<p>Logical. If true, number of rows in output is reduced by
+collapsing rows within a subject in which weights do not change.</p>
+</td></tr>
+<tr valign="top"><td><code>rm.na</code></td>
+<td>
+<p>Logical. If true, rows for which <code>status</code> is missing are
+deleted.</p>
+</td></tr>
+<tr valign="top"><td><code>origin</code></td>
+<td>
+<p>Substract origin time units from all Tstop and Tstart times.</p>
+</td></tr>
+<tr valign="top"><td><code>prec.factor</code></td>
+<td>
+<p>Factor by which to multiply the machine's precision.
+Censoring and truncation times are shifted by prec.factor*precision if event
+times and censoring/truncation times are equal.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Further arguments to be passed to or from other methods. They
+are ignored in this function.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>For each event type as specified via <code>trans</code>, individuals with a
+competing event remain in the risk set with weights that are determined by
+the product-limit forms of the time-to-censoring and time-to-entry
+estimates. Typically, their weights change over follow-up, and therefore
+such individuals are split into several rows. Censoring weights are always
+computed. Truncation weights are computed only if <code>Tstart</code> is
+specified.
+</p>
+<p>If several event types are specified at once, regression analyses using the
+stacked format data set can be performed (see Putter et al. 2007 and Chapter
+4 in Geskus 2016). The data set can also be used for a regression on the
+cause-specific hazard by restricting to the subset <code>subset=count==0</code>.
+</p>
+<p>Missing values are allowed in <code>Tstop</code>, <code>status</code>, <code>Tstart</code>,
+<code>strata</code> and <code>keep</code>. Rows for which <code>Tstart</code> or <code>Tstart</code>
+is missing are deleted.
+</p>
+<p>There are two ways to supply the data. If given &quot;by value&quot; (option 1), the
+actual data vectors are used. If given &quot;by name&quot; (option 2), the column
+names are specified, which are read from the data set in <code>data</code>. In
+general, the second option is preferred.
+</p>
+<p>If data are given by value, the following holds for the naming of the
+columns in the output data set. If <code>keep</code>, <code>strata</code> or <code>id</code>
+is a vector from a (sub)-list, e.g. obj$name2$name1, then the column name is
+based on the most inner part (i.e.\ &quot;name1&quot;). If it is a vector of the form
+obj[,&quot;name1&quot;], then the column is named &quot;name1&quot;. For all other vector
+specifications, the name is copied as is. If <code>keep</code> is a data.frame or
+a named matrix, the same names are used for the covariate columns in the
+output data set. If keep is a matrix without names, then the covariate
+columns are given the names &quot;V1&quot; until &quot;Vk&quot;.
+</p>
+<p>The current function does not allow to create a weighted data set in which
+the censoring and/or truncation mechanisms depend on covariates via a
+regression model.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data frame in long (counting process) format containing the
+covariates (replicated per subject). The following column names are used:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>Tstart</code></td>
+<td>
+<p>start dates of dataset</p>
+</td></tr> <tr valign="top"><td><code>Tstop</code></td>
+<td>
+<p>stop dates of dataset</p>
+</td></tr>
+<tr valign="top"><td><code>status</code></td>
+<td>
+<p>status of the subject at the end of that row</p>
+</td></tr>
+<tr valign="top"><td><code>weight.cens</code></td>
+<td>
+<p>weights due to censoring mechanism</p>
+</td></tr>
+<tr valign="top"><td><code>weight.trunc</code></td>
+<td>
+<p>weights due to truncation mechanism (if present)</p>
+</td></tr>
+<tr valign="top"><td><code>count</code></td>
+<td>
+<p>row number within subject and event type under consideration</p>
+</td></tr>
+<tr valign="top"><td><code>failcode</code></td>
+<td>
+<p>event type under consideration</p>
+</td></tr>
+</table>
+<p>The first column is the subject identifier. If the argument &quot;id&quot; is missing,
+it has values 1:n and is named &quot;id&quot;. Otherwise the information is taken from
+the <code>id</code> argument.
+</p>
+<p>Variables as specified in <code>strata</code> and/or <code>keep</code> are included as
+well (see Details).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Ronald Geskus
+</p>
+
+
+<h3>References</h3>
+
+<p>Geskus RB (2011). Cause-Specific Cumulative Incidence Estimation
+and the Fine and Gray Model Under Both Left Truncation and Right Censoring.
+<em>Biometrics</em> <b>67</b>, 39&ndash;49.
+</p>
+<p>Geskus, Ronald B. (2016). <em>Data Analysis with Competing Risks and
+Intermediate States.</em> CRC Press, Boca Raton.
+</p>
+<p>Putter H, Fiocco M, Geskus RB (2007). Tutorial in biostatistics: Competing
+risks and multi-state models. <em>Statistics in Medicine</em> <b>26</b>,
+2389&ndash;2430.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+data(aidssi)
+aidssi.w &lt;- crprep("time", "cause", data=aidssi, trans=c("AIDS","SI"),
+                   cens="event-free", id="patnr", keep="ccr5")
+
+# calculate cause-specific cumulative incidence, no truncation,
+# compare with Cuminc (also from mstate)
+ci &lt;- Cuminc(aidssi$time, aidssi$status)
+sf &lt;- survfit(Surv(Tstart,Tstop,status=="AIDS")~1, data=aidssi.w,
+              weight=weight.cens, subset=failcode=="AIDS")
+plot(sf, fun="event", mark.time=FALSE)
+lines(CI.1~time,data=ci,type="s",col="red")
+sf &lt;- survfit(Surv(Tstart,Tstop,status=="SI")~1, data=aidssi.w,
+              weight=weight.cens, subset=failcode=="SI")
+plot(sf, fun="event", mark.time=FALSE)
+lines(CI.2~time,data=ci,type="s",col="red")
+
+# Fine and Gray regression for cause 1
+cw &lt;- coxph(Surv(Tstart,Tstop,status=="AIDS")~ccr5, data=aidssi.w,
+      weight=weight.cens, subset=failcode=="AIDS")
+cw
+# This can be checked with the results of crr (cmprsk)
+# crr(ftime=aidssi$time, fstatus=aidssi$status, cov1=as.numeric(aidssi$ccr5))
+
+# Gray's log-rank test
+aidssi.wCCR &lt;- crprep("time", "cause", data=aidssi, trans=c("AIDS","SI"),
+                      cens="event-free", id="patnr", strata="ccr5")
+test.AIDS &lt;- coxph(Surv(Tstart,Tstop,status=="AIDS")~ccr5, data=aidssi.wCCR,
+                   weights=weight.cens, subset=failcode=="AIDS")
+test.SI &lt;- coxph(Surv(Tstart,Tstop,status=="SI")~ccr5, data=aidssi.wCCR,
+                 weights=weight.cens, subset=failcode=="SI")
+## score test statistic and p-value
+c(test.AIDS$score, 1-pchisq(test.AIDS$score,1)) # AIDS
+c(test.SI$score, 1-pchisq(test.SI$score,1))     # SI
+# This can be compared with the results of cuminc (cmprsk)
+# with(aidssi, cuminc(time, status, group=ccr5)$Tests)
+# Note: results are not exactly the same
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mstate</em> version 0.3.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

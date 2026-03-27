@@ -1,35 +1,3 @@
-# tidytree 0.4.6
-
-+ import `methods::setClassUnion()` to fix R check (2023-12-12, Tue)
-+ check before `setOldClass()`, which suppose to fix the #47 issue (2023-11-29, Wed)
-
-# tidytree 0.4.5
-
-+ mv tree operation functions (e.g., `parent()`, `child()`, `tree_subset()`, etc.) from the 'treeio' package (2023-08-03, Thu, #44)
-+ update `valid.edge()` to avoid warning (2023-7-18, Tue)
-
-# tidytree 0.4.4
-
-+ update old-style 'CITATION' from `citEntry()` to `bibentry()` (2023-07-14, Fri, #38)
-+ update dplyr-verb for 'tbl_tree' object to print information to avoid confusion (2023-07-13, Thu, #37, #39)
-+ add accessor function of node label for 'tbl_tree', 'phylo' and 'treedata' object (2023-07-13, Thu, #37)
-
-# tidytree 0.4.3
-
-+ add `print()` method for 'tbl_tree' object to avoid confusion with `tbl_df` (2023-07-12, Wed)
-
-# tidytree 0.4.2
-
-+ fixed the `dots` issue of `left_join` (2022-12-16, Fri, #30, #31)
-
-# tidytree 0.4.1
-
-+ update citation with the ggtree imeta paper (2022-08-13, Sat)
-
-# tidytree 0.4.0
-
-+ update citation with the tree data book (2022-08-13, Sat)
-
 # tidytree 0.3.9
 
 + update package startup message (2022-03-04, Fri)

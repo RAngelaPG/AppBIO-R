@@ -1,0 +1,288 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Calculate more fit indices</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for moreFitIndices {semTools}"><tr><td>moreFitIndices {semTools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Calculate more fit indices</h2>
+
+<h3>Description</h3>
+
+<p>Calculate more fit indices that are not already provided in lavaan.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+moreFitIndices(object, fit.measures = "all", nPrior = 1)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>The lavaan model object provided after running the <code>cfa</code>,
+<code>sem</code>, <code>growth</code>, or <code>lavaan</code> functions.</p>
+</td></tr>
+<tr valign="top"><td><code>fit.measures</code></td>
+<td>
+<p>Additional fit measures to be calculated. All additional
+fit measures are calculated by default</p>
+</td></tr>
+<tr valign="top"><td><code>nPrior</code></td>
+<td>
+<p>The sample size on which prior is based. This argument is used
+to compute <code>bic.priorN</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>See <code><a href="../../semTools/help/nullRMSEA.html">nullRMSEA()</a></code> for the further details of the computation of
+RMSEA of the null model.
+</p>
+<p>Gamma-Hat (<code>gammaHat</code>; West, Taylor, &amp; Wu, 2012) is a global
+goodness-of-fit index which can be computed (assuming equal number of
+indicators across groups) by
+</p>
+<p style="text-align: center;"><i> \hat{&Gamma;} =\frac{p}{p + 2 \times \frac{&chi;^{2}_{k} - df_{k}}{N}},</i></p>
+
+<p>where <i>p</i> is the number of variables in the model, <i>&chi;^{2}_{k}</i> is
+the <i>&chi;^2</i> test statistic value of the target model, <i>df_{k}</i> is
+the degree of freedom when fitting the target model, and <i>N</i> is the
+sample size (or sample size minus the number of groups if <code>mimic</code> is
+set to <code>"EQS"</code>).
+</p>
+<p>Adjusted Gamma-Hat (<code>adjGammaHat</code>; West, Taylor, &amp; Wu, 2012) is a
+global fit index which can be computed by
+</p>
+<p style="text-align: center;"><i> \hat{&Gamma;}_\textrm{adj} = &le;ft(1 - \frac{K \times p \times
+  (p + 1)}{2 \times df_{k}} \right) \times &le;ft( 1 - \hat{&Gamma;} \right),</i></p>
+
+<p>where <i>K</i> is the number of groups (please refer to Dudgeon, 2004, for
+the multiple-group adjustment for <code>adjGammaHat</code>).
+</p>
+<p>Note that if Satorra&ndash;Bentler's or Yuan&ndash;Bentler's method is used, the fit
+indices using the scaled <i>&chi;^2</i> values are also provided.
+</p>
+<p>The remaining indices are information criteria calculated using the
+<code>object</code>'s <i>-2 \times</i> log-likelihood, abbreviated <i>-2LL</i>.
+</p>
+<p>Corrected Akaike Information Criterion (<code>aic.smallN</code>; Burnham &amp;
+Anderson, 2003) is a corrected version of AIC for small sample size, often
+abbreviated AICc:
+</p>
+<p style="text-align: center;"><i> \textrm{AIC}_{\textrm{small}-N} = AIC + \frac{2q(q + 1)}{N - q - 1},</i></p>
+
+<p>where <i>AIC</i> is the original AIC: <i>-2LL + 2q</i> (where <i>q</i>
+= the number of estimated parameters in the target model). Note that AICc is
+a small-sample correction derived for univariate regression models, so it is
+probably <em>not</em> appropriate for comparing SEMs.
+</p>
+<p>Corrected Bayesian Information Criterion (<code>bic.priorN</code>; Kuha, 2004) is
+similar to BIC but explicitly specifying the sample size on which the prior
+is based (<i>N_{prior}</i>) using the <code>nPrior</code> argument.
+</p>
+<p style="text-align: center;"><i> \textrm{BIC}_{\textrm{prior}-N} = -2LL + q\log{( 1 + \frac{N}{N_{prior}} )}.</i></p>
+
+<p>Bollen et al. (2012, 2014) discussed additional BICs that incorporate more
+terms from a Taylor series expansion, which the standard BIC drops.  The
+&quot;Scaled Unit-Information Prior&quot; BIC is calculated depending on whether the
+product of the vector of estimated model parameters (<i>\hat{&theta;}</i>) and
+the observed information matrix (FIM) exceeds the number of estimated model
+parameters (Case 1) or not (Case 2), which is checked internally:
+</p>
+<p style="text-align: center;"><i> \textrm{SPBIC}_{\textrm{Case 1}} = -2LL + q(1 - \frac{q}{\hat{&theta;}^{'} \textrm{FIM} \hat{&theta;}}), \textrm{ or}</i></p>
+
+<p style="text-align: center;"><i> \textrm{SPBIC}_{\textrm{Case 2}} = -2LL + \hat{&theta;}^{'} \textrm{FIM} \hat{&theta;},</i></p>
+
+<p>Note that this implementation of SPBIC is calculated on the assumption that
+priors for all estimated parameters are centered at zero, which is
+inappropriate for most SEMs (e.g., variances should not have priors centered
+at the lowest possible value; Bollen, 2014, p. 6).
+</p>
+<p>Bollen et al. (2014, eq. 14) credit the HBIC to Haughton (1988):
+</p>
+<p style="text-align: center;"><i> \textrm{HBIC} = -2LL + q\log{\frac{N}{2 &pi;}}.</i></p>
+
+<p>Bollen et al. (2012, p. 305) proposed the information matrix (<i>I</i>)-based BIC by
+adding another term:
+</p>
+<p style="text-align: center;"><i> \textrm{IBIC} = -2LL + q\log{\frac{N}{2 &pi;}} + \log{\det{\textrm{FIM}}},</i></p>
+
+<p>or equivalently, using the inverse information (the asymptotic sampling
+covariance matrix of estimated parameters: ACOV):
+</p>
+<p style="text-align: center;"><i> \textrm{IBIC} = -2LL - q\log{2 &pi;} - \log{\det{\textrm{ACOV}}}.</i></p>
+
+<p>Stochastic information criterion (SIC; see Preacher, 2006, for details) is
+similar to IBIC but does not include the <i>q\log{2 &pi;}</i> term that is
+also in HBIC.  SIC and IBIC both account for model complexity in a model's
+functional form, not merely the number of free parameters.  The SIC can be
+computed as:
+</p>
+<p style="text-align: center;"><i> \textrm{SIC} = -2LL + q\log{N} + \log{\det{\textrm{FIM}}} = -2LL - \log{\det{\textrm{ACOV}}}.</i></p>
+
+<p>Hannan&ndash;Quinn Information Criterion (HQC; Hannan &amp; Quinn, 1979) is used for
+model selection, similar to AIC or BIC.
+</p>
+<p style="text-align: center;"><i> \textrm{HQC} = -2LL + 2q\log{(\log{N})},</i></p>
+
+<p>Bozdogan Information Complexity (ICOMP) Criteria (Howe et al., 2011),
+instead of penalizing the number of free parameters directly,
+ICOMP penalizes the covariance complexity of the model.
+</p>
+<p style="text-align: center;"><i> \textrm{ICOMP} = -2LL + s \times log(\frac{\bar{&lambda;_a}}{\bar{&lambda;_g}}) </i></p>
+
+
+
+<h3>Value</h3>
+
+<p>A <code>numeric</code> <code>lavaan.vector</code> including any of the
+following requested via <code style="white-space: pre;">fit.measures=</code>
+</p>
+
+<ol>
+<li> <p><code>gammaHat</code>: Gamma-Hat
+</p>
+</li>
+<li> <p><code>adjGammaHat</code>: Adjusted Gamma-Hat
+</p>
+</li>
+<li> <p><code>baseline.rmsea</code>: RMSEA of the default baseline (i.e., independence) model
+</p>
+</li>
+<li> <p><code>gammaHat.scaled</code>: Gamma-Hat using scaled <i>&chi;^2</i>
+</p>
+</li>
+<li> <p><code>adjGammaHat.scaled</code>: Adjusted Gamma-Hat using scaled <i>&chi;^2</i>
+</p>
+</li>
+<li> <p><code>baseline.rmsea.scaled</code>: RMSEA of the default baseline (i.e.,
+independence) model using scaled <i>&chi;^2</i>
+</p>
+</li>
+<li> <p><code>aic.smallN</code>: Corrected (for small sample size) AIC
+</p>
+</li>
+<li> <p><code>bic.priorN</code>: BIC with specified prior sample size
+</p>
+</li>
+<li> <p><code>spbic</code>: Scaled Unit-Information Prior BIC (SPBIC)
+</p>
+</li>
+<li> <p><code>hbic</code>: Haughton's BIC (HBIC)
+</p>
+</li>
+<li> <p><code>ibic</code>: Information-matrix-based BIC (IBIC)
+</p>
+</li>
+<li> <p><code>sic</code>: Stochastic Information Criterion (SIC)
+</p>
+</li>
+<li> <p><code>hqc</code>: Hannan-Quinn Information Criterion (HQC)
+</p>
+</li>
+<li> <p><code>icomp</code>: Bozdogan Information Complexity (ICOMP) Criteria
+</p>
+</li></ol>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Sunthud Pornprasertmanit (<a href="mailto:psunthud@gmail.com">psunthud@gmail.com</a>)
+</p>
+<p>Terrence D. Jorgensen (University of Amsterdam; <a href="mailto:TJorgensen314@gmail.com">TJorgensen314@gmail.com</a>)
+</p>
+<p>Aaron Boulton (University of Delaware)
+</p>
+<p>Ruben Arslan (Humboldt-University of Berlin, <a href="mailto:rubenarslan@gmail.com">rubenarslan@gmail.com</a>)
+</p>
+<p>Yves Rosseel (Ghent University; <a href="mailto:Yves.Rosseel@UGent.be">Yves.Rosseel@UGent.be</a>)
+</p>
+<p>Mauricio Garnier-Villarreal (Vrije Universiteit Amsterdam; <a href="mailto:mgv@pm.me">mgv@pm.me</a>)
+</p>
+<p>A great deal of feedback was provided by Kris Preacher regarding Bollen et
+al.'s (2012, 2014) extensions of BIC.
+</p>
+
+
+<h3>References</h3>
+
+<p>Bollen, K. A., Ray, S., Zavisca, J., &amp; Harden, J. J. (2012). A comparison of
+Bayes factor approximation methods including two new methods.
+<em>Sociological Methods &amp; Research, 41</em>(2), 294&ndash;324.
+doi: <a href="https://doi.org/10.1177/0049124112452393">10.1177/0049124112452393</a>
+</p>
+<p>Bollen, K. A., Harden, J. J., Ray, S., &amp; Zavisca, J. (2014). BIC and
+alternative Bayesian information criteria in the selection of structural
+equation models. <em>Structural Equation Modeling, 21</em>(1), 1&ndash;19.
+doi: <a href="https://doi.org/10.1080/10705511.2014.856691">10.1080/10705511.2014.856691</a>
+</p>
+<p>Burnham, K., &amp; Anderson, D. (2003). <em>Model selection and
+multimodel inference: A practical&ndash;theoretic approach</em>. New York, NY:
+Springer&ndash;Verlag.
+</p>
+<p>Dudgeon, P. (2004). A note on extending Steiger's (1998) multiple sample
+RMSEA adjustment to other noncentrality parameter-based statistic.
+<em>Structural Equation Modeling, 11</em>(3), 305&ndash;319.
+doi: <a href="https://doi.org/10.1207/s15328007sem1103_1">10.1207/s15328007sem1103_1</a>
+</p>
+<p>Howe, E. D., Bozdogan, H., &amp; Katragadda, S. (2011). Structural equation
+modeling (SEM) of categorical and mixed-data using the novel Gifi
+transformations and information complexity (ICOMP) criterion.
+<em>Istanbul University Journal of the School of Business Administration, 40</em>(1), 86&ndash;123.
+</p>
+<p>Kuha, J. (2004). AIC and BIC: Comparisons of assumptions and performance.
+<em>Sociological Methods Research, 33</em>(2), 188&ndash;229.
+doi: <a href="https://doi.org/10.1177/0049124103262065">10.1177/0049124103262065</a>
+</p>
+<p>Preacher, K. J. (2006). Quantifying parsimony in structural equation
+modeling. <em>Multivariate Behavioral Research, 43</em>(3), 227&ndash;259.
+doi: <a href="https://doi.org/10.1207/s15327906mbr4103_1">10.1207/s15327906mbr4103_1</a>
+</p>
+<p>West, S. G., Taylor, A. B., &amp; Wu, W. (2012). Model fit and model selection
+in structural equation modeling. In R. H. Hoyle (Ed.), <em>Handbook of
+structural equation modeling</em> (pp. 209&ndash;231). New York, NY: Guilford.
+</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><code><a href="../../semTools/help/epcEquivFit.html">epcEquivFit()</a></code> For the equivalence testing based on expected
+parameter changes for model fit evaluation
+</p>
+</li>
+<li> <p><code><a href="../../semTools/help/nullRMSEA.html">nullRMSEA()</a></code> For RMSEA of the default independence model
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+
+HS.model &lt;- ' visual  =~ x1 + x2 + x3
+              textual =~ x4 + x5 + x6
+              speed   =~ x7 + x8 + x9 '
+
+fit &lt;- cfa(HS.model, data = HolzingerSwineford1939)
+moreFitIndices(fit)
+
+fit2 &lt;- cfa(HS.model, data = HolzingerSwineford1939, estimator = "mlr")
+moreFitIndices(fit2)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>semTools</em> version 0.5-8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

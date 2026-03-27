@@ -1,0 +1,128 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Estimate Bayes Factors for the bbnam</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for bbnam.bf {sna}"><tr><td>bbnam.bf {sna}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Estimate Bayes Factors for the bbnam </h2>
+
+<h3>Description</h3>
+
+<p>This function uses monte carlo integration to estimate the BFs, and tests the fixed probability, pooled, and pooled by actor models. (See <code><a href="../../sna/help/bbnam.html">bbnam</a></code> for details.)
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+bbnam.bf(dat, nprior=0.5, em.fp=0.5, ep.fp=0.5, emprior.pooled=c(1, 11),
+    epprior.pooled=c(1, 11), emprior.actor=c(1, 11), epprior.actor=c(1, 11), 
+    diag=FALSE, mode="digraph", reps=1000)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>dat</code></td>
+<td>
+<p> Input networks to be analyzed.  This may be supplied in any reasonable form, but must be reducible to an array of dimension <i>m x n x n</i>, where <i>n</i> is <i>|V(G)|</i>, the first dimension indexes the observer (or information source), the second indexes the sender of the relation, and the third dimension indexes the recipient of the relation.  (E.g., <code>dat[i,j,k]==1</code> implies that i observed j sending the relation in question to k.)  Note that only dichotomous data is supported at present, and missing values are permitted; the data collection pattern, however, is assumed to be ignorable, and hence the posterior draws are implicitly conditional on the observation pattern.</p>
+</td></tr>
+<tr valign="top"><td><code>nprior</code></td>
+<td>
+<p> Network prior matrix.  This must be a matrix of dimension <i>n</i> x <i>n</i>, containing the arc/edge priors for the criterion network.  (E.g., <code>nprior[i,j]</code> gives the prior probability of <code>i</code> sending the relation to <code>j</code> in the criterion graph.)  Non-matrix values will be coerced/expanded to matrix form as appropriate.  If no network prior is provided, an uninformative prior on the space of networks will be assumed (i.e., <i>Pr(i-&gt;j)=0.5</i>).  Missing values are not allowed. </p>
+</td></tr>
+<tr valign="top"><td><code>em.fp</code></td>
+<td>
+<p> Probability of false negatives for the fixed probability model </p>
+</td></tr>
+<tr valign="top"><td><code>ep.fp</code></td>
+<td>
+<p> Probability of false positives for the fixed probability model </p>
+</td></tr>
+<tr valign="top"><td><code>emprior.pooled</code></td>
+<td>
+ <p><i>(alpha,beta)</i> pairs for the (beta) false negative prior under the pooled model </p>
+</td></tr>
+<tr valign="top"><td><code>epprior.pooled</code></td>
+<td>
+ <p><i>(alpha,beta)</i> pairs for the (beta) false positive prior under the pooled model </p>
+</td></tr>
+<tr valign="top"><td><code>emprior.actor</code></td>
+<td>
+<p> Matrix of per observer <i>(alpha,beta)</i> pairs for the (beta) false negative prior under the per observer/actor model, or something that can be coerced to this form </p>
+</td></tr>
+<tr valign="top"><td><code>epprior.actor</code></td>
+<td>
+<p> Matrix of per observer (<i>(alpha,beta)</i> pairs for the (beta) false positive prior under the per observer/actor model, or something that can be coerced to this form </p>
+</td></tr>
+<tr valign="top"><td><code>diag</code></td>
+<td>
+<p> Boolean indicating whether or not the diagonal should be treated as valid data.  Set this true if and only if the criterion graph can contain loops.  Diag is false by default. </p>
+</td></tr>
+<tr valign="top"><td><code>mode</code></td>
+<td>
+<p> String indicating the type of graph being evaluated.  <code>"digraph"</code> indicates that edges should be interpreted as directed; <code>"graph"</code> indicates that edges are undirected.  Mode is set to <code>"digraph"</code> by default. </p>
+</td></tr>
+<tr valign="top"><td><code>reps</code></td>
+<td>
+<p> Number of Monte Carlo draws to take </p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The bbnam model (detailed in the <code><a href="../../sna/help/bbnam.html">bbnam</a></code> function help) is a fairly simple model for integrating informant reports regarding social network data.  <code>bbnam.bf</code> computes log Bayes Factors (integrated likelihood ratios) for the three error submodels of the bbnam: fixed error probabilities, pooled error probabilities, and per observer/actor error probabilities.
+</p>
+<p>By default, <code>bbnam.bf</code> uses weakly informative Beta(1,11) priors for false positive and false negative rates, which may not be appropriate for all cases.  (Likewise, the initial network prior is uniformative.)  Users are advised to consider adjusting the error rate priors when using this function in a practical context; for instance, it is often reasonable to expect higher false negative rates (on average) than false positive rates, and to expect the criterion graph density to be substantially less than 0.5.  See the reference below for a discussion of this issue.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>bayes.factor</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p> It is important to be aware that the model parameter priors are essential components of the models to be compared; inappropriate parameter priors will result in misleading Bayes Factors. </p>
+
+
+<h3>Author(s)</h3>
+
+<p> Carter T. Butts <a href="mailto:buttsc@uci.edu">buttsc@uci.edu</a> </p>
+
+
+<h3>References</h3>
+
+<p>Butts, C. T.  (2003).  &ldquo;Network Inference, Error, and Informant (In)Accuracy: A Bayesian Approach.&rdquo;  <em>Social Networks</em>, 25(2), 103-140.
+</p>
+<p>Robert, C.  (1994).  <em>The Bayesian Choice: A Decision-Theoretic Motivation.</em>  Springer. </p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../sna/help/bbnam.html">bbnam</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+#Create some random data from the "pooled" model
+g&lt;-rgraph(7)
+g.p&lt;-0.8*g+0.2*(1-g)
+dat&lt;-rgraph(7,7,tprob=g.p)
+
+#Estimate the log Bayes Factors
+b&lt;-bbnam.bf(dat,emprior.pooled=c(3,5),epprior.pooled=c(3,5),
+    emprior.actor=c(3,5),epprior.actor=c(3,5))
+#Print the results
+b
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sna</em> version 2.8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

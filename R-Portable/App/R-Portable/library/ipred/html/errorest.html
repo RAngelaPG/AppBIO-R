@@ -1,0 +1,310 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Estimators of Prediction Error</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for errorest {ipred}"><tr><td>errorest {ipred}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Estimators of Prediction Error </h2>
+
+<h3>Description</h3>
+
+<p>Resampling based estimates of prediction error: misclassification error, 
+root mean squared error or Brier score for survival data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'data.frame'
+errorest(formula, data, subset, na.action=na.omit, 
+         model=NULL, predict=NULL,
+         estimator=c("cv", "boot", "632plus"), 
+         est.para=control.errorest(), ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>a formula of the form <code>lhs ~ rhs</code>. 
+Either describing the model of explanatory and 
+response variables in the usual way (see <code><a href="../../stats/html/lm.html">lm</a></code>) 
+or the model between explanatory and intermediate variables
+in the framework of indirect classification, 
+see <code><a href="../../ipred/help/inclass.html">inclass</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>a data frame containing the variables in the model formula 
+and additionally the class membership variable 
+if <code>model = inclass</code>. <code>data</code> is required for
+indirect classification, otherwise <code>formula</code> is evaluated
+in the calling environment.</p>
+</td></tr>
+<tr valign="top"><td><code>subset</code></td>
+<td>
+<p>optional vector, specifying a subset of observations to 
+be used.</p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+<p>function which indicates what should happen when the data
+contains <code>NA</code>'s, defaults to <code><a href="../../stats/html/na.fail.html">na.omit</a></code>.</p>
+</td></tr> 
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>function. Modelling technique whose error rate is to be 
+estimated. The function <code>model</code> can either return an 
+object representing a fitted model or a function with
+argument <code>newdata</code> which returns predicted values. In
+this case, the <code>predict</code> argument to <code>errorest</code> is
+ignored.</p>
+</td></tr>
+<tr valign="top"><td><code>predict</code></td>
+<td>
+<p>function. Prediction method to be used. The vector of 
+predicted values must have the same length as the the 
+number of to-be-predicted observations. Predictions 
+corresponding to missing data must be replaced by <code>NA</code>.
+Additionally, <code>predict</code> has to return predicted values 
+comparable to the responses (that is: factors for 
+classification problems). See the example on how to make
+this sure for any predictor.</p>
+</td></tr>
+<tr valign="top"><td><code>estimator</code></td>
+<td>
+<p>estimator of the misclassification error: 
+<code>cv</code> cross-validation, <code>boot</code> bootstrap or 
+<code>632plus</code> bias corrected bootstrap (classification
+only). </p>
+</td></tr>
+<tr valign="top"><td><code>est.para</code></td>
+<td>
+<p>a list of additional parameters that control the
+calculation of the estimator, see 
+<code><a href="../../ipred/help/control.errorest.html">control.errorest</a></code> for details.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>additional parameters to <code>model</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The prediction error for classification and regression models as well as
+predictive models for censored data using cross-validation or the 
+bootstrap can be computed by <code>errorest</code>. For classification problems,
+the estimated misclassification error is returned. The root mean squared
+error is computed for regression problems and the Brier score for censored
+data (Graf et al., 1999) is reported if the response is censored. 
+</p>
+<p>Any model can be specified as long as it is a function with arguments
+<code>model(formula, data, subset, na.action, ...)</code>. If 
+a method <code>predict.model(object, newdata, ...)</code> is available,
+<code>predict</code> does not need to be specified. However, <code>predict</code> 
+has to return predicted values in the same order and of the same length
+corresponding to the response. See the examples below. 
+</p>
+<p>$k$-fold cross-validation and the usual bootstrap estimator with
+<code>est.para$nboot</code> bootstrap replications can be computed for
+all kind of problems. The bias corrected .632+ bootstrap
+by Efron and Tibshirani (1997) is available for classification problems
+only. Use <code><a href="../../ipred/help/control.errorest.html">control.errorest</a></code> to specify additional arguments.
+</p>
+<p><code>errorest</code> is a formula based interface to the generic functions 
+<code><a href="../../ipred/help/cv.html">cv</a></code> or <code><a href="../../ipred/help/bootest.html">bootest</a></code> which implement methods for
+classification, regression and survival problems.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The class of the object returned depends on the class of the response
+variable and the estimator used. In each case, it is a list with an element
+<code>error</code> and additional information. <code>print</code> methods are available
+for the inspection of the results.
+</p>
+
+
+<h3>References</h3>
+
+<p>Brian D. Ripley (1996), <em>Pattern Recognition and Neural Networks</em>.
+Cambridge: Cambridge University Press.
+</p>
+<p>Bradley Efron and Robert Tibshirani (1997),
+Improvements on Cross-Validation: The .632+ Bootstrap Estimator.
+<em>Journal of the American Statistical Association</em> <b>92</b>(438),
+548&ndash;560.
+</p>
+<p>Erika Graf, Claudia Schmoor, Willi Sauerbrei and Martin Schumacher (1999), 
+Assessment and comparison of prognostic classification schemes for 
+survival data. <em>Statistics in Medicine</em> <b>18</b>(17-18), 2529&ndash;2545.
+</p>
+<p>Rosa A. Schiavo and David J. Hand (2000), Ten More Years of Error Rate
+Research. <em>International Statistical Review</em> <b>68</b>(3), 296-310. 
+</p>
+<p>David J. Hand, Hua Gui Li, Niall M. Adams (2001),
+Supervised Classification with Structured Class Definitions.
+<em>Computational Statistics &amp; Data Analysis</em> <b>36</b>,
+209&ndash;225.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# Classification
+
+data("iris")
+library("MASS")
+
+# force predict to return class labels only
+mypredict.lda &lt;- function(object, newdata)
+  predict(object, newdata = newdata)$class
+
+# 10-fold cv of LDA for Iris data
+errorest(Species ~ ., data=iris, model=lda, 
+         estimator = "cv", predict= mypredict.lda)
+
+data("PimaIndiansDiabetes", package = "mlbench")
+## Not run: 
+# 632+ bootstrap of LDA for Diabetes data
+errorest(diabetes ~ ., data=PimaIndiansDiabetes, model=lda,
+         estimator = "632plus", predict= mypredict.lda)
+
+## End(Not run)
+
+#cv of a fixed partition of the data
+list.tindx &lt;- list(1:100, 101:200, 201:300, 301:400, 401:500,
+        501:600, 601:700, 701:768)
+
+errorest(diabetes ~ ., data=PimaIndiansDiabetes, model=lda,
+          estimator = "cv", predict = mypredict.lda,
+          est.para = control.errorest(list.tindx = list.tindx))
+
+## Not run: 
+#both bootstrap estimations based on fixed partitions
+
+list.tindx &lt;- vector(mode = "list", length = 25)
+for(i in 1:25) {
+  list.tindx[[i]] &lt;- sample(1:768, 768, TRUE)
+}
+
+errorest(diabetes ~ ., data=PimaIndiansDiabetes, model=lda,
+          estimator = c("boot", "632plus"), predict= mypredict.lda,
+          est.para = control.errorest(list.tindx = list.tindx))
+
+
+## End(Not run)
+data("Glass", package = "mlbench")
+
+# LDA has cross-validated misclassification error of
+# 38% (Ripley, 1996, page 98)
+
+# Pruned trees about 32% (Ripley, 1996, page 230)
+
+# use stratified sampling here, i.e. preserve the class proportions
+errorest(Type ~ ., data=Glass, model=lda, 
+         predict=mypredict.lda, est.para=control.errorest(strat=TRUE))
+
+# force predict to return class labels
+mypredict.rpart &lt;- function(object, newdata)
+  predict(object, newdata = newdata,type="class")
+
+library("rpart")
+pruneit &lt;- function(formula, ...)
+  prune(rpart(formula, ...), cp =0.01)
+
+errorest(Type ~ ., data=Glass, model=pruneit,
+         predict=mypredict.rpart, est.para=control.errorest(strat=TRUE))
+
+# compute sensitivity and specifity for stabilised LDA
+
+data("GlaucomaM", package = "TH.data")
+
+error &lt;- errorest(Class ~ ., data=GlaucomaM, model=slda,
+  predict=mypredict.lda, est.para=control.errorest(predictions=TRUE))
+
+# sensitivity 
+
+mean(error$predictions[GlaucomaM$Class == "glaucoma"] == "glaucoma")
+
+# specifity
+
+mean(error$predictions[GlaucomaM$Class == "normal"] == "normal")
+
+# Indirect Classification: Smoking data
+
+data(Smoking)
+# Set three groups of variables:
+# 1) explanatory variables are: TarY, NicY, COY, Sex, Age
+# 2) intermediate variables are: TVPS, BPNL, COHB
+# 3) response (resp) is defined by:
+
+resp &lt;- function(data){
+  data &lt;- data[, c("TVPS", "BPNL", "COHB")]
+  res &lt;- t(t(data) &gt; c(4438, 232.5, 58))
+  res &lt;- as.factor(ifelse(apply(res, 1, sum) &gt; 2, 1, 0))
+  res
+}
+
+response &lt;- resp(Smoking[ ,c("TVPS", "BPNL", "COHB")])
+smoking &lt;- cbind(Smoking, response)
+
+formula &lt;- response~TVPS+BPNL+COHB~TarY+NicY+COY+Sex+Age
+
+# Estimation per leave-one-out estimate for the misclassification is 
+# 36.36% (Hand et al., 2001), using indirect classification with 
+# linear models
+## Not run: 
+errorest(formula, data = smoking, model = inclass,estimator = "cv", 
+         pFUN = list(list(model=lm, predict = mypredict.lm)), cFUN = resp,  
+         est.para=control.errorest(k=nrow(smoking)))
+
+## End(Not run)
+
+# Regression
+
+data("BostonHousing", package = "mlbench")
+
+# 10-fold cv of lm for Boston Housing data
+errorest(medv ~ ., data=BostonHousing, model=lm,
+         est.para=control.errorest(random=FALSE))
+
+# the same, with "model" returning a function for prediction
+# instead of an object of class "lm"
+
+mylm &lt;- function(formula, data) {
+  mod &lt;- lm(formula, data)
+  function(newdata) predict(mod, newdata)
+}
+
+errorest(medv ~ ., data=BostonHousing, model=mylm,
+est.para=control.errorest(random=FALSE))
+
+
+# Survival data
+
+data("GBSG2", package = "TH.data")
+library("survival")
+
+# prediction is fitted Kaplan-Meier
+predict.survfit &lt;- function(object, newdata) object
+
+# 5-fold cv of Kaplan-Meier for GBSG2 study
+errorest(Surv(time, cens) ~ 1, data=GBSG2, model=survfit,
+         predict=predict.survfit, est.para=control.errorest(k=5))
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ipred</em> version 0.9-15 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

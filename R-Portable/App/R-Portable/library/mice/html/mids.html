@@ -1,0 +1,509 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Multiply imputed data set ('mids')</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mids {mice}"><tr><td>mids {mice}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Multiply imputed data set (<code>mids</code>)</h2>
+
+<h3>Description</h3>
+
+<p>The <code>mids</code> object is an S3 class that represents a multiply imputed
+data set. The <code>mids()</code> function is the S3 constructor.
+The following functions produce a <code>mids</code> object:
+<code>mids()</code>, <code><a href="../../mice/help/mice.html">mice</a>()</code>, <code><a href="../../mice/help/mice.mids.html">mice.mids</a>()</code>,
+<code><a href="../../mice/help/cbind.html">cbind</a>()</code>, <code><a href="../../mice/help/rbind.html">rbind</a>()</code>, <code><a href="../../mice/help/ibind.html">ibind</a>()</code>,
+<code><a href="../../mice/help/as.mids.html">as.mids</a>()</code> and <code><a href="../../mice/help/filter.html">filter</a>()</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+mids(
+  data = data.frame(),
+  imp = list(),
+  m = integer(),
+  where = matrix,
+  blocks = list(),
+  call = match.call(),
+  nmis = integer(),
+  method = character(),
+  predictorMatrix = matrix(),
+  visitSequence = character(),
+  formulas = list(),
+  calltype = character(),
+  post = character(),
+  blots = list(),
+  ignore = logical(),
+  seed = integer(),
+  iteration = integer(),
+  lastSeedValue = tryCatch(get(".Random.seed", envir = globalenv(), mode = "integer",
+    inherits = FALSE), error = function(e) NULL),
+  chainMean = list(),
+  chainVar = list(),
+  loggedEvents = data.frame(),
+  version = packageVersion("mice"),
+  date = Sys.Date()
+)
+
+## S3 method for class 'mids'
+plot(
+  x,
+  y = NULL,
+  theme = mice.theme(),
+  layout = c(2, 3),
+  type = "l",
+  col = 1:10,
+  lty = 1,
+  ...
+)
+
+## S3 method for class 'mids'
+print(x, ...)
+
+## S3 method for class 'mids'
+summary(object, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A data frame or a matrix containing the incomplete data.  Missing
+values are coded as <code>NA</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>imp</code></td>
+<td>
+<p>Calculated field</p>
+</td></tr>
+<tr valign="top"><td><code>m</code></td>
+<td>
+<p>Number of multiple imputations. The default is <code>m=5</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>where</code></td>
+<td>
+<p>A data frame or matrix with logicals of the same dimensions
+as <code>data</code> indicating where in the data the imputations should be
+created. The default, <code>where = is.na(data)</code>, specifies that the
+missing data should be imputed. The <code>where</code> argument may be used to
+overimpute observed data, or to skip imputations for selected missing values.
+Note: Imputation methods that generate imptutations outside of
+<code>mice</code>, like <code>mice.impute.panImpute()</code> may depend on a complete
+predictor space. In that case, a custom <code>where</code> matrix can not be
+specified.</p>
+</td></tr>
+<tr valign="top"><td><code>blocks</code></td>
+<td>
+<p>List of vectors with variable names per block. List elements
+may be named to identify blocks. Variables within a block are
+imputed by a multivariate imputation method
+(see <code>method</code> argument). By default each variable is placed
+into its own block, which is effectively
+fully conditional specification (FCS) by univariate models
+(variable-by-variable imputation). Only variables whose names appear in
+<code>blocks</code> are imputed. The relevant columns in the <code>where</code>
+matrix are set to <code>FALSE</code> of variables that are not block members.
+A variable may appear in multiple blocks. In that case, it is
+effectively re-imputed each time that it is visited.</p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>Calculated field</p>
+</td></tr>
+<tr valign="top"><td><code>nmis</code></td>
+<td>
+<p>Calculated field</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>Can be either a single string, or a vector of strings with
+length <code>length(blocks)</code>, specifying the imputation method to be
+used for each column in data. If specified as a single string, the same
+method will be used for all blocks. The default imputation method (when no
+argument is specified) depends on the measurement level of the target column,
+as regulated by the <code>defaultMethod</code> argument. Columns that need
+not be imputed have the empty method <code>""</code>. See details.</p>
+</td></tr>
+<tr valign="top"><td><code>predictorMatrix</code></td>
+<td>
+<p>A numeric matrix of <code>length(blocks)</code> rows
+and <code>ncol(data)</code> columns, containing 0/1 data specifying
+the set of predictors to be used for each target column.
+Each row corresponds to a variable block, i.e., a set of variables
+to be imputed. A value of <code>1</code> means that the column
+variable is used as a predictor for the target block (in the rows).
+By default, the <code>predictorMatrix</code> is a square matrix of <code>ncol(data)</code>
+rows and columns with all 1's, except for the diagonal.
+Note: For two-level imputation models (which have <code>"2l"</code> in their names)
+other codes (e.g, <code>2</code> or <code>-2</code>) are also allowed.</p>
+</td></tr>
+<tr valign="top"><td><code>visitSequence</code></td>
+<td>
+<p>A vector of block names of arbitrary length, specifying the
+sequence of blocks that are imputed during one iteration of the Gibbs
+sampler. A block is a collection of variables. All variables that are
+members of the same block are imputed
+when the block is visited. A variable that is a member of multiple blocks
+is re-imputed within the same iteration.
+The default <code>visitSequence = "roman"</code> visits the blocks (left to right)
+in the order in which they appear in <code>blocks</code>.
+One may also use one of the following keywords: <code>"arabic"</code>
+(right to left), <code>"monotone"</code> (ordered low to high proportion
+of missing data) and <code>"revmonotone"</code> (reverse of monotone).
+<em>Special case</em>: If you specify both <code>visitSequence = "monotone"</code> and
+<code>maxit = 1</code>, then the procedure will edit the <code>predictorMatrix</code>
+to conform to the monotone pattern. Realize that convergence in one
+iteration is only guaranteed if the missing data pattern is actually
+monotone. The procedure does not check this.</p>
+</td></tr>
+<tr valign="top"><td><code>formulas</code></td>
+<td>
+<p>A named list of formula's, or expressions that
+can be converted into formula's by <code>as.formula</code>. List elements
+correspond to blocks. The block to which the list element applies is
+identified by its name, so list names must correspond to block names.
+The <code>formulas</code> argument is an alternative to the
+<code>predictorMatrix</code> argument that allows for more flexibility in
+specifying imputation models, e.g., for specifying interaction terms.</p>
+</td></tr>
+<tr valign="top"><td><code>calltype</code></td>
+<td>
+<p>A character vector of <code>length(block)</code> elements
+that indicates how the imputation model is specified. Entries can
+one of two values: <code>"pred"</code> or <code>"formula"</code>. If
+<code>calltype = "pred"</code>, the predictors of the imputation
+model for the block are specified by the corresponding row of the
+<code>predictorMatrix</code>. If  <code>calltype = "formula"</code> the
+imputation model is specified by relevant entry in
+<code>formulas</code>. The default depends on the presence of the
+<code>formulas</code> argument. If <code>formulas</code> is present, then
+<code>mice()</code> sets
+<code>calltype = "formula"</code> for any block
+for which a formula is specified. Otherwise, <code>calltype = "pred"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>post</code></td>
+<td>
+<p>A vector of strings with length <code>ncol(data)</code> specifying
+expressions as strings. Each string is parsed and
+executed within the <code>sampler()</code> function to post-process
+imputed values during the iterations.
+The default is a vector of empty strings, indicating no post-processing.
+Multivariate (block) imputation methods ignore the <code>post</code> parameter.</p>
+</td></tr>
+<tr valign="top"><td><code>blots</code></td>
+<td>
+<p>A named <code>list</code> of <code>alist</code>'s that can be used
+to pass down arguments to lower level imputation function. The entries
+of element <code>blots[[blockname]]</code> are passed down to the function
+called for block <code>blockname</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>ignore</code></td>
+<td>
+<p>A logical vector of <code>nrow(data)</code> elements indicating
+which rows are ignored when creating the imputation model. The default
+<code>NULL</code> includes all rows that have an observed value of the variable
+to imputed. Rows with <code>ignore</code> set to <code>TRUE</code> do not influence the
+parameters of the imputation model, but are still imputed. We may use the
+<code>ignore</code> argument to split <code>data</code> into a training set (on which the
+imputation model is built) and a test set (that does not influence the
+imputation model estimates).
+Note: Multivariate imputation methods, like <code>mice.impute.jomoImpute()</code>
+or <code>mice.impute.panImpute()</code>, do not honour the <code>ignore</code> argument.</p>
+</td></tr>
+<tr valign="top"><td><code>seed</code></td>
+<td>
+<p>An integer that is used as argument by the <code>set.seed()</code> for
+offsetting the random number generator. Default is to leave the random number
+generator alone.</p>
+</td></tr>
+<tr valign="top"><td><code>iteration</code></td>
+<td>
+<p>Calculated field</p>
+</td></tr>
+<tr valign="top"><td><code>lastSeedValue</code></td>
+<td>
+<p>Calculated field</p>
+</td></tr>
+<tr valign="top"><td><code>chainMean</code></td>
+<td>
+<p>Calculated field</p>
+</td></tr>
+<tr valign="top"><td><code>chainVar</code></td>
+<td>
+<p>Calculated field</p>
+</td></tr>
+<tr valign="top"><td><code>loggedEvents</code></td>
+<td>
+<p>Calculated field</p>
+</td></tr>
+<tr valign="top"><td><code>version</code></td>
+<td>
+<p>Calculated field</p>
+</td></tr>
+<tr valign="top"><td><code>date</code></td>
+<td>
+<p>Calculated field</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>An object of class <code>mids</code></p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>A formula that specifies which variables, stream and iterations are plotted.
+If omitted, all streams, variables and iterations are plotted.</p>
+</td></tr>
+<tr valign="top"><td><code>theme</code></td>
+<td>
+<p>The trellis theme to applied to the graphs. The default is <code>mice.theme()</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>layout</code></td>
+<td>
+<p>A vector of length 2 given the number of columns and rows in the plot.
+The default is <code>c(2, 3)</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>Parameter <code>type</code> of <code><a href="../../lattice/help/panel.xyplot.html">panel.xyplot</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>col</code></td>
+<td>
+<p>Parameter <code>col</code> of <code><a href="../../lattice/help/panel.xyplot.html">panel.xyplot</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>lty</code></td>
+<td>
+<p>Parameter <code>lty</code> of <code><a href="../../lattice/help/panel.xyplot.html">panel.xyplot</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Others arguments</p>
+</td></tr>
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>Object of class <code>mids</code></p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The S3 class <code>mids</code> has the following methods:
+<code><a href="../../mice/help/bwplot.html">bwplot</a>()</code>, <code><a href="../../mice/help/complete.html">complete</a>()</code>,
+<code><a href="../../mice/help/densityplot.html">densityplot</a>()</code>, <code>plot()</code>,
+<code>print()</code>, <code><a href="../../mice/help/stripplot.html">stripplot</a>()</code>, <code>summary()</code>,
+<code><a href="../../mice/help/with.html">with</a>()</code> and <code><a href="../../mice/help/xyplot.html">xyplot</a>()</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>mids()</code> returns a <code>mids</code> object.
+</p>
+<p><code>plot()</code> returns a <code><a href="../../lattice/help/xyplot.html">xyplot</a></code> object.
+</p>
+<p><code>print()</code> returns the input object invisibly.
+</p>
+<p><code>summary()</code> returns the input object invisibly.
+</p>
+
+
+<h3>Structure</h3>
+
+<p>Objects of class <code>"mids"</code> are lists with the following elements:
+</p>
+
+<dl>
+<dt><code>data</code>:</dt><dd><p>Original (incomplete) data set.</p>
+</dd>
+<dt><code>imp</code>:</dt><dd><p>A list of <code>ncol(data)</code> components with
+the generated multiple imputations. Each list component is a
+<code>data.frame</code> (<code>nmis[j]</code> by <code>m</code>) of imputed values
+for variable <code>j</code>. A <code>NULL</code> component is used for
+variables for which not imputations are generated.</p>
+</dd>
+<dt><code>m</code>:</dt><dd><p>Number of imputations.</p>
+</dd>
+<dt><code>where</code>:</dt><dd><p>The <code>where</code> argument of the
+<code>mice()</code> function.</p>
+</dd>
+<dt><code>blocks</code>:</dt><dd><p>The <code>blocks</code> argument of the
+<code>mice()</code> function.</p>
+</dd>
+<dt><code>call</code>:</dt><dd><p>Call that created the object.</p>
+</dd>
+<dt><code>nmis</code>:</dt><dd><p>An Named vector with counts of missing values per variable</p>
+</dd>
+<dt><code>method</code>:</dt><dd><p>A vector of strings of <code>length(blocks</code>
+specifying the imputation method per block.</p>
+</dd>
+<dt><code>predictorMatrix</code>:</dt><dd><p>A numerical matrix of containing
+integers specifying the predictor set.</p>
+</dd>
+<dt><code>visitSequence</code>:</dt><dd><p>A vector of variable and block names that
+specifies how variables and blocks are visited in one iteration throuh
+the data.</p>
+</dd>
+<dt><code>formulas</code>:</dt><dd><p>A named list of formula's, or expressions that
+can be converted into formula's by <code>as.formula</code>. List elements
+correspond to blocks. The block to which the list element applies is
+identified by its name, so list names must correspond to block names.</p>
+</dd>
+<dt><code>post</code>:</dt><dd><p>A vector of strings of length <code>length(blocks)</code>
+with commands for post-processing.</p>
+</dd>
+<dt><code>blots</code>:</dt><dd><p>&quot;Block dots&quot;. The <code>blots</code> argument to the <code>mice()</code>
+function.</p>
+</dd>
+<dt><code>ignore</code>:</dt><dd><p>A logical vector of length <code>nrow(data)</code> indicating
+the rows in <code>data</code> used to build the imputation model. (new in <code>mice 3.12.0</code>)</p>
+</dd>
+<dt><code>seed</code>:</dt><dd><p>The seed value of the solution.</p>
+</dd>
+<dt><code>iteration</code>:</dt><dd><p>Last Gibbs sampling iteration number.</p>
+</dd>
+<dt><code>lastSeedValue</code>:</dt><dd><p>Random number generator state.</p>
+</dd>
+<dt><code>chainMean</code>:</dt><dd><p>An array of dimensions <code>ncol</code> by
+<code>maxit</code> by <code>m</code> elements containing the mean of
+the generated multiple imputations.
+The array can be used for monitoring convergence.
+Note that observed data are not present in this mean.</p>
+</dd>
+<dt><code>chainVar</code>:</dt><dd><p>An array with similar structure as
+<code>chainMean</code>, containing the variance of the imputed values.</p>
+</dd>
+<dt><code>loggedEvents</code>:</dt><dd><p>A <code>data.frame</code> with five columns
+containing warnings, corrective actions, and other inside info.</p>
+</dd>
+<dt><code>version</code>:</dt><dd><p>Version number of <code>mice</code> package that
+created the object.</p>
+</dd>
+<dt><code>date</code>:</dt><dd><p>Date at which the object was created.</p>
+</dd>
+</dl>
+
+
+
+<h3>LoggedEvents</h3>
+
+<p>The <code>loggedEvents</code> entry is a matrix with five columns containing a
+record of automatic removal actions. It is <code>NULL</code> is no action was
+made.  At initialization the program removes constant variables, and
+removes variables to cause collinearity.
+During iteration, the program does the following actions:
+</p>
+
+<ul>
+<li><p> One or more variables that are linearly dependent are removed
+(for categorical data, a 'variable' corresponds to a dummy variable)
+</p>
+</li>
+<li><p>  Proportional odds regression imputation that does not converge
+and is replaced by <code>polyreg</code>.
+</p>
+</li></ul>
+
+<p>Explanation of elements in <code>loggedEvents</code>:
+</p>
+
+<dl>
+<dt><code>it</code></dt><dd><p>iteration number at which the record was added,</p>
+</dd>
+<dt><code>im</code></dt><dd><p>imputation number,</p>
+</dd>
+<dt><code>dep</code></dt><dd><p>name of the dependent variable,</p>
+</dd>
+<dt><code>meth</code></dt><dd><p>imputation method used,</p>
+</dd>
+<dt><code>out</code></dt><dd><p>a (possibly long) character vector with the
+names of the altered or removed predictors.</p>
+</dd>
+</dl>
+
+
+
+<h3>Methods</h3>
+
+<p>The <code>mids</code> class of objects has methods for the following
+generic functions: <code>print</code>, <code>summary</code>, <code>plot</code>.
+</p>
+
+
+<h3>Plot</h3>
+
+<p>The <code>plot()</code> metho plots the trace lines of the MICE algorithm.
+The <code>plot</code> method for a <code>mids</code> object plots the mean imputed
+value per imputation and the mean standard deviation of the imputed
+values against the iteration number for each of the $m$ replications.
+By default, the function creates a plot for each incomplete
+variable. On convergence, the streams should intermingle and be free
+of any trend.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Stef van Buuren, Karin Groothuis-Oudshoorn
+</p>
+
+
+<h3>References</h3>
+
+<p>van Buuren S and Groothuis-Oudshoorn K (2011). <code>mice</code>:
+Multivariate Imputation by Chained Equations in <code>R</code>. <em>Journal of
+Statistical Software</em>, <b>45</b>(3), 1-67.
+doi: <a href="https://doi.org/10.18637/jss.v045.i03">10.18637/jss.v045.i03</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../mice/help/mice.html">mice</a></code>, <code><a href="../../mice/help/mira.html">mira</a></code>,
+<code><a href="../../mice/help/mipo.html">mipo</a></code>, <code><a href="../../lattice/help/xyplot.html">xyplot</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data &lt;- data.frame(a = c(1, NA, 3), b = c(NA, 2, 3))
+q &lt;- list(
+  a = structure(
+    list(`1` = 3, `2` = 3, `3` = 3, `4` = 3, `5` = 3),
+         row.names = "2", class = "data.frame"),
+  b = structure(
+    list(`1` = 3, `2` = 3, `3` = 2, `4` = 2, `5` = 3),
+         row.names = "1", class = "data.frame"))
+
+imp &lt;- mids(
+  data = data,
+  imp = q,
+  m = 5,
+  where = is.na(data),
+  blocks = list(a = "a", b = "b"),
+  nmis = colSums(is.na(data)),
+  method = c(a = "mean", b = "norm"),
+  predictorMatrix = matrix(1, nrow = 2, ncol = 2, dimnames = list(c("a", "b"), c("a", "b"))),
+  visitSequence = c("a", "b"),
+  formulas = list(a = a ~ b, b = b ~ a),
+  post = NULL,
+  blots = NULL,
+  ignore = logical(nrow(data)),
+  seed = 123,
+  iteration = 1,
+  chainMean = list(a = c(1, 2, 3), b = c(3, 2, 1)),
+  chainVar = list(a = c(1.1, 1.2, 1.3), b = c(0.9, 1.0, 1.1)),
+  loggedEvents = NULL)
+
+print(imp)
+imp &lt;- mice(nhanes, print = FALSE)
+plot(imp, bmi + chl ~ .it | .ms, layout = c(2, 1))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mice</em> version 3.19.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,464 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Interpolation function</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for interp {interp}"><tr><td>interp {interp}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Interpolation function
+</h2>
+
+<h3>Description</h3>
+
+<p>This function implements bivariate interpolation for irregularly 
+spaced input data. Piecewise linear (=barycentric interpolation), 
+bilinear or bicubic spline interpolation according to Akimas method
+is applied. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+interp(x, y = NULL, z, xo = seq(min(x), max(x), length = nx),
+       yo = seq(min(y), max(y), length = ny),
+       linear = (method == "linear"), extrap = FALSE,
+       duplicate = "error", dupfun = NULL,
+       nx = 40, ny = 40, input="points", output = "grid",
+       method = "linear", deltri = "shull", h=0,
+       kernel="gaussian", solver="QR", degree=3,
+       baryweight=TRUE, autodegree=FALSE, adtol=0.1,
+       smoothpde=FALSE, akimaweight=TRUE, nweight=25,
+       na.rm=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+
+<p>vector of <i>x</i>-coordinates of data points or a
+<code>SpatialPointsDataFrame</code> object (a regular gridded 
+<code>SpatialPixelsDataFrame</code> is also allowed). In this case also
+an sp data object will be returned.
+Missing values are not accepted.
+</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+
+<p>vector of <i>y</i>-coordinates of data points.
+Missing values are not accepted.
+</p>
+<p>If left as NULL indicates that <code>x</code> should be a
+<code>SpatialPointsDataFrame</code> and <code>z</code> names the variable of
+interest in this dataframe.
+</p>
+</td></tr>
+<tr valign="top"><td><code>z</code></td>
+<td>
+
+<p>vector of <i>z</i>-values at data points or a character variable
+naming the variable of interest in the
+<code>SpatialPointsDataFrame</code> <code>x</code>.
+</p>
+<p>Missing values are not accepted by default, see parameter <code>na.rm</code>.
+</p>
+<p><code>x</code>, <code>y</code>, and <code>z</code> must be the same length
+(execpt if <code>x</code> is a <code>SpatialPointsDataFrame</code>) and may
+contain no fewer than four points. The points of <code>x</code> and
+<code>y</code> should not be collinear if <code>input="grid"</code>, 
+as the underlying triangulation in these cases sometimes fails.
+</p>
+<p><code>interp</code> is meant for cases in which you have <i>x</i>, <i>y</i> 
+values scattered over a plane and a <i>z</i> value for each.  If, instead,
+you are trying to evaluate a mathematical function, or get a
+graphical interpretation of relationships that can be described by a
+polynomial, try <code><a href="../../base/html/outer.html">outer</a></code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>xo</code></td>
+<td>
+
+<p>If <code>output="grid"</code> (which is the default): sequence of <i>x</i> locations for
+rectangular output grid, defaults to <code>nx</code> points between
+<code>min(x)</code> and <code>max(x)</code>.
+</p>
+<p>If <code>output="points"</code>: vector of <i>x</i> locations for output points.
+</p>
+</td></tr>
+<tr valign="top"><td><code>yo</code></td>
+<td>
+
+<p>If <code>output="grid"</code> (default): sequence of <i>y</i> locations for
+rectangular output grid, defaults to <code>ny</code> points between
+<code>min(y)</code> and <code>max(y)</code>.
+</p>
+<p>If <code>output="points"</code>: vector of <i>y</i> locations for output
+points. In this case it has to be same length as <code>xo</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>input</code></td>
+<td>
+
+<p>text, possible values are <code>"grid"</code> (not yet implemented) and
+<code>"points"</code> (default).
+</p>
+<p>This is used to distinguish between regular and irregular gridded 
+input data.
+</p>
+</td></tr>
+<tr valign="top"><td><code>output</code></td>
+<td>
+
+<p>text, possible values are <code>"grid"</code> (=default) and
+<code>"points"</code>.
+</p>
+<p>If <code>"grid"</code> is choosen then <code>xo</code> and <code>yo</code> are
+interpreted as vectors spanning a rectangular grid of points
+<i>(xo[i],yo[j])</i>, <i>i=1,...,nx</i>, <i>j=1,...,ny</i>. This
+default behaviour matches how <code>akima::interp</code> works.
+</p>
+<p>In the case of <code>"points"</code>  <code>xo</code> and <code>yo</code> have to be
+of same length and are taken as possibly irregular spaced output
+points <i>(xo[i],yo[i])</i>, <i>i=1,...,no</i> with
+<code>no=length(xo)</code>. <code>nx</code> and <code>ny</code> are ignored in this
+case. This case is meant as replacement for the pointwise
+interpolation done by <code>akima::interpp</code>. If the input <code>x</code>
+is a <code>SpatialPointsDataFrame</code> and <code>output="points"</code> then
+<code>xo</code> has to be a <code>SpatialPointsDataFrame</code>, <code>yo</code> will
+be ignored.
+</p>
+</td></tr>
+<tr valign="top"><td><code>linear</code></td>
+<td>
+
+<p>logical, only for backward compatibility with <code>akima::interp</code>,
+indicates if piecewise linear interpolation or Akima splines should be
+used. 
+</p>
+<p>Please use the new <code>method</code> argument instead!
+</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+
+<p>text, possible methods are 
+<code>"linear"</code> (piecewise linear interpolation within
+the triangles of the Delaunay triangulation, also
+referred to as barycentric interpolation based on barycentric 
+coordinates) and <code>"akima"</code> (a reimplementation for Akimas spline 
+algorithms for irregular gridded data with the accuracy of a 
+bicubic polynomial).
+</p>
+<p><code>method="bilinear"</code> is only applicable to regular grids
+(<code>input="grid"</code>) and in turn calls <code><a href="../../interp/help/bilinear.html">bilinear</a></code>, 
+see there for more details.
+</p>
+<p><code>method="linear"</code> replaces the old <code>linear</code> argument of 
+<code>akima::interp</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>extrap</code></td>
+<td>
+
+<p>logical, indicates if extrapolation outside the convex hull is
+intended, this will not work for piecewise linear interpolation!
+</p>
+</td></tr>
+<tr valign="top"><td><code>duplicate</code></td>
+<td>
+
+<p>character string indicating how to handle duplicate
+data points. Possible values are
+</p>
+
+<dl>
+<dt><code>"error"</code></dt><dd><p>produces an error message,</p>
+</dd>
+<dt><code>"strip"</code></dt><dd><p>remove duplicate z values,</p>
+</dd>
+<dt><code>"mean"</code>,<code>"median"</code>,<code>"user"</code></dt><dd><p>calculate
+mean , median or user defined function (<code>dupfun</code>) of duplicate
+<i>z</i> values.</p>
+</dd>
+</dl>
+
+</td></tr>
+<tr valign="top"><td><code>dupfun</code></td>
+<td>
+
+<p>a function, applied to duplicate points if
+<code>duplicate= "user"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>nx</code></td>
+<td>
+
+<p>dimension of output grid in x direction
+</p>
+</td></tr>
+<tr valign="top"><td><code>ny</code></td>
+<td>
+
+<p>dimension of output grid in y direction
+</p>
+</td></tr>
+<tr valign="top"><td><code>deltri</code></td>
+<td>
+
+<p>triangulation method used, this argument may later be moved
+into a control set together with others related to the spline
+interpolation! Possible values are <code>"shull"</code> (default, sweep 
+hull algorithm) and <code>"deldir"</code> (uses package<code>deldir</code>).
+</p>
+</td></tr>
+<tr valign="top"><td><code>h</code></td>
+<td>
+<p>bandwidth for partial derivatives estimation, compare <code><a href="../../interp/help/locpoly.html">locpoly</a></code> for details</p>
+</td></tr>
+<tr valign="top"><td><code>kernel</code></td>
+<td>
+<p>kernel for partial derivatives estimation, compare <code><a href="../../interp/help/locpoly.html">locpoly</a></code> for details</p>
+</td></tr>
+<tr valign="top"><td><code>solver</code></td>
+<td>
+<p>solver used in partial derivatives estimation, compare <code><a href="../../interp/help/locpoly.html">locpoly</a></code> for details</p>
+</td></tr>
+<tr valign="top"><td><code>degree</code></td>
+<td>
+<p>degree of local polynomial used for partial derivatives
+estimation, compare <code><a href="../../interp/help/locpoly.html">locpoly</a></code> for details</p>
+</td></tr>
+<tr valign="top"><td><code>baryweight</code></td>
+<td>
+<p>calculate three partial derivatives estimators and
+return a barycentric weighted average.
+</p>
+<p>This increases the accuracy of Akima splines but the runtime is 
+multplied by 3!
+</p>
+</td></tr>
+<tr valign="top"><td><code>autodegree</code></td>
+<td>
+<p>try to reduce <code>degree</code> automatically</p>
+</td></tr>
+<tr valign="top"><td><code>adtol</code></td>
+<td>
+<p>tolerance used for autodegree</p>
+</td></tr>
+<tr valign="top"><td><code>smoothpde</code></td>
+<td>
+<p>Use an averaged version of partial derivatives
+estimates, by default simple average of <code>nweight</code> estimates.
+</p>
+<p>Currently disabled by default (FALSE), underlying code still a bit 
+experimental.
+</p>
+</td></tr>
+<tr valign="top"><td><code>akimaweight</code></td>
+<td>
+<p>apply Akima weighting scheme on partial derivatives
+estimations instead of simply averaging</p>
+</td></tr>
+<tr valign="top"><td><code>nweight</code></td>
+<td>
+<p>size of search neighbourhood for weighting scheme,
+default: 25</p>
+</td></tr>
+<tr valign="top"><td><code>na.rm</code></td>
+<td>
+<p>remove points where z=<code>NA</code>, defaults to <code>FALSE</code></p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>a list with 3 components:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>x,y</code></td>
+<td>
+
+<p>If <code>output="grid"</code>:
+vectors of <i>x</i>- and <i>y</i>-coordinates of output grid, the same
+as the input
+argument <code>xo</code>, or <code>yo</code>, if present.  Otherwise, their
+default, a vector 40 points evenly spaced over the range of the
+input <code>x</code> and <code>y</code>.
+</p>
+<p>If <code>output="points"</code>: vectors of <i>x</i>- and <i>y</i>-coordinates of
+output points as given by <code>xo</code> and <code>yo</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>z</code></td>
+<td>
+
+<p>If <code>output="grid"</code>:
+matrix of fitted <i>z</i>-values.  The value <code>z[i,j]</code> is computed
+at the point <i>(xo[i], yo[j])</i>. <code>z</code> has
+dimensions <code>length(xo)</code> times <code>length(yo)</code>.
+</p>
+<p>If <code>output="points"</code>: a vector with the calculated z values for
+the output points as given by <code>xo</code> and <code>yo</code>.
+</p>
+<p>If the input was a <code>SpatialPointsDataFrame</code> a
+<code>SpatialPixelsDataFrame</code> is returned for <code>output="grid"</code>
+and a  <code>SpatialPointsDataFrame</code>  for <code>output="points"</code>.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Note</h3>
+
+<p>Please note that this function tries to be a replacement for the interp() function 
+from the akima package. So it should be call compatible for most applications. 
+It also offers additional tuning parameters, usually the default settings will fit.
+Please be aware that these additional parameters may change in the future as they are
+still under development.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Albrecht Gebhardt &lt;albrecht.gebhardt@aau.at&gt;,
+Roger Bivand &lt;roger.bivand@nhh.no&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Moebius, A. F. (1827) Der barymetrische Calcul. Verlag v. Johann
+Ambrosius Barth, Leipzig,
+https://books.google.at/books?id=eFPluv_UqFEC&amp;hl=de&amp;pg=PR1#v=onepage&amp;q&amp;f=false
+</p>
+<p>Franke, R., (1979). A critical comparison of some methods for interpolation
+of scattered data. Tech. Rep. NPS-53-79-003, Dept. of Mathematics, Naval
+Postgraduate School, Monterey, Calif.
+</p>
+<p>Akima, H. (1978). A Method of Bivariate Interpolation and
+Smooth Surface Fitting for Irregularly Distributed Data Points.
+ACM Transactions on Mathematical Software <b>4</b>, 148-164.
+</p>
+<p>Akima, H. (1996). Algorithm 761: scattered-data surface fitting that has
+the accuracy of a cubic polynomial.
+ACM Transactions on Mathematical Software <b>22</b>, 362&ndash;371.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../interp/help/interpp.html">interpp</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+### Use all datasets from Franke, 1979:
+data(franke)
+## x-y irregular grid points:
+oldseed &lt;- set.seed(42)
+ni &lt;- 64
+xi &lt;- runif(ni,0,1)
+yi &lt;- runif(ni,0,1)
+xyi &lt;- cbind(xi,yi)
+## linear interpolation
+fi &lt;- franke.fn(xi,yi,1)
+IL &lt;- interp(xi,yi,fi,nx=80,ny=80,method="linear")
+## prepare breaks and colors that match for image and contour:
+breaks &lt;- pretty(seq(min(IL$z,na.rm=TRUE),max(IL$z,na.rm=TRUE),length=11))
+db &lt;- breaks[2]-breaks[1]
+nb &lt;- length(breaks)
+breaks &lt;- c(breaks[1]-db,breaks,breaks[nb]+db)
+colors &lt;- terrain.colors(length(breaks)-1)
+image(IL,breaks=breaks,col=colors,main="Franke function 1",
+      sub=paste("linear interpolation, ", ni,"points"))
+contour(IL,add=TRUE,levels=breaks)
+points(xi,yi)
+## spline interpolation
+fi &lt;- franke.fn(xi,yi,1)
+IS &lt;- interp(xi,yi,fi,method="akima",
+             kernel="gaussian",solver="QR")
+## prepare breaks and colors that match for image and contour:
+breaks &lt;- pretty(seq(min(IS$z,na.rm=TRUE),max(IS$z,na.rm=TRUE),length=11))
+db &lt;- breaks[2]-breaks[1]
+nb &lt;- length(breaks)
+breaks &lt;- c(breaks[1]-db,breaks,breaks[nb]+db)
+colors &lt;- terrain.colors(length(breaks)-1)
+image(IS,breaks=breaks,col=colors,main="Franke function 1",
+      sub=paste("spline interpolation, ", ni,"points"))
+contour(IS,add=TRUE,levels=breaks)
+        points(xi,yi)
+## regular grid:
+nx &lt;- 8; ny &lt;- 8
+xg&lt;-seq(0,1,length=nx)
+yg&lt;-seq(0,1,length=ny)
+xx &lt;- t(matrix(rep(xg,ny),nx,ny))
+yy &lt;- matrix(rep(yg,nx),ny,nx)
+xyg&lt;-expand.grid(xg,yg)
+## linear interpolation
+fg &lt;- outer(xg,yg,function(x,y)franke.fn(x,y,1))
+IL &lt;- interp(xg,yg,fg,input="grid",method="linear")
+## prepare breaks and colors that match for image and contour:
+breaks &lt;- pretty(seq(min(IL$z,na.rm=TRUE),max(IL$z,na.rm=TRUE),length=11))
+db &lt;- breaks[2]-breaks[1]
+nb &lt;- length(breaks)
+breaks &lt;- c(breaks[1]-db,breaks,breaks[nb]+db)
+colors &lt;- terrain.colors(length(breaks)-1)
+image(IL,breaks=breaks,col=colors,main="Franke function 1",
+      sub=paste("linear interpolation, ", nx,"x",ny,"points"))
+contour(IL,add=TRUE,levels=breaks)
+points(xx,yy)
+## spline interpolation
+fg &lt;- outer(xg,yg,function(x,y)franke.fn(x,y,1))
+IS &lt;- interp(xg,yg,fg,input="grid",method="akima",
+             kernel="gaussian",solver="QR")
+## prepare breaks and colors that match for image and contour:
+breaks &lt;- pretty(seq(min(IS$z,na.rm=TRUE),max(IS$z,na.rm=TRUE),length=11))
+db &lt;- breaks[2]-breaks[1]
+nb &lt;- length(breaks)
+breaks &lt;- c(breaks[1]-db,breaks,breaks[nb]+db)
+colors &lt;- terrain.colors(length(breaks)-1)
+image(IS,breaks=breaks,col=colors,main="Franke function 1",
+      sub=paste("spline interpolation, ", nx,"x",ny,"points"))
+contour(IS,add=TRUE,levels=breaks)
+points(xx,yy)
+
+## apply interp to sp data:
+require(sp)
+## convert Akima data set to a sp object 
+data(akima)
+asp &lt;- SpatialPointsDataFrame(list(x=akima$x,y=akima$y),
+                              data = data.frame(z=akima$z))
+spplot(asp,"z")
+## linear interpolation
+spli &lt;- interp(asp, z="z", method="linear")
+## the result is again a SpatialPointsDataFrame: 
+spplot(spli,"z")
+## now with spline interpolation, slightly higher resolution
+spsi &lt;- interp(asp, z="z", method="akima", nx=120, ny=120)
+spplot(spsi,"z")
+
+## now sp grids: reuse stuff from above
+spgr &lt;- SpatialPixelsDataFrame(list(x=c(xx),y=c(yy)),
+                               data=data.frame(z=c(fg)))
+spplot(spgr)
+## linear interpolation
+spli &lt;- interp(spgr, z="z", method="linear", input="grid")
+## the result is again a SpatialPointsDataFrame: 
+spplot(spli,"z")
+## now with spline interpolation, slightly higher resolution
+spsi &lt;- interp(spgr, z="z", method="akima", nx=240, ny=240)
+spplot(spsi,"z")
+
+set.seed(oldseed)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>interp</em> version 1.1-6 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

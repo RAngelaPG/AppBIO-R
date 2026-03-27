@@ -1,0 +1,338 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Authenticated repositories</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for Authenticated repositories {pak}"><tr><td>Authenticated repositories {pak}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Authenticated repositories</h2>
+
+<h3>Description</h3>
+
+<p>pak supports HTTP basic authentication when interacting with CRAN-like
+repositories.
+</p>
+
+
+<h4>Configuring authenticated repositories</h4>
+
+<p>To use authentication you need to include a user name in the repository
+URL. You can set the repository URL in the <code>repos</code> option with
+<code><a href="../../base/help/options.html">base::options()</a></code> as usual, or you can use <code><a href="../../pak/help/repo_add.html">repo_add()</a></code>.
+</p>
+<p>For testing purposes pak includes a web app that creates an authenticated
+proxy to CRAN. This is how to run the proxy in a subprocess:
+</p>
+<div class="sourceCode r"><pre>repo &lt;- webfakes::new_app_process(pak:::auth_proxy_app())
+repo$url()
+#&gt; [1] "http://127.0.0.1:59571/"
+</pre></div>
+<p>(This needs the webfakes and callr packages.)
+</p>
+<p>Next, we configure the proxy as the main CRAN repository. The default username
+of the proxy is <code>"username"</code> and the default password is <code>"token"</code>. We want to
+replace the default CRAN repository with the proxy, so we name it <code>CRAN</code>:
+</p>
+<div class="sourceCode r"><pre>repo_add(CRAN = repo$url(), username = "username")
+repo_get()
+#&gt; x Did not find credentials for repo &lt;http://username@127.0.0.1:59571/&gt;, keyring
+#&gt; lookup failed (macos backend).
+#&gt; # A data frame: 6 x 7
+#&gt;   name          url           type  r_version bioc_version username has_password
+#&gt; * &lt;chr&gt;         &lt;chr&gt;         &lt;chr&gt; &lt;chr&gt;     &lt;chr&gt;        &lt;chr&gt;    &lt;lgl&gt;       
+#&gt; 1 CRAN          http://usern~ cran  *         &lt;NA&gt;         username FALSE       
+#&gt; 2 BioCsoft      https://bioc~ bioc  4.4.2     3.20         &lt;NA&gt;     NA          
+#&gt; 3 BioCann       https://bioc~ bioc  4.4.2     3.20         &lt;NA&gt;     NA          
+#&gt; 4 BioCexp       https://bioc~ bioc  4.4.2     3.20         &lt;NA&gt;     NA          
+#&gt; 5 BioCworkflows https://bioc~ bioc  4.4.2     3.20         &lt;NA&gt;     NA          
+#&gt; 6 BioCbooks     https://bioc~ bioc  4.4.2     3.20         &lt;NA&gt;     NA
+</pre></div>
+<p>Note that the output includes a <code>username</code> and a <code>has_password</code> column.
+These are only present if at least one configured repository needs
+authentication. <code>has_password</code> is <code>FALSE</code> here, because pak did not find
+the credentials for this repository.
+</p>
+<p><code>repo_get()</code> also displays a message if it cannot find the credentials
+for an authenticated repository.
+</p>
+<p>Next we are going to store the credentials in a place where pak can find
+them.
+</p>
+
+
+
+<h4>Credential lookup</h4>
+
+<p>pak can look up credentials from two sources:
+</p>
+
+<ol>
+<li><p> The current user's <code>netrc</code> file.
+</p>
+</li>
+<li><p> The system credential store via the keyring package. pak comes with its
+own copy of the keyring package, you don't need to install it
+separately.
+</p>
+</li></ol>
+
+
+
+<h5><code>netrc</code> files</h5>
+
+<p>If the <code>NETRC</code> environment variable is set, pak uses its value to
+determine the location of the <code>netrc</code> file.
+</p>
+<p>Otherwise pak looks for the <code>netrc</code> file in current user's home
+directory, at <code style="white-space: pre;">~/.netrc</code>. On Windows it also looks for <code style="white-space: pre;">~/_netrc</code> if the
+file starting with a dot does not exist.
+</p>
+<p>If you create a <code>netrc</code> file, make sure that is only readable by you.
+E.g. on Unix run
+</p>
+<div class="sourceCode sh"><pre>chmod 600 ~/.netrc
+</pre></div>
+<p><code>netrc</code> files are simple text files that can store passwords for multiple
+hosts. They may contain three types of tokens:
+</p>
+
+
+<h6><code style="white-space: pre;">machine &lt;hostname&gt;</code></h6>
+
+<p>A host name, without the protocol. Subsequent <code>login</code> and <code>password</code>
+tokens belong to this host, until another <code>machine</code> token is found, or
+the end of file.
+</p>
+
+
+
+<h6><code style="white-space: pre;">login &lt;username&gt;</code></h6>
+
+<p>User name. It must be preceded by a <code>machine</code> token.
+</p>
+
+
+
+<h6><code style="white-space: pre;">password &lt;password&gt;</code></h6>
+
+<p>Password. It must be preceded by a <code>machine</code> and a <code>login</code> token.
+</p>
+<p>Whitespace is ignored in <code>netrc</code> files. You may include multiple tokens
+on the same line, or have one token per line. Here is an example:
+</p>
+<div class="sourceCode"><pre>machine myhost.mydomain.com login myuser password secret
+machine myhost2.mydomain.com
+login myuser
+password secret
+login anotheruser
+password stillsecret
+</pre></div>
+<p>If you need to include whitespace in a password, put the password in double
+quotes.
+</p>
+
+
+
+
+<h5>The credential store</h5>
+
+<p>pak uses the keyring package to query the system credential store (or an
+alternative keyring credential store) to find credentials for authenticated
+repositories. pak comes with a copy of the keyring package, so you don't
+need to install it separately.
+</p>
+<p>To store a repository password in the system credential store use the
+<code>repo_auth_key_set()</code> function. If you want to use a non-default keyring
+backend, set the <code>keyring_backend</code> option. In this manual we will use
+the backend that stores secrets in environment variables. This is an
+ephemeral store that is destroyed when the R process terminates.
+</p>
+<p>To continue our example from above:
+</p>
+<div class="sourceCode r"><pre>options(keyring_backend = "env")
+repo_auth_key_set(repo$url(), username = "username", password = "token")
+</pre></div>
+<p>Use <code>repo_auth_key_get()</code> to check that the key is properly set:
+</p>
+<div class="sourceCode r"><pre>repo_auth_key_get(repo$url(), username = "username")
+#&gt; [1] "token"
+</pre></div>
+<p><code>repo_get()</code> now does not show a warning message, and also sets the
+<code>has_password</code> column to <code>TRUE</code>, because pak could find the credentials
+for our CRAN proxy:
+</p>
+<div class="sourceCode r"><pre>repo_get()
+#&gt; x Did not find credentials for repo &lt;http://username@127.0.0.1:59571/&gt;, keyring
+#&gt; lookup failed (macos backend).
+#&gt; # A data frame: 6 x 7
+#&gt;   name          url           type  r_version bioc_version username has_password
+#&gt; * &lt;chr&gt;         &lt;chr&gt;         &lt;chr&gt; &lt;chr&gt;     &lt;chr&gt;        &lt;chr&gt;    &lt;lgl&gt;       
+#&gt; 1 CRAN          http://usern~ cran  *         &lt;NA&gt;         username FALSE       
+#&gt; 2 BioCsoft      https://bioc~ bioc  4.4.2     3.20         &lt;NA&gt;     NA          
+#&gt; 3 BioCann       https://bioc~ bioc  4.4.2     3.20         &lt;NA&gt;     NA          
+#&gt; 4 BioCexp       https://bioc~ bioc  4.4.2     3.20         &lt;NA&gt;     NA          
+#&gt; 5 BioCworkflows https://bioc~ bioc  4.4.2     3.20         &lt;NA&gt;     NA          
+#&gt; 6 BioCbooks     https://bioc~ bioc  4.4.2     3.20         &lt;NA&gt;     NA
+</pre></div>
+
+
+
+<h5>Repo vs. host credentials</h5>
+
+<p>pak handles credentials for repositories and hosts. A repository
+credential's key is a URL with a non-empty path:
+</p>
+<div class="sourceCode"><pre>https://repo.host.com/repos/repo1
+</pre></div>
+<p>A host credential's is an URL with an empty path:
+</p>
+<div class="sourceCode"><pre>https://repo.host.com
+</pre></div>
+<p>pak always looks for repository credentials first. If it does not find
+any credentials for a repository then it drops the path and looks for
+host credentials.
+</p>
+<p>Because <code>netrc</code> files only store domain names and not URLs, they can only
+contain host credentials.
+</p>
+
+
+
+
+<h4>Testing</h4>
+
+<p>To test that authentication works, use the <code>repo_status()</code> function:
+</p>
+<div class="sourceCode r"><pre>repo_status()
+#&gt; x Did not find credentials for repo &lt;http://username@127.0.0.1:59571/&gt;, keyring
+#&gt; lookup failed (macos backend).
+#&gt; # A data frame: 12 x 12
+#&gt;    name  url   type  bioc_version username has_password platform path  r_version
+#&gt;    &lt;chr&gt; &lt;chr&gt; &lt;chr&gt; &lt;chr&gt;        &lt;chr&gt;    &lt;lgl&gt;        &lt;chr&gt;    &lt;chr&gt; &lt;chr&gt;    
+#&gt;  1 CRAN  http~ cran  &lt;NA&gt;         username FALSE        source   src/~ 4.4      
+#&gt;  2 CRAN  http~ cran  &lt;NA&gt;         username FALSE        aarch64~ bin/~ 4.4      
+#&gt;  3 BioC~ http~ bioc  3.20         &lt;NA&gt;     NA           source   src/~ 4.4      
+#&gt;  4 BioC~ http~ bioc  3.20         &lt;NA&gt;     NA           aarch64~ bin/~ 4.4      
+#&gt;  5 BioC~ http~ bioc  3.20         &lt;NA&gt;     NA           source   src/~ 4.4      
+#&gt;  6 BioC~ http~ bioc  3.20         &lt;NA&gt;     NA           aarch64~ bin/~ 4.4      
+#&gt;  7 BioC~ http~ bioc  3.20         &lt;NA&gt;     NA           source   src/~ 4.4      
+#&gt;  8 BioC~ http~ bioc  3.20         &lt;NA&gt;     NA           aarch64~ bin/~ 4.4      
+#&gt;  9 BioC~ http~ bioc  3.20         &lt;NA&gt;     NA           source   src/~ 4.4      
+#&gt; 10 BioC~ http~ bioc  3.20         &lt;NA&gt;     NA           aarch64~ bin/~ 4.4      
+#&gt; 11 BioC~ http~ bioc  3.20         &lt;NA&gt;     NA           source   src/~ 4.4      
+#&gt; 12 BioC~ http~ bioc  3.20         &lt;NA&gt;     NA           aarch64~ bin/~ 4.4      
+#&gt; # i 3 more variables: ok &lt;lgl&gt;, ping &lt;dbl&gt;, error &lt;list&gt;
+</pre></div>
+<p>The output of <code>repo_status()</code> has extra columns, compared to <code>repo_get()</code>,
+and it also has a separate row for each platform. If everything works,
+then the <code>has_password</code> column is <code>TRUE</code> for authenticated repositories,
+and the <code>ok</code> column is <code>TRUE</code> if <code>repo_status()</code> was able to perform
+an (authenticated) HTTP HEAD request to the metadata file of a platform in
+a repository.
+</p>
+<p>If you need even more information about repo authentication, e.g. because
+<code>repo_status()</code> shows some failures, then use the <code>repo_auth()</code> function:
+</p>
+<div class="sourceCode r"><pre>repo_auth()
+#&gt; v Found credentials for repo &lt;http://username@127.0.0.1:59571/&gt; (keyring:env).
+#&gt; # A data frame: 1 x 11
+#&gt;   name  url              type  r_version bioc_version username has_password auth_domains auth_domain
+#&gt; * &lt;chr&gt; &lt;chr&gt;            &lt;chr&gt; &lt;chr&gt;     &lt;chr&gt;        &lt;chr&gt;    &lt;lgl&gt;        &lt;I&lt;list&gt;&gt;    &lt;chr&gt;      
+#&gt; 1 CRAN  http://username~ cran  *         &lt;NA&gt;         username TRUE         &lt;chr [4]&gt;    http://127~
+#&gt; # i 2 more variables: auth_source &lt;chr&gt;, auth_error &lt;chr&gt;
+</pre></div>
+<p>The output of <code>repo_auth()</code> has the following extra columns:
+</p>
+
+<ul>
+<li> <p><code>auth_domains</code>: these are the URLs that pak tries to use as the <code>service</code>
+when looking for credentials in the keyring. For our proxy, it tries
+these URLs:
+</p>
+<div class="sourceCode r"><pre>repo_auth()$auth_domains
+#&gt; v Found credentials for repo &lt;http://username@127.0.0.1:59571/&gt; (keyring:env).
+#&gt; [[1]]
+#&gt; [1] "http://username@127.0.0.1:59571/" "http://127.0.0.1:59571/"         
+#&gt; [3] "http://username@127.0.0.1:59571"  "http://127.0.0.1:59571"
+</pre></div>
+</li>
+<li> <p><code>auth_domain</code>: one of <code>auth_domains</code>, the URL for which pak found
+credentials in the keyring. If no credentials were found, then this is
+<code>NA</code>.
+</p>
+</li>
+<li> <p><code>auth_source</code>: a short string that explains where pak found the
+credentials (or <code>NA</code> if not credentials were found). For examples
+<code>netrc</code> means the user's <code>netrc</code> file, and <code>keyring:macos</code> means the
+macOS system credential store.
+</p>
+</li>
+<li> <p><code>auth_error</code>: <code>NA</code> for successful credential search, otherwise a short
+error message on why the search failed. Typically it would fail is the
+credentials are not in the credential store.
+</p>
+</li></ul>
+
+
+
+
+<h4>Usage</h4>
+
+<p>Once you set up your authenticated repositories, and stored the required
+passwords in the system credential store, you can use them like any
+other repository. Operations that need authentication will always include
+reassuring messages for successful authentications, and warning messages
+for failed ones. Function calls that do not perform any HTTP requests,
+e.g. because they list cached data, do not display such messages.
+</p>
+<div class="sourceCode r"><pre>meta_update()
+#&gt; Checking for 15 new metadata files
+#&gt; ! Cannot find credentials for URL &lt;http://username@127.0.0.1:59571//bin/macosx/big-sur-arm64/contrib/4.4/PACKAGES.gz&gt;, credential lookup
+#&gt; failed. Keyring backend: "macos".
+#&gt; Checking for 15 new metadata files
+x Did not find credentials for repo &lt;http://username@127.0.0.1:59571/&gt;, keyring
+#&gt; lookup failed (macos backend).
+#&gt; 
+#&gt; i R 4.4 aarch64-apple-darwin20 packages are missing from CRAN: Failed to connect to 127.0.0.1 port 59571 after 0 ms: Couldn't connect to server and Failed to connect to 127.0.0.1 port 59571 after 0 ms: Couldn't connect to server
+#&gt; i source packages are missing from CRAN: Failed to connect to 127.0.0.1 port 59571 after 0 ms: Couldn't connect to server and Failed to connect to 127.0.0.1 port 59571 after 0 ms: Couldn't connect to server
+#&gt; i Updating metadata database
+#&gt; v Updating metadata database ... done
+</pre></div>
+<div class="sourceCode r"><pre>meta_list()
+#&gt; # A data frame: 50,701 x 33
+#&gt;    package    version depends suggests license md5sum sha256sum needscompilation
+#&gt;    &lt;chr&gt;      &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;    &lt;chr&gt;   &lt;chr&gt;  &lt;chr&gt;     &lt;chr&gt;           
+#&gt;  1 A3         1.0.0   R (&gt;= ~ randomF~ GPL (&gt;~ 929a4~ "\n     ~ no              
+#&gt;  2 AATtools   0.0.3   R (&gt;= ~ &lt;NA&gt;     GPL-3   de2ec~ "\n     ~ no              
+#&gt;  3 ABACUS     1.0.0   R (&gt;= ~ rmarkdo~ GPL-3   28795~ "\n     ~ no              
+#&gt;  4 ABC.RAP    0.9.0   R (&gt;= ~ knitr, ~ GPL-3   0158e~ "\n     ~ no              
+#&gt;  5 ABCanalys~ 1.2.1   R (&gt;= ~ &lt;NA&gt;     GPL-3   4cbe1~ "\n     ~ no              
+#&gt;  6 ABCoptim   0.15.0  &lt;NA&gt;    testtha~ MIT + ~ a294d~ "\n     ~ yes             
+#&gt;  7 ABCp2      1.2     MASS    &lt;NA&gt;     GPL-2   d049b~  &lt;NA&gt;     no              
+#&gt;  8 ABHgenoty~ 1.0.1   &lt;NA&gt;    knitr, ~ GPL-3   fce25~ "\n     ~ no              
+#&gt;  9 ABM        0.4.3   &lt;NA&gt;    &lt;NA&gt;     GPL (&gt;~ 7aaae~ "\n     ~ yes             
+#&gt; 10 ABPS       0.3     &lt;NA&gt;    testthat GPL (&gt;~ d3f00~ "\n     ~ no              
+#&gt; # i 50,691 more rows
+#&gt; # i 25 more variables: imports &lt;chr&gt;, linkingto &lt;chr&gt;, archs &lt;chr&gt;,
+#&gt; #   enhances &lt;chr&gt;, license_restricts_use &lt;chr&gt;, priority &lt;chr&gt;, os_type &lt;chr&gt;,
+#&gt; #   license_is_foss &lt;chr&gt;, repodir &lt;chr&gt;, rversion &lt;chr&gt;, platform &lt;chr&gt;,
+#&gt; #   ref &lt;chr&gt;, type &lt;chr&gt;, direct &lt;lgl&gt;, status &lt;chr&gt;, target &lt;chr&gt;,
+#&gt; #   mirror &lt;chr&gt;, sources &lt;list&gt;, filesize &lt;int&gt;, sha256 &lt;chr&gt;, sysreqs &lt;chr&gt;,
+#&gt; #   built &lt;chr&gt;, published &lt;dttm&gt;, deps &lt;list&gt;, path &lt;chr&gt;
+</pre></div>
+<p>E.g. here <code>meta_update()</code> outputs an authentication message, but
+<code>meta_list()</code> does not.
+</p>
+
+
+
+<h3>See Also</h3>
+
+<p>Other authenticated repositories: 
+<code><a href="../../pak/help/repo_auth.html">repo_auth</a>()</code>,
+<code><a href="../../pak/help/repo_auth_key_get.html">repo_auth_key_get</a>()</code>
+</p>
+
+<hr /><div style="text-align: center;">[Package <em>pak</em> version 0.9.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

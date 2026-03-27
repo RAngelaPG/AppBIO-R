@@ -19,7 +19,7 @@ estimation of degree of penalization). Confidence/credible intervals are readily
 available for any quantity predicted using a fitted model.
 </p>
 <p>Smooth terms are represented using penalized regression splines (or similar smoothers)
-with smoothing parameters selected by GCV/UBRE/AIC/REML/NCV or by regression splines with
+with smoothing parameters selected by GCV/UBRE/AIC/REML or by regression splines with
 fixed degrees of freedom (mixtures of the two are permitted). Multi-dimensional smooths are 
 available using penalized thin plate regression splines (isotropic) or tensor product splines 
 (when an isotropic smooth is inappropriate), and users can add smooths. 
@@ -42,7 +42,7 @@ gam(formula,family=gaussian(),data=list(),weights=NULL,subset=NULL,
     optimizer=c("outer","newton"),control=list(),scale=0,
     select=FALSE,knots=NULL,sp=NULL,min.sp=NULL,H=NULL,gamma=1,
     fit=TRUE,paraPen=NULL,G=NULL,in.out,drop.unused.levels=TRUE,
-    drop.intercept=NULL,nei=NULL,discrete=FALSE,...)
+    drop.intercept=NULL,discrete=FALSE,...)
 </pre>
 
 
@@ -108,18 +108,18 @@ included in <code>formula</code> (this used to conform to the behaviour of
 <tr valign="top"><td><code>method</code></td>
 <td>
 <p>The smoothing parameter estimation method. <code>"GCV.Cp"</code> to use GCV for unknown scale parameter and
-Mallows' Cp/UBRE/AIC for known scale. <code>"GACV.Cp"</code> is equivalent, but using GACV in place of GCV. <code>"NCV"</code>
-for neighbourhood cross-validation using the neighbourhood structure speficied by <code>nei</code> (<code>"QNCV"</code> for numerically more ribust version).  <code>"REML"</code> 
+Mallows' Cp/UBRE/AIC for known scale. <code>"GACV.Cp"</code> is equivalent, but using GACV in place of GCV. <code>"REML"</code> 
 for REML estimation, including of unknown scale, <code>"P-REML"</code> for REML estimation, but using a Pearson estimate 
 of the scale. <code>"ML"</code> and <code>"P-ML"</code> are similar, but using maximum likelihood in place of REML. Beyond the 
-exponential family <code>"REML"</code> is the default, and the only other options are <code>"ML"</code>, <code>"NCV"</code> or <code>"QNCV"</code>.</p>
+exponential family <code>"REML"</code> is the default, and the only other option is <code>"ML"</code>.</p>
 </td></tr>
 <tr valign="top"><td><code>optimizer</code></td>
 <td>
 <p>An array specifying the numerical optimization method to use to optimize the smoothing 
-parameter estimation criterion (given by <code>method</code>). <code>"outer"</code> 
-for the direct nested optimization approach. <code>"outer"</code> can use several alternative optimizers, specified in the 
-second element of <code>optimizer</code>: <code>"newton"</code> (default), <code>"bfgs"</code>, <code>"optim"</code> or <code>"nlm"</code>. <code>"efs"</code>
+parameter estimation criterion (given by <code>method</code>). <code>"perf"</code> (deprecated) for performance iteration. <code>"outer"</code> 
+for the more stable direct approach. <code>"outer"</code> can use several alternative optimizers, specified in the 
+second element of <code>optimizer</code>: <code>"newton"</code> (default), <code>"bfgs"</code>, <code>"optim"</code>, <code>"nlm"</code> 
+and <code>"nlm.fd"</code> (the latter is based entirely on finite differenced derivatives and is very slow). <code>"efs"</code>
 for the extended Fellner Schall method of Wood and Fasiolo (2017).</p>
 </td></tr>
 <tr valign="top"><td><code>scale</code></td>
@@ -173,7 +173,7 @@ defined on the response scale.</p>
 </td></tr>
 <tr valign="top"><td><code>gamma</code></td>
 <td>
-<p>Increase this beyond 1 to produce smoother models. <code>gamma</code> multiplies the effective degrees of freedom in the GCV or UBRE/AIC. <code>n/gamma</code> can be viewed as an effective sample size in the GCV score, and this also enables it to be used with REML/ML. Ignored with P-RE/ML or the <code>efs</code> optimizer. </p>
+<p>Increase this beyond 1 to produce smoother models. <code>gamma</code> multiplies the effective degrees of freedom in the GCV or UBRE/AIC. coden/gamma can be viewed as an effective sample size in the GCV score, and this also enables it to be used with REML/ML. Ignored with P-RE/ML or the <code>efs</code> optimizer. </p>
 </td></tr> 
 <tr valign="top"><td><code>fit</code></td>
 <td>
@@ -209,12 +209,8 @@ involving factor variables you might want to turn this off. Only do so if you kn
 </td></tr>
 <tr valign="top"><td><code>drop.intercept</code></td>
 <td>
-<p>Set to <code>TRUE</code> to force the model to really not have a constant in the parametric model part,
+<p>Set to <code>TRUE</code> to force the model to really not have the a constant in the parametric model part,
 even with factor variables present. Can be vector when <code>formula</code> is a list.</p>
-</td></tr>
-<tr valign="top"><td><code>nei</code></td>
-<td>
-<p>A list specifying the neighbourhood structure for <code><a href="../../mgcv/help/NCV.html">NCV</a></code>. <code>k</code> is the vector of indices to be dropped for each neighbourhood and <code>m</code> gives the end of each neighbourhood. So <code>nei$k[(nei$m[j-1]+1):nei$m[j]]</code> gives the points dropped for the neighbourhood <code>j</code>. <code>i</code> is the vector of indices of points to predict, with corresponding endpoints <code>mi</code>. So <code>nei$i[(nei$mi[j-1]+1):nei$mi[j]]</code> indexes the points to predict for neighbourhood j. If <code>nei==NULL</code> (or <code>k</code> or <code>m</code> are missing) then leave-one-out cross validation is obtained. If <code>jackknife</code> is supplied then <code>TRUE</code> indicates to use raw jackknife covariances estimator and <code>FALSE</code> to use the conventional Bayes estimate. If not supplied then the estimator accounting for neighbourhood structure is used. <code>jackknife</code> ignored when <code>method</code> is not NCV.</p>
 </td></tr>
 <tr valign="top"><td><code>discrete</code></td>
 <td>
@@ -235,7 +231,7 @@ passing on e.g. to <code>gam.fit</code> (such as <code>mustart</code>). </p>
 predictor is given by a user specified sum of smooth functions of the covariates plus a 
 conventional parametric component of the linear predictor. A simple example is:
 </p>
-<p style="text-align: center;"><i>log{E(y_i)}= a + f_1(x_1i)+f_2(x_2i)</i></p>
+<p style="text-align: center;"><i>log(E(y_i))= a + f_1(x_1i)+f_2(x_2i)</i></p>
 
 <p>where the (independent) response variables <i>y_i~Poi</i>, and
 <i>f_1</i> and <i>f_2</i> are smooth functions of covariates <i>x_1</i> and 
@@ -273,9 +269,10 @@ the scale parameter and
 <i>DoF</i> the effective degrees of freedom of the model. Notice that UBRE is effectively
 just AIC rescaled, but is only used when <i>s</i> is known. 
 </p>
-<p>Alternatives are GACV, <code><a href="../../mgcv/help/NCV.html">NCV</a></code> or a Laplace approximation to REML. There
+<p>Alternatives are GACV, or a Laplace approximation to REML. There
 is some evidence that the latter may actually be the most effective choice. 
-The main computational challenge solved by the <code>mgcv</code> package is to optimize the smoothness selection criteria efficiently and reliably. 
+The main computational challenge solved 
+by the <code>mgcv</code> package is to optimize the smoothness selection criteria efficiently and reliably. 
 </p>
 <p>Broadly <code>gam</code> works by first constructing basis functions and one or more quadratic penalty 
 coefficient matrices for each smooth term in the model formula, obtaining a model matrix for 
@@ -286,16 +283,17 @@ fit using <code><a href="../../mgcv/help/gam.fit.html">gam.fit</a></code>, <code
 of <code><a href="../../stats/html/glm.html">glm.fit</a></code>. The GAM 
 penalized likelihood maximization problem is solved by Penalized Iteratively 
 Re-weighted  Least Squares (P-IRLS) (see e.g. Wood 2000). 
-Smoothing parameter selection is possible in one of three ways. (i)
+Smoothing parameter selection is possible in one of two ways. (i)
 &lsquo;Performance iteration&rsquo; uses the fact that at each P-IRLS step a working penalized linear model
 is estimated, and the smoothing parameter estimation can be performed for each such working model.
 Eventually, in most cases, both model parameter estimates and smoothing 
-parameter estimates converge. This option is available in <code><a href="../../mgcv/help/bam.html">bam</a></code> and <code><a href="../../mgcv/help/gamm.html">gamm</a></code>.
-(ii) Alternatively the P-IRLS scheme is iterated to convergence for each trial set of smoothing parameters,
-and GCV, UBRE or REML scores are only evaluated on convergence - optimization is then &lsquo;outer&rsquo; to the P-IRLS
+parameter estimates converge. This option is available in <code><a href="../../mgcv/help/bam.html">bam</a></code> and <code><a href="../../mgcv/help/gamm.html">gamm</a></code> but
+is deprecated for <code>gam</code> (ii) Alternatively the P-IRLS scheme is iterated to
+convergence for each trial set of smoothing parameters, and GCV, UBRE or REML scores
+are only evaluated on convergence - optimization is then &lsquo;outer&rsquo; to the P-IRLS
 loop: in this case the P-IRLS iteration has to be differentiated, to
 facilitate optimization, and <code><a href="../../mgcv/help/gam.fit3.html">gam.fit3</a></code> or one of its variants is used in place of
-<code>gam.fit</code>. (iii) The extended Fellner-Schall algorithm of Wood and Fasiolo (2017) alternates estimation of model coefficients with simple updates of smoothing parameters, eventually approximately maximizing the marginal likelihood of the model (REML). <code>gam</code> uses the second method, outer iteration, by default.
+<code>gam.fit</code>. <code>gam</code> uses the second method, outer iteration.
 </p>
 <p>Several alternative basis-penalty types  are built in for representing model
 smooths, but alternatives can easily be added (see <code><a href="../../mgcv/help/smooth.terms.html">smooth.terms</a></code> 
@@ -318,7 +316,8 @@ general linear functionals of smooths, via the summation convention mechanism de
 <code><a href="../../mgcv/help/linear.functional.terms.html">linear.functional.terms</a></code>. <code>link{family.mgcv}</code> details what is available beyond GLMs 
 and the exponential family.
 </p>
-<p>Details of the default underlying fitting methods are given in Wood (2011, 2004) and Wood, Pya and Saefken (2016). Some alternative methods are discussed in Wood (2000, 2017). 
+<p>Details of the default underlying fitting methods are given in Wood (2011
+and 2004). Some alternative methods are discussed in Wood (2000 and 2006). 
 </p>
 <p><code>gam()</code> is not a clone of Trevor Hastie's original (as supplied in S-PLUS or package <code>gam</code>). The major
 differences are (i) that by default estimation of the
@@ -354,6 +353,10 @@ fit a GAM, but doesn't actually fit it.
 it should be checked that they are not too small. See <code><a href="../../mgcv/help/choose.k.html">choose.k</a></code> and
 <code><a href="../../mgcv/help/gam.check.html">gam.check</a></code>. 
 </p>
+<p>You must have more unique combinations of covariates than the model has total
+parameters. (Total parameters is sum of basis dimensions plus sum of non-spline 
+terms less the number of spline terms). 
+</p>
 <p>Automatic smoothing parameter selection is not likely to work well when 
 fitting models to very few response data.
 </p>
@@ -386,36 +389,30 @@ doi: <a href="https://doi.org/10.1080/01621459.2016.1180986">10.1080/01621459.20
 <p>Wood, S.N. (2011) Fast stable restricted maximum likelihood 
 and marginal likelihood estimation of semiparametric generalized linear 
 models. Journal of the Royal Statistical Society (B) 73(1):3-36
-doi: <a href="https://doi.org/10.1111/j.1467-9868.2010.00749.x">10.1111/j.1467-9868.2010.00749.x</a>
 </p>
 <p>Wood, S.N. (2004) Stable and efficient multiple smoothing parameter estimation for
 generalized additive models. J. Amer. Statist. Ass. 99:673-686. [Default
 method for additive case by GCV (but no longer for generalized)]
 </p>
 <p>Wood, S.N. (2003) Thin plate regression splines. J.R.Statist.Soc.B 65(1):95-114
-doi: <a href="https://doi.org/10.1111/1467-9868.00374">10.1111/1467-9868.00374</a>
 </p>
 <p>Wood, S.N. (2006a) Low rank scale invariant tensor product smooths for
 generalized additive mixed models. Biometrics 62(4):1025-1036
 </p>
 <p>Wood S.N. (2017) Generalized Additive Models: An Introduction with R (2nd edition). Chapman
-and Hall/CRC Press. doi: <a href="https://doi.org/10.1201/9781315370279">10.1201/9781315370279</a>
+and Hall/CRC Press.
 </p>
 <p>Wood, S.N. and M. Fasiolo (2017) A generalized Fellner-Schall method for smoothing
 parameter optimization with application to Tweedie location, scale and shape models.
-Biometrics 73 (4), 1071-1081 doi: <a href="https://doi.org/10.1111/biom.12666">10.1111/biom.12666</a>
+Biometrics 73 (4), 1071-1081
 </p>
-<p>Wood S.N., F. Scheipl and J.J. Faraway (2013) Straightforward intermediate rank tensor product smoothing
-in mixed models. Statistics and Computing 23: 341-360. doi: <a href="https://doi.org/10.1007/s11222-012-9314-z">10.1007/s11222-012-9314-z</a>
+<p>Wood S.N., F. Scheipl and J.J. Faraway (2012) Straightforward intermediate rank tensor product smoothing
+in mixed models. Statistical Computing.
 </p>
 <p>Marra, G and S.N. Wood (2012) Coverage Properties of Confidence Intervals for Generalized Additive
-Model Components. Scandinavian Journal of Statistics, 39(1), 53-74. doi: <a href="https://doi.org/10.1111/j.1467-9469.2011.00760.x">10.1111/j.1467-9469.2011.00760.x</a>
+Model Components. Scandinavian Journal of Statistics, 39(1), 53-74.
 </p>
 <p>Key Reference on GAMs and related models:
-</p>
-<p>Wood, S. N. (2020) Inference and computation with generalized
-additive models and their extensions. Test 29(2): 307-339.
-doi: <a href="https://doi.org/10.1007/s11749-020-00711-5">10.1007/s11749-020-00711-5</a>
 </p>
 <p>Hastie (1993) in Chambers and Hastie (1993) Statistical Models in S. Chapman
 and Hall.
@@ -658,5 +655,5 @@ detach(eg)
 
 </pre>
 
-<hr /><div style="text-align: center;">[Package <em>mgcv</em> version 1.9-1 <a href="00Index.html">Index</a>]</div>
+<hr /><div style="text-align: center;">[Package <em>mgcv</em> version 1.8-38 <a href="00Index.html">Index</a>]</div>
 </div></body></html>

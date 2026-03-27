@@ -11,13 +11,13 @@
 <h3>Description</h3>
 
 <p><code>.SD</code>, <code>.BY</code>, <code>.N</code>, <code>.I</code>, <code>.GRP</code>, and <code>.NGRP</code> are <em>read-only</em> symbols for use in <code>j</code>. <code>.N</code> can be used in <code>i</code> as well. <code>.I</code> can be used in <code>by</code> as well. See the vignettes, Details and Examples here and in <code><a href="../../data.table/help/data.table.html">data.table</a></code>.
-<code>.EACHI</code> is a symbol passed to <code>by</code>; i.e. <code>by=.EACHI</code>.
+<code>.EACHI</code> is a symbol passed to <code>by</code>; i.e. <code>by=.EACHI</code>, <code>.NATURAL</code> is a symbol passed to <code>on</code>; i.e. <code>on=.NATURAL</code>
 </p>
 
 
 <h3>Details</h3>
 
-<p>The bindings of these variables are locked and attempting to assign to them will generate an error. If you wish to manipulate <code>.SD</code> before returning it, take a <code>copy(.SD)</code> first (see FAQ 4.5). Using <code>:=</code> in the <code>j</code> of <code>.SD</code> is reserved for future use as a (tortuously) flexible way to update <code>DT</code> by reference by group (even when groups are not contiguous in an ad hoc by).
+<p>The bindings of these variables are locked and attempting to assign to them will generate an error. If you wish to manipulate <code>.SD</code> before returning it, take a <code><a href="../../data.table/help/copy.html">copy</a>(.SD)</code> first (see FAQ 4.5). Using <code>:=</code> in the <code>j</code> of <code>.SD</code> is reserved for future use as a (tortuously) flexible way to update <code>DT</code> by reference by group (even when groups are not contiguous in an ad hoc by).
 </p>
 <p>These symbols used in <code>j</code> are defined as follows.
 </p>
@@ -44,7 +44,11 @@
 
 <p><code>.EACHI</code> is defined as <code>NULL</code> but its value is not used. Its usage is <code>by=.EACHI</code> (or <code>keyby=.EACHI</code>) which invokes grouping-by-each-row-of-i; see <code><a href="../../data.table/help/data.table.html">data.table</a></code>'s <code>by</code> argument for more details.
 </p>
+<p><code>.NATURAL</code> is defined as <code>NULL</code> but its value is not used. Its usage is <code>on=.NATURAL</code> (alternative of <code>X[on=Y]</code>) which joins two tables on their common column names, performing a natural join; see <code><a href="../../data.table/help/data.table.html">data.table</a></code>'s <code>on</code> argument for more details.
+</p>
 <p>Note that <code>.N</code> in <code>i</code> is computed up-front, while that in <code>j</code> applies <em>after filtering in <code>i</code></em>. That means that even absent grouping, <code>.N</code> in <code>i</code> can be different from <code>.N</code> in <code>j</code>. See Examples.
+</p>
+<p>Note also that you should consider these symbols read-only and of limited scope &ndash; internal data.table code might manipulate them in unexpected ways, and as such their bindings are locked. There are subtle ways to wind up with the wrong object, especially when attempting to copy their values outside a grouping context. See examples; when in doubt, <code>copy()</code> is your friend.
 </p>
 
 
@@ -76,6 +80,7 @@ DT[, c(.(y=max(y)), lapply(.SD, min)),
 DT[, grp := .GRP, by=x]                # add a group counter
 DT[, grp_pct := .GRP/.NGRP, by=x]      # add a group "progress" counter
 X[, DT[.BY, y, on="x"], by=x]          # join within each group
+DT[X, on=.NATURAL]                     # join X and DT on common column similar to X[on=Y]
 
 # .N can be different in i and j
 DT[{cat(sprintf('in i, .N is %d\n', .N)); a &lt; .N/2},
@@ -84,7 +89,11 @@ DT[{cat(sprintf('in i, .N is %d\n', .N)); a &lt; .N/2},
 # .I can be different in j and by, enabling rowwise operations in by
 DT[, .(.I, min(.SD[,-1]))]
 DT[, .(min(.SD[,-1])), by=.I]
+
+# Do not expect this to correctly append the value of .BY in each group; copy(.BY) will work.
+by_tracker = list()
+DT[, { append(by_tracker, .BY); sum(v) }, by=x]
 </pre>
 
-<hr /><div style="text-align: center;">[Package <em>data.table</em> version 1.15.4 <a href="00Index.html">Index</a>]</div>
+<hr /><div style="text-align: center;">[Package <em>data.table</em> version 1.18.2.1 <a href="00Index.html">Index</a>]</div>
 </div></body></html>

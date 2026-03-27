@@ -1,0 +1,167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Compute Path or Cycle Census Information</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for kpath.census {sna}"><tr><td>kpath.census {sna}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Compute Path or Cycle Census Information </h2>
+
+<h3>Description</h3>
+
+<p><code>kpath.census</code> and <code>kcycle.census</code> compute <i>k</i>-path or <i>k</i>-cycle census statistics (respectively) on one or more input graphs.  In addition to aggregate counts of paths or cycles, results may be disaggregated by vertex and co-membership information may be computed.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+kcycle.census(dat, maxlen = 3, mode = "digraph", 
+    tabulate.by.vertex = TRUE, cycle.comembership = c("none", "sum",
+    "bylength"))
+
+kpath.census(dat, maxlen = 3, mode = "digraph", 
+    tabulate.by.vertex = TRUE, path.comembership = c("none", "sum",
+    "bylength"), dyadic.tabulation = c("none", "sum", "bylength"))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>cycle.comembership</code></td>
+<td>
+<p> the type of cycle co-membership information to be tabulated, if any.  <code>"sum"</code> returns a vertex by vertex matrix of cycle co-membership counts; these are disaggregated by cycle length if <code>"bylength"</code> is used.  If <code>"none"</code> is given, no co-membership information is computed.</p>
+</td></tr>
+<tr valign="top"><td><code>dat</code></td>
+<td>
+<p> one or more input graphs. </p>
+</td></tr>
+<tr valign="top"><td><code>maxlen</code></td>
+<td>
+<p> the maximum path/cycle length to evaluate. </p>
+</td></tr>
+<tr valign="top"><td><code>mode</code></td>
+<td>
+ <p><code>"digraph"</code> for directed graphs, or <code>"graph"</code> for undirected graphs.</p>
+</td></tr>
+<tr valign="top"><td><code>tabulate.by.vertex</code></td>
+<td>
+<p> logical; should path or cycle incidence counts be tabulated by vertex? </p>
+</td></tr>
+<tr valign="top"><td><code>path.comembership</code></td>
+<td>
+<p> as per <code>cycle.comembership</code>, for paths rather than cycles.  </p>
+</td></tr>
+<tr valign="top"><td><code>dyadic.tabulation</code></td>
+<td>
+<p> the type of dyadic path count information to be tabulated, if any.  <code>"sum"</code> returns a vertex by vertex matrix of source/destination path counts, while <code>"bylength"</code> disaggregates these counts by path length.  Selecting <code>"none"</code> disables this computation. </p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>There are several equivalent characterizations of paths and cycles, of which the following is one example.  For an arbitrary graph <i>G</i>, a <em>path</em> is a sequence of distinct vertices <i>v_1, v_2, .... v_n</i> and included edges such that <i>v_i</i> is adjacent to <i>v_{i+1}</i> for all <i>i in 1, 2, ... k-1</i> via the pair's included edge. (Contrast this with a <em>walk</em>, in which edges and/or vertices may be repeated.)  A <em>cycle</em> is the union of a path and an edge making <i>v_n</i> adjacent to <i>v_i</i>.  <i>k</i>-paths and <i>k</i>-cycles are respective paths and cycles having <i>k</i> edges (in the former case) or <i>k</i> vertices (in the latter).  The above definitions may be applied in both directed and undirected contexts, by substituting the appropriate notion of adjacency.  (Note that authors do not always employ the same terminology for these concepts, especially in older texts &ndash; it is wise to verify the definitions being used in any particular context.)
+</p>
+<p>A <em>subgraph census statistic</em> is a function which, for any given graph and subgraph, gives the number of copies of the latter contained in the former.  A collection of subgraph census statistics is referred to as a <em>subgraph census</em>; widely used examples include the dyad and triad censuses, implemented in <code>sna</code> by the <code><a href="../../sna/help/dyad.census.html">dyad.census</a></code> and <code><a href="../../sna/help/triad.census.html">triad.census</a></code> functions (respectively).  <code>kpath.census</code> and <code>kcycle.census</code> compute a range of census statistics related to <i>k</i>-paths and <i>k</i>-cycles, including:
+</p>
+
+<ul>
+<li><p> Aggregate counts of paths/cycles by length (i.e., <i>k</i>). 
+</p>
+</li>
+<li><p> Counts of paths/cycles to which each vertex belongs (when <code>tabulate.byvertex==TRUE</code>). 
+</p>
+</li>
+<li><p> Counts of path/cycle co-memberships, potentially disaggregated by length (when the appropriate co-membership argument is set to <code>bylength</code>). 
+</p>
+</li>
+<li><p> For <code>path.census</code>, counts of the total number of paths from each vertex to each other vertex, possibly disaggregated by length (if <code>dyadic.tabulation=="bylength"</code>).
+</p>
+</li></ul>
+
+<p>The length of the maximum-length path/cycle to compute is given by <code>maxlen</code>.  These calculations are intrinsically expensive (path/cycle computation is NP complete in the general case), and users should hence be wary when increasing <code>maxlen</code>.  On the other hand, it may be possible to enumerate even long paths or cycles on a very sparse graph; scaling is approximately <i>c^k</i>, where <i>k</i> is given by <code>maxlen</code> and <i>c</i> is the size of the largest dense cluster.  
+</p>
+<p>The paths or cycles computed by this function are directed if <code>mode=="digraph"</code>, or undirected if <code>mode=="graph"</code>.  Failing to set <code>mode</code> correctly may result in problematic behavior.
+</p>
+
+
+<h3>Value</h3>
+
+<p>For <code>kpath.census</code>, a list with the following elements:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>path.count </code></td>
+<td>
+<p>If <code>tabulate.byvertex==FALSE</code>, a vector of aggregate counts by path length.  Otherwise, a matrix whose first column is a vector of aggregate path counts, and whose succeeding columns contain vectors of path counts for each vertex.</p>
+</td></tr>
+<tr valign="top"><td><code>path.comemb </code></td>
+<td>
+<p>If <code>path.comembership!="none"</code>, a matrix or array containing co-membership in paths by vertex pairs.  If <code>path.comembership=="sum"</code>, only a matrix of co-memberships is returned; if <code>bylength</code> is used, however, co-memberships are returned in a <code>maxlen</code> by <i>n</i> by <i>n</i> array whose <i>i,j,k</i>th cell is the number of paths of length <i>i</i> containing <code>j</code> and <code>k</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>paths.bydyad </code></td>
+<td>
+<p>If <code>dyadic.tabulation!="none"</code>, a matrix or array containing the number of paths originating at a particular vertex and terminating.  If <code>bylength</code> is used, dyadic path counts are supplied via a <code>maxlen</code> by <i>n</i> by <i>n</i> array whose <i>i,j,k</i>th cell is the number of paths of length <i>i</i> starting at <code>j</code> and ending with <code>k</code>.  If <code>sum</code> is used instead, only a matrix whose <i>i,j</i> cell contains the total number of paths from <i>i</i> to <i>j</i> is returned.</p>
+</td></tr>
+</table>
+<p>For <code>kcycle.census</code>, a similar list:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>cycle.count </code></td>
+<td>
+<p>If <code>tabulate.byvertex==FALSE</code>, a vector of aggregate counts by cycle length.  Otherwise, a matrix whose first column is a vector of aggregate cycle counts, and whose succeeding columns contain vectors of cycle counts for each vertex.</p>
+</td></tr>
+<tr valign="top"><td><code>cycle.comemb </code></td>
+<td>
+<p>If <code>cycle.comembership!="none"</code>, a matrix or array containing co-membership in cycles by vertex pairs.  If <code>cycle.comembership=="sum"</code>, only a matrix of co-memberships is returned; if <code>bylength</code> is used, however, co-memberships are returned in a <code>maxlen</code> by <i>n</i> by <i>n</i> array whose <i>i,j,k</i>th cell is the number of cycles of length <i>i</i> containing <code>j</code> and <code>k</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Warning </h3>
+
+<p> The computational cost of calculating paths and cycles grows very sharply in both <code>maxlen</code> and network density.  Be wary of setting <code>maxlen</code> greater than 5-6, unless you know what you are doing.  Otherwise, the expected completion time for your calculation may exceed your life expectancy (and those of subsequent generations). </p>
+
+
+<h3>Author(s)</h3>
+
+<p> Carter T. Butts <a href="mailto:buttsc@uci.edu">buttsc@uci.edu</a> </p>
+
+
+<h3>References</h3>
+
+ 
+<p>Butts, C.T.  (2006).  &ldquo;Cycle Census Statistics for Exponential Random Graph Models.&rdquo;  IMBS Technical Report MBS 06-05, University of California, Irvine.
+</p>
+<p>West, D.B.  (1996).  <em>Introduction to Graph Theory.</em>  Upper Saddle River, N.J.: Prentice Hall.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../sna/help/dyad.census.html">dyad.census</a></code>, <code><a href="../../sna/help/triad.census.html">triad.census</a></code>, <code><a href="../../sna/help/clique.census.html">clique.census</a></code>, <code><a href="../../sna/help/geodist.html">geodist</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+g&lt;-rgraph(20,tp=1.5/19)
+
+#Obtain paths by vertex, with dyadic path counts
+pc&lt;-kpath.census(g,maxlen=5,dyadic.tabulation="sum")
+pc$path.count                                 #Examine path counts
+pc$paths.bydyad                               #Examine dyadic paths
+
+#Obtain aggregate cycle counts, with co-membership by length
+cc&lt;-kcycle.census(g,maxlen=5,tabulate.by.vertex=FALSE,
+    cycle.comembership="bylength")
+cc$cycle.count                             #Examine cycle counts
+cc$cycle.comemb[1,,]                       #Co-membership for 2-cycles
+cc$cycle.comemb[2,,]                       #Co-membership for 3-cycles
+cc$cycle.comemb[3,,]                       #Co-membership for 4-cycles
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sna</em> version 2.8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

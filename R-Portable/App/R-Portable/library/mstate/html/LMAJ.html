@@ -1,0 +1,111 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Landmark Aalen-Johansen method</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for LMAJ {mstate}"><tr><td>LMAJ {mstate}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Landmark Aalen-Johansen method</h2>
+
+<h3>Description</h3>
+
+<p>This function implements the landmark Aalen-Johansen method of Putter &amp;
+Spitoni (2016) for non-parametric estimation of transition probabilities in
+non-Markov models.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+LMAJ(msdata, s, from, method = c("aalen", "greenwood"))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>msdata</code></td>
+<td>
+<p>An <code>"msdata"</code> object, as for instance prepared by
+<code>link{msprep}</code></p>
+</td></tr>
+<tr valign="top"><td><code>s</code></td>
+<td>
+<p>The prediction time point s from which transition probabilities are
+to be obtained</p>
+</td></tr>
+<tr valign="top"><td><code>from</code></td>
+<td>
+<p>Either a single state or a set of states in the state space
+1,...,S</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>The method for calculating variances, as in
+<code><a href="../../mstate/help/probtrans.html">probtrans</a></code></p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A data frame containing estimates and associated standard errors of
+the transition probabilities P(X(t)=k | X(s) in <code>from</code>) with <code>s</code>
+and <code>from</code> the arguments of the function.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Hein Putter <a href="mailto:H.Putter@lumc.nl">H.Putter@lumc.nl</a>
+</p>
+<p>Edouard F. Bonneville <a href="mailto:e.f.bonneville@lumc.nl">e.f.bonneville@lumc.nl</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>H. Putter and C. Spitoni (2016). Estimators of transition
+probabilities in non-Markov multi-state models. Submitted.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+data(prothr)
+tmat &lt;- attr(prothr, "trans")
+pr0 &lt;- subset(prothr, treat=="Placebo")
+attr(pr0, "trans") &lt;- tmat
+pr1 &lt;- subset(prothr, treat=="Prednisone")
+attr(pr1, "trans") &lt;- tmat
+c0 &lt;- coxph(Surv(Tstart, Tstop, status) ~ strata(trans), data=pr0)
+c1 &lt;- coxph(Surv(Tstart, Tstop, status) ~ strata(trans), data=pr1)
+msf0 &lt;- msfit(c0, trans=tmat)
+msf1 &lt;- msfit(c1, trans=tmat)
+# Comparison as in Figure 2 of Titman (2015)
+# Aalen-Johansen
+pt0 &lt;- probtrans(msf0, predt=1000)[[2]]
+pt1 &lt;- probtrans(msf1, predt=1000)[[2]]
+par(mfrow=c(1,2))
+plot(pt0$time, pt0$pstate1, type="s", lwd=2, xlim=c(1000,4000), ylim=c(0,0.61),
+     xlab="Time since randomisation (days)", ylab="Probability")
+lines(pt1$time, pt1$pstate1, type="s", lwd=2, lty=3)
+legend("topright", c("Placebo", "Prednisone"), lwd=2, lty=1:2, bty="n")
+title(main="Aalen-Johansen")
+# Landmark Aalen-Johansen
+LMpt0 &lt;- LMAJ(msdata=pr0, s=1000, from=2)
+LMpt1 &lt;- LMAJ(msdata=pr1, s=1000, from=2)
+plot(LMpt0$time, LMpt0$pstate1, type="s", lwd=2, xlim=c(1000,4000), ylim=c(0,0.61),
+     xlab="Time since randomisation (days)", ylab="Probability")
+lines(LMpt1$time, LMpt1$pstate1, type="s", lwd=2, lty=3)
+legend("topright", c("Placebo", "Prednisone"), lwd=2, lty=1:2, bty="n")
+title(main="Landmark Aalen-Johansen")
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mstate</em> version 0.3.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

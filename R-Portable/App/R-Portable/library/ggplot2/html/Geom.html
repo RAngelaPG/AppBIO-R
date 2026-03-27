@@ -1,0 +1,364 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Geoms</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for Geom {ggplot2}"><tr><td>Geom {ggplot2}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Geoms</h2>
+
+<h3>Description</h3>
+
+<p>All <code style="white-space: pre;">geom_*()</code> functions (like <code>geom_point()</code>) return a layer that
+contains a <code style="white-space: pre;">Geom*</code> object (like <code>GeomPoint</code>). The <code style="white-space: pre;">Geom*</code>
+object is responsible for rendering the data in the plot.
+</p>
+
+
+<h3>Details</h3>
+
+<p>Each of the <code style="white-space: pre;">Geom*</code> objects is a <code><a href="../../ggplot2/help/ggproto.html">ggproto()</a></code> object, descended
+from the top-level <code>Geom</code>, and each implements various methods and
+fields. The object and its parameters are chaperoned by the <a href="../../ggplot2/help/Layer.html">Layer</a> class.
+</p>
+<p>Compared to <code>Stat</code> and <code>Position</code>, <code>Geom</code> is a little
+different because the execution of the setup and compute functions is
+split up. <code>setup_data</code> runs before position adjustments, and
+<code>draw_layer()</code> is not run until render time, much later.
+</p>
+<p>When creating a new Geom class, you may want to consider override one or
+more of the following:
+</p>
+
+<ul>
+<li><p> The <code>required_aes</code> and <code>default_aes</code> fields.
+</p>
+</li>
+<li><p> The <code>setup_data()</code> and <code>setup_params()</code> functions.
+</p>
+</li>
+<li><p> Either the <code>draw_panel()</code> or <code>draw_group()</code> function.
+</p>
+</li>
+<li><p> The <code>draw_key</code> field.
+</p>
+</li></ul>
+
+
+
+<h3>Fields</h3>
+
+
+<dl>
+<dt><code>required_aes</code></dt><dd><p>A character vector naming aesthetics that are necessary
+to render the geom.</p>
+</dd>
+<dt><code>non_missing_aes</code></dt><dd><p>A character vector naming aesthetics that will cause
+removal if they have missing values.</p>
+</dd>
+<dt><code>optional_aes</code></dt><dd><p>A character vector naming aesthetics that will be
+accepted by <code>layer()</code>, but are not required or described in the
+<code>default_aes</code> field.</p>
+</dd>
+<dt><code>default_aes</code></dt><dd><p>A <a href="../../ggplot2/help/aes.html">mapping</a> of default values for aesthetics.
+Aesthetics can be set to <code>NULL</code> to be included as optional aesthetic.</p>
+</dd>
+<dt><code>rename_size</code></dt><dd><p>A scalar boolean: whether to rename <code>size</code> aesthetics to <code>linewidth</code>.</p>
+</dd>
+<dt><code>extra_params</code></dt><dd><p>A character vector of parameter names in addition to
+those imputed from the <code>draw_panel()</code> or <code>draw_groups()</code> methods. This
+field can be set to include parameters for <code>setup_data()</code> or <code>handle_na()</code>
+methods. By default, this only contains <code>"na.rm"</code>.</p>
+</dd>
+<dt><code>draw_key</code></dt><dd><p>A function generating a single legend glyph for the geom.
+Typically one of the functions prefixed by <code><a href="../../ggplot2/help/draw_key.html">draw_key_</a></code>.</p>
+</dd>
+<dt><code>setup_params</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for modifying or checking the parameters based on the
+data. The default method returns the parameters unaltered.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Geom$setup_params(data, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A data frame with the layer's data.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of current parameters.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A list of parameters</p>
+</dd>
+<dt><code>setup_data</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for modifying or checking the data prior to adding
+defaults. The default method returns data unaltered.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Geom$setup_data(data, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A data frame with the layer's data.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters coming from the <code>setup_params()</code>
+method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A data frame with layer data</p>
+</dd>
+<dt><code>use_defaults</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for completing the layer data by filling in default
+aesthetics that are not present. It is not recommended to use as an
+extension point.
+</p>
+<p>It takes on these tasks:
+</p>
+
+<ul>
+<li><p> Evaluation of default aesthetics from the <code>default_aes</code> field.
+</p>
+</li>
+<li><p> Handling the <code><a href="../../ggplot2/help/after_scale.html">after_scale()</a></code>/<code>stage(after_scale)</code> stage of delayed
+evaluation.
+</p>
+</li>
+<li><p> Fill in fixed, unmapped aesthetics passed as parameters.
+</p>
+</li></ul>
+
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Geom$use_defaults(data, params, modifiers, default_aes, theme, ...)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A data frame of the layer's data, coming from the
+<code>setup_data()</code> method. Can be <code>NULL</code>, in which case resolved defaults
+should be returned.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of fixed aesthetic parameters</p>
+</dd>
+<dt><code>modifiers</code></dt><dd><p>A <a href="../../ggplot2/help/aes.html">mapping</a> with delayed evaluations.</p>
+</dd>
+<dt><code>default_aes</code></dt><dd><p>A <a href="../../ggplot2/help/aes.html">mapping</a> with default aesthetics.</p>
+</dd>
+<dt><code>theme</code></dt><dd><p>A <a href="../../ggplot2/help/complete_theme.html">completed theme</a>.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A data frame with completed layer data.</p>
+</dd>
+<dt><code>handle_na</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method to handle missing values. The default method will
+remove rows that have missing values for the aesthetics listed in the
+<code>required_aes</code> and <code>non_missing_aes</code> fields. It is not recommended to
+use this method as an extension point.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Geom$handle_na(data, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A data frame with the layer's data coming from the
+<code>update_defaults()</code> method.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters coming from the <code>setup_params()</code>
+method</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A data frame with layer data</p>
+</dd>
+<dt><code>draw_layer</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method orchestrating the drawing of the entire layer. The
+default method splits the data and passes on drawing tasks to the
+panel-level <code>draw_panel()</code> method. It is not recommended to use this method
+as an extension point.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Geom$draw_layer(data, params, layout, coord)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A data frame with the layer's data.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters</p>
+</dd>
+<dt><code>layout</code></dt><dd><p>A completed <code style="white-space: pre;">&lt;Layout&gt;</code> ggproto object.</p>
+</dd>
+<dt><code>coord</code></dt><dd><p>A <code style="white-space: pre;">&lt;Coord&gt;</code> ggproto object.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A list of grobs, one per panel</p>
+</dd>
+<dt><code>draw_panel,draw_group</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method orchestrating the drawing of the layer for a single
+panel or group. The default <code>draw_panel()</code> method splits the data into groups,
+passes on the drawing tasks to the group-level <code>draw_group()</code> method and
+finally assembles these into a single grob. The default <code>draw_group</code> method
+is not implemented.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Geom$draw_panel(data, panel_params, coord, ...)
+Geom$draw_group(data, panel_params, coord, ...)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>data</code></dt><dd><p>A data frame with the layer's data.</p>
+</dd>
+<dt><code>panel_params</code></dt><dd><p>A list of per-panel parameters constructed by
+<code>Coord$setup_panel_params()</code>. This should be considered an opaque data
+structure that is just passed along when calling coord methods.</p>
+</dd>
+<dt><code>coord</code></dt><dd><p>A <code style="white-space: pre;">&lt;Coord&gt;</code> ggproto object. To correctly scale the
+position data, one should always call
+<code>coord$transform(data, panel_params)</code>. When working with non-linear
+coordinate systems, data should be converted to fit a primitive geom
+(e.g. point, path or polygon) and passed on to the corresponding draw
+method for <a href="../../ggplot2/help/coord_munch.html">munching</a>.</p>
+</dd>
+<dt><code>...</code></dt><dd><p>Reserved for extensions. By default, this is passed on to
+the <code>draw_group()</code> method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A single grob or <code><a href="../../ggplot2/help/zeroGrob.html">zeroGrob()</a></code> when there is nothing to draw. For
+<code>draw_panel()</code> this can be a <a href="../../grid/help/grid.grob.html">gTree</a> holding individual grobs
+from the <code>draw_group()</code> method.</p>
+</dd>
+<dt><code>parameters</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for listing out all acceptable parameters for this geom.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Geom$parameters(extra)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>extra</code></dt><dd><p>A boolean: whether to include the <code>extra_params</code> field.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A character vector of parameter names.</p>
+</dd>
+<dt><code>aesthetics</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for listing out all acceptable aesthetics for this geom.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Geom$aesthetics()
+</pre></div>
+<p><strong>Value</strong>
+</p>
+<p>A character vector of aesthetic names.</p>
+</dd>
+</dl>
+
+
+<h3>Conventions</h3>
+
+<p>The object name that a new class is assigned to is typically the same as
+the class name. Geom class names are in UpperCamelCase and start with the
+<code style="white-space: pre;">Geom*</code> prefix, like <code>GeomNew</code>.
+</p>
+<p>A constructor function is usually paired with a Geom class. The constructor
+wraps a call to <code>layer()</code>, where e.g. <code>layer(geom = GeomNew)</code>. The constructor
+function name is formatted by taking the Geom class name and formatting it
+with snake_case, so that <code>GeomNew</code> becomes <code>geom_new()</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>The <a href="https://ggplot2-book.org/extensions#sec-new-geoms">new geoms section</a> of the online ggplot2 book.
+</p>
+<p>Run <code>vignette("extending-ggplot2")</code>, in particular the &quot;Creating a
+new geom&quot; section.
+</p>
+<p>Other Layer components: 
+<code><a href="../../ggplot2/help/Layer-class.html">Layer-class</a></code>,
+<code><a href="../../ggplot2/help/Position.html">Position</a></code>,
+<code><a href="../../ggplot2/help/Stat.html">Stat</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Extending the class
+GeomSimplePoint &lt;- ggproto(
+  "GeomSimplePoint", Geom,
+  # Fields
+  required_aes = c("x", "y"),
+  draw_key     = draw_key_point,
+  # Methods
+  draw_panel = function(data, panel_params, coord) {
+    data &lt;- coord$transform(data, panel_params)
+    grid::pointsGrob(data$x, data$y)
+  }
+)
+
+# Building a constructor
+geom_simple_point &lt;- function(mapping = NULL, data = NULL, stat = "identity",
+                              position = "identity", ..., na.rm = FALSE,
+                              show.legend = NA, inherit.aes = TRUE) {
+  layer(
+    mapping = mapping, data = data,
+    geom = GeomSimplePoint, stat = stat, position = position,
+    show.legend = show.legend, inherit.aes = inherit.aes,
+    params = list(na.rm = na.rm, ...)
+  )
+}
+
+# Use new geom in plot
+ggplot(mpg, aes(displ, hwy)) +
+  geom_simple_point()
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ggplot2</em> version 4.0.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

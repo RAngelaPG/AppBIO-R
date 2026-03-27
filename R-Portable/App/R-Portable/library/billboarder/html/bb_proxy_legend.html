@@ -1,0 +1,149 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Show or hide legend with proxy</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for bb_proxy_legend {billboarder}"><tr><td>bb_proxy_legend {billboarder}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Show or hide legend with proxy</h2>
+
+<h3>Description</h3>
+
+<p>Show or hide legend with proxy
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+bb_proxy_legend(proxy, what = c("show", "hide"), targetIds = NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>proxy</code></td>
+<td>
+<p>A <code>billboardProxy</code> <code>htmlwidget</code> object.</p>
+</td></tr>
+<tr valign="top"><td><code>what</code></td>
+<td>
+<p><code>show</code> or <code>hide</code> the legend.</p>
+</td></tr>
+<tr valign="top"><td><code>targetIds</code></td>
+<td>
+<p>Series ids to show/hide, if <code>NULL</code> show/hide all legend.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A <code>billboardProxy</code> <code>htmlwidget</code> object.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+if (interactive()) {
+  library("shiny")
+
+  data("prod_par_filiere")
+
+  ui &lt;- fluidPage(
+    tags$h2("Show or hide legend with Proxy"),
+    fluidRow(
+      column(
+        width = 3,
+        checkboxInput(
+          inputId = "show_legend",
+          label = "Show legend",
+          value = TRUE
+        ),
+        checkboxGroupInput(
+          inputId = "item_show",
+          label = "Item to show in legend",
+          choices = c("Hydraulic" = "prod_hydraulique",
+                      "Wind" = "prod_eolien",
+                      "Solar" = "prod_solaire"),
+          selected = c("prod_hydraulique", "prod_eolien", "prod_solaire")
+        )
+      ),
+      column(
+        width = 9,
+        billboarderOutput(outputId = "mybb")
+      )
+    )
+  )
+
+  server &lt;- function(input, output, session) {
+
+    output$mybb &lt;- renderBillboarder({
+      billboarder() %&gt;%
+        bb_barchart(
+          data = prod_par_filiere[, c(
+            "annee", "prod_hydraulique", 
+            "prod_eolien", "prod_solaire"
+          )],
+          stacked = TRUE
+        ) %&gt;%
+        bb_data(
+          names = list(prod_hydraulique = "Hydraulic",
+                       prod_eolien = "Wind",
+                       prod_solaire = "Solar"),
+          labels = TRUE
+        ) %&gt;%
+        bb_colors_manual(
+          "prod_eolien" = "#41AB5D",
+          "prod_hydraulique" = "#4292C6", 
+          "prod_solaire" = "#FEB24C"
+        ) %&gt;%
+        bb_y_grid(show = TRUE) %&gt;%
+        bb_y_axis(
+          tick = list(format = suffix("TWh")),
+          label = list(text = "production (in terawatt-hours)",
+                       position = "outer-top")
+        ) %&gt;%
+        bb_legend(position = "right") %&gt;%
+        bb_labs(
+          title = "Renewable energy production",
+          caption = "Data source: RTE (https://opendata.rte-france.com)"
+        )
+    })
+
+    observe({
+      if (input$show_legend) {
+        billboarderProxy("mybb") %&gt;% 
+          bb_proxy_legend(what = "show")
+      } else {
+        billboarderProxy("mybb") %&gt;% 
+          bb_proxy_legend(what = "hide")
+      }
+    })
+
+    observe({
+      lapply(
+        X = c("prod_hydraulique", "prod_eolien", "prod_solaire"),
+        FUN = function(x) {
+          if (x %in% input$item_show) {
+            billboarderProxy("mybb") %&gt;%
+              bb_proxy_legend(what = "show", targetIds = x)
+          } else {
+            billboarderProxy("mybb") %&gt;%
+              bb_proxy_legend(what = "hide", targetIds = x)
+          }
+        }
+      )
+    })
+
+  }
+
+  shinyApp(ui = ui, server = server)
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>billboarder</em> version 0.5.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,147 @@
+---
+title: "GIGWA Example"
+author: "Khaled Al-Shamaa"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{GIGWA Example}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## QBMS
+This R package assists breeders in linking data systems with their analytic pipelines, a crucial step in digitizing breeding processes. It supports querying and retrieving phenotypic and genotypic data from systems like [EBS](https://ebs.excellenceinbreeding.org/), [BMS](https://bmspro.io/), [BreedBase](https://breedbase.org), and [GIGWA](https://github.com/SouthGreenPlatform/Gigwa2) (using [BrAPI](https://brapi.org/) calls). Extra helper functions support environmental data sources, including [TerraClimate](https://www.climatologylab.org/terraclimate.html) and FAO [HWSDv2](https://gaez.fao.org/pages/hwsd) soil database.
+
+## GIGWA
+[GIGWA](https://github.com/SouthGreenPlatform/Gigwa2) is a web-based tool which provides an easy and intuitive way to explore large amounts of genotyping data by filtering the latter based not only on variant features, including functional annotations, but also on genotype patterns. The data storage relies on MongoDB, which offers good scalability perspectives. GIGWA can handle multiple databases and may be deployed in either single or multi-user mode. Finally, it provides a wide range of popular export formats.
+
+## BrAPI
+The Breeding API ([BrAPI](https://brapi.org/)) project is an effort to enable interoperability among plant breeding databases. BrAPI is a standardized RESTful web service API specification for communicating plant breeding data. This community driven standard is free to be used by anyone interested in plant breeding data management.
+
+## _Example_
+```r
+# load the QBMS library
+library(QBMS)
+
+# The public GIGWA testing server required no authentication. If your GIGWA server 
+# requires authentication, then make sure that no_auth parameter value is FALSE
+# IMPORTENT NOTE: QBMS required GIGWA version 2.4.1 or higher
+set_qbms_config("https://gigwa.southgreen.fr/gigwa/", 
+                time_out = 300, engine = "gigwa", no_auth = TRUE)
+
+# If login is required, then you can use your GIGWA account (interactive mode)
+# or pass your GIGWA username and password as parameters (batch mode)
+# login_gigwa()
+# login_gigwa("gigwadmin", "nimda")
+
+# list existing databases in the current GIGWA server
+gigwa_list_dbs()
+
+# select a database by name
+gigwa_set_db("Sorghum-JGI_v1")
+
+# list all projects in the selected database
+gigwa_list_projects()
+
+# select a project by name
+gigwa_set_project("Nelson_et_al_2011")
+
+# list all runs in the selected project
+gigwa_list_runs()
+
+# select a specific run by name
+gigwa_set_run("run1")
+
+# get a list of all samples in the selected run
+samples <- gigwa_get_samples()
+
+# show the first 6 individuals on the list of samples
+head(samples)
+
+# query the variants (e.g., SNPs markers) in the selected run 
+# that match the given criteria:
+# - max_missing: maximum missing ratio (by sample) [0-1] (default is 1 for 100%) 
+# - min_maf: minimum Minor Allele Frequency (MAF) [0-1] (default is 0 for 0%) 
+# - start: start position of region (zero-based, inclusive) (e.g., 19750802)
+# - end: end position of region (zero-based, exclusive)	(e.g., 19850125)
+# - referenceName: reference sequence name	(e.g., '6H' in the Barley LI-AM)
+# - samples: a list of a samples subset (default is NULL will retrieve for all samples) 
+marker_matrix <- gigwa_get_variants(max_missing = 0.2, 
+                                    min_maf = 0.05, 
+                                    start = 100000,
+                                    end = 500000,
+                                    samples = c("ind1", "ind3", "ind7"))
+
+# Data returns in data.frame format. The first 4 columns describe attributes of the SNP 
+# - rs#: variant name
+# - alleles: reference allele / alternative allele
+# - chrom: chromosome name
+# - pos: position in bp
+# while the following columns describe the SNP value for a single sample line using 
+# numerical coding 0, 1, and 2 for reference, heterozygous, alternative/minor alleles.
+head(marker_matrix)
+
+# get the metadata associated with the samples in the current active run
+gigwa_set_db("DIVRICE_NB")
+gigwa_set_project("refNB")
+gigwa_set_run("03052022")
+
+# get a list of all samples in the selected run
+metadata <- gigwa_get_metadata()
+
+View(metadata)
+
+```
+
+## Enhanced Allele Matrix Retrieval
+The following functions now utilize the new efficient BrAPI v2.1 /allelematrix 
+calls, requiring version 2.6 of GIGWA or higher. This update significantly 
+improves the QBMS allele matrix retrieval speed, increasing it by more than 10 
+times, as demonstrated by benchmark tests.
+
+```r
+# Configure your GIGWA connection
+set_qbms_config("https://gigwa-dev.southgreen.fr/gigwaV2/", page_size = 50000,
+                time_out = 300, engine = "gigwa", no_auth = TRUE)
+
+# Select a database by name
+gigwa_set_db("Sorghum-JGI_v1")
+
+# Select a project by name
+gigwa_set_project("Nelson_et_al_2011")
+
+# Select a specific run by name
+gigwa_set_run("run1")
+
+# Get the list of all samples in the selected project
+germplasmNames <- gigwa_get_samples()
+
+# Get the list of all sequences in the selected project
+chroms <- gigwa_get_sequences()
+
+### Get Variants Info (Geno Map) ###############################################
+
+?gigwa_get_markers
+geno_map <- gigwa_get_markers(start = 0,
+                              end = 1234567,
+                              # chrom = c("Sb01", "Sb02"),      # chroms[1:3]
+                              )
+
+### Get Marker Matrix ##########################################################
+
+?gigwa_get_allelematrix
+geno_data <- gigwa_get_allelematrix(start = 0,                  # default is 0
+                                    end = 1234567,              # default is "" -> "ref:0-"
+                                    snps = geno_map$`rs#`,      # optional
+                                    # chrom = "Sb01",           # c("Sb01", "Sb07")
+                                    # samples = germplasmNames, # gigwa_get_samples()
+                                    # snps_pageSize = 10000,
+                                    # samples_pageSize = 100,
+                                    )
+
+### Get The Whole Variant Set ##################################################
+
+?get_variantset
+snps <- get_variantset()
+
+```

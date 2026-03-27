@@ -1,0 +1,336 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Get NASA POWER data from the POWER API</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for get_power {nasapower}"><tr><td>get_power {nasapower}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Get NASA POWER data from the POWER API</h2>
+
+<h3>Description</h3>
+
+<p>Get <acronym><span class="acronym">POWER</span></acronym> global meteorology and surface solar energy
+climatology data and return a tidy data frame <a href="https://CRAN.R-project.org/package=tibble"><span class="pkg">tibble</span></a> object.  All
+options offered by the official <acronym><span class="acronym">POWER</span></acronym> <acronym><span class="acronym">API</span></acronym> are
+supported.  Requests are formed to submit one request per point.
+There is no need to make synchronous requests for multiple parameters for
+a single point or regional request.  See section on &ldquo;Rate Limiting&rdquo;
+for more.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+get_power(
+  community = c("ag", "re", "sb"),
+  pars,
+  temporal_api = c("daily", "monthly", "hourly", "climatology"),
+  lonlat,
+  dates = NULL,
+  site_elevation = NULL,
+  wind_elevation = NULL,
+  wind_surface = NULL,
+  time_standard = c("LST", "UTC")
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>community</code></td>
+<td>
+<p>A case-insensitive character vector providing community
+name: &ldquo;AG&rdquo;, &ldquo;RE&rdquo; or &ldquo;SB&rdquo;.  See argument details for
+more.</p>
+</td></tr>
+<tr valign="top"><td><code>pars</code></td>
+<td>
+<p>case-insensitive character vector of solar, meteorological or
+climatology parameters to download.  When requesting a single point of x,
+y coordinates, a maximum of twenty (20) <code>pars</code> can be specified at one
+time, for &ldquo;daily&rdquo;, &ldquo;monthly&rdquo; and &ldquo;climatology&rdquo;
+<code>temporal_api</code>s.  If the <code>temporal_api</code> is specified as &ldquo;hourly&rdquo;
+only 15 <code>pars</code> can be specified in a single query.  See <code>temporal_api</code> for
+more.  These values are checked internally for validity before sending the
+query to the <acronym><span class="acronym">POWER</span></acronym> <acronym><span class="acronym">API</span></acronym>.</p>
+</td></tr>
+<tr valign="top"><td><code>temporal_api</code></td>
+<td>
+<p>A case-insensitive character vector providing the
+temporal <acronym><span class="acronym">API</span></acronym> end-point for data being queried, supported values
+are &ldquo;hourly&rdquo;, &ldquo;daily&rdquo;, &ldquo;monthly&rdquo; or
+&ldquo;climatology&rdquo;. Defaults to &ldquo;daily&rdquo;.  See argument details
+for more.</p>
+</td></tr>
+<tr valign="top"><td><code>lonlat</code></td>
+<td>
+<p>A numeric vector of geographic coordinates for a cell or
+region entered as x, y (longitude, latitude) coordinates.  See argument
+details for more.</p>
+</td></tr>
+<tr valign="top"><td><code>dates</code></td>
+<td>
+<p>A character vector of start and end dates in that order,<br />
+<em>e.g.</em>, <code>dates = c("1983-01-01", "2017-12-31")</code>.
+Not used when<br /> <code>temporal_api</code> is set to &ldquo;climatology&rdquo;.
+See argument details for more.</p>
+</td></tr>
+<tr valign="top"><td><code>site_elevation</code></td>
+<td>
+<p>A user-supplied value for elevation at a single point
+in metres.  If provided this will return a corrected atmospheric pressure
+value adjusted to the elevation provided.  Only used with <code>lonlat</code> as a
+single point of x, y coordinates, not for use with &ldquo;global&rdquo; or with
+a regional request.</p>
+</td></tr>
+<tr valign="top"><td><code>wind_elevation</code></td>
+<td>
+<p>A user-supplied value for elevation at a single point
+in metres.  Wind elevation values are required to be between 10 and 300
+metres.  Only used with <code>lonlat</code> as a single point of x, y coordinates,
+not for use with &ldquo;global&rdquo; or with a regional request.  If this
+parameter is provided, the <code>wind_surface</code> parameter is required with the
+request, see
+<a href="https://power.larc.nasa.gov/docs/methodology/meteorology/wind/">https://power.larc.nasa.gov/docs/methodology/meteorology/wind/</a>.</p>
+</td></tr>
+<tr valign="top"><td><code>wind_surface</code></td>
+<td>
+<p>A user-supplied wind surface for which the corrected
+wind-speed is to be supplied.  See <code>wind-surface</code> section for more detail.</p>
+</td></tr>
+<tr valign="top"><td><code>time_standard</code></td>
+<td>
+<p><acronym><span class="acronym">POWER</span></acronym> provides two different time standards.
+</p>
+
+<ul>
+<li><p> Universal Time Coordinated (<acronym><span class="acronym">UTC</span></acronym>): is the standard time-
+measure that used by the world.
+</p>
+</li>
+<li><p> Local Solar Time (<acronym><span class="acronym">LST</span></acronym>): A 15 degree swath that represents
+solar noon at the middle longitude of the swath.
+Defaults to <code>LST</code>.
+</p>
+</li></ul>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A data frame as a <code>POWER.Info</code> class, an extension of the
+<a href="https://CRAN.R-project.org/package=tibble"><span class="pkg">tibble</span></a>, object of <acronym><span class="acronym">POWER</span></acronym> data including location, dates
+(not including &ldquo;climatology&rdquo;) and requested parameters; a decorative
+header of metadata is included in this object.
+</p>
+
+
+<h3>Argument details for &ldquo;community&rdquo;</h3>
+
+<p>There are three valid
+values, one must be supplied. This  will affect the units of the parameter
+and the temporal display of time series data.
+</p>
+
+<dl>
+<dt>ag</dt><dd><p>Provides access to the Agroclimatology Archive, which
+contains industry-friendly parameters formatted for input to crop models.</p>
+</dd>
+<dt>sb</dt><dd><p>Provides access to the Sustainable Buildings Archive, which
+contains industry-friendly parameters for the buildings community to
+include parameters in multi-year monthly averages.</p>
+</dd>
+<dt>re</dt><dd><p>Provides access to the Renewable Energy Archive, which contains
+parameters specifically tailored to assist in the design of solar and wind
+powered renewable energy systems.</p>
+</dd>
+</dl>
+
+
+
+<h3>Argument details for <code>temporal_api</code></h3>
+
+<p>There are four valid values.
+</p>
+
+<dl>
+<dt>hourly</dt><dd><p>The hourly average of <code>pars</code> by hour, day, month and year,
+the time zone is LST by default.</p>
+</dd>
+<dt>daily</dt><dd><p>The daily average of <code>pars</code> by day, month and year.</p>
+</dd>
+<dt>monthly</dt><dd><p>The monthly average of <code>pars</code> by month and year.</p>
+</dd>
+<dt>climatology</dt><dd><p>Provide parameters as 22-year climatologies (solar)
+and 30-year climatologies (meteorology); the period climatology and
+monthly average, maximum, and/or minimum values.</p>
+</dd>
+</dl>
+
+
+
+<h3>Argument details for <code>lonlat</code></h3>
+
+
+<dl>
+<dt>For a single point</dt><dd><p>To get a specific cell, 1/2 x 1/2 degree, supply
+a length-two numeric vector giving the decimal degree longitude and
+latitude in that order for data to download,<br />
+<em>e.g.</em>, <code>lonlat = c(-179.5, -89.5)</code>.</p>
+</dd>
+<dt>For regional coverage</dt><dd><p>To get a region, supply a length-four numeric
+vector as lower left (lon, lat) and upper right (lon, lat) coordinates,
+<em>e.g.</em>, <code>lonlat = c(xmin, ymin, xmax, ymax)</code> in that order for a
+given region, <em>e.g.</em>, a bounding box for the south western corner of
+Australia: <code>lonlat = c(112.5, -55.5, 115.5, -50.5)</code>.  *Maximum area
+processed is 4.5 x 4.5 degrees (100 points).</p>
+</dd>
+<dt>For global coverage</dt><dd><p>To get global coverage for &ldquo;climatology&rdquo;,
+supply &ldquo;global&rdquo; while also specifying &ldquo;climatology&rdquo; for the
+<code>temporal_api</code>.</p>
+</dd>
+</dl>
+
+
+
+<h3>Argument details for <code>dates</code></h3>
+
+<p>if one date only is provided, it
+will be treated as both the start date and the end date and only a single
+day's values will be returned, <em>e.g.</em>, <code>dates = "1983-01-01"</code>.  When
+<code>temporal_api</code> is set to &ldquo;MONTHLY&rdquo;, use only two year values (YYYY),
+<em>e.g.</em> <code>dates = c(1983, 2010)</code>.  This argument should not be used when
+<code>temporal_api</code> is set to &ldquo;climatology&rdquo; and will be ignored if set.
+</p>
+
+
+<h3><code>wind_surface</code></h3>
+
+<p>There are 17 surfaces that may be used for corrected
+wind-speed values using the following equation:
+</p>
+<p style="text-align: center;"><i>WSC_hgt = WS_10 m*(hgt/WS_50m)^&alpha; </i></p>
+
+<p>Valid surface types are described here.
+</p>
+
+<dl>
+<dt>vegtype_1</dt><dd><p>35-m broadleaf-evergreen trees (70% coverage)</p>
+</dd>
+<dt>vegtype_2</dt><dd><p>20-m broadleaf-deciduous trees (75% coverage)</p>
+</dd>
+<dt>vegtype_3</dt><dd><p>20-m broadleaf and needleleaf trees (75% coverage)</p>
+</dd>
+<dt>vegtype_4</dt><dd><p>17-m needleleaf-evergreen trees (75% coverage)</p>
+</dd>
+<dt>vegtype_5</dt><dd><p>14-m needleleaf-deciduous trees (50% coverage)</p>
+</dd>
+<dt>vegtype_6</dt><dd><p>Savanna:18-m broadleaf trees (30%) &amp; groundcover</p>
+</dd>
+<dt>vegtype_7</dt><dd><p>0.6-m perennial groundcover (100%)</p>
+</dd>
+<dt>vegtype_8</dt><dd><p>0.5-m broadleaf shrubs (variable %) &amp; groundcover</p>
+</dd>
+<dt>vegtype_9</dt><dd><p>0.5-m broadleaf shrubs (10%) with bare soil</p>
+</dd>
+<dt>vegtype_10</dt><dd><p>Tundra: 0.6-m trees/shrubs (variable %) &amp; groundcover</p>
+</dd>
+<dt>vegtype_11</dt><dd><p>Rough bare soil</p>
+</dd>
+<dt>vegtype_12</dt><dd><p>Crop: 20-m broadleaf-deciduous trees (10%) &amp; wheat</p>
+</dd>
+<dt>vegtype_20</dt><dd><p>Rough glacial snow/ice</p>
+</dd>
+<dt>seaice</dt><dd><p>Smooth sea ice</p>
+</dd>
+<dt>openwater</dt><dd><p>Open water</p>
+</dd>
+<dt>airportice</dt><dd><p>Airport: flat ice/snow</p>
+</dd>
+<dt>airportgrass</dt><dd><p>Airport: flat rough grass</p>
+</dd>
+</dl>
+
+
+
+<h3>Rate limiting</h3>
+
+<p>The <acronym><span class="acronym">POWER</span></acronym> <acronym><span class="acronym">API</span></acronym> endpoints limit
+queries to prevent server overloads due to repetitive and rapid requests.
+If you find that the <acronym><span class="acronym">API</span></acronym> is throttling your queries, I suggest
+that you investigate the use of <code>limit_rate()</code> from <a href="https://CRAN.R-project.org/package=ratelimitr"><span class="pkg">ratelimitr</span></a> to
+create self-limiting functions that will respect the rate limits that the
+<acronym><span class="acronym">API</span></acronym> has in place.  It is considered best practice to check the
+<a href="https://power.larc.nasa.gov/docs/services/api/">POWER website</a> for the
+latest rate limits as they differ between temporal <acronym><span class="acronym">API</span></acronym>s and may
+change over time as the project matures.
+</p>
+
+
+<h3>Note</h3>
+
+<p>The associated metadata shown in the decorative header are not saved
+if the data are exported to a file format other than a native <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> data
+format, <em>e.g.</em>, .Rdata, .rda or .rds.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Adam H. Sparks <a href="mailto:adamhsparks@gmail.com">adamhsparks@gmail.com</a>
+</p>
+
+
+<h3>References</h3>
+
+<p><a href="https://power.larc.nasa.gov/docs/methodology/">https://power.larc.nasa.gov/docs/methodology/</a>
+<a href="https://power.larc.nasa.gov">https://power.larc.nasa.gov</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+
+# Fetch daily "AG" community temperature, relative humidity and
+# precipitation for January 1 1985 at Kingsthorpe, Queensland, Australia
+ag_d &lt;- get_power(
+  community = "AG",
+  lonlat = c(151.81, -27.48),
+  pars = c("RH2M", "T2M", "PRECTOTCORR"),
+  dates = "1985-01-01",
+  temporal_api = "daily"
+)
+
+ag_d
+
+# Fetch single point climatology for air temperature
+ag_c_point &lt;- get_power(
+  community = "AG",
+  pars = "T2M",
+  c(151.81, -27.48),
+  temporal_api = "climatology"
+)
+
+ag_c_point
+
+# Fetch interannual solar cooking parameters for a given region
+sse_i &lt;- get_power(
+  community = "RE",
+  lonlat = c(112.5, -55.5, 115.5, -50.5),
+  dates = c("1984", "1985"),
+  temporal_api = "monthly",
+  pars = c("CLRSKY_SFC_SW_DWN", "ALLSKY_SFC_SW_DWN")
+)
+
+sse_i
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>nasapower</em> version 4.2.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

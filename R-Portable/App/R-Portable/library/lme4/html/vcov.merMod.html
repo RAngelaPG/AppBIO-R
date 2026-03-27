@@ -1,0 +1,133 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Covariance matrix of estimated parameters</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for vcov.merMod {lme4}"><tr><td>vcov.merMod {lme4}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Covariance matrix of estimated parameters</h2>
+
+<h3>Description</h3>
+
+<p>Compute the variance-covariance matrix of estimated paramers.
+Optionally also computes correlations, or the full (joint)
+covariance matrix of the fixed-effect coefficients and the conditional
+modes of the random effects.</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'merMod'
+vcov(object, correlation = TRUE, sigm = sigma(object),
+    use.hessian = NULL, full = FALSE, noScale = NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>an <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> object of class <code><a href="../../lme4/help/merMod-class.html">merMod</a></code>, i.e.,
+as resulting from <code><a href="../../lme4/help/lmer.html">lmer</a>()</code>, or <code><a href="../../lme4/help/glmer.html">glmer</a>()</code>,
+etc.</p>
+</td></tr>
+<tr valign="top"><td><code>correlation</code></td>
+<td>
+<p>(logical)
+indicates whether the correlation matrix as well as
+the variance-covariance matrix is desired
+</p>
+</td></tr>
+<tr valign="top"><td><code>sigm</code></td>
+<td>
+<p>the residual standard error; by default <code><a href="../../lme4/help/sigma.html">sigma</a>(object)</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>use.hessian</code></td>
+<td>
+<p>(logical) indicates whether to use the
+finite-difference Hessian of the deviance function to compute
+standard errors of the fixed effects. See <em>Details</em>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>full</code></td>
+<td>
+<p>return the 'full' covariance matrix, i.e. the joint
+covariance matrix of the conditional distribution of conditional
+modes (as in <code>getME(., "b")</code>) and fixed-effect
+parameters. (<code>correlation</code> and <code>use.hessian</code> are
+<em>ignored</em> in this case.)
+</p>
+<p>Note that this option may be slow for models with large numbers of
+random-effect levels!
+</p>
+</td></tr>
+<tr valign="top"><td><code>noScale</code></td>
+<td>
+<p>(logical) some users may use autoscaling. If so, the default
+returns the scaled parameters. If <code>noScale = TRUE</code>, then <code>vcov</code> 
+returns the non-scaled parameters instead.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>extra arguments for method compatibility (ignored)</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>When <code>use.hessian = FALSE</code>, the code estimates the
+covariance matrix based on internal information about the inverse of
+the model matrix (see <code><a href="../../lme4/help/getME.html">getME</a>(.,"RX")</code>). This is exact for
+linear mixed models, but approximate for GLMMs.
+The default is to use the Hessian whenever the
+fixed effect parameters are arguments to the deviance
+function (i.e. for GLMMs with <code>nAGQ&gt;0</code>), and to use
+<code><a href="../../lme4/help/getME.html">getME</a>(.,"RX")</code> whenever the fixed effect parameters are
+profiled out (i.e. for GLMMs with <code>nAGQ==0</code> or LMMs).
+</p>
+<p><code>use.hessian=FALSE</code> is backward-compatible with older versions
+of <code>lme4</code>, but may give less accurate SE estimates when the
+estimates of the fixed-effect (see <code><a href="../../lme4/help/getME.html">getME</a>(.,"beta")</code>)
+and random-effect (see <code><a href="../../lme4/help/getME.html">getME</a>(.,"theta")</code>) parameters
+are correlated.
+</p>
+<p>However, <code>use.hessian=TRUE</code> is not always more accurate: for some
+numerically unstable fits, the approximation using <code>RX</code> is
+actually more reliable (because the Hessian has to be computed by
+a finite difference approximation, which is also error-prone): see
+e.g. <a href="https://github.com/lme4/lme4/issues/720">https://github.com/lme4/lme4/issues/720</a>
+</p>
+
+
+<h3>Value</h3>
+
+<p>a covariance matrix (sparse when <code>full=TRUE</code>)</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+fm1 &lt;- lmer(Reaction ~ Days + (Days | Subject), sleepstudy)
+gm1 &lt;- glmer(cbind(incidence, size - incidence) ~ period + (1 | herd),
+             data = cbpp, family = binomial)
+(v1 &lt;- vcov(fm1))
+v2 &lt;- vcov(fm1, correlation = TRUE)
+# extract the hidden 'correlation' entry in @factors
+as(v2, "corMatrix")
+v3 &lt;- vcov(gm1)
+v3X &lt;- vcov(gm1, use.hessian  = FALSE)
+all.equal(v3, v3X)
+## full correlatiom matrix
+cv &lt;- vcov(fm1, full = TRUE)
+image(cv, xlab = "", ylab = "",
+      scales = list(y = list(labels = rownames(cv)),
+                    at = seq(nrow(cv)),
+                    x = list(labels = NULL)))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>lme4</em> version 2.0-1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

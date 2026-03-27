@@ -1,0 +1,334 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Create groups from your data</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for group {groupdata2}"><tr><td>group {groupdata2}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Create groups from your data</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#stable"><img src="../help/figures/lifecycle-stable.svg" alt='[Stable]' /></a>
+</p>
+<p>Divides data into groups by a wide range of methods.
+Creates a grouping factor with <code>1</code>s for group 1, <code>2</code>s for group 2, etc.
+Returns a <code>data.frame</code> grouped by the grouping factor for easy use in
+<code>magrittr `%&gt;%`</code> pipelines.
+</p>
+<p>By default*, the data points in a group are connected sequentially (e.g. <code>c(1, 1, 2, 2, 3, 3)</code>)
+and splitting is done from top to bottom. *Except in the <code>"every"</code> method.
+</p>
+<p>There are <strong>five</strong> types of grouping methods:
+</p>
+<p>The <code>"n_*"</code> methods split the data into a given <em>number of groups</em>.
+They differ in how they handle excess data points.
+</p>
+<p>The <code>"greedy"</code> method uses a <em>group size</em> to split the data into groups,
+greedily grabbing <code>`n`</code> data points from the top.
+The last group may thus differ in size (e.g. <code>c(1, 1, 2, 2, 3)</code>).
+</p>
+<p>The <code>"l_*"</code> methods use a <em>list</em> of either starting points (<code>"l_starts"</code>)
+or group sizes (<code>"l_sizes"</code>). The <code>"l_starts"</code> method can also auto-detect group starts
+(when a value differs from the previous value).
+</p>
+<p>The <code>"every"</code> method puts every <code>`n`</code>th data point into the same group
+(e.g. <code>c(1, 2, 3, 1, 2, 3)</code>).
+</p>
+<p>The step methods <code>"staircase"</code> and <code>"primes"</code> increase the group size by a step for each group.
+</p>
+<p><strong>Note</strong>: To create groups balanced by a categorical and/or numerical variable, see the
+<code><a href="../help/fold.html">fold()</a></code> and <code><a href="../help/partition.html">partition()</a></code> functions.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+group(
+  data,
+  n,
+  method = "n_dist",
+  starts_col = NULL,
+  force_equal = FALSE,
+  allow_zero = FALSE,
+  return_factor = FALSE,
+  descending = FALSE,
+  randomize = FALSE,
+  col_name = ".groups",
+  remove_missing_starts = FALSE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p><code>data.frame</code> or <code>vector</code>.
+When a <em>grouped</em> <code>data.frame</code>, the function is applied group-wise.</p>
+</td></tr>
+<tr valign="top"><td><code>n</code></td>
+<td>
+<p><em>Depends on <code>`method`</code>.</em>
+</p>
+<p>Number of groups (default), group size, list of group sizes,
+list of group starts, number of data points between group members,
+step size or prime number to start at. See <code>`method`</code>.
+</p>
+<p>Passed as whole number(s) and/or percentage(s) (<code>0</code> &lt; <code>n</code> &lt; <code>1</code>)
+and/or character.
+</p>
+<p>Method <code>"l_starts"</code> allows <code>'auto'</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p><code>"greedy"</code>, <code>"n_dist"</code>, <code>"n_fill"</code>, <code>"n_last"</code>,
+<code>"n_rand"</code>, <code>"l_sizes"</code>, <code>"l_starts"</code>, <code>"every"</code>, <code>"staircase"</code>, or
+<code>"primes"</code>.
+</p>
+<p><strong>Note</strong>: examples are sizes of the generated groups
+based on a vector with <code>57</code> elements.
+</p>
+
+
+<h4>greedy</h4>
+
+<p>Divides up the data greedily given a specified group size
+<i>(e.g. 10, 10, 10, 10, 10, 7)</i>.
+</p>
+<p><code>`n`</code> is group size.</p>
+
+
+
+<h4>n_dist (default)</h4>
+
+<p>Divides the data into a specified number of groups and
+distributes excess data points across groups
+<i>(e.g. 11, 11, 12, 11, 12)</i>.
+</p>
+<p><code>`n`</code> is number of groups.</p>
+
+
+
+<h4>n_fill</h4>
+
+<p>Divides the data into a specified number of groups and
+fills up groups with excess data points from the beginning
+<i>(e.g. 12, 12, 11, 11, 11)</i>.
+</p>
+<p><code>`n`</code> is number of groups.</p>
+
+
+
+<h4>n_last</h4>
+
+<p>Divides the data into a specified number of groups.
+It finds the most equal group sizes possible,
+using all data points. Only the last group is able to differ in size
+<i>(e.g. 11, 11, 11, 11, 13)</i>.
+</p>
+<p><code>`n`</code> is number of groups.</p>
+
+
+
+<h4>n_rand</h4>
+
+<p>Divides the data into a specified number of groups.
+Excess data points are placed randomly in groups (max. 1 per group)
+<i>(e.g. 12, 11, 11, 11, 12)</i>.
+</p>
+<p><code>`n`</code> is number of groups.</p>
+
+
+
+<h4>l_sizes</h4>
+
+<p>Divides up the data by a <code>list</code> of group sizes.
+Excess data points are placed in an extra group at the end.
+</p>
+<p><i>E.g. n = list(0.2, 0.3) outputs groups with sizes (11, 17, 29)</i>.
+</p>
+<p><code>`n`</code> is a <code>list</code> of group sizes.</p>
+
+
+
+<h4>l_starts</h4>
+
+<p>Starts new groups at specified values in the <code>`starts_col`</code> vector.
+</p>
+<p><code>n</code> is a <code>list</code> of starting positions.
+Skip values by <code>c(value, skip_to_number)</code> where <code>skip_to_number</code> is the
+nth appearance of the value in the vector after the previous group start.
+The first data point is automatically a starting position.
+</p>
+<p><i>E.g. n = c(1, 3, 7, 25, 50) outputs groups with sizes (2, 4, 18, 25, 8)</i>.
+</p>
+<p>To skip: <i>given vector c("a", "e", "o", "a", "e", "o"), n = list("a", "e", c("o", 2))
+ outputs groups with sizes (1, 4, 1)</i>.</p>
+
+<p>If passing <i>n = 'auto'</i> the starting positions are automatically found
+such that a group is started whenever a value differs from the previous value
+(see <code><a href="../../groupdata2/help/find_starts.html">find_starts</a>()</code>).
+Note that all <code>NA</code>s are first replaced by a single unique value,
+meaning that they will also cause group starts.
+See <code><a href="../../groupdata2/help/differs_from_previous.html">differs_from_previous</a>()</code>
+to set a threshold for what is considered &quot;different&quot;.
+</p>
+<p><i>E.g. n = "auto" for c(10, 10, 7, 8, 8, 9) would start groups at
+ the first 10, 7, 8 and 9, and give c(1, 1, 2, 3, 3, 4).</i>
+</p>
+
+
+<h4>every</h4>
+
+<p>Combines every <code>`n`</code>th data point into a group.
+<i>(e.g. 12, 12, 11, 11, 11 with n = 5)</i>.
+</p>
+<p><code>`n`</code> is the number of data points between group members (&quot;every n&quot;).</p>
+
+
+
+<h4>staircase</h4>
+
+<p>Uses step size to divide up the data.
+Group size increases with 1 step for every group,
+until there is no more data
+<i>(e.g. 5, 10, 15, 20, 7)</i>.
+</p>
+<p><code>`n`</code> is step size.</p>
+
+
+
+<h4>primes</h4>
+
+<p>Uses prime numbers as group sizes.
+Group size increases to the next prime number
+until there is no more data.
+<i>(e.g. 5, 7, 11, 13, 17, 4)</i>.
+</p>
+<p><code>`n`</code> is the prime number to start at.</p>
+</td></tr>
+<tr valign="top"><td><code>starts_col</code></td>
+<td>
+<p>Name of column with values to match in method <code>"l_starts"</code>
+when <code>`data`</code> is a <code>data.frame</code>. Pass <code>'index'</code> to use row names. (Character)</p>
+</td></tr>
+<tr valign="top"><td><code>force_equal</code></td>
+<td>
+<p>Create equal groups by discarding excess data points.
+Implementation varies between methods. (Logical)</p>
+</td></tr>
+<tr valign="top"><td><code>allow_zero</code></td>
+<td>
+<p>Whether <code>`n`</code> can be passed as <code>0</code>.
+Can be useful when programmatically finding <code>n</code>. (Logical)</p>
+</td></tr>
+<tr valign="top"><td><code>return_factor</code></td>
+<td>
+<p>Only return the grouping factor. (Logical)</p>
+</td></tr>
+<tr valign="top"><td><code>descending</code></td>
+<td>
+<p>Change the direction of the method. (Not fully implemented)
+(Logical)</p>
+</td></tr>
+<tr valign="top"><td><code>randomize</code></td>
+<td>
+<p>Randomize the grouping factor. (Logical)</p>
+</td></tr>
+<tr valign="top"><td><code>col_name</code></td>
+<td>
+<p>Name of the added grouping factor.</p>
+</td></tr>
+<tr valign="top"><td><code>remove_missing_starts</code></td>
+<td>
+<p>Recursively remove elements from the
+list of starts that are not found.
+For method <code>"l_starts"</code> only.
+(Logical)</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p><code>data.frame</code> grouped by existing grouping variables and the new grouping factor.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Ludvig Renbo Olsen, <a href="mailto:r-pkgs@ludvigolsen.dk">r-pkgs@ludvigolsen.dk</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other grouping functions: 
+<code><a href="../../groupdata2/help/all_groups_identical.html">all_groups_identical</a>()</code>,
+<code><a href="../../groupdata2/help/collapse_groups.html">collapse_groups</a>()</code>,
+<code><a href="../../groupdata2/help/collapse_groups_by.html">collapse_groups_by</a></code>,
+<code><a href="../../groupdata2/help/fold.html">fold</a>()</code>,
+<code><a href="../../groupdata2/help/group_factor.html">group_factor</a>()</code>,
+<code><a href="../../groupdata2/help/partition.html">partition</a>()</code>,
+<code><a href="../../groupdata2/help/splt.html">splt</a>()</code>
+</p>
+<p>Other staircase tools: 
+<code><a href="../../groupdata2/help/+25primes+25.html">%primes%</a>()</code>,
+<code><a href="../../groupdata2/help/+25staircase+25.html">%staircase%</a>()</code>,
+<code><a href="../../groupdata2/help/group_factor.html">group_factor</a>()</code>
+</p>
+<p>Other l_starts tools: 
+<code><a href="../../groupdata2/help/differs_from_previous.html">differs_from_previous</a>()</code>,
+<code><a href="../../groupdata2/help/find_missing_starts.html">find_missing_starts</a>()</code>,
+<code><a href="../../groupdata2/help/find_starts.html">find_starts</a>()</code>,
+<code><a href="../../groupdata2/help/group_factor.html">group_factor</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Attach packages
+library(groupdata2)
+library(dplyr)
+
+# Create data frame
+df &lt;- data.frame(
+  "x" = c(1:12),
+  "species" = factor(rep(c("cat", "pig", "human"), 4)),
+  "age" = sample(c(1:100), 12)
+)
+
+# Using group()
+df_grouped &lt;- group(df, n = 5, method = "n_dist")
+
+# Using group() in pipeline to get mean age
+df_means &lt;- df %&gt;%
+  group(n = 5, method = "n_dist") %&gt;%
+  dplyr::summarise(mean_age = mean(age))
+
+# Using group() with `l_sizes`
+df_grouped &lt;- group(
+  data = df,
+  n = list(0.2, 0.3),
+  method = "l_sizes"
+)
+
+# Using group_factor() with `l_starts`
+# `c('pig', 2)` skips to the second appearance of
+# 'pig' after the first appearance of 'cat'
+df_grouped &lt;- group(
+  data = df,
+  n = list("cat", c("pig", 2), "human"),
+  method = "l_starts",
+  starts_col = "species"
+)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>groupdata2</em> version 2.0.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

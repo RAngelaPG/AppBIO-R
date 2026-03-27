@@ -1,0 +1,133 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Left and Right Medcouple, Robust Measures of Tail Weight</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for lmc {robustbase}"><tr><td>lmc {robustbase}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Left and Right Medcouple, Robust Measures of Tail Weight</h2>
+
+<h3>Description</h3>
+
+<p>Compute the left and right &lsquo;medcouple&rsquo;, <em>robust</em> estimators
+of tail weight, in some sense robust versions of the kurtosis, the very
+unrobust centralized 4th moment.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+lmc(x, mx = median(x, na.rm=na.rm), na.rm = FALSE, doReflect = FALSE, ...)
+rmc(x, mx = median(x, na.rm=na.rm), na.rm = FALSE, doReflect = FALSE, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>a numeric vector</p>
+</td></tr>
+<tr valign="top"><td><code>mx</code></td>
+<td>
+<p>number, the &ldquo;center&rdquo; of <code>x</code> wrt which the left and
+right parts of <code>x</code> are defined: </p>
+<pre>
+    lmc(x, mx, *) :=  mc(x[x &lt;= mx], *)
+    rmc(x, mx, *) :=  mc(x[x &gt;= mx], *)</pre>
+</td></tr>
+<tr valign="top"><td><code>na.rm</code></td>
+<td>
+<p>logical indicating how missing values (<code><a href="../../base/html/NA.html">NA</a></code>s)
+should be dealt with.</p>
+</td></tr>
+<tr valign="top"><td><code>doReflect</code></td>
+<td>
+<p>logical indicating if <code><a href="../../robustbase/help/mc.html">mc</a></code> should also be
+computed on the <em>reflected</em> sample <code>-x</code>.  Setting
+<code>doReflect=TRUE</code> makes sense for mathematical strictness reasons,
+as the internal MC computes the himedian() which can differ slightly from
+the median.
+Note that <code><a href="../../robustbase/help/mc.html">mc</a>()</code>'s own default is true iff <code>length(x) &lt;= 100</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>further arguments to <code><a href="../../robustbase/help/mc.html">mc</a>()</code>, see its help page.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>each a number (unless <code>...</code> contains <code>full.result = TRUE</code>).
+</p>
+
+
+<h3>References</h3>
+
+<p>Brys, G., Hubert, M. and Struyf, A. (2006).
+Robust measures of tail weight,
+<em>Computational Statistics and Data Analysis</em> <b>50(3)</b>, 733&ndash;759.
+</p>
+<p>and those in &lsquo;References&rsquo; of <code><a href="../../robustbase/help/mc.html">mc</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+mc(1:5)  # 0 for a symmetric sample
+lmc(1:5) # 0
+rmc(1:5) # 0
+
+x1 &lt;- c(1, 2, 7, 9, 10)
+mc(x1) # = -1/3
+c( lmc( x1),  lmc( x1, doReflect=TRUE))#   0  -1/3
+c( rmc( x1),  rmc( x1, doReflect=TRUE))# -1/3 -1/6
+c(-rmc(-x1), -rmc(-x1, doReflect=TRUE)) # 2/3  1/3
+
+data(cushny)
+lmc(cushny) # 0.2
+rmc(cushny) # 0.45
+
+isSym_LRmc &lt;- function(x, tol = 1e-14)
+    all.equal(lmc(-x, doReflect=TRUE),
+              rmc( x, doReflect=TRUE), tolerance = tol)
+
+sym &lt;- c(-20, -5, -2:2, 5, 20)
+stopifnot(exprs = {
+    lmc(sym) == 0.5
+    rmc(sym) == 0.5
+    isSym_LRmc(cushny)
+    isSym_LRmc(x1)
+})
+
+## Susceptibility to large outliers:
+## "Sensitivity Curve" := empirical influence function
+dX10 &lt;- function(X) c(1:5,7,10,15,25, X) # generate skewed size-10 with 'X'
+x &lt;- c(26:40, 45, 50, 60, 75, 100)
+(lmc10N &lt;- vapply(x, function(X) lmc(dX10(X)), 1))
+(rmc10N &lt;- vapply(x, function(X) rmc(dX10(X)), 1))
+cols &lt;- adjustcolor(2:3, 3/4)
+
+plot(x, lmc10N, type="o", cex=1/2, main = "lmc &amp; rmc( c(1:5,7,10,15,25, X) )",
+     xlab=quote(X), log="x", col=cols[1])
+lines(x, rmc10N, col=cols[2], lwd=3)
+legend("top", paste0(c("lmc", "rmc"), "(X)"), col=cols, lty=1, lwd=c(1,3), pch = c(1, NA), bty="n")
+
+n &lt;- length(x)
+stopifnot(exprs = {
+    all.equal(current = lmc10N, target = rep(0, n))
+    all.equal(current = rmc10N, target = c(3/19, 1/5, 5/21, 3/11, 7/23, rep(1/3, n-5)))
+    ## and it stays stable with outlier  X --&gt; oo :
+    lmc(dX10(1e300)) == 0
+    rmc(dX10(1e300)) == rmc10N[6]
+})
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>robustbase</em> version 0.99-7 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

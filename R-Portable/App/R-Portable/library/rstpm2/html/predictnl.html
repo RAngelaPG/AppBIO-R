@@ -1,0 +1,182 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Estimation of standard errors using the numerical delta...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for predictnl {rstpm2}"><tr><td>predictnl {rstpm2}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Estimation of standard errors using the numerical delta method.
+</h2>
+
+<h3>Description</h3>
+
+<p>A simple, yet exceedingly useful, approach to estimate the variance of a
+function using the numerical delta method. A number of packages provide
+functions that analytically calculate the gradients; we use numerical
+derivatives, which generalises to models that do not offer analytical
+derivatives (e.g. ordinary differential equations, integration), or to
+examples that are tedious or error-prone to calculate (e.g. sums of
+predictions from GLMs).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## Default S3 method:
+predictnl(object, fun, newdata=NULL, gd=NULL, ...)
+## S3 method for class 'lm'
+predictnl(object, fun, newdata=NULL, ...)
+## S3 method for class 'formula'
+predict(object,data,newdata,na.action,type="model.matrix",...)
+## S3 method for class 'predictnl'
+confint(object, parm, level=0.95, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+
+<p>An object with <code>coef</code>, <code>vcov</code> and <code>`coef&lt;-`</code>
+methods (required). 
+</p>
+</td></tr>
+<tr valign="top"><td><code>fun</code></td>
+<td>
+
+<p>A function that takes <code>object</code> as the first argument, possibly with
+<code>newdata</code> and other arguments (required). See notes for why it is
+often useful to include <code>newdata</code> as an argument to the function.
+</p>
+</td></tr>
+<tr valign="top"><td><code>newdata</code></td>
+<td>
+
+<p>An optional argument that defines newdata to be passed to <code>fun</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>gd</code></td>
+<td>
+
+<p>An optional matrix of gradients. If this is not specified, then the
+gradients are calculated using finite differences.
+</p>
+</td></tr>
+<tr valign="top"><td><code>parm</code></td>
+<td>
+
+<p>currently ignored
+</p>
+</td></tr>
+<tr valign="top"><td><code>level</code></td>
+<td>
+
+<p>significance level for 2-sided confidence intervals
+</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+
+<p>object used to define the model frame
+</p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+
+<p>passed to <code>model.frame</code>
+</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+
+<p>currently restricted to <code>"model.matrix"</code>
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>Other arguments that are passed to <code>fun</code>.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The signature for <code>fun</code>
+is either <code>fun(object, ...)</code> or <code>fun(object, newdata=NULL,
+  ...)</code>.
+</p>
+<p>The different <code>predictnl</code> methods call the utility function
+<code>numDeltaMethod</code>, which in turn calls the <code>grad</code> function for
+numerical differentiation. The <code>numDeltaMethod</code> function calls the
+standard <code>coef</code> and <code>vcov</code> methods, and the non-standard
+<code>`coef&lt;-`</code> method for changing the coefficients in a regression
+object. This non-standard method has been provided for several
+regression objects and essentially mirrors the <code>coef</code> method.
+</p>
+<p>One potential issue is that some <code>predict</code> methods do not
+re-calculate their predictions for the fitted dataset (i.e. when
+<code>newdata=NULL</code>). As the <code>predictnl</code> function changes the
+fitted coefficients, it is required that the predictions are
+re-calculated. One solution is to pass <code>newdata</code> as an argument to
+both <code>predictnl</code> and <code>fun</code>; alternatively, <code>newdata</code> can
+be specified in <code>fun</code>. These approaches are described in the examples
+below. The <code>numDeltaMethod</code> method called by <code>predictnl</code>
+provides a warning when the variance estimates are zero, which may be
+due to this cause.
+</p>
+<p>For completeness, it is worth discussing why the example
+<code>predictnl(fit,predict)</code> does not work for when <code>fit</code> is a
+<code>glm</code> object. First, <code>predict.glm</code> does not update the
+predictions for the fitted data. Second, the default <code>predict</code>
+method has a signature <code>predict(object, ...)</code>, which does not
+include a <code>newdata</code> argument. We could then either (i) require that
+a <code>newdata</code> argument be passed to the <code>fun</code> function for all
+examples, which would make this corner case work, or (ii) only pass the
+<code>newdata</code> argument if it is non-null or in the formals for the
+<code>fun</code> function, which would fail for this corner case. The current
+API defaults to the latter case (ii).  To support this approach, the
+<code>predictnl.lm</code> method replaces a null <code>newdata</code> with
+<code>object$data</code>. We also provide a revised
+<code>numdelta:::predict.lm</code> method that performs the same operation,
+although its use is not encouraged due to its clumsiness.
+</p>
+
+
+<h3>Value</h3>
+
+<p> Returns an object of class
+an object with class <code>c("predictnl","data.frame")</code> elements
+<code>c("fit","se.fit","Estimate","SE")</code> and with methods <code>print</code>
+and <code>confint</code>. Note that the Estimate and SE fields are deprecated
+and their use is discouraged, as we would like to remove them from future releases.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Mark Clements
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+df &lt;- data.frame(x=0:1, y=c(10, 20))
+fit &lt;- glm(y ~ x, df, family=poisson)
+
+predictnl(fit,
+          function(obj,newdata)
+          diff(predict(obj,newdata,type="response")))
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rstpm2</em> version 1.7.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

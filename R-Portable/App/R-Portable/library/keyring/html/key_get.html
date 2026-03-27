@@ -1,0 +1,187 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Operations on keys</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for key_get {keyring}"><tr><td>key_get {keyring}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Operations on keys</h2>
+
+<h3>Description</h3>
+
+<p>These functions manipulate keys in a keyring. You can think of a keyring
+as a secure key-value store.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+key_get(service, username = NULL, keyring = NULL)
+
+key_get_raw(service, username = NULL, keyring = NULL)
+
+key_set(service, username = NULL, keyring = NULL, prompt = "Password: ")
+
+key_set_with_value(service, username = NULL, password = NULL, keyring = NULL)
+
+key_set_with_raw_value(
+  service,
+  username = NULL,
+  password = NULL,
+  keyring = NULL
+)
+
+key_delete(service, username = NULL, keyring = NULL)
+
+key_list(service = NULL, keyring = NULL)
+
+key_list_raw(service = NULL, keyring = NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>service</code></td>
+<td>
+<p>Service name, a character scalar.</p>
+</td></tr>
+<tr valign="top"><td><code>username</code></td>
+<td>
+<p>Username, a character scalar, or <code>NULL</code> if the key
+is not associated with a username.</p>
+</td></tr>
+<tr valign="top"><td><code>keyring</code></td>
+<td>
+<p>For systems that support multiple keyrings, specify
+the name of the keyring to use here. If <code>NULL</code>, then the default
+keyring is used. See also <code><a href="../../keyring/help/has_keyring_support.html">has_keyring_support()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>prompt</code></td>
+<td>
+<p>The character string displayed when requesting the secret</p>
+</td></tr>
+<tr valign="top"><td><code>password</code></td>
+<td>
+<p>The secret to store. For <code>key_set</code>, it is read from
+the console, interactively. <code>key_set_with_value</code> can be also used
+in non-interactive mode.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>key_get</code> queries a key from the keyring.
+</p>
+<p><code>key_get_raw</code> queries a key and returns it as a raw vector.
+Most credential stores allow storing a byte sequence with embedded null
+bytes, and these cannot be represented as traditional null bytes
+terminated strings. If you don't know whether the key contains an
+embedded null, it is best to query it with <code>key_get_raw</code> instead of
+<code>key_get</code>.
+</p>
+<p><code>key_set</code> sets a key in the keyring. The contents of the key is read
+interactively from the terminal.
+</p>
+<p><code>key_set_with_value</code> is the non-interactive pair of <code>key_set</code>, to set
+a key in the keyring.
+</p>
+<p><code>key_set_raw_with_value</code> sets a key to a byte sequence from a raw
+vector.
+</p>
+<p><code>key_delete</code> deletes a key.
+</p>
+<p><code>key_list</code> lists all keys of a keyring, or the keys for a certain
+service (if <code>service</code> is not <code>NULL</code>).
+</p>
+<p><code>key_list_raw()</code> is like <code>key_list()</code> but also returns the keys as raw
+values. This is useful if your keys have bytes that cannot appear
+in R strings, e.g. a zero byte.
+</p>
+
+
+<h4>Encodings</h4>
+
+<p>On Windows, if required, an encoding can be specified using either
+an R option (<code>keyring.encoding_windows</code>) or environment variable
+(<code>KEYRING_ENCODING_WINDOWS</code>). This will be applied when both
+getting and setting keys. The option takes precedence over the
+environment variable, if both are set.
+</p>
+<p>This is reserved primarily for compatibility with keys set with
+other software, such as Python's implementation of keyring. For a
+list of encodings, use <code><a href="../../base/html/iconv.html">iconvlist()</a></code>, although it should be noted
+that not <em>every</em> encoding can be properly converted, even for
+trivial cases. For best results, use UTF-8 if you can.
+</p>
+
+
+
+<h3>Value</h3>
+
+<p><code>key_get</code> returns a character scalar, the password or other
+confidential information that was stored in the key.
+</p>
+<p><code>key_list</code> returns a list of keys, i.e. service names and usernames,
+in a data frame with column names <code>service</code> and <code>username</code>. If a
+service or user name contains a zero byte, which is not allowed in an
+R string, that entry is shown as <code>NA</code> and a warning (of class
+<code>keyring_warn_zero_byte_keys</code>) is thrown.  You can use the
+<code>key_list_raw()</code> function to query these keys.
+</p>
+<p><code>key_list_raw</code> is similar to <code>key_list</code> but returns service and
+usernames as raw vectors. This is useful if some service or user
+names) contain zero bytes. All column names: <code>service</code>, <code>username</code>,
+<code>service_raw</code>, <code>username_raw</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# These examples use the default keyring, and they are interactive,
+# so, we don't run them by default
+## Not run: 
+key_set("R-keyring-test-service", "donaldduck")
+key_get("R-keyring-test-service", "donaldduck")
+if (has_keyring_support()) key_list(service = "R-keyring-test-service")
+key_delete("R-keyring-test-service", "donaldduck")
+
+## This is non-interactive, assuming that that default keyring
+## is unlocked
+key_set_with_value("R-keyring-test-service", "donaldduck",
+                   password = "secret")
+key_get("R-keyring-test-service", "donaldduck")
+if (has_keyring_support()) key_list(service = "R-keyring-test-service")
+key_delete("R-keyring-test-service", "donaldduck")
+
+## This is interactive using backend_file
+## Set variables to be used in keyring
+kr_name &lt;- "my_keyring"
+kr_service &lt;- "my_database"
+kr_username &lt;- "my_username"
+
+## Create a keyring and add an entry using the variables above
+kb &lt;- keyring::backend_file$new()
+## Prompt for the keyring password, used to unlock keyring
+kb$keyring_create(kr_name)
+## Prompt for the secret/password to be stored in the keyring
+kb$set(kr_service, username=kr_username, keyring=kr_name)
+# Lock the keyring
+kb$keyring_lock(kr_name)
+
+## The keyring file is stored at ~/.config/r-keyring/ on Linux
+
+## Output the stored password
+keyring::backend_file$new()$get(service = kr_service,
+  user = kr_username,
+  keyring = kr_name)
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>keyring</em> version 1.4.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

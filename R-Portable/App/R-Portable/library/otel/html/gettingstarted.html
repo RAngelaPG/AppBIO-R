@@ -1,0 +1,322 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Getting Started</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for Getting Started {otel}"><tr><td>Getting Started {otel}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Getting Started</h2>
+
+<h3>Description</h3>
+
+<p>This page is about instrumenting you R package or project for
+OpenTelemetry. If you want to start collecting OpenTelemetry data
+for instrumented packages, see <a href="../../otelsdk/help/Collecting+20Telemetry+20Data.html">
+Collecting Telemetry Data</a> in the otelsdk package.
+</p>
+
+
+<h3>About OpenTelemetry</h3>
+
+<p>OpenTelemetry is an observability framework.
+<a href="https://opentelemetry.io/">OpenTelemetry</a> is a collection of tools,
+APIs, and SDKs used to instrument, generate, collect, and export
+telemetry data such as metrics, logs, and traces, for analysis in order
+to understand your software’s performance and behavior.
+</p>
+<p>For an introduction to OpenTelemetry, see the <a href="https://opentelemetry.io/docs/">OpenTelemetry website docs</a>.
+</p>
+
+
+<h3>The otel and otelsdk R packages</h3>
+
+<p>Use the <a href="https://github.com/r-lib/otel">otel</a> package as a dependency if
+you want to instrument your R package or project for OpenTelemetry.
+</p>
+<p>Use the <a href="https://github.com/r-lib/otelsdk">otelsdk</a> package to produce
+OpenTelemetry output from an R package or project that was instrumented
+with the otel package.
+</p>
+
+
+<h3>Complete Example</h3>
+
+<p>To instrument your package with otel, you need to do a couple of steps.
+In this section we show how to instrument the <a href="https://github.com/r-lib/callr">callr</a> package.
+</p>
+
+
+<h4>Add the otel package as a dependency</h4>
+
+<p>The first step is to add the otel package as a dependency. otel is a very
+lightweight package, so may want to add it as a hard dependency. This has
+the advantage that you don't need to check if otel is installed every time
+you call an otel function. Add otel to the <code>Imports</code> section in
+<code>DESCRIPTION</code>:
+</p>
+<div class="sourceCode"><pre>Imports:
+    otel
+</pre></div>
+<p>Alternatively, you may add otel as a soft dependency. Add otel to the
+<code>Suggests</code> section in <code>DESCRIPTION</code>:
+</p>
+<div class="sourceCode"><pre>Suggests:
+    otel
+</pre></div>
+<p>If you add otel in <code>Suggests</code>, then it makes sense to create a helper
+function that checks if otel is installed and also that tracing is enabled
+for the caller. You can put this function in any R file, e.g. <code>R/utils.R</code>
+is a nice place for it:
+</p>
+<div class="sourceCode r"><pre>is_otel_tracing &lt;- function() {
+  requireNamespace("otel", quietly = TRUE) &amp;&amp; otel::is_tracing_enabled()
+}
+</pre></div>
+
+
+
+<h4>Choose a tracer name</h4>
+
+<p>Every package should have its own tracer with a name that is unique for the
+package. See <code><a href="../../otel/help/default_tracer_name.html">default_tracer_name()</a></code> for tips on choosing a good tracer
+name. Set the <code>otel_tracer_name</code> variable to the tracer name. No need to
+export this symbol. In callr, we'll add
+</p>
+<div class="sourceCode r"><pre>otel_tracer_name &lt;- "org.r-lib.callr"
+</pre></div>
+<p>to the <code>R/callr-package.R</code> file.
+</p>
+
+
+
+<h4>Create spans for selected functions</h4>
+
+<p>Select the functions you want to add tracing to. It is overkill to add
+tracing to small functions that are called lots of times. It makes sense to
+add spans to the main functions of the package.
+</p>
+<p>The callr package has various ways of starting another R process and then
+running R code in it. We'll add tracing to the
+</p>
+
+<ul>
+<li> <p><code>callr::r()</code>
+</p>
+</li>
+<li> <p><code>callr::rcmd()</code>
+</p>
+</li>
+<li> <p><code>callr::rscript()</code>
+</p>
+</li></ul>
+
+<p>functions first.
+</p>
+<p>We add to <code>callr::r()</code> in <code>eval.R</code>:
+</p>
+<div class="sourceCode r"><pre>  if (is_otel_tracing()) {
+    otel::start_local_active_span(
+      "callr::r",
+      attributes = otel::as_attributes(options)
+    )
+  }
+</pre></div>
+
+<ul>
+<li><p> We use the <code>is_otel_tracing()</code> helper function, defined above.
+</p>
+</li>
+<li> <p><code><a href="../../otel/help/start_local_active_span.html">start_local_active_span()</a></code> starts a span and also activates it.
+It also sets up an exit handler that ends the span when the caller
+function (<code>callr::r()</code>) exits.
+</p>
+</li>
+<li> <p><code>options</code> contain a long list of user-provided and other option, we
+add these to the span as attributes.
+</p>
+</li></ul>
+
+<p>We add essentially the same code to <code>callr::rcmd()</code>:
+</p>
+<div class="sourceCode r"><pre>  if (is_otel_tracing()) {
+    otel::start_local_active_span(
+      "callr::rcmd",
+      attributes = otel::as_attributes(options)
+    )
+  }
+</pre></div>
+<p>And to <code>callr::rscript()</code>:
+</p>
+<div class="sourceCode r"><pre>  if (is_otel_tracing()) {
+    otel::start_local_active_span(
+      "callr::rscript",
+      attributes = otel::as_attributes(options)
+    )
+  }
+</pre></div>
+
+
+
+<h4>Concurrency</h4>
+
+<p>An instance of the <code>callr::r_session</code> R6 class represents persistent
+R background processes. We want to collect all spans from an R process into
+the same trace. Since the R processes are running concurrently, their
+(sub)spans will not form the correct hierarchy if we use the default,
+timing-based otel mechanism to organize spans into trees. We need to
+manage the lifetime and activation of the spans that represent the R
+processes manually.
+</p>
+<p>A generic strategy for handling concurrency in otel is:
+</p>
+
+<ol>
+<li><p> Create a new long lasting span with <code><a href="../../otel/help/start_span.html">start_span()</a></code>.
+(I.e. <em>not</em> <code><a href="../../otel/help/start_local_active_span.html">start_local_active_span()</a></code>!)
+</p>
+</li>
+<li><p> Assign the returned span into the corresponding object of the concurrent
+and/or asynchronous computation. Every span has a finalizer that closes
+the span.
+</p>
+</li>
+<li><p> When running code that belongs to the concurrent computation represented
+by the span, activate it for a specific R scope by calling
+<code><a href="../../otel/help/with_active_span.html">with_active_span()</a></code> or <code><a href="../../otel/help/local_active_span.html">local_active_span()</a></code>.
+</p>
+</li>
+<li><p> When the concurrent computation ends, close the span manually
+with its <code style="white-space: pre;">$end()</code> method or <code><a href="../../otel/help/end_span.html">end_span()</a></code>. (Otherwise it would be only
+closed at the next garbage collection, assuming there are no references
+to it.)
+</p>
+</li></ol>
+
+<p>This code goes into the constructor of the <code>r_session</code> object:
+</p>
+<div class="sourceCode r"><pre>  if (is_otel_tracing()) {
+    private$options$otel_session &lt;- otel::start_span(
+      "callr::r_session",
+      attributes = otel::as_attributes(options)
+    )
+  }
+</pre></div>
+<p>The <code>finalize()</code> method (the finalizer) gets a call to close the span:
+</p>
+<div class="sourceCode r"><pre>  if (is_otel_tracing()) {
+    private$options$otel_session$end()
+  }
+</pre></div>
+<p>We also add (sub)spans to other operations, e.g. the <code>read()</code> method gets
+</p>
+<div class="sourceCode r"><pre>  if (is_otel_tracing()) {
+    otel::local_session(private$options$otel_session)
+    spn &lt;- otel::start_local_active_span("callr::r_session$read")
+  }
+</pre></div>
+
+
+
+<h4>Testing</h4>
+
+<p>To test your instrumentation, you need to install the
+<a href="https://github.com/r-lib/otelsdk">otelsdk</a> package and you also need
+a local or remote OpenTelemetry collector.
+</p>
+<p>I suggest you use <a href="https://github.com/ymtdzzz/otel-tui"><code>otel-tui</code></a>,
+a terminal OpenTelemetry viewer. To configure it, use the <code>http</code> exporter,
+see <a href="../../otel/help/Environment+20Variables.html">Environment Variables</a>:
+</p>
+<div class="sourceCode sh"><pre>OTEL_TRACES_EXPORTER=http R -q
+</pre></div>
+
+
+
+<h4>Development mode</h4>
+
+<p>By default otel functions never error, to avoid taking down a production
+app. For development this is not ideal, we want to catch errors
+early. I suggest you always turn on development mode when instrumenting a
+package:
+</p>
+<div class="sourceCode sh"><pre>OTEL_ENV=dev
+</pre></div>
+
+
+
+<h4>Context propagation</h4>
+
+<p>OpenTelemetry supports distributed tracing. A span (context) can be
+serialized, copied to another process, and there it can be used to create
+child spans.
+</p>
+<p>For applications communicating via HTTP the serialized span context is
+transmitted in HTTP headers. For our callr example we can copy the context
+to the R subprocess in environment variables.
+</p>
+<p>For example in the <code>callr:r()</code> code we may write:
+</p>
+<div class="sourceCode r"><pre>  if (is_otel_tracing()) {
+    otel::start_local_active_span(
+      "callr::r",
+      attributes = otel::as_attributes(options)
+    )
+    hdrs &lt;- otel::pack_http_context()
+    names(hdrs) &lt;- toupper(names(hdrs))
+    options$env[names(hdrs)] &lt;- hdrs
+  }
+</pre></div>
+<p><code>options$env</code> contains the environment variables callr will set in the
+newly started R process. This is where we need to add the output of
+<code><a href="../../otel/help/pack_http_context.html">pack_http_context()</a></code>, which contains the serialized representation
+of the active span, if there is any.
+</p>
+<p>Additionally, the subprocess needs to pick up the span context from the
+environment variables. The <code>callr:::common_hook()</code> internal function
+contains the code that the subprocess runs at startup. Here we need to
+add:
+</p>
+<div class="sourceCode r"><pre>      has_otel &lt;- nzchar(Sys.getenv("TRACEPARENT")) &amp;&amp;
+        requireNamespace("otel", quietly = TRUE)
+      assign(envir = env$`__callr_data__`, "has_otel", has_otel)
+      if (has_otel) {
+        hdrs &lt;- as.list(c(
+          traceparent = Sys.getenv("TRACEPARENT"),
+          tracestate = Sys.getenv("TRACESTATE"),
+          baggage = Sys.getenv("BAGGAGE")
+        ))
+        prtctx &lt;- otel::extract_http_context(hdrs)
+        reg.finalizer(
+          env$`__callr_data__`,
+          function(e) e$otel_span$end(),
+          onexit = TRUE
+        )
+        assign(
+          envir = env$`__callr_data__`,
+          "otel_span",
+          otel::start_span(
+            "callr subprocess",
+            options = list(parent = prtctx)
+          )
+        )
+      }
+</pre></div>
+<p>First we check if the <code>TRACEPARENT</code> environment variable is set. This
+contains the serialization of the parent span. If it exists and the otel
+package is also available, then we extract the span context from the
+environment variables, and start a new span that is a child span or the
+remote span obtained from the environment variables. We also set up a
+finalizer that closes this span when the R process terminates.
+</p>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+# See above
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>otel</em> version 0.2.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

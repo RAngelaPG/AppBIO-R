@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Wrapper for running extreme triplet grouping</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for extreme_triplet_grouping_rearranger_ {rearrr}"><tr><td>extreme_triplet_grouping_rearranger_ {rearrr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Wrapper for running extreme triplet grouping</h2>
+
+<h3>Description</h3>
+
+<p>Wrapper for running extreme triplet grouping
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+extreme_triplet_grouping_rearranger_(
+  data,
+  col = NULL,
+  middle_is = "middle",
+  unequal_method_1 = "middle",
+  unequal_method_2 = c("middle", "middle"),
+  order_by_aggregates = FALSE,
+  shuffle_members = FALSE,
+  shuffle_triplets = FALSE,
+  num_groupings = 1,
+  balance = "mean",
+  factor_name = ".triplet",
+  overwrite = FALSE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p><code>data.frame</code> or <code>vector</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>col</code></td>
+<td>
+<p>Column to create sorting factor by.
+When <code>`NULL`</code> and <code>`data`</code> is a <code>data.frame</code>,
+the row numbers are used.</p>
+</td></tr>
+<tr valign="top"><td><code>middle_is</code></td>
+<td>
+<p>Whether the middle element in the triplet is the nth closest element
+to the median value or the nth+1 lowest/highest value.
+</p>
+<p>One of: <code>middle</code> (default), <code>min</code>, or <code>max</code>.
+</p>
+<p>Triplet grouping is performed greedily from the most extreme values to the least extreme
+values. E.g. <code>c(1, 6, 12)</code> is created before <code>c(2, 5, 11)</code> which is made
+before <code>c(3, 7, 10)</code>.
+</p>
+<p><strong>Examples</strong>:
+</p>
+<p>When <code>`middle_is` == 'middle'</code>, a <code>1:12</code> sequence is grouped into:
+</p>
+<p><code>c( c(1, 6, 12), c(2, 7, 11), c(3, 5, 10),  c(4, 8, 9) )</code>
+</p>
+<p>When <code>`middle_is` == 'min'</code>, a <code>1:12</code> sequence is grouped into:
+</p>
+<p><code>c( c(1, 2, 12), c(3, 4, 11), c(5, 6, 10),  c(7, 8, 9) )</code>
+</p>
+<p>When <code>`middle_is` == 'max'</code>, a <code>1:12</code> sequence is grouped into:
+</p>
+<p><code>c( c(1, 11, 12), c(2, 9, 10), c(3, 7, 8),  c(4, 5, 6) )</code></p>
+</td></tr>
+<tr valign="top"><td><code>order_by_aggregates</code></td>
+<td>
+<p>Whether to order the groups from initial groupings (first <code>`num_groupings` - 1</code>)
+by their aggregate values instead of their group identifiers.
+</p>
+<p>N.B. Only used when <code>`num_groupings` &gt; 1</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>shuffle_members</code></td>
+<td>
+<p>Whether to shuffle the order of the group members within the groups. (Logical)</p>
+</td></tr>
+<tr valign="top"><td><code>shuffle_triplets</code></td>
+<td>
+<p>Whether to shuffle the order of the triplets. Triplet members remain together. (Logical)</p>
+</td></tr>
+<tr valign="top"><td><code>num_groupings</code></td>
+<td>
+<p>Number of times to group into triplets (recursively). At least <code>1</code>.
+</p>
+<p>Based on <code>`balance`</code>, the secondary groupings perform extreme triplet grouping on either the
+<em>sum</em>, <em>absolute difference</em>, <em>min</em>, or <em>max</em> of the triplet elements.</p>
+</td></tr>
+<tr valign="top"><td><code>balance</code></td>
+<td>
+<p>What to balance triplets for in a given <em>secondary</em> triplet grouping.
+Either <code>"mean"</code>, <code>"spread"</code>, <code>"min"</code>, or <code>"max"</code>.
+Can be a single string used for all secondary groupings
+or one for each secondary grouping (<code>`num_groupings` - 1</code>).
+</p>
+<p>The first triplet grouping always groups the actual element values.
+</p>
+
+
+<h4>mean</h4>
+
+<p>Triplets have similar means. The values in the triplets from the previous grouping
+are aggregated with <code>`sum()`</code> and extreme triplet grouped.
+</p>
+
+
+
+<h4>spread</h4>
+
+<p>Triplets have similar spread (e.g. standard deviations). The values in the triplets
+from the previous triplet grouping are aggregated with <code>`sum(abs(diff()))`</code> and
+extreme triplet grouped.
+</p>
+
+
+
+<h4>min / max</h4>
+
+<p>Triplets have similar minimum / maximum values. The values in the triplets from the
+previous triplet grouping are aggregated with <code>`min()`</code> / <code>`max()`</code> and extreme
+triplet grouped.
+</p>
+</td></tr>
+<tr valign="top"><td><code>factor_name</code></td>
+<td>
+<p>Name of new column with the sorting factor.
+If <code>`NULL`</code>, no column is added.</p>
+</td></tr>
+<tr valign="top"><td><code>overwrite</code></td>
+<td>
+<p>Whether to allow overwriting of existing columns. (Logical)</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>The sorted <code>data.frame</code> (<code>tibble</code>) / <code>vector</code>.
+Optionally with the sorting factor(s) added.
+</p>
+<p>When <code>`data`</code> is a <code>vector</code> and <code>`factor_name`</code> is <code>`NULL`</code>,
+the output will be a <code>vector</code>. Otherwise, a <code>data.frame</code>.
+</p>
+
+<hr /><div style="text-align: center;">[Package <em>rearrr</em> version 0.3.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

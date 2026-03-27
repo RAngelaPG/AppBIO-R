@@ -1,0 +1,151 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Covariance Functions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for covmat {spam}"><tr><td>covmat {spam}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Covariance Functions</h2>
+
+<h3>Description</h3>
+
+<p>Evaluate a covariance function.</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+covmat(h, theta, ... , type="sph")
+
+cov.exp(h, theta, ... , eps= getOption("spam.eps"))
+cov.sph(h, theta, ... , eps= getOption("spam.eps"))
+cov.nug(h, theta, ... , eps= getOption("spam.eps"))
+cov.wend1(h, theta, ... , eps= getOption("spam.eps"))
+cov.wend2(h, theta, ... , eps= getOption("spam.eps"))
+cov.wu1(h, theta, ... , eps= getOption("spam.eps"))
+cov.wu2(h, theta, ... , eps= getOption("spam.eps"))
+cov.wu3(h, theta, ... , eps= getOption("spam.eps"))
+cov.mat(h, theta, ... , eps= getOption("spam.eps"))
+cov.finnmat(h, theta, ... , eps= getOption("spam.eps"))
+cov.mat12(h, theta, ... , eps= getOption("spam.eps"))
+cov.mat32(h, theta, ... , eps= getOption("spam.eps"))
+cov.mat52(h, theta, ... , eps= getOption("spam.eps"))
+
+cor.sph(h, range, ... , eps= getOption("spam.eps"))
+
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>h</code></td>
+<td>
+<p>object containing the lags.</p>
+</td></tr>
+<tr valign="top"><td><code>theta</code></td>
+<td>
+<p>parameter of the covariance function, see
+&lsquo;Details&rsquo;.</p>
+</td></tr>
+<tr valign="top"><td><code>range</code></td>
+<td>
+<p>parameter defining the compact support.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>covariance function specification.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>arguments passed from other methods.</p>
+</td></tr>
+<tr valign="top"><td><code>eps</code></td>
+<td>
+<p>tolerance level, see
+&lsquo;Details&rsquo;.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>covmat</code> is a wrapper that calls the other functions
+according to the argument <code>type</code>. The nomenclature is similar to
+<code>precmat</code>.
+<br />
+The parametrization is (range, [partial-sill = 1], [smoothness = 1], [nugget = 0]), where
+only the range needs to be specified.
+In case of negative parameter values, a warning is issued and the
+absolute value is retained.
+Although more cryptic, having all arguments as a single vector
+simplifies optimization with <code>optim</code>.
+<br />
+The parameters are and locations are up to precision <code>epsilon</code>.
+That means that all distances smaller than <code>eps</code> are considered zero; a nugget smaller than <code>eps</code> is ignored; a range smaller than <code>eps</code> represents a nugget model; etc.
+<br />
+<code>cov.finnmat()</code> is similar to <code>cov.mat()</code> but with the
+<code>sqrt(8*smoothness)/range</code> argument in the Bessel function
+(instead of <code>1/range</code>).
+<code>cov.mat12()</code> is a wrapper to <code>cov.exp()</code>
+<code>cov.mat32()</code>, and <code>cov.mat52()</code> are fast version of
+<code>cov.mat()</code> with smoothness 3/2 and 5/2, respectively (factor 10).
+<br />
+<code>cor.sph(,range)</code> is a fast version of <code>cov.sph(,c(range,1,0))</code>.
+<br />
+Currently, the functions distinguish between a sparse <code>spam</code>
+object <code>h</code> and any other numeric type. In the future, this might
+change and appropriate methods will be implemented.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Covariance function evaluated on <code>h</code>.</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Reinhard Furrer</p>
+
+
+<h3>References</h3>
+
+<p>Any classical book about geostatistics.</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../spam/help/precmat.html">precmat</a></code>.</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+set.seed(123)
+n &lt;- 200
+locs &lt;- cbind(runif(n),runif(n))
+h &lt;- nearest.dist(locs, delta=sqrt(2), upper = NULL)
+Sigma &lt;- cov.sph(h, c(.3, 1, .1))
+
+iidsample &lt;- rnorm(n)
+cholS &lt;- chol.spam(as.spam(Sigma))
+iorder &lt;- iord &lt;- ordering(cholS, inv = TRUE)
+sample &lt;- (iidsample %*% as.spam(cholS))[iorder]
+plot(locs, col = fields::tim.colors(n = 256)[cut(sample, n)], pch = 20)
+
+## Not run: 
+h &lt;- seq(0, to=1, length.out=100)
+plot( h, cov.exp(h, c(1/3,1)), type='l', ylim=c(0,1))
+type &lt;- c("sph","wendland1","wendland2","wu1","wu2","wu3")
+for (i in 1:6)
+  lines( h, covmat(h, 1, type=type[i]), col=i+1)
+legend('topright',legend=type, col=2:7, lty=1)
+
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>spam</em> version 2.11-3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

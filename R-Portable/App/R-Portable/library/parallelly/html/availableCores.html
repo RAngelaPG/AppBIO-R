@@ -1,0 +1,330 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Get Number of Available Cores on The Current Machine</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for availableCores {parallelly}"><tr><td>availableCores {parallelly}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Get Number of Available Cores on The Current Machine</h2>
+
+<h3>Description</h3>
+
+<p>The current/main <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> session counts as one, meaning the minimum
+number of cores available is always at least one.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+availableCores(
+  constraints = NULL,
+  methods = getOption2("parallelly.availableCores.methods", c("system",
+    "/proc/self/status", "cgroups.cpuset", "cgroups.cpuquota", "cgroups2.cpu.max",
+    "nproc", "mc.cores", "BiocParallel", "_R_CHECK_LIMIT_CORES_", "Bioconductor", "LSF",
+    "PJM", "PBS", "SGE", "Slurm", "fallback", "custom")),
+  na.rm = TRUE,
+  logical = getOption2("parallelly.availableCores.logical", TRUE),
+  default = c(current = 1L),
+  which = c("min", "max", "all"),
+  omit = getOption2("parallelly.availableCores.omit", 0L),
+  max = getOption2("parallelly.availableCores.max", Inf)
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>constraints</code></td>
+<td>
+<p>An optional character specifying under what
+constraints (&quot;purposes&quot;) we are requesting the values.
+For instance, on systems where multicore processing is not supported
+(i.e. Windows), using <code>constraints = "multicore"</code> will force a
+single core to be reported.
+Using <code>constraints = "connections"</code>, will append <code>"connections"</code> to
+the <code>methods</code> argument.
+It is possible to specify multiple constraints, e.g.
+<code>constraints = c("connections", "multicore")</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>methods</code></td>
+<td>
+<p>A character vector specifying how to infer the number
+of available cores.</p>
+</td></tr>
+<tr valign="top"><td><code>na.rm</code></td>
+<td>
+<p>If TRUE, only non-missing settings are considered/returned.</p>
+</td></tr>
+<tr valign="top"><td><code>logical</code></td>
+<td>
+<p>Passed to
+<code><a href="../../parallel/help/detectCores.html">detectCores</a>(logical = logical)</code>, which,
+<em>if supported</em>, returns the number of logical CPUs (TRUE) or physical
+CPUs/cores (FALSE).
+At least as of R 4.2.2, <code>detectCores()</code> this argument on Linux.
+This argument is only if argument <code>methods</code> includes <code>"system"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>default</code></td>
+<td>
+<p>The default number of cores to return if no non-missing
+settings are available.</p>
+</td></tr>
+<tr valign="top"><td><code>which</code></td>
+<td>
+<p>A character specifying which settings to return.
+If <code>"min"</code> (default), the minimum value is returned.
+If <code>"max"</code>, the maximum value is returned (be careful!)
+If <code>"all"</code>, all values are returned.</p>
+</td></tr>
+<tr valign="top"><td><code>omit</code></td>
+<td>
+<p>(integer; non-negative) Number of cores to not include.</p>
+</td></tr>
+<tr valign="top"><td><code>max</code></td>
+<td>
+<p>(integer; positive) Maximum number of cores returned.
+<code>availableCores(..., max = n)</code> is short for
+<code>min(n, availableCores(...), na.rm = TRUE)</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The following settings (&quot;methods&quot;) for inferring the number of cores
+are supported:
+</p>
+
+<ul>
+<li> <p><code>"system"</code> -
+Query <code><a href="../../parallel/help/detectCores.html">detectCores</a>(logical = logical)</code>.
+</p>
+</li>
+<li> <p><code>"/proc/self/status"</code> -
+Query <code>Cpus_allowed_list</code> of <code style="white-space: pre;">/proc/self/status</code>.
+</p>
+</li>
+<li> <p><code>"cgroups.cpuset"</code> -
+On Unix, query control group (cgroup v1) value <code>cpuset.set</code>.
+</p>
+</li>
+<li> <p><code>"cgroups.cpuquota"</code> -
+On Unix, query control group (cgroup v1) value
+<code>cpu.cfs_quota_us</code> / <code>cpu.cfs_period_us</code>.
+</p>
+</li>
+<li> <p><code>"cgroups2.cpu.max"</code> -
+On Unix, query control group (cgroup v2) values <code>cpu.max</code>.
+</p>
+</li>
+<li> <p><code>"nproc"</code> -
+On Unix, query system command <code>nproc</code>.
+</p>
+</li>
+<li> <p><code>"mc.cores"</code> -
+If available, returns the value of option
+<code><a href="../../base/help/options.html">mc.cores</a></code>.
+Note that <code>mc.cores</code> is defined as the number of
+<em>additional</em> <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> processes that can be used in addition to the
+main <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> process.  This means that with <code>mc.cores = 0</code> all
+calculations should be done in the main <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> process, i.e. we have
+exactly one core available for our calculations.
+The <code>mc.cores</code> option defaults to environment variable
+<span class="env">MC_CORES</span> (and is set accordingly when the <span class="pkg">parallel</span>
+package is loaded).  The <code>mc.cores</code> option is used by for
+instance <code><a href="../../parallel/html/mcdummies.html">mclapply</a>()</code> of the <span class="pkg">parallel</span>
+package.
+</p>
+</li>
+<li> <p><code>"connections"</code> or <code>"connections-N"</code> -
+Query the current number of available R connections per
+<code><a href="../../parallelly/help/freeConnections.html">freeConnections()</a></code>.  This is the maximum number of socket-based
+<strong>parallel</strong> cluster nodes that are possible launch, because each
+one needs its own R connection.
+The <code>"connections-N"</code> form (e.g. <code>connections-16</code>) works like
+<code>"connections"</code> but uses <code>freeConnections() - N</code> as the upper limit,
+leaving <code>N</code> connections free for other purposes.
+The exception is when the result is zero or less, then <code>1L</code> is
+still returned, because <code>availableCores()</code> should always return a
+positive integer.
+</p>
+</li>
+<li> <p><code>"BiocParallel"</code> -
+Query environment variable <span class="env">BIOCPARALLEL_WORKER_NUMBER</span> (integer),
+which is defined and used by <strong>BiocParallel</strong> (&gt;= 1.27.2).
+If the former is set, this is the number of cores considered.
+</p>
+</li>
+<li> <p><code>"_R_CHECK_LIMIT_CORES_"</code> -
+Query environment variable <span class="env">_R_CHECK_LIMIT_CORES_</span> (logical or
+<code>"warn"</code>) used by <code style="white-space: pre;">R CMD check</code> and set to true by
+<code style="white-space: pre;">R CMD check --as-cran</code>. In addition, package <span class="pkg">parallelly</span> sets
+<code style="white-space: pre;">_R_CHECK_LIMIT_CORES_=true</code> when <em>loaded</em> if it detects that <code style="white-space: pre;">R CMD</code>
+is running and <em>builds</em> package vignettes via <code style="white-space: pre;">R CMD build</code> and
+<code style="white-space: pre;">R CMD check</code>, which is something <code style="white-space: pre;">R CMD check</code> does not do itself.
+If <code style="white-space: pre;">_R_CHECK_LIMIT_CORES_</code> is set to a non-false value, then a maximum
+of 2 cores is considered.
+</p>
+</li>
+<li> <p><code>"Bioconductor"</code> -
+Query environment variable <span class="env">IS_BIOC_BUILD_MACHINE</span> (logical)
+used by the Bioconductor (&gt;= 3.16) build and check system. If set to
+true, then a maximum of 4 cores is considered.
+</p>
+</li>
+<li> <p><code>"LSF"</code> -
+Query Platform Load Sharing Facility (LSF)/OpenLava environment variable
+<span class="env">LSB_DJOB_NUMPROC</span>.
+Jobs with multiple (CPU) slots can be submitted on LSF using
+<code style="white-space: pre;">bsub -n 2 -R "span[hosts=1]" &lt; hello.sh</code>.
+</p>
+</li>
+<li> <p><code>"PJM"</code> -
+Query Fujitsu Technical Computing Suite (that we choose to shorten
+as &quot;PJM&quot;) environment variables <span class="env">PJM_VNODE_CORE</span> and
+<span class="env">PJM_PROC_BY_NODE</span>.
+The first is set when submitted with <code style="white-space: pre;">pjsub -L vnode-core=8 hello.sh</code>.
+</p>
+</li>
+<li> <p><code>"PBS"</code> -
+Query TORQUE/PBS environment variables <span class="env">PBS_NUM_PPN</span> and <span class="env">NCPUS</span>.
+Depending on PBS system configuration, these <em>resource</em>
+parameters may or may not default to one.
+An example of a job submission that results in this is
+<code style="white-space: pre;">qsub -l nodes=1:ppn=2</code>, which requests one node with two cores.
+</p>
+</li>
+<li> <p><code>"SGE"</code> -
+Query the &quot;Grid Engine&quot; scheduler environment variable <span class="env">NSLOTS</span>.
+An example of a job submission that results in this is
+<code style="white-space: pre;">qsub -pe smp 2</code> (or <code style="white-space: pre;">qsub -pe by_node 2</code>), which
+requests two cores on a single machine.
+Known Grid Engine schedulers are
+Oracle Grid Engine (OGE; acquired Sun Microsystems in 2010),
+Univa Grid Engine (UGE; fork of open-source SGE 6.2u5),
+Altair Grid Engine (AGE; acquires Univa Corporation in 2020),
+Son of Grid Engine (SGE aka SoGE; open-source fork of SGE 6.2u5), and
+</p>
+</li>
+<li> <p><code>"Slurm"</code> -
+Query Simple Linux Utility for Resource Management (Slurm)
+environment variable <span class="env">SLURM_CPUS_PER_TASK</span>.
+This may or may not be set.  It can be set when submitting a job,
+e.g. <code style="white-space: pre;">sbatch --cpus-per-task=2 hello.sh</code> or by adding
+<code style="white-space: pre;">#SBATCH --cpus-per-task=2</code> to the &lsquo;<span class="file">hello.sh</span>&rsquo; script.
+If <span class="env">SLURM_CPUS_PER_TASK</span> is not set, then it will fall back to
+use <span class="env">SLURM_CPUS_ON_NODE</span> if the job is a single-node job
+(<span class="env">SLURM_JOB_NUM_NODES</span> is 1), e.g. <code style="white-space: pre;">sbatch --ntasks=2 hello.sh</code>.
+To make sure all tasks are assign to a single node, specify
+<code>--nodes=1</code>, e.g. <code style="white-space: pre;">sbatch --nodes=1 --ntasks=16 hello.sh</code>.
+</p>
+</li>
+<li> <p><code>"custom"</code> -
+If option
+<code><a href="../../parallelly/help/parallelly.options.html">parallelly.availableCores.custom</a></code>
+is set and a function,
+then this function will be called (without arguments) and it's value
+will be coerced to an integer, which will be interpreted as a number
+of available cores.  If the value is NA, then it will be ignored.
+It is safe for this custom function to call <code>availableCores()</code>; if
+done, the custom function will <em>not</em> be recursively called.
+</p>
+</li></ul>
+
+<p>For any other value of a <code>methods</code> element, the <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> option with the
+same name is queried.  If that is not set, the system environment
+variable is queried.  If neither is set, a missing value is returned.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Return a positive (&gt;= 1) integer.
+If <code>which = "all"</code>, then more than one value may be returned.
+Together with <code>na.rm = FALSE</code> missing values may also be returned.
+</p>
+
+
+<h3>Avoid ending up with zero cores</h3>
+
+<p>Note that some machines might have a limited number of cores, or the R
+process runs in a container or a cgroup that only provides a small number
+of cores. A real-world example is when you run R in webR &ndash; webR is
+single-core by design. Another example are free Posit Cloud accounts,
+which are limited to a single core. In such cases
+</p>
+<div class="sourceCode r"><pre>ncores &lt;- availableCores() - 1
+</pre></div>
+<p>may return zero, which is often not intended and is likely to give an
+error downstream.  Instead, use:
+</p>
+<div class="sourceCode r"><pre>ncores &lt;- availableCores(omit = 1)
+</pre></div>
+<p>to put aside one of the cores from being used.  Regardless how many cores
+you put aside, this function is guaranteed to return at least one core.
+</p>
+
+
+<h3>Advanced usage</h3>
+
+<p>It is possible to override the maximum number of cores on the machine
+as reported by <code>availableCores(methods = "system")</code>.  This can be
+done by first specifying
+<code>options(parallelly.availableCores.methods = "mc.cores")</code> and
+then the number of cores to use, e.g. <code>options(mc.cores = 8)</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>To get the set of available workers regardless of machine,
+see <code><a href="../../parallelly/help/availableWorkers.html">availableWorkers()</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+message(paste("Number of cores available:", availableCores()))
+
+## Not run: 
+options(mc.cores = 2L)
+message(paste("Number of cores available:", availableCores()))
+
+## End(Not run)
+
+## Not run: 
+## IMPORTANT: availableCores() may return 1L
+options(mc.cores = 1L)
+ncores &lt;- availableCores() - 1      ## ncores = 0
+ncores &lt;- availableCores(omit = 1)  ## ncores = 1
+message(paste("Number of cores to use:", ncores))
+
+## End(Not run)
+
+## Not run: 
+## Use 75% of the cores on the system but never more than four
+options(parallelly.availableCores.custom = function() {
+  ncores &lt;- max(parallel::detectCores(), 1L, na.rm = TRUE)
+  ncores &lt;- min(as.integer(0.75 * ncores), 4L)
+  max(1L, ncores)
+})
+message(paste("Number of cores available:", availableCores()))
+
+## Use 50% of the cores according to availableCores(), e.g.
+## allocated by a job scheduler or cgroups.
+## Note that it is safe to call availableCores() here.
+options(parallelly.availableCores.custom = function() {
+  0.50 * parallelly::availableCores()
+})
+message(paste("Number of cores available:", availableCores()))
+
+## End(Not run)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>parallelly</em> version 1.46.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

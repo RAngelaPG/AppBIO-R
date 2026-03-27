@@ -1,0 +1,178 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Empirical Bayes Genome Wide Association Mapping</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for GWAS {NAM}"><tr><td>GWAS {NAM}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Empirical Bayes Genome Wide Association Mapping 
+</h2>
+
+<h3>Description</h3>
+
+<p>The gwas function calculates the likelihood ratio for each marker under the empirical Bayesian framework. The method allows analysis with multiple populations. <code>gwas2</code> is computationally optimized. <code>gwas3</code> was design for multiple random populations.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+gwas(y,gen,fam=NULL,chr=NULL,window=NULL,fixed=FALSE)
+gwas2(y,gen,fam=NULL,chr=NULL,fixed=FALSE,EIG=NULL,cov=NULL)
+gwas3(y,gen,fam=NULL,chr=NULL,EIG=NULL,cov=NULL)
+gwasGE(Phe,gen,fam,chr=NULL,cov=NULL,ge=FALSE,ammi=1)
+meta3(ByEnv,ammi=1)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>y</code></td>
+<td>
+
+<p>Numeric vector of observations (<i>n</i>) describing the trait to be analyzed. <code>NA</code> is allowed.
+</p>
+</td></tr>
+<tr valign="top"><td><code>gen</code></td>
+<td>
+
+<p>Numeric matrix containing the genotypic data. A matrix with <i>n</i>
+rows of observations and (<i>m</i>) columns of molecular markers. SNPs must be coded as <code>0, 1, 2</code>, for founder homozygous, heterozygous and reference homozigous. <code>NA</code> is allowed.
+</p>
+</td></tr>
+<tr valign="top"><td><code>fam</code></td>
+<td>
+
+<p>Numeric vector of length <i>n</i> indicating a stratification factor or which subpopulation (<i>e.g.</i> family) that each observation comes from. Default assumes that all observations are from the same populations.
+</p>
+</td></tr>
+<tr valign="top"><td><code>chr</code></td>
+<td>
+
+<p>Numeric vector indicating the number of markers in each chromosome. The sum of <i>chr</i> must be equal to the number of columns in <i>gen</i>. Default assumes that all markers are from the same chromosome.
+</p>
+</td></tr>
+<tr valign="top"><td><code>window</code></td>
+<td>
+
+<p>Numeric. If specified, genetic distance between markers is used for moving window strategy. Window must be specified in Morgans (<i>e.g.</i> 0.05 would represent 5cM). Genetic distance is calculated assuming that individuals are RILs.
+</p>
+</td></tr>
+<tr valign="top"><td><code>fixed</code></td>
+<td>
+
+<p>Logical. If TRUE, markers are treated as fixed effect and hence, evaluated through Wald statistics. If markers are specief as fixed, the argument 'window' is not applicable.
+</p>
+</td></tr>
+<tr valign="top"><td><code>EIG</code></td>
+<td>
+
+<p>Output of the R function 'eigen'. It is used for user-defined kinship matrix.
+</p>
+</td></tr>
+<tr valign="top"><td><code>cov</code></td>
+<td>
+
+<p>Numeric vector of length <i>n</i> to be used as covariate in the association analysis.
+</p>
+</td></tr>
+<tr valign="top"><td><code>Phe</code></td>
+<td>
+
+<p>Numeric matrix of observations (<i>n*e</i>) where rows represent genotypes and columns represent environments. <code>NA</code> is allowed.
+</p>
+</td></tr>
+<tr valign="top"><td><code>ge</code></td>
+<td>
+
+<p>Logical. If TRUE, meta-analysis (function gwasGE) will be done for the <i>G</i>x<i>E</i> interactions term only. If FALSE, variance components will be computed for three terms: genotype, environment and interaction.
+</p>
+</td></tr>
+<tr valign="top"><td><code>ammi</code></td>
+<td>
+
+<p>Integer. It indicates the number of principal components used to represent <i>G</i>x<i>E</i> interactions through additive main-effects and multiplicative interaction (AMMI).
+</p>
+</td></tr>
+<tr valign="top"><td><code>ByEnv</code></td>
+<td>
+
+<p>List of objected output from <code>gwas3</code> to perform meta-analysis.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Empirical Bayes model (Wang 2016) with a special incidence matrix is recreated to optimize the information provided by the subpopulations. Each locus is recoded as a vector with length <i>f</i> equal to number of subpopulations, or NAM families, as the interaction locus by family. For example, a locus heterozigous from an individual from subpopulation 2 is coded as [ 1, 0, 1 , ... ,<i>f</i> ], a locus homozigous for the reference allele from any subpopulation is coded as [ 2, 0, 0, ... , <i>f</i> ] and a locus homozigous for the founder allele from an individual from subpopulation 1 is coded as [ 0, 2, 0, ... ,<i>f</i> ]. The base model for genome scanning is described by:
+</p>
+<p style="text-align: center;"><i>y = Xb + Zu + g + e</i></p>
+
+<p>That includes the fixed effect (<i>Xb</i>), the marker (<i>Zu</i>), the polygene (<i>g</i>) and the residuals (<i>e</i>). If the <i>window</i> term is specified, the model for genome scanning is expanded as follows:
+</p>
+<p style="text-align: center;"><i>y = Xb + Zu[k-1] + Zu + Zu[k+1] + g - g[k] + e</i></p>
+
+<p>This model includes three extra terms: the left side genome ( <i>Zu[k-1]</i> ) and the right side genome ( <i>Zu[k+1]</i> ), also subtracting the window polygene ( <i>-g[k]</i> ). Windows are based on genetic distance, which is computed using Kosambi map function. The recombination rate is estimated under the assuption markers are ordered and that genotypes are recombinant inbred lines.
+</p>
+<p>The polygenic term is calculated only once (Zhang et al 2010) using eigendecomposition with a GEMMA-like algorithm (Zhou ans Stephens 2012). Efficient inversion of capacitance matrix is obtained through the Woodbury matrix identities. Models and algorithms are described with more detail by Xavier et al (2015) and Wei and Xu (2016).
+</p>
+<p>In order to analyze large dateset, one can avoid memory issues by using the function <i>gwas2</i>, but that the argument 'window' is not implemented for <i>gwas2</i>. This function also allows used-defined kindship through the argument EIG, and the use of a numeric covariate vector through the argument cov.
+</p>
+<p>When multi-environmental trials are the target of mapping, one may use the function <i>gwasGE</i> to perform analysis by environment, followed by &quot;meta-analysis&quot; used to combine the results. This strategy provides an idea of the variation on QTL effect due to environment, genetic background (provided by the stratification factor) and the interaction between environment and genetics.
+</p>
+<p>An alternative to this method is the mega-analysis, where one can provide the stratification factor as a combination of subpopulation and environment. Meta-analysis can be performed in a single step with function <code>gwasGE</code>, or users can perform multiple association analyses using <code>gwas3</code> and perform meta-analysis with <code>meta3</code>. In <code>gwasGE</code>, the same genotype will often appear more than once in the phenotypic and genotypic data, so that phenotypes are provided as a matrix. The statistical detail about the meta-analysis are available in the vignette <i>Background for Meta-analysis</i>.
+</p>
+<p>The function <code>gwas3</code> is an alternative for association analysis and meta-analysis, also solved in the Empirical-Bayes framework for multiple populations. Unlike <code>gwas</code>, <code>gwas2</code> and <code>gwasGE</code>, this function does not set a reference allele and analysis each marker as the interaction of allele by stratification factor (ie. family or subpopulation). Therefore,  <code>gwas3</code> is compatible with any allele coding.
+</p>
+<p>For further statistical background:
+</p>
+<p>1) <code>system(paste('open',system.file("doc","gwa_description.pdf",package="NAM")))</code>
+</p>
+<p>2) <code>system(paste('open',system.file("doc","gwa_ge_interactions.pdf",package="NAM")))</code>
+</p>
+
+
+<h3>Value</h3>
+
+<p>The function gwas returns a list containing the method deployed (<i>Method</i>), a summary of predicted parameters and statistical tests (<i>PolyTest</i>), estimated genetic map for NAM panels (<i>MAP</i>) and the marker names (<i>SNPs</i>).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Alencar Xavier, Tiago Pimenta, Qishan Wang and Shizhong Xu
+</p>
+
+
+<h3>References</h3>
+
+<p>Wang, Q., Wei, J., Pan, Y., &amp; Xu, S. (2016). An efficient empirical Bayes method for genomewide association studies. Journal of Animal Breeding and Genetics, 133(4), 253-263.  
+</p>
+<p>Wei, J., &amp; Xu, S. (2016). A Random Model Approach to QTL Mapping in Multi-parent Advanced Generation Inter-cross (MAGIC) Populations. Genetics, 202(2), 471-486.
+</p>
+<p>Xavier, A., Xu, S., Muir, W. M., &amp; Rainey, K. M. (2015). NAM: Association Studies in Multiple Populations. Bioinformatics, 31(23), 3862-3864.
+</p>
+<p>Zhang et al. 2010. Mixed linear model approach adapted for genome-wide association studies. Nat. Genet. 42:355-360.
+</p>
+<p>Zhou, X., &amp; Stephens, M. (2012). Genome-wide efficient mixed-model analysis for association studies. Nature genetics, 44(7), 821-824.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+data(tpod)
+gen=reference(gen)
+gwa=gwas2(y=y,gen=gen,fam=fam,chr=chr,fixed=TRUE)
+plot(gwa,pch=20,lwd=4)
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>NAM</em> version 1.8.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Automatically fitting a variogram</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for autofitVariogram {automap}"><tr><td>autofitVariogram {automap}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Automatically fitting a variogram</h2>
+
+<h3>Description</h3>
+
+<p>Automatically fitting a variogram to the data on which it is applied. The automatic fitting 
+is done through <a href="../../gstat/help/fit.variogram.html">fit.variogram</a>. In <a href="../../gstat/help/fit.variogram.html">fit.variogram</a> the user had to supply an initial estimate for the sill, 
+range etc. <code>autofitVariogram</code> provides this estimate based on the data and then calls <a href="../../gstat/help/fit.variogram.html">fit.variogram</a>.</p>
+
+
+<h3>Usage</h3>
+
+<pre>autofitVariogram(formula, 
+         input_data, 
+         model = c("Sph", "Exp", "Gau", "Ste"),
+         kappa = c(0.05, seq(0.2, 2, 0.1), 5, 10), 
+         fix.values = c(NA,NA,NA),
+         verbose = FALSE, 
+         GLS.model = NA,
+         start_vals = c(NA,NA,NA),
+         cutoff,
+         miscFitOptions = list(),
+         ...)</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>formula that defines the dependent variable as a linear model
+of independent variables; suppose the dependent variable has
+name 'z', for ordinary and simple kriging use the formula
+'z~1'; for simple kriging also define 'beta' (see below); for
+universal kriging, suppose 'z' is linearly dependent on 'x'
+and 'y', use the formula 'z~x+y'.</p>
+</td></tr>
+<tr valign="top"><td><code>input_data</code></td>
+<td>
+<p>An object of <a href="../../sp/help/SpatialPointsDataFrame-class.html">SpatialPointsDataFrame-class</a>
+or <a href="../../sf/help/sf.html">sf</a> .</p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>The list of variogrammodels that will be tested.</p>
+</td></tr>
+<tr valign="top"><td><code>kappa</code></td>
+<td>
+<p>Smoothing parameter of the Matern model. Provide a list if you want to check
+more than one value.</p>
+</td></tr>
+<tr valign="top"><td><code>fix.values</code></td>
+<td>
+<p>Can be used to fix a variogram parameter to a certain value. It 
+consists of a list with a length of three. The items describe the
+fixed value for the nugget, range and sill respectively. They need to be given in that order. 
+Setting the value to NA means that the value is not fixed. </p>
+</td></tr> 
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>logical, if TRUE the function will give extra feedback on the fitting process</p>
+</td></tr>  
+<tr valign="top"><td><code>GLS.model</code></td>
+<td>
+<p>If a variogram model is passed on through this parameter a Generalized Least Squares 
+sample variogram is calculated.</p>
+</td></tr> 
+<tr valign="top"><td><code>start_vals</code></td>
+<td>
+<p>Can be used to give the starting values for the variogram fitting. The items describe the
+fixed value for the nugget, range and sill respectively. They need to be given in that order.
+Setting the value to NA means that the value will be automatically chosen.</p>
+</td></tr> 
+<tr valign="top"><td><code>cutoff</code></td>
+<td>
+<p>A maximum range to be used for the empirical variogram</p>
+</td></tr>
+<tr valign="top"><td><code>miscFitOptions</code></td>
+<td>
+<p>A list with named arguments that provide additional control over the fitting process. 
+For example: <code>list(merge.small.bins = TRUE)</code>. If the list is empty, autofitVariogram 
+uses default values. The following parameters can be set:
+</p>
+ 
+<dl>
+<dt><code>merge.small.bins</code>:</dt><dd><p>logical, when TRUE, the function checks if there are bins with less than 5 points. 
+If so, the first two bins are merged and the check is repeated. This is done until all bins have more 
+than <code>min.np.bin</code> points.</p>
+</dd>
+<dt><code>min.np.bin</code>:</dt><dd><p>integer, the minimum number of points allowed in a bin before we start merging bins. 
+See also <code>merge.small.bins</code>.</p>
+</dd>
+</dl>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>parameters that are passed on to <a href="../../gstat/help/variogram.html">variogram</a> when calculating the sample variogram.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Geostatistical routines are used from package <code>gstat</code>.
+</p>
+<p>A few simple choices are made when estimating the inital guess for <code>fit.variogram</code>. 
+The initial sill is estimated as the <code>mean</code> of the <code>max</code> and the <code>median</code>
+of the semi-variance. The inital range is defined as 0.10 times the diagonal of the bounding
+box of the data. The initial nugget is defined as the <code>min</code> of the the semi-variance. 
+</p>
+<p>There are five different types of models that are often used: 
+</p>
+
+<dl>
+<dt>Sph</dt><dd><p>A shperical model.</p>
+</dd>
+<dt>Exp</dt><dd><p>An exponential model.</p>
+</dd>
+<dt>Gau</dt><dd><p>A gaussian model.</p>
+</dd>
+<dt>Mat</dt><dd><p>A model of the Matern familiy</p>
+</dd>
+<dt>Ste</dt><dd><p>Matern, M. Stein's parameterization</p>
+</dd>
+</dl>
+
+<p>A list of all permitted variogram models is available by typing vgm() into the R console.
+<code>autofitVariogram</code> iterates over the variogram models listed in <code>model</code> and picks the model 
+that has the smallest residual sum of squares with the sample variogram. For the Matern model, all the 
+kappa values in <code>kappa</code> are tested. 
+</p>
+<p>Note that when using the power model, and not specifying starting values yourself, the sill is set to 1, 
+the range to 1 and the nugget to 0. This is because the normal initial values for those paramters don't 
+work well with the power model. I consider this a temporary solution, any suggestions are appreciated.
+</p>
+<p>It is possible to pass anisotropy parameters to <code>autofitVariogram</code>. However, <code>autofitVariogram</code> does not fit anisotropic variogram models. The function sees the anisotropic sample variogram as one big sample variogram. So it fits an average isotropic variogram model from the anisotropic sample variogram. A warning is issued when a users passes <code>alpha</code> to <code>autofitVariogram</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of type <code>autofitVariogram</code> is returned. This object contains the experimental variogram, 
+the fitted variogram model and the sums of squares (<code>sserr</code>) between the sample variogram and the
+fitted variogram model.</p>
+
+
+<h3>Note</h3>
+
+<p><code>autofitVariogram</code> is mostly used indirectly through the function <code>autoKrige</code></p>
+
+
+<h3>Author(s)</h3>
+
+<p>Paul Hiemstra, <a href="mailto:paul@numbertheory.nl">paul@numbertheory.nl</a></p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../gstat/help/fit.variogram.html">fit.variogram</a></code>, <code><a href="../../automap/help/autoKrige.html">autoKrige</a></code>, <code><a href="../../automap/help/posPredictionInterval.html">posPredictionInterval</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(sp)
+data(meuse)
+coordinates(meuse) =~ x+y
+variogram = autofitVariogram(zinc~1,meuse)
+plot(variogram)
+
+# Residual variogram
+data(meuse)
+coordinates(meuse) =~ x+y
+variogram = autofitVariogram(zinc ~ soil + ffreq + dist, meuse)
+plot(variogram)
+
+# Settings additional fitting options
+variogram = autofitVariogram(zinc ~ soil + ffreq + dist, meuse, 
+    miscFitOptions = list(merge.small.bins = FALSE))
+plot(variogram)
+
+# Settings the minimum number of pairs per bin quite high
+# to see the effect of merging bins
+variogram = autofitVariogram(zinc ~ soil + ffreq + dist, meuse, 
+    miscFitOptions = list(min.np.bin = 500))
+plot(variogram)
+
+# ...and disable the merging, note the difference between the two plots
+variogram = autofitVariogram(zinc ~ soil + ffreq + dist, meuse, 
+    miscFitOptions = list(min.np.bin = 500, merge.small.bins = FALSE))
+plot(variogram)
+
+# An example of autofitVariogram with anisotropic sample variogram.
+# This is not supported, see details section.
+vm.isotropic = autofitVariogram(log(zinc) ~ dist, meuse)
+# The following line might not work, depending on version of R and gstat
+# vm.anisotropic = autofitVariogram(log(zinc) ~ dist, meuse, alpha = c(0,45,90,135))
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>automap</em> version 1.1-20 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

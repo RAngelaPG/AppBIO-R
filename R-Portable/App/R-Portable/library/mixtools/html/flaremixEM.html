@@ -1,0 +1,173 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: EM Algorithm for Mixtures of Regressions with Flare</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for flaremixEM {mixtools}"><tr><td>flaremixEM {mixtools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>EM Algorithm for Mixtures of Regressions with Flare</h2>
+
+<h3>Description</h3>
+
+<p>Returns output for 2-component mixture of regressions with flaring
+using an EM algorithm with one step of Newton-Raphson requiring
+an adaptive barrier for maximization of the objective function. A mixture of regressions
+with flare occurs when there appears to be a common regression relationship for the data,
+but the error terms have a mixture structure of one normal component and one exponential
+component.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+flaremixEM(y, x, lambda = NULL, beta = NULL, sigma = NULL, 
+           alpha = NULL, nu = NULL, epsilon = 1e-04, 
+           maxit = 10000, verb = FALSE, restart = 50)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>An n-vector of response values.</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>An n-vector of predictor values.  An intercept term will be added by default.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>Initial value of mixing proportions.  Entries should sum to 1.</p>
+</td></tr>
+<tr valign="top"><td><code>beta</code></td>
+<td>
+<p>Initial value of <code>beta</code> parameters.  Should be a 2x2 matrix where the columns
+correspond to the component.</p>
+</td></tr>
+<tr valign="top"><td><code>sigma</code></td>
+<td>
+<p>A vector of standard deviations.</p>
+</td></tr>
+<tr valign="top"><td><code>alpha</code></td>
+<td>
+<p>A scalar for the exponential component's rate.</p>
+</td></tr>
+<tr valign="top"><td><code>nu</code></td>
+<td>
+<p>A vector specifying the barrier constants to use.  The first barrier constant where the algorithm
+converges is used.</p>
+</td></tr>
+<tr valign="top"><td><code>epsilon</code></td>
+<td>
+<p>The convergence criterion.</p>
+</td></tr>
+<tr valign="top"><td><code>maxit</code></td>
+<td>
+<p>The maximum number of iterations.</p>
+</td></tr> 
+<tr valign="top"><td><code>verb</code></td>
+<td>
+<p>If TRUE, then various updates are printed during each iteration of the algorithm.</p>
+</td></tr> 
+<tr valign="top"><td><code>restart</code></td>
+<td>
+<p>The number of times to restart the algorithm in case convergence is not attained.
+The default is 50.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p><code>flaremixEM</code> returns a list of class <code>mixEM</code> with items:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>The set of predictors (which includes a column of 1's).</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>The response values.</p>
+</td></tr>
+<tr valign="top"><td><code>posterior</code></td>
+<td>
+<p>An nx2 matrix of posterior probabilities for
+observations.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>The final mixing proportions.</p>
+</td></tr>
+<tr valign="top"><td><code>beta</code></td>
+<td>
+<p>The final regression coefficients.</p>
+</td></tr>
+<tr valign="top"><td><code>sigma</code></td>
+<td>
+<p>The final standard deviations.</p>
+</td></tr>
+<tr valign="top"><td><code>alpha</code></td>
+<td>
+<p>The final exponential rate.</p>
+</td></tr>
+<tr valign="top"><td><code>loglik</code></td>
+<td>
+<p>The final log-likelihood.</p>
+</td></tr>
+<tr valign="top"><td><code>all.loglik</code></td>
+<td>
+<p>A vector of each iteration's log-likelihood.</p>
+</td></tr>
+<tr valign="top"><td><code>ft</code></td>
+<td>
+<p>A character vector giving the name of the function.</p>
+</td></tr>
+</table>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../mixtools/help/regmixEM.html">regmixEM</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Simulation output.
+
+set.seed(100)
+j=1
+while(j == 1){
+    x1 &lt;- runif(30, 0, 10)
+    x2 &lt;- runif(20, 10, 20)
+    x3 &lt;- runif(30, 20, 30)
+    y1 &lt;- 3+4*x1+rnorm(30, sd = 1)
+    y2 &lt;- 3+4*x2+rexp(20, rate = .05)
+    y3 &lt;- 3+4*x3+rnorm(30, sd = 1)
+    x &lt;- c(x1, x2, x3)
+    y &lt;- c(y1, y2, y3)
+    nu &lt;- (1:30)/2
+
+    out &lt;- try(flaremixEM(y, x, beta = c(3, 4), nu = nu,
+               lambda = c(.75, .25), sigma = 1), silent = TRUE)
+    if(any(class(out) == "try-error")){
+        j &lt;- 1
+    } else j &lt;- 2
+}
+
+out[4:7]
+plot(x, y, pch = 19)
+abline(out$beta)
+
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mixtools</em> version 2.0.0.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

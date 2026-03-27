@@ -1,0 +1,202 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Function to prepare dataset for multi-state modeling in long...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for msprep {mstate}"><tr><td>msprep {mstate}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Function to prepare dataset for multi-state modeling in long format from
+dataset in wide format</h2>
+
+<h3>Description</h3>
+
+<p>This function converts a dataset which is in wide format (one subject per
+line, multiple columns indicating time and status for different states) into
+a dataset in long format (one line for each transition for which a subject
+is at risk). Selected covariates are replicated per subjects.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+msprep(time, status, data, trans, start, id, keep)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>time</code></td>
+<td>
+<p>Either 1) a matrix or data frame of dimension n x S (n being the
+number of individuals and S the number of states in the multi-state model),
+containing the times at which the states are visited or last follow-up time,
+or 2) a character vector of length S containing the column names indicating
+these times. In the latter cases, some elements of <code>time</code> may be NA,
+see Details</p>
+</td></tr>
+<tr valign="top"><td><code>status</code></td>
+<td>
+<p>Either 1) a matrix or data frame of dimension n x S,
+containing, for each of the states, event indicators taking the value 1 if
+the state is visited or 0 if it is not (censored), or 2) a character vector
+of length S containing the column names indicating these status variables.
+In the latter cases, some elements of <code>status</code> may be NA, see Details</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>Data frame (not a tibble) in wide format in which to interpret
+<code>time</code>, <code>status</code>, <code>id</code> or <code>keep</code>, if appropriate</p>
+</td></tr>
+<tr valign="top"><td><code>trans</code></td>
+<td>
+<p>Transition matrix describing the states and transitions in the
+multi-state model. If S is the number of states in the multi-state model,
+<code>trans</code> should be an S x S matrix, with (i,j)-element a positive
+integer if a transition from i to j is possible in the multi-state model,
+<code>NA</code> otherwise. In particular, all diagonal elements should be
+<code>NA</code>. The integers indicating the possible transitions in the
+multi-state model should be sequentially numbered, 1,...,K, with K the
+number of transitions</p>
+</td></tr>
+<tr valign="top"><td><code>start</code></td>
+<td>
+<p>List with elements <code>state</code> and <code>time</code>, containing
+starting states and times of the subjects in the data.  Default is
+<code>NULL</code>, in which case all subjects start in state 1 at time 0. If a
+single state and time are given this state and time is used for all
+subjects, otherwise the length of <code>state</code> and <code>time</code> should equal
+the number of subjects in <code>data</code></p>
+</td></tr>
+<tr valign="top"><td><code>id</code></td>
+<td>
+<p>Either 1) a vector of length n containing the subject
+identifications, or 2) a character string indicating the column name
+containing these subject ids. If not provided, <code>"id"</code> will be assigned
+with values 1,...,n</p>
+</td></tr>
+<tr valign="top"><td><code>keep</code></td>
+<td>
+<p>Either 1) a data frame or matrix with n rows or a numeric or
+factor vector of length n containing covariate(s) that need to be retained
+in the output dataset, or 2) a character vector containing the column names
+of these covariates in <code>data</code></p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>For <code>msprep</code>, the transition matrix should correspond to an
+irreversible acyclic Markov chain. In particular, on the diagonals only
+<code>NA</code>s are allowed.
+</p>
+<p>The transition matrix, if irreversible and acyclic, will have starting
+states, i.e. states into which no transitions are possible. For these
+starting states <code>NA</code>s are allowed in the <code>time</code> and <code>status</code>
+arguments, either as columns, when specified as matrix or data frame, or as
+elements of the character vector when specified as character vector.
+</p>
+<p>The function <code>msprep</code> uses a recursive algorithm through calls to the
+recursive function <code>msprepEngine</code>. First, with the current transition
+matrix, all starting states are detected (defined as states into which there
+are no transitions). For each of these starting states, all subjects
+starting from that state are selected and for each subject the next visited
+state is detected by looking at all transitions from that starting state and
+determining the smallest transition time with <code>status</code>=1. The recursive
+<code>msprepEngine</code> is called again with the starting states deleted from
+the transition matrix and with subjects deleted that either reached an
+absorbing state or that were censored. For the remaining subjects the
+starting states and times are updated in the next call. Datasets returned
+from the <code>msprepEngine</code> calls are appended to the current dataset in
+long format and finally sorted.
+</p>
+<p>A warning is issued for a subject, if multiple transitions exist with the
+same smallest transition time (and <code>status</code>=0). In such cases the next
+transition cannot be determined unambiguously, and the state with the
+smallest number is chosen. In our experience, occasionally the shortest
+transition time has <code>status</code>=0, while a higher transition time has
+<code>status</code>=1. Then this larger transition time and the corresponding
+transition is selected. No warning is issued for these data inconsistencies.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>"msdata"</code>, which is a data frame in long
+(counting process) format containing the subject id, the covariates
+(replicated per subject), and </p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>from</code></td>
+<td>
+<p>the starting state</p>
+</td></tr> <tr valign="top"><td><code>to</code></td>
+<td>
+<p>the
+receiving state</p>
+</td></tr> <tr valign="top"><td><code>trans</code></td>
+<td>
+<p>the transition number</p>
+</td></tr> <tr valign="top"><td><code>Tstart</code></td>
+<td>
+<p>the
+starting time of the transition</p>
+</td></tr> <tr valign="top"><td><code>Tstop</code></td>
+<td>
+<p>the stopping time of the
+transition</p>
+</td></tr> <tr valign="top"><td><code>status</code></td>
+<td>
+<p>status variable, with 1 indicating an event
+(transition), 0 a censoring</p>
+</td></tr></table>
+<p> The <code>"msdata"</code> object has the transition
+matrix as <code>"trans"</code> attribute.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Hein Putter <a href="mailto:H.Putter@lumc.nl">H.Putter@lumc.nl</a> and Marta Fiocco
+</p>
+
+
+<h3>References</h3>
+
+<p>Putter H, Fiocco M, Geskus RB (2007). Tutorial in biostatistics:
+Competing risks and multi-state models. <em>Statistics in Medicine</em>
+<b>26</b>, 2389&ndash;2430.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# transition matrix for illness-death model
+tmat &lt;- trans.illdeath()
+# some data in wide format
+tg &lt;- data.frame(stt=rep(0,6),sts=rep(0,6),
+        illt=c(1,1,6,6,8,9),ills=c(1,0,1,1,0,1),
+        dt=c(5,1,9,7,8,12),ds=c(1,1,1,1,1,1),
+        x1=c(1,1,1,2,2,2),x2=c(6:1))
+tg$x1 &lt;- factor(tg$x1,labels=c("male","female"))
+tg$patid &lt;- factor(2:7,levels=1:8,labels=as.character(1:8))
+# define time, status and covariates also as matrices
+tt &lt;- matrix(c(rep(NA,6),tg$illt,tg$dt),6,3)
+st &lt;- matrix(c(rep(NA,6),tg$ills,tg$ds),6,3)
+keepmat &lt;- data.frame(gender=tg$x1,age=tg$x2)
+# data in long format using msprep
+msprep(time=tt,status=st,trans=tmat,keep=as.matrix(keepmat))
+msprep(time=c(NA,"illt","dt"),status=c(NA,"ills","ds"),data=tg,
+		id="patid",keep=c("x1","x2"),trans=tmat)
+# Patient no 5, 6 now start in state 2 at time t=4 and t=10
+msprep(time=tt,status=st,trans=tmat,keep=keepmat,
+        start=list(state=c(1,1,1,1,2,2),time=c(0,0,0,0,4,10)))
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mstate</em> version 0.3.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

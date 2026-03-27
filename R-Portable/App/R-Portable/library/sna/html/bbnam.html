@@ -1,0 +1,240 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Butts' (Hierarchical) Bayesian Network Accuracy Model</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for bbnam {sna}"><tr><td>bbnam {sna}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Butts' (Hierarchical) Bayesian Network Accuracy Model </h2>
+
+<h3>Description</h3>
+
+<p>Takes posterior draws from Butts' bayesian network accuracy/estimation model for multiple participant/observers (conditional on observed data and priors), using a Gibbs sampler.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+bbnam(dat, model="actor", ...)
+bbnam.fixed(dat, nprior=0.5, em=0.25, ep=0.25, diag=FALSE,
+    mode="digraph", draws=1500, outmode="draws", anames=NULL,
+    onames=NULL)
+bbnam.pooled(dat, nprior=0.5, emprior=c(1,11), epprior=c(1,11),
+    diag=FALSE, mode="digraph", reps=5, draws=1500, burntime=500, 
+    quiet=TRUE, anames=NULL, onames=NULL, compute.sqrtrhat=TRUE)
+bbnam.actor(dat, nprior=0.5, emprior=c(1,11), epprior=c(1,11), 
+    diag=FALSE, mode="digraph", reps=5, draws=1500, burntime=500,
+    quiet=TRUE, anames=NULL, onames=NULL, compute.sqrtrhat=TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>dat</code></td>
+<td>
+<p> Input networks to be analyzed.  This may be supplied in any reasonable form, but must be reducible to an array of dimension <i>m x n x n</i>, where <i>n</i> is <i>|V(G)|</i>, the first dimension indexes the observer (or information source), the second indexes the sender of the relation, and the third dimension indexes the recipient of the relation.  (E.g., <code>dat[i,j,k]==1</code> implies that i observed j sending the relation in question to k.)  Note that only dichotomous data is supported at present, and missing values are permitted; the data collection pattern, however, is assumed to be ignorable, and hence the posterior draws are implicitly conditional on the observation pattern. </p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p> String containing the error model to use; options are <code>"actor"</code>, <code>"pooled"</code>, and <code>"fixed"</code>. </p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Arguments to be passed by <code>bbnam</code> to the particular model method.</p>
+</td></tr>
+<tr valign="top"><td><code>nprior</code></td>
+<td>
+<p> Network prior matrix.  This must be a matrix of dimension <i>n</i> x <i>n</i>, containing the arc/edge priors for the criterion network.  (E.g., <code>nprior[i,j]</code> gives the prior probability of <code>i</code> sending the relation to <code>j</code> in the criterion graph.)  Non-matrix values will be coerced/expanded to matrix form as appropriate.  If no network prior is provided, an uninformative prior on the space of networks will be assumed (i.e., <i>Pr(i-&gt;j)=0.5</i>).  Missing values are not allowed. </p>
+</td></tr>
+<tr valign="top"><td><code>em</code></td>
+<td>
+<p> Probability of a false negative; this may be in the form of a single number, one number per observation slice, one number per (directed) dyad, or one number per dyadic observation (fixed model only). </p>
+</td></tr>
+<tr valign="top"><td><code>ep</code></td>
+<td>
+<p> Probability of a false positive; this may be in the form of a single number, one number per observation slice, one number per (directed) dyad, or one number per dyadic observation (fixed model only). </p>
+</td></tr>
+<tr valign="top"><td><code>emprior</code></td>
+<td>
+<p> Parameters for the (Beta) false negative prior; these should be in the form of an <i>(alpha,beta)</i> pair for the pooled model, and of an <i>n x 2</i> matrix of <i>(alpha,beta)</i> pairs for the actor model (or something which can be coerced to this form). If no <code>emprior</code> is given, a weakly informative prior (1,11) will be assumed; note that this may be inappropriate, as described below.  Missing values are not allowed. </p>
+</td></tr>
+<tr valign="top"><td><code>epprior</code></td>
+<td>
+<p>  Parameters for the (Beta) false positive prior; these should be in the form of an <i>(alpha,beta)</i> pair for the pooled model, and of an <i>n x 2</i> matrix of <i>(alpha,beta)</i> pairs for the actor model (or something which can be coerced to this form). If no <code>epprior</code> is given, a weakly informative prior (1,11) will be assumed; note that this may be inappropriate, as described below.  Missing values are not allowed. </p>
+</td></tr>
+<tr valign="top"><td><code>diag</code></td>
+<td>
+<p> Boolean indicating whether loops (matrix diagonals) should be counted as data. </p>
+</td></tr>
+<tr valign="top"><td><code>mode</code></td>
+<td>
+<p> A string indicating whether the data in question forms a <code>"graph"</code> or a <code>"digraph"</code> </p>
+</td></tr>
+<tr valign="top"><td><code>reps</code></td>
+<td>
+<p> Number of replicate chains for the Gibbs sampler (pooled and actor models only). </p>
+</td></tr>
+<tr valign="top"><td><code>draws</code></td>
+<td>
+<p> Integer indicating the total number of draws to take from the posterior distribution.  Draws are taken evenly from each replication (thus, the number of draws from a given chain is draws/reps). </p>
+</td></tr>
+<tr valign="top"><td><code>burntime</code></td>
+<td>
+<p> Integer indicating the burn-in time for the Markov Chain.  Each replication is iterated burntime times before taking draws (with these initial iterations being discarded); hence, one should realize that each increment to burntime increases execution time by a quantity proportional to reps. (pooled and actor models only) </p>
+</td></tr>
+<tr valign="top"><td><code>quiet</code></td>
+<td>
+<p> Boolean indicating whether MCMC diagnostics should be displayed (pooled and actor models only). </p>
+</td></tr>
+<tr valign="top"><td><code>outmode</code></td>
+<td>
+ <p><code>posterior</code> indicates that the exact posterior probability matrix for the criterion graph should be returned; otherwise draws from the joint posterior are returned instead (fixed model only). </p>
+</td></tr>
+<tr valign="top"><td><code>anames</code></td>
+<td>
+<p> A vector of names for the actors (vertices) in the graph. </p>
+</td></tr>
+<tr valign="top"><td><code>onames</code></td>
+<td>
+<p> A vector of names for the observers (possibly the actors themselves) whose reports are contained in the input data.</p>
+</td></tr>
+<tr valign="top"><td><code>compute.sqrtrhat</code></td>
+<td>
+<p> A boolean indicating whether or not Gelman et al.'s potential scale reduction measure (an MCMC convergence diagnostic) should be computed (pooled and actor models only). </p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The bbnam models a set of network data as reflecting a series of (noisy) observations by a set of participants/observers regarding an uncertain criterion structure.  Each observer is assumed to send false positives (i.e., reporting a tie when none exists in the criterion structure) with probability <i>e^+</i>, and false negatives (i.e., reporting that no tie exists when one does in fact exist in the criterion structure) with probability <i>e^-</i>.  The criterion network itself is taken to be a Bernoulli (di)graph.  Note that the present model includes three variants:
+</p>
+
+<ol>
+<li><p> Fixed error probabilities: Each edge is associated with a known pair of false negative/false positive error probabilities (provided by the researcher).  In this case, the posterior for the criterion graph takes the form of a matrix of Bernoulli parameters, with each edge being independent conditional on the parameter matrix.
+</p>
+</li>
+<li><p> Pooled error probabilities: One pair of (uncertain) false negative/false positive error probabilities is assumed to hold for all observations.  Here, we assume that the researcher's prior information regarding these parameters can be expressed as a pair of Beta distributions, with the additional assumption of independence in the prior distribution.  Note that error rates and edge probabilities are <em>not</em> independent in the joint posterior, but the posterior marginals take the form of Beta mixtures and Bernoulli parameters, respectively. 
+</p>
+</li>
+<li><p> Per observer (&ldquo;actor&rdquo;) error probabilities: One pair of (uncertain) false negative/false positive error probabilities is assumed to hold for each observation slice.  Again, we assume that prior knowledge can be expressed in terms of independent Beta distributions (along with the Bernoulli prior for the criterion graph) and the resulting posterior marginals are Beta mixtures and a Bernoulli graph.  (Again, it should be noted that independence in the priors does <em>not</em> imply independence in the joint posterior!)
+</p>
+</li></ol>
+
+<p>By default, the <code>bbnam</code> routine returns (approximately) independent draws from the joint posterior distribution, each draw yielding one realization of the criterion network and one collection of accuracy parameters (i.e., probabilities of false positives/negatives).  This is accomplished via a Gibbs sampler in the case of the pooled/actor model, and by direct sampling for the fixed probability model. In the special case of the fixed probability model, it is also possible to obtain directly the posterior for the criterion graph (expressed as a matrix of Bernoulli parameters); this can be controlled by the <code>outmode</code> parameter.
+</p>
+<p>As noted, the taking of posterior draws in the nontrivial case is accomplished via a Markov Chain Monte Carlo method, in particular the Gibbs sampler; the high dimensionality of the problem (<i>O(n^2+2n)</i>) tends to preclude more direct approaches.  At present, chain burn-in is determined ex ante on a more or less arbitrary basis by specification of the <code>burntime</code> parameter.  Eventually, a more systematic approach will be utilized.  Note that insufficient burn-in will result in inaccurate posterior sampling, so it's not wise to skimp on burn time where otherwise possible.  Similarly, it is wise to employ more than one Markov Chain (set by <code>reps</code>), since it is possible for trajectories to become &ldquo;trapped&rdquo; in metastable regions of the state space.  Number of draws per chain being equal, more replications are usually better than few; consult Gelman et al. for details.  A useful measure of chain convergence, Gelman and Rubin's potential scale reduction (<i>&radic;{\hat{R}}</i>), can be computed using the <code>compute.sqrtrhat</code> parameter.  The potential scale reduction measure is an ANOVA-like comparison of within-chain versus between-chain variance; it approaches 1 (from above) as the chain converges, and longer burn-in times are strongly recommended for chains with scale reductions in excess of 1.2 or thereabouts.  
+</p>
+<p>Finally, a cautionary concerning prior distributions: it is important that the specified priors actually reflect the prior knowledge of the researcher; otherwise, the posterior will be inadequately informed.  In particular, note that an uninformative prior on the accuracy probabilities implies that it is a priori equally probable that any given actor's observations will be informative or <em>negatively</em> informative (i.e., that <i>i</i> observing <i>j</i> sending a tie to <i>k</i> <em>reduces</em> <i>Pr(j-&gt;k)</i>).  This is a highly unrealistic assumption, and it will tend to produce posteriors which are bimodal (one mode being related to the &ldquo;informative&rdquo; solution, the other to the &ldquo;negatively informative&rdquo; solution).  Currently, the default error parameter prior is Beta(1,11), which is both diffuse and which renders negatively informative observers extremely improbable (i.e., on the order of 1e-6).  Another plausible but still fairly diffuse prior would be Beta(3,5), which reduces the prior probability of an actor's being negatively informative to 0.16, and the prior probability of any given actor's being more than 50% likely to make a particular error (on average) to around 0.22.  (This prior also puts substantial mass near the 0.5 point, which would seem consonant with the BKS studies.)  For network priors, a reasonable starting point can often be derived by considering the expected mean degree of the criterion graph: if <i>d</i> represents the user's prior expectation for the mean degree, then <i>d/(N-1)</i> is a natural starting point for the cell values of <code>nprior</code>.  Butts (2003) discusses a number of issues related to choice of priors for the <code>bbnam</code> model, and users should consult this reference if matters are unclear before defaulting to the uninformative solution.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class bbnam, containing the posterior draws.  The components of the output are as follows:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>anames</code></td>
+<td>
+
+<p>A vector of actor names.
+</p>
+</td></tr>
+<tr valign="top"><td><code>draws</code></td>
+<td>
+
+<p>An integer containing the number of draws.
+</p>
+</td></tr>
+<tr valign="top"><td><code>em</code></td>
+<td>
+
+<p>A matrix containing the posterior draws for probability of producing false negatives, by actor.
+</p>
+</td></tr>
+<tr valign="top"><td><code>ep</code></td>
+<td>
+
+<p>A matrix containing the posterior draws for probability of producing false positives, by actor.
+</p>
+</td></tr>
+<tr valign="top"><td><code>nactors</code></td>
+<td>
+
+<p>An integer containing the number of actors.
+</p>
+</td></tr>
+<tr valign="top"><td><code>net</code></td>
+<td>
+
+<p>An array containing the posterior draws for the criterion network.
+</p>
+</td></tr>
+<tr valign="top"><td><code>reps</code></td>
+<td>
+
+<p>An integer indicating the number of replicate chains used by the Gibbs sampler.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Note</h3>
+
+<p> As indicated, the posterior draws are conditional on the observed data, and hence on the data collection mechanism if the collection design is non-ignorable.  Complete data (e.g., a CSS) and random tie samples are examples of ignorable designs; see Gelman et al. for more information concerning ignorability.</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Carter T. Butts <a href="mailto:buttsc@uci.edu">buttsc@uci.edu</a> </p>
+
+
+<h3>References</h3>
+
+ 
+<p>Butts, C. T.  (2003).  &ldquo;Network Inference, Error, and Informant (In)Accuracy: A Bayesian Approach.&rdquo;  <em>Social Networks</em>, 25(2), 103-140.
+</p>
+<p>Gelman, A.; Carlin, J.B.; Stern, H.S.; and Rubin, D.B.  (1995).  <em>Bayesian Data Analysis.</em>  London: Chapman and Hall.
+</p>
+<p>Gelman, A., and Rubin, D.B.  (1992).  &ldquo;Inference from Iterative Simulation Using Multiple Sequences.&rdquo;  <em>Statistical Science,</em> 7, 457-511.
+</p>
+<p>Krackhardt, D.  (1987).  &ldquo;Cognitive Social Structures.&rdquo; <em>Social Networks,</em> 9, 109-134.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../sna/help/npostpred.html">npostpred</a></code>, <code><a href="../../sna/help/event2dichot.html">event2dichot</a></code>, <code><a href="../../sna/help/bbnam.bf.html">bbnam.bf</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+#Create some random data
+g&lt;-rgraph(5)
+g.p&lt;-0.8*g+0.2*(1-g)
+dat&lt;-rgraph(5,5,tprob=g.p)
+
+#Define a network prior
+pnet&lt;-matrix(ncol=5,nrow=5)
+pnet[,]&lt;-0.5
+#Define em and ep priors
+pem&lt;-matrix(nrow=5,ncol=2)
+pem[,1]&lt;-3
+pem[,2]&lt;-5
+pep&lt;-matrix(nrow=5,ncol=2)
+pep[,1]&lt;-3
+pep[,2]&lt;-5
+
+#Draw from the posterior
+b&lt;-bbnam(dat,model="actor",nprior=pnet,emprior=pem,epprior=pep,
+    burntime=100,draws=100)
+#Print a summary of the posterior draws
+summary(b)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sna</em> version 2.8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Edit individual rows in the underlying database table</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for rows_insert.tbl_lazy {dbplyr}"><tr><td>rows_insert.tbl_lazy {dbplyr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Edit individual rows in the underlying database table</h2>
+
+<h3>Description</h3>
+
+<p>These are methods for the dplyr <code><a href="../../dplyr/help/rows.html">dplyr::rows_insert()</a></code>, <code><a href="../../dplyr/help/rows.html">dplyr::rows_append()</a></code>,
+<code><a href="../../dplyr/help/rows.html">dplyr::rows_update()</a></code>, <code><a href="../../dplyr/help/rows.html">dplyr::rows_patch()</a></code>, <code><a href="../../dplyr/help/rows.html">dplyr::rows_upsert()</a></code>, and <code><a href="../../dplyr/help/rows.html">dplyr::rows_delete()</a></code>
+generics.
+</p>
+<p>When <code>in_place = TRUE</code> these verbs do not generate <code>SELECT</code> queries, but
+instead directly modify the underlying data using <code>INSERT</code>, <code>UPDATE</code>, or
+<code>DELETE</code> operators. This will require that you have write access to
+the database: the connection needs permission to insert, modify or delete
+rows, but not to alter the structure of the table.
+</p>
+<p>The default, <code>in_place = FALSE</code>, generates equivalent lazy tables (using
+<code>SELECT</code> queries) that allow previewing the result without actually
+modifying the underlying table on the database.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'tbl_lazy'
+rows_insert(
+  x,
+  y,
+  by = NULL,
+  ...,
+  conflict = c("error", "ignore"),
+  copy = FALSE,
+  in_place = FALSE,
+  returning = NULL,
+  method = NULL
+)
+
+## S3 method for class 'tbl_lazy'
+rows_append(x, y, ..., copy = FALSE, in_place = FALSE, returning = NULL)
+
+## S3 method for class 'tbl_lazy'
+rows_update(
+  x,
+  y,
+  by = NULL,
+  ...,
+  unmatched = c("error", "ignore"),
+  copy = FALSE,
+  in_place = FALSE,
+  returning = NULL
+)
+
+## S3 method for class 'tbl_lazy'
+rows_patch(
+  x,
+  y,
+  by = NULL,
+  ...,
+  unmatched = c("error", "ignore"),
+  copy = FALSE,
+  in_place = FALSE,
+  returning = NULL
+)
+
+## S3 method for class 'tbl_lazy'
+rows_upsert(
+  x,
+  y,
+  by = NULL,
+  ...,
+  copy = FALSE,
+  in_place = FALSE,
+  returning = NULL,
+  method = NULL
+)
+
+## S3 method for class 'tbl_lazy'
+rows_delete(
+  x,
+  y,
+  by = NULL,
+  ...,
+  unmatched = c("error", "ignore"),
+  copy = FALSE,
+  in_place = FALSE,
+  returning = NULL
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A lazy table.
+For <code>in_place = TRUE</code>, this must be a table instantiated with <code><a href="../../dplyr/help/tbl.html">dplyr::tbl()</a></code> or
+<code><a href="../../dplyr/help/compute.html">dplyr::compute()</a></code>, not to a lazy query. The <code><a href="../../dbplyr/help/remote_name.html">remote_name()</a></code> function is used to
+determine the name of the table to be updated.</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>A lazy table, data frame, or data frame extensions (e.g. a tibble).</p>
+</td></tr>
+<tr valign="top"><td><code>by</code></td>
+<td>
+<p>An unnamed character vector giving the key columns. The key columns
+must exist in both <code>x</code> and <code>y</code>. Keys typically uniquely identify each row,
+but this is only enforced for the key values of <code>y</code> when <code>rows_update()</code>,
+<code>rows_patch()</code>, or <code>rows_upsert()</code> are used.
+</p>
+<p>By default, we use the first column in <code>y</code>, since the first column is
+a reasonable place to put an identifier variable.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Other parameters passed onto methods.</p>
+</td></tr>
+<tr valign="top"><td><code>conflict</code></td>
+<td>
+<p>For <code>rows_insert()</code>, how should keys in <code>y</code> that conflict
+with keys in <code>x</code> be handled? A conflict arises if there is a key in <code>y</code>
+that already exists in <code>x</code>.
+</p>
+<p>One of:
+</p>
+
+<ul>
+<li> <p><code>"error"</code>, the default, is not supported for database tables. To get the
+same behaviour add a unique index on the <code>by</code> columns and use
+<code>rows_append()</code>.
+</p>
+</li>
+<li> <p><code>"ignore"</code> will ignore rows in <code>y</code> with keys that conflict with keys in
+<code>x</code>.
+</p>
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>copy</code></td>
+<td>
+<p>If <code>x</code> and <code>y</code> are not from the same data source,
+and <code>copy</code> is <code>TRUE</code>, then <code>y</code> will be copied into the
+same src as <code>x</code>.  This allows you to join tables across srcs, but
+it is a potentially expensive operation so you must opt into it.</p>
+</td></tr>
+<tr valign="top"><td><code>in_place</code></td>
+<td>
+<p>Should <code>x</code> be modified in place? If <code>FALSE</code> will
+generate a <code>SELECT</code> query that returns the modified table; if <code>TRUE</code>
+will modify the underlying table using a DML operation (<code>INSERT</code>, <code>UPDATE</code>,
+<code>DELETE</code> or similar).</p>
+</td></tr>
+<tr valign="top"><td><code>returning</code></td>
+<td>
+<p>Columns to return. See <code><a href="../../dbplyr/help/get_returned_rows.html">get_returned_rows()</a></code> for details.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>A string specifying the method to use. This is only relevant for
+<code>in_place = TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>unmatched</code></td>
+<td>
+<p>For <code>rows_update()</code>, <code>rows_patch()</code>, and <code>rows_delete()</code>,
+how should keys in <code>y</code> that are unmatched by the keys in <code>x</code> be handled?
+</p>
+<p>One of:
+</p>
+
+<ul>
+<li> <p><code>"error"</code>, the default, is not supported for database tables. Add a
+foreign key constraint on the <code>by</code> columns of <code>y</code> to let the database
+check this behaviour for you.
+</p>
+</li>
+<li> <p><code>"ignore"</code> will ignore rows in <code>y</code> with keys that are unmatched by the
+keys in <code>x</code>.
+</p>
+</li></ul>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A new <code>tbl_lazy</code> of the modified data.
+With <code>in_place = FALSE</code>, the result is a lazy query that prints visibly,
+because the purpose of this operation is to preview the results.
+With <code>in_place = TRUE</code>, <code>x</code> is returned invisibly,
+because the purpose of this operation is the side effect of modifying rows
+in the table behind <code>x</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(dplyr)
+
+con &lt;- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+DBI::dbExecute(con, "CREATE TABLE Ponies (
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   name TEXT,
+   cutie_mark TEXT
+)")
+
+ponies &lt;- tbl(con, "Ponies")
+
+applejack &lt;- copy_inline(con, data.frame(
+  name = "Apple Jack",
+  cutie_mark = "three apples"
+))
+
+# The default behavior is to generate a SELECT query
+rows_insert(ponies, applejack, conflict = "ignore")
+# And the original table is left unchanged:
+ponies
+
+# You can also choose to modify the table with in_place = TRUE:
+rows_insert(ponies, applejack, conflict = "ignore", in_place = TRUE)
+# In this case `rows_insert()` returns nothing and the underlying
+# data is modified
+ponies
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>dbplyr</em> version 2.5.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

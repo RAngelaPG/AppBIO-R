@@ -1,0 +1,275 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Fit a Linear Network Autocorrelation Model</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for lnam {sna}"><tr><td>lnam {sna}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Fit a Linear Network Autocorrelation Model </h2>
+
+<h3>Description</h3>
+
+<p><code>lnam</code> is used to fit linear network autocorrelation models.  These include standard OLS as a special case, although <code><a href="../../stats/html/lm.html">lm</a></code> is to be preferred for such analyses.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+lnam(y, x = NULL, W1 = NULL, W2 = NULL, theta.seed = NULL, 
+    null.model = c("meanstd", "mean", "std", "none"), method = "BFGS", 
+    control = list(), tol=1e-10)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p> a vector of responses. </p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p> a vector or matrix of covariates; if the latter, each column should contain a single covariate. </p>
+</td></tr>
+<tr valign="top"><td><code>W1</code></td>
+<td>
+<p> one or more (possibly valued) graphs on the elements of <code>y</code>. </p>
+</td></tr>
+<tr valign="top"><td><code>W2</code></td>
+<td>
+<p> one or more (possibly valued) graphs on the elements of <code>y</code>. </p>
+</td></tr>
+<tr valign="top"><td><code>theta.seed</code></td>
+<td>
+<p> an optional seed value for the parameter vector estimation process. </p>
+</td></tr>
+<tr valign="top"><td><code>null.model</code></td>
+<td>
+<p> the null model to be fit; must be one of <code>"meanstd"</code>, <code>"mean"</code>, <code>"std"</code>, or <code>"none"</code>. </p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p> method to be used with <code><a href="../../stats/html/optim.html">optim</a></code>. </p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+<p> optional control parameters for <code><a href="../../stats/html/optim.html">optim</a></code>. </p>
+</td></tr>
+<tr valign="top"><td><code>tol</code></td>
+<td>
+<p> convergence tolerance for the MLE (expressed as change in deviance).</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>lnam</code> fits the linear network autocorrelation model given by
+</p>
+<p style="text-align: center;"><i>
+  y = W1 %*% y + X %*% beta + e, e = W2 %*% e + nu</i></p>
+
+<p>where <i>y</i> is a vector of responses, <i>X</i> is a covariate matrix, <i>nu ~ Norm(0,sigma^2)</i>,  
+</p>
+<p style="text-align: center;"><i>
+  W1 = sum( rho1_i W1_i, i=1..p), W2 = sum( rho2_i W2_i, i=1..q),</i></p>
+
+<p>and <i>W1_i</i>, <i>W2_i</i> are (possibly valued) adjacency matrices.
+</p>
+<p>Intuitively, <i>rho1</i> is a vector of &ldquo;AR&rdquo;-like parameters (parameterizing the autoregression of each <i>y</i> value on its neighbors in the graphs of <i>W1</i>) while <i>rho2</i> is a vector of &ldquo;MA&rdquo;-like parameters (parameterizing the autocorrelation of each <em>disturbance</em> in <i>y</i> on its neighbors in the graphs of <i>W2</i>).  In general, the two models are distinct, and either or both effects may be selected by including the appropriate matrix arguments.
+</p>
+<p>Model parameters are estimated by maximum likelihood, and asymptotic standard errors are provided as well; all of the above (and more) can be obtained by means of the appropriate <code>print</code> and <code>summary</code> methods.  A plotting method is also provided, which supplies fit basic diagnostics for the estimated model.  For purposes of comparison, fits may be evaluated against one of four null models:
+</p>
+
+<ol>
+<li> <p><code>meanstd</code>: mean and standard deviation estimated (default).
+</p>
+</li>
+<li> <p><code>mean</code>: mean estimated; standard deviation assumed equal to 1.
+</p>
+</li>
+<li> <p><code>std</code>: standard deviation estimated; mean assumed equal to 0.
+</p>
+</li>
+<li> <p><code>none</code>: no parameters estimated; data assumed to be drawn from a standard normal density.
+</p>
+</li></ol>
+
+<p>The default setting should be appropriate for the vast majority of cases, although the others may have use when fitting &ldquo;pure&rdquo; autoregressive models (e.g., without covariates).  Although a major use of the <code>lnam</code> is in controlling for network autocorrelation within a regression context, the model is subtle and has a variety of uses.  (See the references below for suggestions.)
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>"lnam"</code> containing the following elements:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>the response vector used.</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>if supplied, the coefficient matrix.</p>
+</td></tr>
+<tr valign="top"><td><code>W1</code></td>
+<td>
+<p>if supplied, the W1 array.</p>
+</td></tr>
+<tr valign="top"><td><code>W2</code></td>
+<td>
+<p>if supplied, the W2 array.</p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>a code indicating the model terms fit.</p>
+</td></tr>
+<tr valign="top"><td><code>infomat</code></td>
+<td>
+<p>the estimated Fisher information matrix for the fitted model.</p>
+</td></tr>
+<tr valign="top"><td><code>acvm</code></td>
+<td>
+<p>the estimated asymptotic covariance matrix for the model parameters.</p>
+</td></tr>
+<tr valign="top"><td><code>null.model</code></td>
+<td>
+<p>a string indicating the null model fit.</p>
+</td></tr>
+<tr valign="top"><td><code>lnlik.null</code></td>
+<td>
+<p>the log-likelihood of y under the null model.</p>
+</td></tr>
+<tr valign="top"><td><code>df.null.resid</code></td>
+<td>
+<p>the residual degrees of freedom under the null model.</p>
+</td></tr>
+<tr valign="top"><td><code>df.null</code></td>
+<td>
+<p>the model degrees of freedom under the null model.</p>
+</td></tr>
+<tr valign="top"><td><code>null.param</code></td>
+<td>
+<p>parameter estimates for the null model.</p>
+</td></tr>
+<tr valign="top"><td><code>lnlik.model</code></td>
+<td>
+<p>the log-likelihood of y under the fitted model.</p>
+</td></tr>
+<tr valign="top"><td><code>df.model</code></td>
+<td>
+<p>the model degrees of freedom.</p>
+</td></tr>
+<tr valign="top"><td><code>df.residual</code></td>
+<td>
+<p>the residual degrees of freedom.</p>
+</td></tr>
+<tr valign="top"><td><code>df.total</code></td>
+<td>
+<p>the total degrees of freedom.</p>
+</td></tr>
+<tr valign="top"><td><code>rho1</code></td>
+<td>
+<p>if applicable, the MLE for rho1.</p>
+</td></tr>
+<tr valign="top"><td><code>rho1.se</code></td>
+<td>
+<p>if applicable, the asymptotic standard error for rho1.</p>
+</td></tr>
+<tr valign="top"><td><code>rho2</code></td>
+<td>
+<p>if applicable, the MLE for rho2.</p>
+</td></tr>
+<tr valign="top"><td><code>rho2.se</code></td>
+<td>
+<p>if applicable, the asymptotic standard error for rho2.</p>
+</td></tr>
+<tr valign="top"><td><code>sigma</code></td>
+<td>
+<p>the MLE for sigma.</p>
+</td></tr>
+<tr valign="top"><td><code>sigma.se</code></td>
+<td>
+<p>the standard error for sigma</p>
+</td></tr>
+<tr valign="top"><td><code>beta</code></td>
+<td>
+<p>if applicable, the MLE for beta.</p>
+</td></tr>
+<tr valign="top"><td><code>beta.se</code></td>
+<td>
+<p>if applicable, the asymptotic standard errors for beta.</p>
+</td></tr>
+<tr valign="top"><td><code>fitted.values</code></td>
+<td>
+<p>the fitted mean values.</p>
+</td></tr>
+<tr valign="top"><td><code>residuals</code></td>
+<td>
+<p>the residuals (response minus fitted); note that these correspond to <i>e-hat</i> in the model equation, not <i>nu-hat</i>.</p>
+</td></tr>
+<tr valign="top"><td><code>disturbances</code></td>
+<td>
+<p>the estimated disturbances, i.e., <i>nu-hat</i>.</p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>the matched call.</p>
+</td></tr>
+</table>
+
+
+<h3>Note</h3>
+
+<p> Actual optimization is performed by calls to <code><a href="../../stats/html/optim.html">optim</a></code>.  Information on algorithms and control parameters can be found via the appropriate man pages. </p>
+
+
+<h3>Author(s)</h3>
+
+<p> Carter T. Butts <a href="mailto:buttsc@uci.edu">buttsc@uci.edu</a> </p>
+
+
+<h3>References</h3>
+
+ 
+<p>Leenders, T.Th.A.J.  (2002)  &ldquo;Modeling Social Influence Through Network Autocorrelation: Constructing the Weight Matrix&rdquo;  <em>Social Networks</em>, 24(1), 21-47. 
+</p>
+<p>Anselin, L.  (1988)  <em>Spatial Econometrics: Methods and Models.</em>  Norwell, MA: Kluwer.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../stats/html/lm.html">lm</a></code>, <code><a href="../../stats/html/optim.html">optim</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+#Construct a simple, random example:
+w1&lt;-rgraph(100)               #Draw the AR matrix
+w2&lt;-rgraph(100)               #Draw the MA matrix
+x&lt;-matrix(rnorm(100*5),100,5) #Draw some covariates
+r1&lt;-0.2                       #Set the model parameters
+r2&lt;-0.1
+sigma&lt;-0.1
+beta&lt;-rnorm(5)
+#Assemble y from its components:
+nu&lt;-rnorm(100,0,sigma)          #Draw the disturbances
+e&lt;-qr.solve(diag(100)-r2*w2,nu) #Draw the effective errors
+y&lt;-qr.solve(diag(100)-r1*w1,x%*%beta+e)  #Compute y
+
+#Now, fit the autocorrelation model:
+fit&lt;-lnam(y,x,w1,w2)
+summary(fit)
+plot(fit)
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sna</em> version 2.8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

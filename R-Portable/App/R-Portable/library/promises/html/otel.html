@@ -1,0 +1,487 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: OpenTelemetry integration</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for with_otel_span {promises}"><tr><td>with_otel_span {promises}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>OpenTelemetry integration</h2>
+
+<h3>Description</h3>
+
+<p><span class="pkg">otel</span> provides tools for integrating with OpenTelemetry, a framework for
+observability and tracing in distributed systems.
+</p>
+<p>These methods are intended to enhance the framework to be used with the
+<span class="pkg">promises</span> package, not as a generic replacement.
+</p>
+<p>Developer note - Barret 2025/09: This otel span handoff promise domain topic is
+complex and has been discussed over many hours. Many advanced Shiny/R
+developers are not even aware of promise domains (very reasonable!),
+therefore this topic requires more in-depth documentation and examples.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+with_otel_span(name, expr, ..., tracer, attributes = NULL)
+
+with_otel_promise_domain(expr)
+
+local_otel_promise_domain(envir = parent.frame())
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>name</code></td>
+<td>
+<p>Character string. The name of the otel span.</p>
+</td></tr>
+<tr valign="top"><td><code>expr</code></td>
+<td>
+<p>An expression to evaluate within the otel span context.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Additional arguments passed to <code><a href="../../otel/help/start_span.html">otel::start_span()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>tracer</code></td>
+<td>
+<p>(Required) An <code>{otel}</code> tracer. It is required to provide your
+own tracer from your own package. See <code><a href="../../otel/help/get_tracer.html">otel::get_tracer()</a></code> for more
+details.</p>
+</td></tr>
+<tr valign="top"><td><code>attributes</code></td>
+<td>
+<p>Attributes passed through <code><a href="../../otel/help/as_attributes.html">otel::as_attributes()</a></code> (when
+not <code>NULL</code>)</p>
+</td></tr>
+<tr valign="top"><td><code>envir</code></td>
+<td>
+<p>The &quot;local&quot; environment in which to add the promise domain. When
+the environment is exited, the promise domain is removed.</p>
+</td></tr>
+</table>
+
+
+<h3>Functions</h3>
+
+
+<ul>
+<li> <p><code>with_otel_span()</code>: Creates an OpenTelemetry span, executes the given expression within it, and
+ends the span.
+</p>
+<p>This method <strong>requires</strong> the use of <code>with_otel_promise_domain()</code>
+to be within the execution stack.
+</p>
+<p>This function is designed to handle both synchronous and asynchronous
+(promise-based) operations. For promises, the span is automatically ended
+when the promise resolves or rejects.
+</p>
+<p>Returns the result of evaluating <code>expr</code>. If <code>expr</code> returns a promise, the
+span will be automatically ended when the promise completes.
+</p>
+<p>This function differs from synchronous otel span operations in that it
+installs a promise domain and properly handles asynchronous operations. In
+addition, the internal span will be ended either when the function exits (for
+synchronous operations) or when a returned promise completes (for
+asynchronous operations).
+</p>
+<p>If OpenTelemetry is not enabled, the expression will be evaluated without any
+tracing context.
+</p>
+</li>
+<li> <p><code>with_otel_promise_domain()</code>: Adds an idempotent handoff Active OpenTelemetry span promise domain.
+</p>
+<p>Package authors are required to use this function to have otel span context
+persist across asynchronous boundaries. This method is only needed once per
+promise domain stack. If you are unsure, feel free to call
+<code>with_otel_promise_domain()</code> as the underlying promise domain will only be
+added if not found within the current promise domain stack. If your package
+<strong>only</strong> works within Shiny apps, Shiny will have already added the domain so
+no need to add it yourself. If your package works outside of Shiny and you
+use <code>{promises}</code> (i.e. <code>{chromote}</code>), then you'll need to use this wrapper
+method.
+</p>
+<p>This method adds a <em>handoff</em> Active OpenTelemetry span promise domain to the
+expression evaluation. This <em>handoff</em> promise domain will only run once on
+reactivation. This is critical if there are many layered
+<code>with_otel_span()</code> calls, such as within Shiny reactivity. For example, if
+we nested many <code>with_otel_span()</code> calls of which each call added a promise
+domain that reactivated each otel span on restore, we'd reactivate <code>k</code> otel
+span objects (<code>O(k)</code>) when we only need to activate the <strong>last</strong> span
+(<code>O(1)</code>).
+</p>
+<p>Returns the result of evaluating <code>expr</code> within the otel span promise domain.
+</p>
+</li>
+<li> <p><code>local_otel_promise_domain()</code>: Local OpenTelemetry span promise domain
+</p>
+<p>Adds an OpenTelemetry span promise domain to the local scope. This is useful
+for <code>{coro}</code> operations where encapsulating the coro operations inside a
+<code style="white-space: pre;">with_*()</code> methods is not allowed.
+</p>
+<p>When not using <code>{coro}</code>, please prefer to use <code>with_otel_span()</code> or
+<code>with_otel_promise_domain()</code>.
+</p>
+</li></ul>
+
+
+<h3>Definitions</h3>
+
+
+<ul>
+<li><p> Promise domain: An environment in which has setup/teardown methods. These
+environments can be composed together to facilitate execution context for
+promises. In normal R execution, this can be achieved with scope / stack.
+But for complex situations, such as the currently open graphics device,
+async operations require promise domains to setup/teardown these contexts
+to function properly. Otherwise a multi-stage promise that adds to the
+graphics device at each stage will only ever print to the most recently
+created graphics device, not the associated graphics device. These promise
+domains are not automatically created, they must be manually added to the
+execution stack, for example <code>with_otel_promise_domain()</code> does this for
+OpenTelemetry spans.
+</p>
+</li>
+<li><p> Promise domain restoration: When switching from one promise chain to
+another, the execution context is torn down and then re-established. This
+re-establishment is called &quot;promise domain restoration&quot;. During this
+process, the promise domains are restored in their previously established
+combination order.
+</p>
+</li>
+<li><p> Promise chain: A set of promise objects to execute over multiple async
+ticks.
+</p>
+</li>
+<li><p> Async tick: the number of times an event loop must run to move computation
+forward. (Similar to a JavaScript event loop tick.)
+</p>
+</li>
+<li> <p><code>then()</code> promise domain capture: When <code>then()</code> is called, it will capture
+the current promise domain. This promise domain is restored (only if
+needed) when evaluating the given <code>onFulfilled</code> and <code>onRejected</code> callbacks.
+This captured promise domain does not go into any downstream promise chain
+objects. The only way the promise domain is captured is exactly when the
+<code>then()</code> method is called.
+</p>
+</li></ul>
+
+<p><code>with_otel_promise_domain()</code> creates a promise domain that restores the
+currently active OpenTelemetry span from when a call to <code>promises::then()</code> is
+executed. Given the special circumstance where only the current otel span is
+needed to continue recording (not a full ancestry tree of otel spans), we can
+capture <em>just</em> the current otel span and reactivate that otel span during promise
+domain restoration.
+</p>
+
+
+<h3>When promise domains are captured</h3>
+
+<p>Asynchronous operation
+</p>
+
+<ul>
+<li><p> Creates <code>async_op</code> otel span
+</p>
+</li>
+<li><p> Automatically ends the otel span (<code>async_op</code>) when the promise (p)
+resolves or rejects
+</p>
+</li></ul>
+
+<p>The code below illustrates an example of when the promise domain are
+created/captured/restored and when otel span objects are
+created/activated/reactivated/ended.
+</p>
+<div class="sourceCode r"><pre># t0.0
+p2 &lt;- with_otel_promise_domain({
+  # t0.1
+  p &lt;- with_otel_span("async_op", {
+    # ... return a promise ...
+    init_async_work() |&gt; # t0.2
+      then( # t0.3
+        some_async_work # t1.0
+      )
+  }) # t0.4, t1.0, t2.0
+  p |&gt;
+    then( # t0.5
+      more_async_work # t3.0
+    )
+}) # t0.6
+
+p_final &lt;-
+  p2 |&gt; then( # t0.7
+    final_work # t4.0
+  )
+</pre></div>
+<p>An in-depth explanation of the execution timeline is below.
+</p>
+
+<ul>
+<li><p> At the first initial tick, <code style="white-space: pre;">t0.*</code>:
+</p>
+
+<ul>
+<li> <p><code>t0.0</code>: The code is wrapped in <code>with_otel_promise_domain()</code>
+</p>
+</li>
+<li> <p><code>t0.1</code>: The <code>async_op</code> otel span is created and activated
+</p>
+</li>
+<li> <p><code>t0.2</code>: Some async work is initiated
+</p>
+</li>
+<li> <p><code>t0.3</code>: <code>then()</code> is called, capturing the active <code>async_op</code> otel span (as it
+is called within <code>with_otel_promise_domain()</code>)
+</p>
+</li>
+<li> <p><code>t0.4</code>: The <code>with_otel_span()</code> call exits, but the <code>async_op</code> otel span is
+not ended as the promise is still pending. The returned promise has a
+<code>finally()</code> step added to it that will end the otel span <code>async_op</code> when <code>p</code>
+is resolved.
+</p>
+</li>
+<li> <p><code>t0.5</code>: Another <code>then()</code> is called, but there is no active otel span to
+capture
+</p>
+</li>
+<li> <p><code>t0.6</code>: The otel span promise domain call exits
+</p>
+</li>
+<li> <p><code>t0.7</code>: Another <code>then()</code> is called. No otel span will be captured as there is
+no active otel span / promise domain
+</p>
+</li></ul>
+
+</li>
+<li><p> At the first followup tick, <code>t1.0</code>:
+</p>
+
+<ul>
+<li><p> The active <code>async_op</code> otel span is reactivated during promise domain
+restoration for the duration of the <code>then</code> callback
+</p>
+</li>
+<li><p> The <code>some_async_work</code> function is called
+</p>
+</li></ul>
+
+</li>
+<li><p> At tick, <code>t2.0</code>:
+</p>
+
+<ul>
+<li> <p><code>some_async_work</code> has resolved
+</p>
+</li>
+<li><p> A hidden <code>finally()</code> step closes the otel span, <code>async_op</code>
+</p>
+</li>
+<li> <p><code>p</code> is now resolved
+</p>
+</li></ul>
+
+</li>
+<li><p> At tick, <code>t3.0</code>:
+</p>
+
+<ul>
+<li><p> There is no active otel span at <code>t0.5</code>, so no otel span is reactivated during
+promise domain restoration
+</p>
+</li>
+<li><p> The <code>more_async_work</code> function is executed
+</p>
+</li></ul>
+
+</li>
+<li><p> At tick, <code>t4.0</code>:
+</p>
+
+<ul>
+<li> <p><code>more_async_work</code> has resolved, therefore <code>p2</code> is now resolved
+</p>
+</li>
+<li><p> There was no otel span promise domain at <code>t0.7</code>, so no attempt is made to
+reactivate any otel span
+</p>
+</li>
+<li><p> The <code>final_work</code> function is executed
+</p>
+</li></ul>
+
+</li>
+<li><p> At tick, <code>t5.0</code>:
+</p>
+
+<ul>
+<li> <p><code>p_final</code> has resolved
+</p>
+</li></ul>
+
+</li></ul>
+
+
+
+<h3>Complexity</h3>
+
+<p>When reactivating the <code>k</code>th step in a promise chain, the currently active
+otel span (during the call to <code>then()</code>) will be reactivated during promise domain
+restoration (<code>O(1)</code>). To restore a chain of promises, the active otel span will
+be restored at each step (<code>O(n)</code>) due to the <strong><code>n</code></strong> calls to wrapping each
+<code>onFulfilled</code> and <code>onRejected</code> callbacks inside <code>then()</code>.
+</p>
+<p>If we did NOT have a handoff promise domain for otel span restoration, a regular
+promise domain approach would be needed at each step to restore the active
+otel span. Each step would call <code>with_active_span()</code> <code>k</code> times (<code>O(k)</code>, where as
+handoff domain computes in <code>O(1)</code>). Taking a step back, to restore each otel span
+at for every step in a promise chain would then take <code>O(n^2)</code> time, not
+<code>O(n)</code>. The standard, naive promise domain approach does not scale for
+multiple similar promise domain restorations.
+</p>
+
+
+<h3>Execution model for <code>with_otel_promise_domain()</code></h3>
+
+
+<ol>
+<li> <p><code>with_otel_promise_domain(expr)</code> is called.
+</p>
+
+<ul>
+<li><p> The following steps all occur within <code>expr</code>.
+</p>
+</li></ul>
+
+</li>
+<li><p> Create an otel span object using <code>otel::start_span()</code>.
+</p>
+
+<ul>
+<li><p> We need the otel span to be active during the a followup async operation.
+Therefore, <code>otel::start_local_active_span()</code> is not appropriate as the
+otel span would be ended when the function exits, not when the promise chain
+resolves.
+</p>
+</li></ul>
+
+</li>
+<li><p> Be sure your otel span is activated before calling <code>promises::then()</code>.
+</p>
+
+<ul>
+<li><p> Activate it using <code>with_otel_span(name, expr)</code> (which also
+creates/ends the otel span) or <code>otel::with_active_span(span, expr)</code>.
+</p>
+</li></ul>
+
+</li>
+<li><p> Call <code>promises::then()</code>
+</p>
+</li></ol>
+
+
+<ul>
+<li><p> When <code>promises::then()</code> is called, the two methods (<code>onFulfilled</code> and
+<code>onRejected</code>) capture the currently active spans. (Performed by the
+initial <code>with_otel_promise_domain()</code>)
+</p>
+</li></ul>
+
+
+<ol>
+<li><p> During reactivation of the promise chain step, the previously captured
+otel span is reactivated via <code>with_active_span()</code>. (Performed by the initial
+<code>with_otel_promise_domain()</code>)
+</p>
+</li></ol>
+
+
+
+<h3>OpenTelemetry span compatibility</h3>
+
+<p>For otel span objects to exist over may async ticks, the otel span must be created
+using <code>otel::start_span()</code> and later ended using <code>otel::end_span()</code>. Ending
+the otel span must occur <strong>after</strong> any promise chain work has completed.
+</p>
+<p>If we were to instead use <code>otel::start_local_active_span()</code>, the otel span would
+be ended when the function exits, not when the promise chain completes. Even
+though the local otel span is created, activated, and eventually ended, the otel span
+will not exist during reactivation of the otel span promise domain.
+</p>
+<p><code>with_otel_span()</code> is a convenience method that creates, activates, and
+ends the otel span only after the returned promise (if any) resolves. It also
+properly handles both synchronous (ending the otel span within <code>on.exit()</code>) and
+asynchronous operations (ending the otel span within <code>promises::finally()</code>).
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../otel/help/start_span.html">otel::start_span()</a></code>, <code><a href="../../otel/help/with_active_span.html">otel::with_active_span()</a></code>,
+<code><a href="../../otel/help/end_span.html">otel::end_span()</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+# Common usage:
+with_otel_promise_domain({
+  # ... deep inside some code execution ...
+
+  # Many calls to `with_otel_span()` within `with_otel_promise_domain()`
+  with_otel_span("my_operation", {
+    # ... do some work ...
+  })
+})
+
+## End(Not run)
+## Not run: 
+with_otel_promise_domain({
+  # ... deep inside some code execution ...
+
+  # Synchronous operation
+  # * Creates `my_operation` span
+  result &lt;- with_otel_span("my_operation", {
+    # ... do some work ...
+    print(otel::get_active_span()$name) # "my_operation"
+
+    # Nest (many) more spans
+    prom_nested &lt;- with_otel_span("my_nested_operation", {
+      # ... do some more work ...
+      promise_resolve(42) |&gt;
+        then(\(value) {
+          print(otel::get_active_span()$name) # "my_nested_operation"
+          print(value) # 42
+        })
+    })
+
+    # Since `then()` is called during the active `my_operation` span,
+    # the `my_operation` span will be reactivated in the `then()` callback.
+    prom_nested |&gt; then(\(value) {
+      print(otel::get_active_span()$name) # "my_operation"
+      value
+    })
+  })
+
+  # Since `then()` is called where there is no active span,
+  # there is no _active_ span in the `then()` callback.
+  result |&gt; then(\(value) {
+    stopifnot(inherits(otel::get_active_span(), "otel_span_noop"))
+    print(value) # 42
+  })
+})
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>promises</em> version 1.5.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

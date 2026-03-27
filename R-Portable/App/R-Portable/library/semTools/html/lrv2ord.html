@@ -1,0 +1,163 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Calculate Population Moments for Ordinal Data Treated as...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for lrv2ord {semTools}"><tr><td>lrv2ord {semTools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Calculate Population Moments for Ordinal Data Treated as Numeric</h2>
+
+<h3>Description</h3>
+
+<p>This function calculates ordinal-scale moments implied by LRV-scale moments
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+lrv2ord(Sigma, Mu, thresholds, cWts)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>Sigma</code></td>
+<td>
+<p>Population covariance <code><a href="../../base/html/matrix.html">matrix()</a></code>, with variable names
+saved in the <code><a href="../../base/html/dimnames.html">dimnames()</a></code> attribute.</p>
+</td></tr>
+<tr valign="top"><td><code>Mu</code></td>
+<td>
+<p>Optional <code>numeric</code> vector of population means. If missing,
+all means will be set to zero.</p>
+</td></tr>
+<tr valign="top"><td><code>thresholds</code></td>
+<td>
+<p>Either a single <code>numeric</code> vector of population
+thresholds used to discretize each normally distributed variable, or a
+named <code>list</code> of each discretized variable's vector of thresholds.
+The discretized variables may be a subset of all variables in <code>Sigma</code>
+if the remaining variables are intended to be observed rather than latent
+normally distributed variables.</p>
+</td></tr>
+<tr valign="top"><td><code>cWts</code></td>
+<td>
+<p>Optional (default when missing is to use 0 for the lowest
+category, followed by successive integers for each higher category).
+Either a single <code>numeric</code> vector of category weights (if they are
+identical across all variables) or a named <code>list</code> of each
+discretized variable's vector of category weights.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Binary and ordinal data are frequently accommodated in SEM by incorporating
+a threshold model that links each observed categorical response variable to
+a corresponding latent response variable that is typically assumed to be
+normally distributed (Kamata &amp; Bauer, 2008; Wirth &amp; Edwards, 2007).
+This function can be useful for real-data analysis or for designing
+Monte Carlo simulations, as described by Jorgensen and Johnson (2022).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>list</code> including the LRV-scale population moments (means,
+covariance matrix, correlation matrix, and thresholds), the category
+weights, a <code>data.frame</code> of implied univariate moments (means,
+<em>SD</em>s, skewness, and excess kurtosis (i.e., in excess of 3, which is
+the kurtosis of the normal distribution) for discretized data treated as
+<code>numeric</code>, and the implied covariance and correlation matrix of
+discretized data treated as <code>numeric</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Terrence D. Jorgensen (University of Amsterdam; <a href="mailto:TJorgensen314@gmail.com">TJorgensen314@gmail.com</a>)
+</p>
+<p>Andrew R. Johnson (Curtin University; <a href="mailto:andrew.johnson@curtin.edu.au">andrew.johnson@curtin.edu.au</a>)
+</p>
+
+
+<h3>References</h3>
+
+<p>Jorgensen, T. D., &amp; Johnson, A. R. (2022). How to derive expected values of
+structural equation model parameters when treating discrete data as
+continuous. <em>Structural Equation Modeling, 29</em>(4), 639&ndash;650.
+doi: <a href="https://doi.org/10.1080/10705511.2021.1988609">10.1080/10705511.2021.1988609</a>
+</p>
+<p>Kamata, A., &amp; Bauer, D. J. (2008). A note on the relation between factor
+analytic and item response theory models.
+<em>Structural Equation Modeling, 15</em>(1), 136&ndash;153.
+doi: <a href="https://doi.org/10.1080/10705510701758406">10.1080/10705510701758406</a>
+</p>
+<p>Wirth, R. J., &amp; Edwards, M. C. (2007). Item factor analysis: Current
+approaches and future directions. <em>Psychological Methods, 12</em>(1),
+58&ndash;79. doi: <a href="https://doi.org/10.1037/1082-989X.12.1.58">10.1037/1082-989X.12.1.58</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## SCENARIO 1: DIRECTLY SPECIFY POPULATION PARAMETERS
+
+## specify population model in LISREL matrices
+Nu &lt;- rep(0, 4)
+Alpha &lt;- c(1, -0.5)
+Lambda &lt;- matrix(c(1, 1, 0, 0, 0, 0, 1, 1), nrow = 4, ncol = 2,
+                 dimnames = list(paste0("y", 1:4), paste0("eta", 1:2)))
+Psi &lt;- diag(c(1, .75))
+Theta &lt;- diag(4)
+Beta &lt;- matrix(c(0, .5, 0, 0), nrow = 2, ncol = 2)
+
+## calculate model-implied population means and covariance matrix
+## of latent response variables (LRVs)
+IB &lt;- solve(diag(2) - Beta) # to save time and space
+Mu_LRV &lt;- Nu + Lambda %*% IB %*% Alpha
+Sigma_LRV &lt;- Lambda %*% IB %*% Psi %*% t(IB) %*% t(Lambda) + Theta
+
+## Specify (unstandardized) thresholds to discretize normally distributed data
+## generated from Mu_LRV and Sigma_LRV, based on marginal probabilities
+PiList &lt;- list(y1 = c(.25, .5, .25),
+               y2 = c(.17, .33, .33, .17),
+               y3 = c(.1, .2, .4, .2, .1),
+               ## make final variable highly asymmetric
+               y4 = c(.33, .25, .17, .12, .08, .05))
+sapply(PiList, sum) # all sum to 100%
+CumProbs &lt;- sapply(PiList, cumsum)
+## unstandardized thresholds
+TauList &lt;- mapply(qnorm, p = lapply(CumProbs, function(x) x[-length(x)]),
+                  m = Mu_LRV, sd = sqrt(diag(Sigma_LRV)))
+for (i in 1:4) names(TauList[[i]]) &lt;- paste0(names(TauList)[i], "|t",
+                                             1:length(TauList[[i]]))
+
+## assign numeric weights to each category (optional, see default)
+NumCodes &lt;- list(y1 = c(-0.5, 0, 0.5), y2 = 0:3, y3 = 1:5, y4 = 1:6)
+
+
+## Calculate Population Moments for Numerically Coded Ordinal Variables
+lrv2ord(Sigma = Sigma_LRV, Mu = Mu_LRV, thresholds = TauList, cWts = NumCodes)
+
+
+## SCENARIO 2: USE ESTIMATED PARAMETERS AS POPULATION
+
+data(datCat) # already stored as c("ordered","factor")
+fit &lt;- cfa(' f =~ 1*u1 + 1*u2 + 1*u3 + 1*u4 ', data = datCat)
+lrv2ord(Sigma = fit, thresholds = fit) # use same fit for both
+## or use estimated thresholds with specified parameters, but note that
+## lrv2ord() will only extract standardized thresholds
+dimnames(Sigma_LRV) &lt;- list(paste0("u", 1:4), paste0("u", 1:4))
+lrv2ord(Sigma = cov2cor(Sigma_LRV), thresholds = fit)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>semTools</em> version 0.5-8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

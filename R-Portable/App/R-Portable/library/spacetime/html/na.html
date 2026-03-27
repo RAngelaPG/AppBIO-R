@@ -1,0 +1,119 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: replace NA attribute values; disaggregation time series</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for na.locf {spacetime}"><tr><td>na.locf {spacetime}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> replace NA attribute values; disaggregation time series </h2>
+
+<h3>Description</h3>
+
+<p> replace NA attribute values in time series, using last or
+next observation, or using (temporal) interpolation, and disaggregation </p>
+
+
+<h3>Usage</h3>
+
+<pre> 
+## S3 method for class 'STFDF'
+na.locf(object, na.rm = FALSE, ...)
+## S3 method for class 'STFDF'
+na.approx(object, x = time(object), xout, ..., na.rm = TRUE)
+## S3 method for class 'STFDF'
+na.spline(object, x = time(object), xout, ..., na.rm = TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p> object of class <code>STFDF</code>, with potentially NA values </p>
+</td></tr>
+<tr valign="top"><td><code>na.rm</code></td>
+<td>
+<p> logical; need non-replaced NA values be removed? </p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p> times at which observations are taken; should not be modified </p>
+</td></tr>
+<tr valign="top"><td><code>xout</code></td>
+<td>
+<p> if present, new times at which the time series should be
+approximated (disaggregated) </p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p> passed on to underlying zoo functions; see details </p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>details are found in
+<a href="../../zoo/help/na.locf.html">na.locf</a>,
+<a href="../../zoo/help/na.approx.html">na.approx</a>,
+<a href="../../zoo/help/na.spline.html">na.spline</a>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>object of class <code>STFDF</code>, with <code>NA</code> values replaced.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Edzer Pebesma</p>
+
+
+<h3>References</h3>
+
+<p> https://www.jstatsoft.org/v51/i07/ </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# toy example:
+library(sp)
+pts = SpatialPoints(cbind(c(0,1),c(0,1)))
+Sys.setenv(TZ="GMT")
+tm = seq(as.POSIXct("2012-11-25"), as.POSIXct("2012-11-30"), "1 day")
+df = data.frame(a = c(NA,NA,2,3,NA,NA,NA,2,NA,NA,4,NA), b = c(NA,2,3,4,5,1,2,NA,NA,NA,NA,3))
+x = STFDF(pts, tm, df)
+as(x, "xts")
+as(na.locf(x), "xts")
+as(na.locf(x, fromLast = TRUE), "xts")
+as(na.locf(na.locf(x), fromLast = TRUE), "xts")
+# drops first record:
+as(na.approx(x[,,1]), "xts")
+# keep it:
+cbind(as(na.approx(x[,,1], na.rm=FALSE), "xts"),
+as(na.approx(x[,,2]), "xts"))
+cbind(as(na.spline(x[,,1]), "xts"),
+as(na.spline(x[,,2]), "xts"))
+#disaggregate:
+xout = seq(start(x), end(x), "6 hours")
+as(na.approx(x[,,1], xout = xout), "xts")
+as(na.spline(x[,,1], xout = xout), "xts")
+as(na.spline(x[,,2], xout = xout), "xts")
+
+# larger/real data:
+data(air)
+rural = STFDF(stations, dates, data.frame(PM10 = as.vector(air)))
+# fill NA's with last non-NA
+r = na.locf(rural)
+# sample (NOT aggregate) to monthly:
+m = seq(start(rural), end(rural), "1 month")
+stplot(na.approx(rural[1:20,"2003::2005"], xout = m), mode = 'ts')
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>spacetime</em> version 1.3-3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

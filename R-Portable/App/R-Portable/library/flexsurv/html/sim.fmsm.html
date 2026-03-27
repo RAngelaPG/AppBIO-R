@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Simulate paths through a fully parametric semi-Markov...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for sim.fmsm {flexsurv}"><tr><td>sim.fmsm {flexsurv}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Simulate paths through a fully parametric semi-Markov multi-state model</h2>
+
+<h3>Description</h3>
+
+<p>Simulate changes of state and transition times from a semi-Markov
+multi-state model fitted using <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+sim.fmsm(
+  x,
+  trans = NULL,
+  t,
+  newdata = NULL,
+  start = 1,
+  M = 10,
+  tvar = "trans",
+  tcovs = NULL,
+  tidy = FALSE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A model fitted with <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>. See
+<code><a href="../../flexsurv/help/msfit.flexsurvreg.html">msfit.flexsurvreg</a></code> for the required form of the model and the
+data.
+</p>
+<p>Alternatively <code>x</code> can be a list of fitted <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>
+model objects.  The <code>i</code>th element of this list is the model
+corresponding to the <code>i</code>th transition in <code>trans</code>.  This is a more
+efficient way to fit a multi-state model, but only valid if the parameters
+are different between different transitions.</p>
+</td></tr>
+<tr valign="top"><td><code>trans</code></td>
+<td>
+<p>Matrix indicating allowed transitions.  See
+<code><a href="../../flexsurv/help/msfit.flexsurvreg.html">msfit.flexsurvreg</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>t</code></td>
+<td>
+<p>Time, or vector of times for each of the <code>M</code> individuals, to
+simulate trajectories until.</p>
+</td></tr>
+<tr valign="top"><td><code>newdata</code></td>
+<td>
+<p>A data frame specifying the values of covariates in the
+fitted model, other than the transition number.  See
+<code><a href="../../flexsurv/help/msfit.flexsurvreg.html">msfit.flexsurvreg</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>start</code></td>
+<td>
+<p>Starting state, or vector of starting states for each of the
+<code>M</code> individuals.</p>
+</td></tr>
+<tr valign="top"><td><code>M</code></td>
+<td>
+<p>Number of individual trajectories to simulate.</p>
+</td></tr>
+<tr valign="top"><td><code>tvar</code></td>
+<td>
+<p>Variable in the data representing the transition type. Not
+required if <code>x</code> is a list of models.</p>
+</td></tr>
+<tr valign="top"><td><code>tcovs</code></td>
+<td>
+<p>Names of &quot;predictable&quot; time-dependent covariates in
+<code>newdata</code>, i.e. those whose values change at the same rate as time.
+Age is a typical example.  During simulation, their values will be updated
+after each transition time, by adding the current time to the value
+supplied in <code>newdata</code>.  This assumes the covariate is measured in the
+same unit as time. <code>tcovs</code> is supplied as a character vector.</p>
+</td></tr>
+<tr valign="top"><td><code>tidy</code></td>
+<td>
+<p>If <code>TRUE</code> then the simulated data are returned as a tidy data frame with one row per simulated transition.  See <code><a href="../../flexsurv/help/simfs_bytrans.html">simfs_bytrans</a></code> for a function to rearrange the data into this format if it was simulated in non-tidy format.  Currently this includes only event times, and excludes any times of censoring that are reported when <code>tidy=FALSE</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>sim.fmsm</code> relies on the presence of a function to sample random
+numbers from the parametric survival distribution used in the fitted model
+<code>x</code>, for example <code><a href="../../stats/html/Weibull.html">rweibull</a></code> for Weibull models. If
+<code>x</code> was fitted using a custom distribution, called <code>dist</code> say,
+then there must be a function called (something like) <code>rdist</code> either
+in the working environment, or supplied through the <code>dfns</code> argument to
+<code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>.  This must be in the same format as standard R
+functions such as <code><a href="../../stats/html/Weibull.html">rweibull</a></code>, with first argument <code>n</code>, and
+remaining arguments giving the parameters of the distribution.  It must be
+vectorised with respect to the parameter arguments.
+</p>
+<p>This function is only valid for semi-Markov (&quot;clock-reset&quot;) models, though
+no warning or error is currently given if the model is not of this type. An
+equivalent for time-inhomogeneous Markov (&quot;clock-forward&quot;) models has
+currently not been implemented.
+</p>
+
+
+<h3>Value</h3>
+
+<p>If <code>tidy=TRUE</code>, a data frame with one row for each simulated transition, giving the individual ID <code>id</code>, start state <code>start</code>, end state <code>end</code>, transition label <code>trans</code>, time of the transition since the start of the process (<code>time</code>), and time since the previous transition (<code>delay</code>).
+</p>
+<p>If <code>tidy=FALSE</code>, a list of two matrices named <code>st</code> and <code>t</code>.  The rows of
+each matrix represent simulated individuals.  The columns of <code>t</code>
+contain the times when the individual changes state, to the corresponding
+states in <code>st</code>.
+</p>
+<p>The first columns will always contain the starting states and the starting
+times. The last column of <code>t</code> represents either the time when the
+individual moves to an absorbing state, or right-censoring in a transient
+state at the time given in the <code>t</code> argument to <code>sim.fmsm</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Christopher Jackson <a href="mailto:chris.jackson@mrc-bsu.cam.ac.uk">chris.jackson@mrc-bsu.cam.ac.uk</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../flexsurv/help/pmatrix.simfs.html">pmatrix.simfs</a></code>,<code><a href="../../flexsurv/help/totlos.simfs.html">totlos.simfs</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+bexp &lt;- flexsurvreg(Surv(years, status) ~ trans, data=bosms3, dist="exp")
+tmat &lt;- rbind(c(NA,1,2),c(NA,NA,3),c(NA,NA,NA))
+sim.fmsm(bexp, M=10, t=5, trans=tmat)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>flexsurv</em> version 2.3.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

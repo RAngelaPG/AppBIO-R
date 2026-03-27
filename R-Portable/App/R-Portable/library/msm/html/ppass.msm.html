@@ -1,0 +1,208 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Passage probabilities</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for ppass.msm {msm}"><tr><td>ppass.msm {msm}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Passage probabilities</h2>
+
+<h3>Description</h3>
+
+<p>Probabilities of having visited each state by a particular time in a
+continuous time Markov model.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+ppass.msm(
+  x = NULL,
+  qmatrix = NULL,
+  tot,
+  start = "all",
+  covariates = "mean",
+  piecewise.times = NULL,
+  piecewise.covariates = NULL,
+  ci = c("none", "normal", "bootstrap"),
+  cl = 0.95,
+  B = 1000,
+  cores = NULL,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A fitted multi-state model, as returned by <code><a href="../../msm/help/msm.html">msm</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>qmatrix</code></td>
+<td>
+<p>Instead of <code>x</code>, you can simply supply a transition
+intensity matrix in <code>qmatrix</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>tot</code></td>
+<td>
+<p>Finite time to forecast the passage probabilites for.</p>
+</td></tr>
+<tr valign="top"><td><code>start</code></td>
+<td>
+<p>Starting state (integer).  By default (<code>start="all"</code>),
+this will return a matrix one row for each starting state.
+</p>
+<p>Alternatively, this can be used to obtain passage probabilities from a
+<em>set</em> of states, rather than single states.  To achieve this,
+<code>state</code> is set to a vector of weights, with length equal to the number
+of states in the model.  These weights should be proportional to the
+probability of starting in each of the states in the desired set, so that
+weights of zero are supplied for other states.  The function will calculate
+the weighted average of the passage probabilities from each of the
+corresponding states.</p>
+</td></tr>
+<tr valign="top"><td><code>covariates</code></td>
+<td>
+<p>Covariate values defining the intensity matrix for the
+fitted model <code>x</code>, as supplied to <code><a href="../../msm/help/qmatrix.msm.html">qmatrix.msm</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>piecewise.times</code></td>
+<td>
+<p>For models with time-dependent covariates,
+this defines the cut points in time at which the transition
+intensity matrix changes.  This is not required for models fitted
+with the <code>pci</code> option to <code><a href="../../msm/help/msm.html">msm</a></code>, which are
+handled automatically.</p>
+</td></tr>
+<tr valign="top"><td><code>piecewise.covariates</code></td>
+<td>
+<p>For models with time-dependent
+covariates, this is the list of covariates for each time period
+defined by <code>piecewise.times</code>, in the format documented for
+the <code>covariates</code> argument to
+<code><a href="../../msm/help/pmatrix.piecewise.msm.html">pmatrix.piecewise.msm</a></code>.  This is not required for
+models fitted with the <code>pci</code> option to <code><a href="../../msm/help/msm.html">msm</a></code>,
+which are handled automatically.</p>
+</td></tr>
+<tr valign="top"><td><code>ci</code></td>
+<td>
+<p>If <code>"normal"</code>, then calculate a confidence interval by
+simulating <code>B</code> random vectors from the asymptotic multivariate normal
+distribution implied by the maximum likelihood estimates (and covariance
+matrix) of the log transition intensities and covariate effects.
+</p>
+<p>If <code>"bootstrap"</code> then calculate a confidence interval by non-parametric
+bootstrap refitting.  This is 1-2 orders of magnitude slower than the
+<code>"normal"</code> method, but is expected to be more accurate. See
+<code><a href="../../msm/help/boot.msm.html">boot.msm</a></code> for more details of bootstrapping in <span class="pkg">msm</span>.
+</p>
+<p>If <code>"none"</code> (the default) then no confidence interval is calculated.</p>
+</td></tr>
+<tr valign="top"><td><code>cl</code></td>
+<td>
+<p>Width of the symmetric confidence interval, relative to 1.</p>
+</td></tr>
+<tr valign="top"><td><code>B</code></td>
+<td>
+<p>Number of bootstrap replicates.</p>
+</td></tr>
+<tr valign="top"><td><code>cores</code></td>
+<td>
+<p>Number of cores to use for bootstrapping using parallel
+processing. See <code><a href="../../msm/help/boot.msm.html">boot.msm</a></code> for more details.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Arguments to pass to <code><a href="../../msm/help/MatrixExp.html">MatrixExp</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The passage probabilities to state <i>s</i> are computed by setting the
+<i>s</i>th row of the transition intensity matrix <i>Q</i> to zero, giving an
+intensity matrix <i>Q*</i> for a simplified model structure where state
+<i>s</i> is absorbing.  The probabilities of passage are then equivalent to
+row <i>s</i> of the transition probability matrix <i>Exp(tQ*)</i> 
+(<code><a href="../../msm/help/pmatrix.msm.html">pmatrix.msm</a></code>) under this
+simplified model for <i>t=</i><code>tot</code>.   
+</p>
+<p>For time-inhomogenous models, 
+this process is generalised by calculating an intensity matrix for each
+time period, zeroing the appropriate row of each, and calculating and multiplying
+transition probability matrices as in <code><a href="../../msm/help/pmatrix.piecewise.msm.html">pmatrix.piecewise.msm</a></code>.
+</p>
+<p>Note this is different from the probability of occupying each state at
+exactly time <i>t</i>, given by <code><a href="../../msm/help/pmatrix.msm.html">pmatrix.msm</a></code>.  The passage
+probability allows for the possibility of having visited the state before
+<i>t</i>, but then occupying a different state at <i>t</i>.
+</p>
+<p>The mean of the passage distribution is the expected first passage time,
+<code><a href="../../msm/help/efpt.msm.html">efpt.msm</a></code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A matrix whose <i>r, s</i> entry is the probability of having visited
+state <i>s</i> at least once before time <i>t</i>, given the state at time
+<i>0</i> is <i>r</i>.  The diagonal entries should all be 1.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>C. H. Jackson <a href="mailto:chris.jackson@mrc-bsu.cam.ac.uk">chris.jackson@mrc-bsu.cam.ac.uk</a> with
+contributions from Jon Fintzi.
+</p>
+
+
+<h3>References</h3>
+
+<p>Norris, J. R. (1997) Markov Chains. Cambridge University Press.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../msm/help/efpt.msm.html">efpt.msm</a></code>, <code><a href="../../msm/help/totlos.msm.html">totlos.msm</a></code>,
+<code><a href="../../msm/help/boot.msm.html">boot.msm</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+Q &lt;- rbind(c(-0.5, 0.25, 0, 0.25), c(0.166, -0.498, 0.166, 0.166),
+           c(0, 0.25, -0.5, 0.25), c(0, 0, 0, 0))
+
+## ppass[1,2](t) converges to 0.5 with t, since given in state 1, the
+## probability of going to the absorbing state 4 before visiting state
+## 2 is 0.5, and the chance of still being in state 1 at t decreases.
+
+ppass.msm(qmatrix=Q, tot=2)
+ppass.msm(qmatrix=Q, tot=20)
+ppass.msm(qmatrix=Q, tot=100)
+
+Q &lt;- Q[1:3,1:3]; diag(Q) &lt;- 0; diag(Q) &lt;- -rowSums(Q)
+
+## Probability of about 1/2 of visiting state 3 by time 10.5, the
+## median first passage time
+
+ppass.msm(qmatrix=Q, tot=10.5)
+
+## Mean first passage time from state 2 to state 3 is 10.02: similar
+## to the median
+
+efpt.msm(qmatrix=Q, tostate=3)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>msm</em> version 1.8.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: create ST* objects from long or wide tables</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for stConstruct {spacetime}"><tr><td>stConstruct {spacetime}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> create ST* objects from long or wide tables </h2>
+
+<h3>Description</h3>
+
+<p> create ST* objects from long or wide tables </p>
+
+
+<h3>Usage</h3>
+
+<pre> 
+stConstruct(x, space, time, SpatialObj = NULL, TimeObj = NULL, 
+	crs = CRS(as.character(NA)), interval, endTime)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p> object of class <code>matrix</code> or <code>data.frame</code>,
+holding the long, space-wide or time-wide table; see details. </p>
+</td></tr>
+<tr valign="top"><td><code>space</code></td>
+<td>
+<p> in case <code>x</code> is a long table,
+character or integer holding the column index in <code>x</code> where the spatial
+coordinates are (if length(space)==2) or where the ID of the spatial
+location is (if (length(space)==1). If <code>x</code> is a space-wide table,
+a list with each (named) list element a set of columns that together
+form a variable </p>
+</td></tr>
+<tr valign="top"><td><code>time</code></td>
+<td>
+<p> in case <code>x</code> is a long table, character or integer 
+indicating the column in <code>x</code> with times; </p>
+</td></tr>
+<tr valign="top"><td><code>SpatialObj</code></td>
+<td>
+<p> object of class <a href="../../sp/help/Spatial-class.html">Spatial-class</a>, containing the
+locations of a time-wide table, or the locations of a long table  </p>
+</td></tr>
+<tr valign="top"><td><code>TimeObj</code></td>
+<td>
+<p> in case of space-wide table, 
+object of class <a href="../../xts/help/xts.html">xts</a>, containing the times for each 
+of the columns in a list element of <code>space</code>
+</p>
+</td></tr>
+<tr valign="top"><td><code>crs</code></td>
+<td>
+<p> object of class <a href="../../sp/help/CRS-class.html">CRS-class</a>; only used when coordinates
+are in <code>x</code> and no CRS can be taken from <code>SpatialObj</code></p>
+</td></tr>
+<tr valign="top"><td><code>interval</code></td>
+<td>
+<p> logical; specifies whether time should reflect time
+instance (FALSE) or time intervals (TRUE). If omitted, defaults values
+depend on the class </p>
+</td></tr>
+<tr valign="top"><td><code>endTime</code></td>
+<td>
+<p> vector of <code>POSIXct</code>, specifying (if present) the end
+points of observation time intervals </p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>For examples, see below.
+</p>
+<p>A long table is a data.frame with each row holding a single
+observation in space-time, and particular columns in this table
+indicate the space (location or location ID) and time.
+</p>
+<p>A space-wide table is a table in which different columns refer to
+different locations, and each row reflects a particular observation
+time.
+</p>
+<p>A time-wide table is a table where different times of a particular
+characteristic are represented as different colunns; rows in the
+table represent particular locations or location IDs.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Depending on the arguments, an object of class <code>STIDF</code>
+or <code>STFDF</code>.
+</p>
+
+
+<h3>References</h3>
+
+<p> https://www.jstatsoft.org/v51/i07/ </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# stConstruct multivariable, time-wide
+if (require(maps) &amp;&amp; require(plm) &amp;&amp; require(sf)) {
+ library(sp)
+
+ states.m &lt;- map('state', plot=FALSE, fill=TRUE)
+ IDs &lt;- sapply(strsplit(states.m$names, ":"), function(x) x[1])
+ sf = st_as_sf(states.m, IDs=IDs)
+ row.names(sf) = sf$ID # not needed if sf &gt;= 1.0-13
+ states &lt;- as(sf, "Spatial")
+ states=geometry(states)
+
+ yrs = 1970:1986
+ time = as.POSIXct(paste(yrs, "-01-01", sep=""), tz = "GMT")
+ data("Produc")
+# deselect District of Columbia, polygon 8, which is not present in Produc:
+ Produc.st &lt;- STFDF(states[-8], time, Produc[order(Produc[,2], Produc[,1]),])
+ # stplot(Produc.st[,,"unemp"], yrs, col.regions = brewer.pal(9, "YlOrRd"),cuts=9)
+
+ # example 1: st from long table, with states as Spatial object:
+ # use Date format for time:
+ Produc$time = as.Date(paste(yrs, "01", "01", sep = "-"))
+ # take centroids of states:
+ xy = coordinates(states[-8])
+ Produc$x = xy[,1]
+ Produc$y = xy[,2]
+ #using stConstruct, use polygon centroids for location:
+ x = stConstruct(Produc, c("x", "y"), "time", interval = TRUE)
+ class(x)
+ stplot(x[,,"unemp"])
+
+ # alternatively, pass states as SpatialObj:
+ Produc$state = gsub("TENNESSE", "TENNESSEE", Produc$state)
+ Produc$State = gsub("_", " ", tolower(Produc$state))
+ x = stConstruct(Produc, "State", "time", states)
+ class(x)
+ all.equal(x, Produc.st, check.attributes = FALSE)
+}
+
+if (require(sf)) {
+fname = system.file("shape/nc.shp", package="sf")[1]
+nc = as(st_read(fname), "Spatial")
+timesList = list(
+	BIR=c("BIR74", "BIR79"),  # sets of variables that belong together
+	NWBIR=c("NWBIR74", "NWBIR79"), # only separated by space
+	SID=c("SID74", "SID79")
+)
+t = as.Date(c("1974-01-01","1979-01-01"))
+nc.st = stConstruct(as(nc, "data.frame"), geometry(nc), timesList,
+	TimeObj = t, interval = TRUE)
+
+}
+# stConstruct multivariable, space-wide
+if (require(gstat)) {
+data(wind)
+wind.loc$y = as.numeric(char2dms(as.character(wind.loc[["Latitude"]])))
+wind.loc$x = as.numeric(char2dms(as.character(wind.loc[["Longitude"]])))
+coordinates(wind.loc) = ~x+y
+proj4string(wind.loc) = "+proj=longlat +datum=WGS84"
+
+# match station order to names in wide table:
+stations = 4:15
+wind.loc = wind.loc[match(names(wind[stations]), wind.loc$Code),]
+row.names(wind.loc) = wind.loc$Station
+# convert to utm zone 29, to be able to do interpolation in
+# proper Euclidian (projected) space:
+
+# create time variable
+wind$time = ISOdate(wind$year+1900, wind$month, wind$day, 0)
+
+w = STFDF(wind.loc, wind$time, 
+	data.frame(values = as.vector(t(wind[stations]))))
+space = list(values = names(wind)[stations])
+wind.st = stConstruct(wind[stations], space, wind$time, SpatialObj = wind.loc, interval = TRUE)
+all.equal(w, wind.st)
+class(wind.st)
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>spacetime</em> version 1.3-3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

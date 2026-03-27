@@ -1,0 +1,243 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Fit spatial models per time point</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for fitModels {statgenHTP}"><tr><td>fitModels {statgenHTP}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Fit spatial models per time point</h2>
+
+<h3>Description</h3>
+
+<p>Perform REML analysis at each time point using either SpATS or asreml. The
+idea is to is to accurately separate the genetic effects from the spatial
+effects at each time point. SpATS is used as a default method. See details
+for the exact models fitted.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+fitModels(
+  TP,
+  trait,
+  timePoints = names(TP),
+  extraFixedFactors = NULL,
+  geno.decomp = NULL,
+  what = c("random", "fixed"),
+  useCheck = FALSE,
+  useRepId = FALSE,
+  engine = c("SpATS", "asreml"),
+  spatial = FALSE,
+  quiet = FALSE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>TP</code></td>
+<td>
+<p>An object of class <code>TP</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>trait</code></td>
+<td>
+<p>A character string indicating the trait used as response
+variable in the model.</p>
+</td></tr>
+<tr valign="top"><td><code>timePoints</code></td>
+<td>
+<p>A character or numeric vector indicating the time points
+to be modeled. When using a character string to reference a time point, the
+value has to be an exact match to one of the existing time points. When using
+a number it will be matched by its number (&quot;timeNumber&quot;) in the timePoints
+attribute of the <code>TP</code> object.</p>
+</td></tr>
+<tr valign="top"><td><code>extraFixedFactors</code></td>
+<td>
+<p>A character vector indicating the variables to use
+as extra fixed effects in the model.</p>
+</td></tr>
+<tr valign="top"><td><code>geno.decomp</code></td>
+<td>
+<p>A character vector indicating the variables to use to
+group the genotypic variance in the model.</p>
+</td></tr>
+<tr valign="top"><td><code>what</code></td>
+<td>
+<p>A character vector specifying whether &quot;genotype&quot; should
+be fitted as &quot;random&quot; or &quot;fixed&quot; effect. Note that when using
+<code>geno.decomp</code>, fitting a model with genotype as &quot;fixed&quot; effect is not
+possible.</p>
+</td></tr>
+<tr valign="top"><td><code>useCheck</code></td>
+<td>
+<p>Should check genotypes be used as an extra factor in the
+model?</p>
+</td></tr>
+<tr valign="top"><td><code>useRepId</code></td>
+<td>
+<p>Should repId be used as a fixed effect in the model? When
+fitting a spatial model rowId and colId are also nested within repId in the
+random part of the model.</p>
+</td></tr>
+<tr valign="top"><td><code>engine</code></td>
+<td>
+<p>A character string indicating the engine used to fit the
+models.</p>
+</td></tr>
+<tr valign="top"><td><code>spatial</code></td>
+<td>
+<p>Should a spatial model be fitted for asreml?</p>
+</td></tr>
+<tr valign="top"><td><code>quiet</code></td>
+<td>
+<p>Should printed progress messages be suppressed?</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The actual model fitted depends on the function parameters specified. The
+basic model is the following:<br />
+trait = <strong>genotype</strong> + e<br />
+In case <code>useCheck = TRUE</code>, instead of genotype, genoCheck is used as
+genotype and check is used as an extra fixed effect. So then the model
+becomes:<br />
+trait = <em>check</em> + <strong>genoCheck</strong> + e<br />
+Variables in <code>extraFixedFactors</code> are fitted as extra fixed
+effects.<br /><br />
+When <code>SpATS</code> is used for modeling, an extra spatial term is always
+included in the model. This term is constructed using the function
+<code><a href="../../SpATS/help/PSANOVA.html">PSANOVA</a></code> from the SpATS package as<br />
+<code>PSANOVA(colNum, rowNum, nseg = nSeg, nest.div = 2)</code>
+where<br /> <code>nSeg = c(number of columns, number of rows)</code>.<br /><br />
+When <code>asreml</code> is used for modeling and <code>spatial = TRUE</code>,
+four models are fitted with different covariance structures.
+The best model is determined based on a goodness-of-fit criterion, AIC,
+on 20% of the time points or at least 10 time points. The best model is then
+run on all time points.
+The following combinations of random and spatial terms are fitted
+</p>
+
+<ul>
+<li><p>random = repId:rowId + repId:colId, spatial = NULL
+</p>
+</li>
+<li><p>random = repId:rowId + repId:colId, spatial = ar1(rowId):colId
+</p>
+</li>
+<li><p>random = repId:colId + repId:colId, spatial = rowId:ar1(colId)
+</p>
+</li>
+<li><p>random = repId:rowId + repId:colId, spatial = ar1(rowId):ar1(colId)
+</p>
+</li></ul>
+
+<p>If there are no replicates in the model, repId is left out from the random
+parts above.<br /><br />
+When <code>geno.decomp</code> is specified, the genotypic variance is decomposed
+following the variable(s) chosen. For example, when a treatment is used in
+<code>geno.decomp</code>, the initial model becomes:<br />
+trait = <em>treatment</em> + <strong>treatment:genotype</strong> + e<br />
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>fitMod</code>, a list of fitted models.
+</p>
+
+
+<h3>References</h3>
+
+<p>Maria Xose Rodriguez-Alvarez, Martin P. Boer, Fred A. van Eeuwijk, Paul H.C.
+Eilers (2017). Correcting for spatial heterogeneity in plant breeding
+experiments with P-splines. Spatial Statistics
+doi: <a href="https://doi.org/10.1016/j.spasta.2017.10.003">10.1016/j.spasta.2017.10.003</a>
+Butler, D. G., et al. (2018). ASReml-R Reference Manual Version 4. VSN
+International Ltd, http://asreml.org
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other functions for spatial modeling: 
+<code><a href="../../statgenHTP/help/getCorrected.html">getCorrected</a>()</code>,
+<code><a href="../../statgenHTP/help/getEffDims.html">getEffDims</a>()</code>,
+<code><a href="../../statgenHTP/help/getGenoPred.html">getGenoPred</a>()</code>,
+<code><a href="../../statgenHTP/help/getHerit.html">getHerit</a>()</code>,
+<code><a href="../../statgenHTP/help/getVar.html">getVar</a>()</code>,
+<code><a href="../../statgenHTP/help/plot.fitMod.html">plot.fitMod</a>()</code>,
+<code><a href="../../statgenHTP/help/summary.fitMod.html">summary.fitMod</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Using the first example dataset (PhenovatorDat1):
+## Fit a model using SpATS on few time points:
+
+## Create an object of class TP.
+phenoTP &lt;- createTimePoints(dat = PhenovatorDat1,
+                            experimentName = "Phenovator",
+                            genotype = "Genotype",
+                            timePoint = "timepoints",
+                            repId = "Replicate",
+                            plotId = "pos",
+                            rowNum = "y", colNum = "x",
+                            addCheck = TRUE,
+                            checkGenotypes = c("check1", "check2",
+                                               "check3", "check4"))
+## Fit a model with SpATS for three time points.
+modPhenoSp &lt;- fitModels(TP = phenoTP,
+                        trait = "EffpsII",
+                        timePoints = c(3, 6, 20))
+summary(modPhenoSp)
+
+## Fit a model with SpATS for a single time point with extra fixed factors
+## and check genotypes:
+modPhenoSpCheck &lt;- fitModels(TP = phenoTP,
+                             trait = "EffpsII",
+                             extraFixedFactors = c("repId", "Image_pos"),
+                             useCheck = TRUE,
+                             timePoints = 3)
+
+
+## Fit a model with asreml on few time points with a spatial function:
+if (requireNamespace("asreml", quietly = TRUE)) {
+  modPhenoSpAs &lt;- fitModels(TP = phenoTP,
+                            trait = "EffpsII",
+                            timePoints = c(1, 6, 20),
+                            engine = "asreml",
+                            spatial = TRUE)
+}
+
+## Using the second example dataset (PhenoarchDat1):
+## Fit a model with SpATS on one time points with two variables for
+## geno.decomp:
+data("PhenoarchDat1")
+phenoTParch &lt;- createTimePoints(dat = PhenoarchDat1,
+                                experimentName = "Phenoarch",
+                                genotype = "Genotype",
+                                timePoint = "Date",
+                                plotId = "pos",
+                                rowNum = "Row",
+                                colNum = "Col")
+
+modPhenoSpGD &lt;- fitModels(TP = phenoTParch,
+                          trait = "LeafArea",
+                          geno.decomp = c("Scenario", "population"),
+                          timePoints = 16)
+
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>statgenHTP</em> version 1.0.9.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Authenticated repositories</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for repo_auth {pak}"><tr><td>repo_auth {pak}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Authenticated repositories</h2>
+
+<h3>Description</h3>
+
+<p>pak supports HTTP basic authentication when interacting with
+CRAN-like repositories. To use authentication, include a username
+in the repo URL:
+</p>
+<div class="sourceCode"><pre>https://&lt;username&gt;@&lt;repo-host&gt;/&lt;repo-path&gt;
+</pre></div>
+
+
+<h3>Usage</h3>
+
+<pre>
+repo_auth(
+  r_version = getRversion(),
+  bioc = NULL,
+  cran_mirror = NULL,
+  check_credentials = TRUE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>r_version</code></td>
+<td>
+<p>R version to use to determine the correct Bioconductor
+version, if <code>bioc = TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>bioc</code></td>
+<td>
+<p>Whether to automatically add the Bioconductor repositories
+to the result.</p>
+</td></tr>
+<tr valign="top"><td><code>cran_mirror</code></td>
+<td>
+<p>CRAN mirror to use. Leave it at <code>NULL</code> to use the
+mirror in <code>getOption("repos")</code> or an automatically selected one.</p>
+</td></tr>
+<tr valign="top"><td><code>check_credentials</code></td>
+<td>
+<p>Whether to check that credentials are
+available for authenticated repositories.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>pak will look up the password for this url and username from the
+the user's <code>.netrc</code> file and from the system credential store using
+the keyring package.
+</p>
+
+
+<h4>'.netrc&ldquo; files</h4>
+
+<p>First pak searches in the <code>.netrc</code> file. If the <code>NETRC</code> environment
+variable is set, pak uses its value to determine the location of the
+<code>netrc</code> file.
+</p>
+<p>Otherwise pak looks for the <code>netrc</code> file in current user's home
+directory, at <code style="white-space: pre;">~/.netrc</code>. On Windows it also looks for <code style="white-space: pre;">~/_netrc</code> if the
+file starting with a dot does not exist.
+</p>
+<p>If you create a <code>netrc</code> file, make sure that is only readable by you.
+E.g. on Unix run
+</p>
+<div class="sourceCode sh"><pre>chmod 600 ~/.netrc
+</pre></div>
+<p><code>netrc</code> files are simple text files that can store passwords for multiple
+hosts. They may contain three types of tokens:
+</p>
+
+
+<h5><code style="white-space: pre;">machine &lt;hostname&gt;</code></h5>
+
+<p>A host name, without the protocol. Subsequent <code>login</code> and <code>password</code>
+tokens belong to this host, until another <code>machine</code> token is found, or
+the end of file.
+</p>
+
+
+
+<h5><code style="white-space: pre;">login &lt;username&gt;</code></h5>
+
+<p>User name. It must be preceded by a <code>machine</code> token.
+</p>
+
+
+
+<h5><code style="white-space: pre;">password &lt;password&gt;</code></h5>
+
+<p>Password. It must be preceded by a <code>machine</code> and a <code>login</code> token.
+</p>
+<p>Whitespace is ignored in <code>netrc</code> files. You may include multiple tokens
+on the same line, or have one token per line. Here is an example:
+</p>
+<div class="sourceCode"><pre>machine myhost.mydomain.com login myuser password secret
+machine myhost2.mydomain.com
+login myuser
+password secret
+login anotheruser
+password stillsecret
+</pre></div>
+<p>If you need to include whitespace in a password, put the password in double
+quotes.
+</p>
+
+
+
+
+<h4>The system credential store</h4>
+
+<p>pak currently supports the following keyring
+backends:
+</p>
+
+<ul>
+<li><p> Windows credential store,
+</p>
+</li>
+<li><p> macOS Keychain,
+</p>
+</li>
+<li><p> Linux Secret Service via libsecret, if built with libsecret support,
+</p>
+</li>
+<li><p> environment variables.
+</p>
+</li></ul>
+
+<p>For the URL above it tries the following keyring
+keys, in this order:
+</p>
+<div class="sourceCode"><pre>https://&lt;username&gt;@repo-host/&lt;repo-path&gt;
+https://repo-host/&lt;repo-path&gt;
+https://&lt;username&gt;@repo-host
+https://repo-host
+</pre></div>
+<p>To add an authenticated repository use <code><a href="../../pak/help/repo_add.html">repo_add()</a></code> with the <code>username</code>
+argument. Alternatively, you can set the <code>repos</code> option directly using
+<code><a href="../../base/help/options.html">base::options()</a></code> and including the username in the repository URL.
+</p>
+<p><code>repo_auth()</code> lists authentication information for all configured
+repositories.
+</p>
+
+
+
+<h3>Value</h3>
+
+<p>Data frame with columns:
+</p>
+
+<ul>
+<li><p> all columns from the output of <code><a href="../../pak/help/repo_get.html">repo_get()</a></code>,
+</p>
+</li>
+<li> <p><code>auth_domains</code>: authentication domains. pak tries to find the
+credentials for these domains, until the search is successful or all
+domains fail.
+</p>
+</li>
+<li> <p><code>auth_domain</code>: if the credential lookup is successful, then this is
+the authentication domain that was used to get the credentials.
+</p>
+</li>
+<li> <p><code>auth_source</code>: where the credentials were found. E.g.
+<code style="white-space: pre;">keyring:&lt;backend&gt;</code> means it was in the default macos keyring.
+</p>
+</li>
+<li> <p><code>auth_error</code>: for failed credential searches this is the description
+of why the search failed. E.g. maybe the keyring package is not
+installed, or pak found no credentials for any of the
+authentication domains.
+</p>
+</li></ul>
+
+
+
+<h3>See Also</h3>
+
+<p><a href="../../pak/help/Authenticated+20repositories.html">Authenticated repositories</a>.
+</p>
+<p>Other authenticated repositories: 
+<code><a href="../../pak/help/Authenticated+20repositories.html">Authenticated repositories</a></code>,
+<code><a href="../../pak/help/repo_auth_key_get.html">repo_auth_key_get</a>()</code>
+</p>
+
+<hr /><div style="text-align: center;">[Package <em>pak</em> version 0.9.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Create an asynchronous task from sequential code.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for async {async}"><tr><td>async {async}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Create an asynchronous task from sequential code.</h2>
+
+<h3>Description</h3>
+
+<p><code>async({...})</code>, with an expression written in its argument, allows
+that expression to be evaluated in an asynchronous, or non-blocking
+manner. <code>async</code> returns an object with class <code>c("async", "promise")</code> which
+implements the <a href="../../promises/help/promise.html">promise</a> interface.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+async(
+  expr,
+  ...,
+  split_pipes = TRUE,
+  compileLevel = getOption("async.compileLevel"),
+  debugR = FALSE,
+  debugInternal = FALSE,
+  trace = getOption("async.verbose")
+)
+
+await(prom, error)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>expr</code></td>
+<td>
+<p>An expression, to be executed asynchronously.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Undocumented.</p>
+</td></tr>
+<tr valign="top"><td><code>split_pipes</code></td>
+<td>
+<p>Rewrite chained calls that use <code>await</code> (see
+below)</p>
+</td></tr>
+<tr valign="top"><td><code>compileLevel</code></td>
+<td>
+<p>Compilation level; same options as for <a href="../../async/help/gen.html">gen</a>.</p>
+</td></tr>
+<tr valign="top"><td><code>debugR</code></td>
+<td>
+<p>Set TRUE to enter the browser immediately on
+executing the first R expression.</p>
+</td></tr>
+<tr valign="top"><td><code>debugInternal</code></td>
+<td>
+<p>Set TRUE to single-step at implementation
+level, immediately upon execution.</p>
+</td></tr>
+<tr valign="top"><td><code>trace</code></td>
+<td>
+<p>Enable verbose logging by passing a function to
+<code>trace</code>, like <code>trace=cat</code>. This function should take a character
+argument.</p>
+</td></tr>
+<tr valign="top"><td><code>prom</code></td>
+<td>
+<p>A promise, or something that can be converted to such
+by <code><a href="../../promises/help/is.promise.html">promises::as.promise()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>error</code></td>
+<td>
+<p>This argument will be forced if the promise rejects.  If
+it is a function, it will be called with the error condition.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>An example Shiny app using <code>async/await</code> is on Github:
+<a href="https://github.com/crowding/cranwhales-await">https://github.com/crowding/cranwhales-await</a>
+</p>
+<p>When an <code>async</code> object is activated, it will evaluate its expression
+until it reaches the keyword <code>await</code>. The <code>async</code> object will return
+to its caller and preserve the partial state of its evaluation.
+When the awaited promise is resolved, evaluation continues from where
+the <code>async</code> left off.
+</p>
+<p>When an async block finishes (either by reaching the end, or using
+<code>return()</code>), the promise resolves with the resulting value. If the
+async block stops with an error, the promise is rejected with
+that error.
+</p>
+<p>Async blocks and generators are conceptually related and share much
+of the same underlying mechanism. You can think of one as &quot;output&quot;
+and the other as &quot;input&quot;. A generator pauses until a value is
+requested, runs until it has a value to output, then pauses again.
+An async runs until it requires an external value, pauses until
+it receives the value, then continues.
+</p>
+<p>The syntax rules for an <code>async</code> are analogous to those for <code><a href="../../async/help/gen.html">gen()</a></code>;
+<code>await</code> must appear only within the arguments of functions for
+which there is a pausable implementation (See <code style="white-space: pre;">[pausables()]</code>). For
+<code>async</code> the default <code>split_pipes=TRUE</code> is enabled; this will
+rearrange some expressions to satisfy this requirement.
+</p>
+<p>When <code>split_pipes=FALSE</code>, <code>await()</code> can only appear in the
+arguments of <a href="../../async/help/pausables.html">pausables</a> and not ordinary R functions.  This is an
+inconvenience as it prevents using <code>await()</code> in a pipeline. With
+<code>split_pipes=TRUE</code> applies some syntactic sugar: if an <code>await()</code>
+appears in the leftmost, unnamed, argument of an R function, the
+pipe will be &quot;split&quot; at that call using a temporary variable. For
+instance, either
+</p>
+<div class="sourceCode"><pre>async(makeRequest() |&gt; await() |&gt; sort())
+</pre></div>
+<p>or, equivalently,
+</p>
+<div class="sourceCode"><pre>async(sort(await(makeRequest())))
+</pre></div>
+<p>will be effectively rewritten to something like
+</p>
+<div class="sourceCode"><pre>async({.tmp &lt;- await(makeRequest()); sort(.tmp)})
+</pre></div>
+<p>This works only so long as <code>await</code> appears in calls that evaluate
+their leftmost arguments normally. <code>split_pipes</code> can backfire if
+the outer call has other side effects; for instance
+<code>suppressWarnings(await(x))</code> will be rewritten as <code>{.tmp &lt;- await(x); suppressWarnings(x)}</code>, which would defeat the purpose.
+</p>
+<p>If <code>async</code> is given a function expression, like <code>async(function(...) ...)</code>, it will return an &quot;async function&quot; i.e. a function that
+constructs an async.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>async()</code> returns an object with class &quot;promise,&quot; as
+defined by the <a href="../../base/html/delayedAssign.html">promises</a> package (i.e., rather than the kind of
+promise used in R's lazy evaluation.)
+</p>
+<p>In the context of an <code>async</code> or <code>stream</code>, <code>await(x)</code> returns
+the resolved value of a promise <code>x</code>, or stops with an error.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+myAsync &lt;- async(for (i in 1:4) {
+  await(delay(5))
+  cat(i, "\n")
+})
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>async</em> version 0.3.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

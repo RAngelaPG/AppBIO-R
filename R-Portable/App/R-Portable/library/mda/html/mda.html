@@ -1,0 +1,291 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Mixture Discriminant Analysis</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mda {mda}"><tr><td>mda {mda}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Mixture Discriminant Analysis</h2>
+
+<h3>Description</h3>
+
+<p>Mixture discriminant analysis.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+mda(formula, data, subclasses, sub.df, tot.df, dimension, eps,
+    iter, weights, method, keep.fitted, trace, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>of the form <code>y~x</code> it describes the response and
+the predictors.  The formula can be more complicated, such as
+<code>y~log(x)+z</code> etc (see <code><a href="../../stats/html/formula.html">formula</a></code> for more details).
+The response should be a factor representing the response variable,
+or any vector that can be coerced to such (such as a logical
+variable).</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>data frame containing the variables in the formula
+(optional).</p>
+</td></tr>
+<tr valign="top"><td><code>subclasses</code></td>
+<td>
+<p>Number of subclasses per class, default is 3.  Can be
+a vector with a number for each class.</p>
+</td></tr>
+<tr valign="top"><td><code>sub.df</code></td>
+<td>
+<p>If subclass centroid shrinking is performed, what is the
+effective degrees of freedom of the centroids per class.  Can be a
+scalar, in which case the same number is used for each class, else a
+vector.</p>
+</td></tr>
+<tr valign="top"><td><code>tot.df</code></td>
+<td>
+<p>The total df for all the centroids can be specified
+rather than separately per class.</p>
+</td></tr>
+<tr valign="top"><td><code>dimension</code></td>
+<td>
+<p>The dimension of the reduced model.  If we know our
+final model will be confined to a discriminant subspace (of the
+subclass centroids), we can specify this in advance and have the EM
+algorithm operate in this subspace.</p>
+</td></tr>
+<tr valign="top"><td><code>eps</code></td>
+<td>
+<p>A numerical threshold for automatically truncating the
+dimension.</p>
+</td></tr>
+<tr valign="top"><td><code>iter</code></td>
+<td>
+<p>A limit on the total number of iterations,  default is 5.</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p><em>NOT</em> observation weights!  This is a special
+weight structure, which for each class assigns a weight (prior
+probability) to each of the observations in that class of belonging
+to one of the subclasses.  The default is provided by a call to
+<code>mda.start(x, g, subclasses, trace, ...)</code> (by this time
+<code>x</code> and <code>g</code> are known).  See the help for
+<code><a href="../../mda/help/mda.start.html">mda.start</a></code>.  Arguments for <code>mda.start</code> can be
+provided via the <code>...</code> argument to mda, and the
+<code>weights</code> argument need never be accessed.  A previously fit
+mda object can be supplied, in which case the final subclass
+<code>responsibility</code> weights are used for <code>weights</code>.  This 
+allows the iterations from a previous fit to be continued.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>regression method used in optimal scaling.  Default is
+linear regression via the function <code>polyreg</code>, resulting in the
+usual mixture model.  Other possibilities are <code>mars</code> and 
+<code>bruto</code>.  For penalized mixture discriminant models
+<code>gen.ridge</code> is appropriate.</p>
+</td></tr>
+<tr valign="top"><td><code>keep.fitted</code></td>
+<td>
+<p>a logical variable, which determines whether the
+(sometimes large) component <code>"fitted.values"</code> of the <code>fit</code>
+component of the returned <code>mda</code> object should be kept.  The
+default is <code>TRUE</code> if <code>n * dimension &lt; 5000</code>.</p>
+</td></tr> 
+<tr valign="top"><td><code>trace</code></td>
+<td>
+<p>if <code>TRUE</code>, iteration information is printed.  Note
+that the deviance reported is for the posterior class likelihood,
+and not the full likelihood, which is used to drive the EM algorithm
+under <code>mda</code>.  In general the latter is not available.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>additional arguments to <code>mda.start</code> and to
+<code>method</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>c("mda", "fda")</code>.  The most useful extractor
+is <code>predict</code>, which can make many types of predictions from this
+object.  It can also be plotted, and any functions useful for fda
+objects will work here too, such as <code>confusion</code> and <code>coef</code>.
+</p>
+<p>The object has the following components:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>percent.explained</code></td>
+<td>
+<p>the percent between-group variance explained
+by each dimension (relative to the total explained.)</p>
+</td></tr>
+<tr valign="top"><td><code>values</code></td>
+<td>
+<p>optimal scaling regression sum-of-squares for each
+dimension (see reference).</p>
+</td></tr>
+<tr valign="top"><td><code>means</code></td>
+<td>
+<p>subclass means in the discriminant space.  These are also
+scaled versions of the final theta's or class scores, and can be
+used in a subsequent call to <code>mda</code> (this only makes sense if
+some columns of theta are omitted&mdash;see the references)</p>
+</td></tr>
+<tr valign="top"><td><code>theta.mod</code></td>
+<td>
+<p>(internal) a class scoring matrix which allows
+<code>predict</code> to work properly.</p>
+</td></tr>
+<tr valign="top"><td><code>dimension</code></td>
+<td>
+<p>dimension of discriminant space.</p>
+</td></tr>
+<tr valign="top"><td><code>sub.prior</code></td>
+<td>
+<p>subclass membership priors, computed in the fit.  No
+effort is currently spent in trying to keep these above a threshold.</p>
+</td></tr>
+<tr valign="top"><td><code>prior</code></td>
+<td>
+<p>class proportions for the training data.</p>
+</td></tr>
+<tr valign="top"><td><code>fit</code></td>
+<td>
+<p>fit object returned by <code>method</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>the call that created this object (allowing it to be
+<code>update</code>-able).</p>
+</td></tr>
+<tr valign="top"><td><code>confusion</code></td>
+<td>
+<p>confusion matrix when classifying the training data.</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>These are the subclass membership probabilities for
+each member of the training set; see the weights argument.</p>
+</td></tr>
+<tr valign="top"><td><code>assign.theta</code></td>
+<td>
+<p>a pointer list which identifies which elements of
+certain lists belong to individual classes.</p>
+</td></tr>
+<tr valign="top"><td><code>deviance</code></td>
+<td>
+<p>The multinomial log-likelihood of the fit.  Even though
+the full log-likelihood drives the iterations, we cannot in general
+compute it because of the flexibility of the <code>method</code> used.
+The deviance can increase with the iterations, but generally does not.</p>
+</td></tr>
+</table>
+<p>The <code>method</code> functions are required to take arguments <code>x</code>
+and <code>y</code> where both can be matrices, and should produce a matrix
+of <code>fitted.values</code> the same size as <code>y</code>.  They can take
+additional arguments <code>weights</code> and should all have a <code>...</code>
+for safety sake.  Any arguments to method() can be passed on via the
+<code>...</code> argument of <code>mda</code>.  The default method
+<code>polyreg</code> has a <code>degree</code> argument which allows polynomial
+regression of the required total degree.  See the documentation for
+<code><a href="../../mda/help/predict.fda.html">predict.fda</a></code> for further requirements of <code>method</code>.
+The package <code>earth</code> is suggested for this package as well;
+<code>earth</code> is a more detailed implementation of the mars model, and
+works as a <code>method</code> argument.
+</p>
+<p>The function <code>mda.start</code> creates the starting weights; it takes
+additional arguments which can be passed in via the <code>...</code>
+argument to <code>mda</code>.  See the documentation for <code>mda.start</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Trevor Hastie and Robert Tibshirani
+</p>
+
+
+<h3>References</h3>
+
+<p>&ldquo;Flexible Disriminant Analysis by Optimal Scoring&rdquo; by Hastie,
+Tibshirani and Buja, 1994, JASA, 1255-1270.
+</p>
+<p>&ldquo;Penalized Discriminant Analysis&rdquo; by Hastie, Buja and Tibshirani, 1995,
+Annals of Statistics, 73-102
+</p>
+<p>&ldquo;Discriminant Analysis by Gaussian Mixtures&rdquo; by Hastie and
+Tibshirani, 1996, JRSS-B, 155-176.
+</p>
+<p>&ldquo;Elements of Statisical Learning - Data Mining, Inference and
+Prediction&rdquo; (2nd edition, Chapter 12) by Hastie, Tibshirani and
+Friedman, 2009, Springer
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../mda/help/predict.mda.html">predict.mda</a></code>,
+<code><a href="../../mda/help/mars.html">mars</a></code>,
+<code><a href="../../mda/help/bruto.html">bruto</a></code>,
+<code><a href="../../mda/help/polyreg.html">polyreg</a></code>,
+<code><a href="../../mda/help/gen.ridge.html">gen.ridge</a></code>,
+<code><a href="../../mda/help/softmax.html">softmax</a></code>,
+<code><a href="../../mda/help/confusion.html">confusion</a></code>
+
+
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(iris)
+irisfit &lt;- mda(Species ~ ., data = iris)
+irisfit
+## Call:
+## mda(formula = Species ~ ., data = iris)
+##
+## Dimension: 4
+##
+## Percent Between-Group Variance Explained:
+##     v1     v2     v3     v4
+##  96.02  98.55  99.90 100.00
+##
+## Degrees of Freedom (per dimension): 5
+##
+## Training Misclassification Error: 0.02 ( N = 150 )
+##
+## Deviance: 15.102
+
+data(glass)
+# random sample of size 100
+samp &lt;- c(1, 3, 4, 11, 12, 13, 14, 16, 17, 18, 19, 20, 27, 28, 31,
+          38, 42, 46, 47, 48, 49, 52, 53, 54, 55, 57, 62, 63, 64, 65,
+          67, 68, 69, 70, 72, 73, 78, 79, 83, 84, 85, 87, 91, 92, 94,
+          99, 100, 106, 107, 108, 111, 112, 113, 115, 118, 121, 123,
+          124, 125, 126, 129, 131, 133, 136, 139, 142, 143, 145, 147,
+          152, 153, 156, 159, 160, 161, 164, 165, 166, 168, 169, 171,
+          172, 173, 174, 175, 177, 178, 181, 182, 185, 188, 189, 192,
+          195, 197, 203, 205, 211, 212, 214) 
+glass.train &lt;- glass[samp,]
+glass.test &lt;- glass[-samp,]
+glass.mda &lt;- mda(Type ~ ., data = glass.train)
+predict(glass.mda, glass.test, type="post") # abbreviations are allowed
+confusion(glass.mda,glass.test)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mda</em> version 0.5-5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

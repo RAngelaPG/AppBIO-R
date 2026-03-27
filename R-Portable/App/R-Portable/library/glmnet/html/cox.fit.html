@@ -1,0 +1,240 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Fit a Cox regression model with elastic net regularization...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for cox.fit {glmnet}"><tr><td>cox.fit {glmnet}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Fit a Cox regression model with elastic net regularization for a single
+value of lambda</h2>
+
+<h3>Description</h3>
+
+<p>Fit a Cox regression model via penalized maximum likelihood for a single
+value of lambda. Can deal with (start, stop] data and strata, as well as
+sparse design matrices.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+cox.fit(
+  x,
+  y,
+  weights,
+  lambda,
+  alpha = 1,
+  offset = rep(0, nobs),
+  thresh = 1e-10,
+  maxit = 1e+05,
+  penalty.factor = rep(1, nvars),
+  exclude = c(),
+  lower.limits = -Inf,
+  upper.limits = Inf,
+  warm = NULL,
+  from.cox.path = FALSE,
+  save.fit = FALSE,
+  trace.it = 0
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>Input matrix, of dimension <code>nobs x nvars</code>; each row is an
+observation vector. If it is a sparse matrix, it is assumed to be unstandardized.
+It should have attributes <code>xm</code> and <code>xs</code>, where <code>xm(j)</code> and
+<code>xs(j)</code> are the centering and scaling factors for variable j respsectively.
+If it is not a sparse matrix, it is assumed that any standardization needed
+has already been done.</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>Survival response variable, must be a Surv or stratifySurv object.</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>Observation weights. <code>cox.fit</code> does NOT standardize
+these weights.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>A single value for the <code>lambda</code> hyperparameter.</p>
+</td></tr>
+<tr valign="top"><td><code>alpha</code></td>
+<td>
+<p>See glmnet help file</p>
+</td></tr>
+<tr valign="top"><td><code>offset</code></td>
+<td>
+<p>See glmnet help file</p>
+</td></tr>
+<tr valign="top"><td><code>thresh</code></td>
+<td>
+<p>Convergence threshold for coordinate descent. Each inner
+coordinate-descent loop continues until the maximum change in the objective
+after any coefficient update is less than thresh times the null deviance.
+Default value is <code>1e-10</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>maxit</code></td>
+<td>
+<p>Maximum number of passes over the data; default is <code>10^5</code>.
+(If a warm start object is provided, the number of passes the warm start object
+performed is included.)</p>
+</td></tr>
+<tr valign="top"><td><code>penalty.factor</code></td>
+<td>
+<p>See glmnet help file</p>
+</td></tr>
+<tr valign="top"><td><code>exclude</code></td>
+<td>
+<p>See glmnet help file</p>
+</td></tr>
+<tr valign="top"><td><code>lower.limits</code></td>
+<td>
+<p>See glmnet help file</p>
+</td></tr>
+<tr valign="top"><td><code>upper.limits</code></td>
+<td>
+<p>See glmnet help file</p>
+</td></tr>
+<tr valign="top"><td><code>warm</code></td>
+<td>
+<p>Either a <code>glmnetfit</code> object or a list (with name <code>beta</code>
+containing coefficients) which can be used as a warm start. Default is
+<code>NULL</code>, indicating no warm start. For internal use only.</p>
+</td></tr>
+<tr valign="top"><td><code>from.cox.path</code></td>
+<td>
+<p>Was <code>cox.fit()</code> called from <code>cox.path()</code>?
+Default is FALSE.This has implications for computation of the penalty factors.</p>
+</td></tr>
+<tr valign="top"><td><code>save.fit</code></td>
+<td>
+<p>Return the warm start object? Default is FALSE.</p>
+</td></tr>
+<tr valign="top"><td><code>trace.it</code></td>
+<td>
+<p>Controls how much information is printed to screen. If
+<code>trace.it=2</code>, some information about the fitting procedure is printed to
+the console as the model is being fitted. Default is <code>trace.it=0</code>
+(no information printed). (<code>trace.it=1</code> not used for compatibility with
+<code>glmnet.path</code>.)</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>WARNING: Users should not call <code>cox.fit</code> directly. Higher-level
+functions in this package call <code>cox.fit</code> as a subroutine. If a
+warm start object is provided, some of the other arguments in the function
+may be overriden.
+</p>
+<p><code>cox.fit</code> solves the elastic net problem for a single, user-specified
+value of lambda. <code>cox.fit</code> works for Cox regression models, including
+(start, stop] data and strata. It solves the problem using iteratively
+reweighted least squares (IRLS). For each IRLS iteration, <code>cox.fit</code>
+makes a quadratic (Newton) approximation of the log-likelihood, then calls
+<code>elnet.fit</code> to minimize the resulting approximation.
+</p>
+<p>In terms of standardization: <code>cox.fit</code> does not standardize <code>x</code>
+and <code>weights</code>. <code>penalty.factor</code> is standardized so that they sum
+up to <code>nvars</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object with class &quot;coxnet&quot;, &quot;glmnetfit&quot; and &quot;glmnet&quot;. The list
+returned contains more keys than that of a &quot;glmnet&quot; object.
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>a0</code></td>
+<td>
+<p>Intercept value, <code>NULL</code> for &quot;cox&quot; family.</p>
+</td></tr>
+<tr valign="top"><td><code>beta</code></td>
+<td>
+<p>A <code>nvars x 1</code> matrix of coefficients, stored in sparse matrix
+format.</p>
+</td></tr>
+<tr valign="top"><td><code>df</code></td>
+<td>
+<p>The number of nonzero coefficients.</p>
+</td></tr>
+<tr valign="top"><td><code>dim</code></td>
+<td>
+<p>Dimension of coefficient matrix.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>Lambda value used.</p>
+</td></tr>
+<tr valign="top"><td><code>dev.ratio</code></td>
+<td>
+<p>The fraction of (null) deviance explained. The deviance
+calculations incorporate weights if present in the model. The deviance is
+defined to be 2*(loglike_sat - loglike), where loglike_sat is the log-likelihood
+for the saturated model (a model with a free parameter per observation).
+Hence dev.ratio=1-dev/nulldev.</p>
+</td></tr>
+<tr valign="top"><td><code>nulldev</code></td>
+<td>
+<p>Null deviance (per observation). This is defined to be
+2*(loglike_sat -loglike(Null)). The null model refers to the 0 model.</p>
+</td></tr>
+<tr valign="top"><td><code>npasses</code></td>
+<td>
+<p>Total passes over the data.</p>
+</td></tr>
+<tr valign="top"><td><code>jerr</code></td>
+<td>
+<p>Error flag, for warnings and errors (largely for internal
+debugging).</p>
+</td></tr>
+<tr valign="top"><td><code>offset</code></td>
+<td>
+<p>A logical variable indicating whether an offset was included
+in the model.</p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>The call that produced this object.</p>
+</td></tr>
+<tr valign="top"><td><code>nobs</code></td>
+<td>
+<p>Number of observations.</p>
+</td></tr>
+<tr valign="top"><td><code>warm_fit</code></td>
+<td>
+<p>If <code>save.fit=TRUE</code>, output of C++ routine, used for
+warm starts. For internal use only.</p>
+</td></tr>
+<tr valign="top"><td><code>family</code></td>
+<td>
+<p>Family used for the model, always &quot;cox&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>converged</code></td>
+<td>
+<p>A logical variable: was the algorithm judged to have
+converged?</p>
+</td></tr>
+<tr valign="top"><td><code>boundary</code></td>
+<td>
+<p>A logical variable: is the fitted value on the boundary of
+the attainable values?</p>
+</td></tr>
+<tr valign="top"><td><code>obj_function</code></td>
+<td>
+<p>Objective function value at the solution.</p>
+</td></tr>
+</table>
+
+<hr /><div style="text-align: center;">[Package <em>glmnet</em> version 4.1-10 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Balance groups by up- and downsampling</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for balance {groupdata2}"><tr><td>balance {groupdata2}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Balance groups by up- and downsampling</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#maturing"><img src="../help/figures/lifecycle-maturing.svg" alt='[Maturing]' /></a>
+</p>
+<p>Uses up- and/or downsampling to fix the group sizes to the
+<code>min</code>, <code>max</code>, <code>mean</code>, or <code>median</code> group size or
+to a specific number of rows. Has a range of methods for balancing on
+ID level.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+balance(
+  data,
+  size,
+  cat_col,
+  id_col = NULL,
+  id_method = "n_ids",
+  mark_new_rows = FALSE,
+  new_rows_col_name = ".new_row"
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p><code>data.frame</code>. Can be <em>grouped</em>, in which case
+the function is applied group-wise.</p>
+</td></tr>
+<tr valign="top"><td><code>size</code></td>
+<td>
+<p>Size to fix group sizes to.
+Can be a specific number, given as a whole number, or one of the following strings:
+<code>"min"</code>, <code>"max"</code>, <code>"mean"</code>, <code>"median"</code>.
+</p>
+
+
+<h4>number</h4>
+
+<p>Fix each group to have the size of the specified number of row.
+Uses downsampling for groups with too many rows and upsampling for groups with too few rows.
+</p>
+
+
+
+<h4>min</h4>
+
+<p>Fix each group to have the size of smallest group in the dataset.
+Uses downsampling on all groups that have too many rows.
+</p>
+
+
+
+<h4>max</h4>
+
+<p>Fix each group to have the size of largest group in the dataset.
+Uses upsampling on all groups that have too few rows.
+</p>
+
+
+
+<h4>mean</h4>
+
+<p>Fix each group to have the mean group size in the dataset. The mean is rounded.
+Uses downsampling for groups with too many rows and upsampling for groups with too few rows.
+</p>
+
+
+
+<h4>median</h4>
+
+<p>Fix each group to have the median group size in the dataset. The median is rounded.
+Uses downsampling for groups with too many rows and upsampling for groups with too few rows.
+</p>
+</td></tr>
+<tr valign="top"><td><code>cat_col</code></td>
+<td>
+<p>Name of categorical variable to balance by. (Character)</p>
+</td></tr>
+<tr valign="top"><td><code>id_col</code></td>
+<td>
+<p>Name of factor with IDs. (Character)
+</p>
+<p>IDs are considered entities, e.g. allowing us to add or remove all rows for an ID.
+How this is used is up to the <code>`id_method`</code>.
+</p>
+<p>E.g. If we have measured a participant multiple times and
+want make sure that we keep all these measurements. Then we would either
+remove/add all measurements for the participant or leave in
+all measurements for the participant.
+</p>
+<p>N.B. When <code>`data`</code> is a <em>grouped</em> <code>data.frame</code>
+(see <code><a href="../../dplyr/help/group_by.html">dplyr::group_by()</a></code>), IDs that appear in multiple
+groupings are considered separate entities within those groupings.</p>
+</td></tr>
+<tr valign="top"><td><code>id_method</code></td>
+<td>
+<p>Method for balancing the IDs. (Character)
+</p>
+<p><code>"n_ids"</code>, <code>"n_rows_c"</code>, <code>"distributed"</code>, or <code>"nested"</code>.
+</p>
+
+
+<h4>n_ids (default)</h4>
+
+<p>Balances on ID level only. It makes sure there are the same number of IDs for each category.
+This might lead to a different number of rows between categories.
+</p>
+
+
+
+<h4>n_rows_c</h4>
+
+<p>Attempts to level the number of rows per category, while only removing/adding entire IDs.
+This is done in 2 steps:
+</p>
+
+<ol>
+<li><p> If a category needs to add all its rows one or more times, the data is repeated.
+</p>
+</li>
+<li><p> Iteratively, the ID with the number of rows closest to the
+lacking/excessive number of rows is added/removed.
+This happens until adding/removing the closest ID would lead to a size further from
+the target size than the current size.
+If multiple IDs are closest, one is randomly sampled.
+</p>
+</li></ol>
+
+
+
+
+<h4>distributed</h4>
+
+<p>Distributes the lacking/excess rows equally between the IDs.
+If the number to distribute can not be equally divided, some IDs will have 1 row more/less than the others.
+</p>
+
+
+
+<h4>nested</h4>
+
+<p>Calls <code>balance()</code> on each category with IDs as cat_col.
+</p>
+<p>I.e. if size is <code>"min"</code>, IDs will have the size of the smallest ID in their category.
+</p>
+</td></tr>
+<tr valign="top"><td><code>mark_new_rows</code></td>
+<td>
+<p>Add column with <code>1</code>s for added rows, and <code>0</code>s for original rows. (Logical)</p>
+</td></tr>
+<tr valign="top"><td><code>new_rows_col_name</code></td>
+<td>
+<p>Name of column marking new rows. Defaults to <code>".new_row"</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+
+
+<h4>Without <code>`id_col`</code></h4>
+
+<p>Upsampling is done with replacement for added rows,
+while the original data remains intact.
+Downsampling is done without replacement, meaning that rows are not duplicated but only removed.</p>
+
+
+
+<h4>With <code>`id_col`</code></h4>
+
+<p>See <code>`id_method`</code> description.</p>
+
+
+
+<h3>Value</h3>
+
+<p><code>data.frame</code> with added and/or deleted rows.
+Ordered by potential grouping variables, <code>`cat_col`</code> and (potentially) <code>`id_col`</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Ludvig Renbo Olsen, <a href="mailto:r-pkgs@ludvigolsen.dk">r-pkgs@ludvigolsen.dk</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other sampling functions: 
+<code><a href="../../groupdata2/help/downsample.html">downsample</a>()</code>,
+<code><a href="../../groupdata2/help/upsample.html">upsample</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Attach packages
+library(groupdata2)
+
+# Create data frame
+df &lt;- data.frame(
+  "participant" = factor(c(1, 1, 2, 3, 3, 3, 3, 4, 4, 5, 5, 5, 5)),
+  "diagnosis" = factor(c(0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0)),
+  "trial" = c(1, 2, 1, 1, 2, 3, 4, 1, 2, 1, 2, 3, 4),
+  "score" = sample(c(1:100), 13)
+)
+
+# Using balance() with specific number of rows
+balance(df, 3, cat_col = "diagnosis")
+
+# Using balance() with min
+balance(df, "min", cat_col = "diagnosis")
+
+# Using balance() with max
+balance(df, "max", cat_col = "diagnosis")
+
+# Using balance() with id_method "n_ids"
+# With column specifying added rows
+balance(df, "max",
+  cat_col = "diagnosis",
+  id_col = "participant",
+  id_method = "n_ids",
+  mark_new_rows = TRUE
+)
+
+# Using balance() with id_method "n_rows_c"
+# With column specifying added rows
+balance(df, "max",
+  cat_col = "diagnosis",
+  id_col = "participant",
+  id_method = "n_rows_c",
+  mark_new_rows = TRUE
+)
+
+# Using balance() with id_method "distributed"
+# With column specifying added rows
+balance(df, "max",
+  cat_col = "diagnosis",
+  id_col = "participant",
+  id_method = "distributed",
+  mark_new_rows = TRUE
+)
+
+# Using balance() with id_method "nested"
+# With column specifying added rows
+balance(df, "max",
+  cat_col = "diagnosis",
+  id_col = "participant",
+  id_method = "nested",
+  mark_new_rows = TRUE
+)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>groupdata2</em> version 2.0.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

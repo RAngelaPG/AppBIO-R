@@ -1,0 +1,320 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Insert bibtex references in Rd and roxygen2 documentation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for insert_ref {Rdpack}"><tr><td>insert_ref {Rdpack}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Insert bibtex references in Rd and roxygen2 documentation</h2>
+
+<h3>Description</h3>
+
+<p>Package Rdpack provides Rd macros for inserting references and
+citations from bibtex files into R documentation.  Function
+<code>insert_ref()</code> is the workhorse behind this mechanism. The
+description given on this page should be sufficient, for more details
+see the vignette.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+insert_ref(key, package = NULL, ..., cached_env = NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>key</code></td>
+<td>
+<p>the bibtex key of the reference, a character string.</p>
+</td></tr>
+<tr valign="top"><td><code>package</code></td>
+<td>
+<p>the package in which to look for the bibtex file.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>further arguments to pass on to <code>get_bibentries()</code>. The only
+one of interest to users is <code>bibfile</code>, whose default is
+&quot;REFERENCES.bib&quot;, see <code><a href="../../Rdpack/help/get_bibentries.html">get_bibentries</a></code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>cached_env</code></td>
+<td>
+
+<p>environment, used to avoid repeatedly passing the bib
+file from scratch, mainly used by the Rd macros.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>insert_ref</code> extracts a bibliograhic reference from a bibtex
+file, converts it to Rd format and returns a single string with
+embedded newline characters. It is the workhorse in the provided
+mechanism but most users do not even need to know about
+<code>insert_ref</code>.
+</p>
+<p>Package <span class="pkg">Rdpack</span> provides several Rd macros for inserting
+references and citations in the documentation of a package. All macros
+work in both, manually written Rd files and in <span class="pkg">roxygen2</span>
+documentation chunks. The macros look for references in file
+<code>"REFERENCES.bib"</code> in the root of the installation directory of
+the package. When a package is in development mode under
+<span class="pkg">devtools</span>, <code>"inst/REFERENCES.bib"</code> in the development
+directory of the package is checked first. See also
+<code><a href="../../Rdpack/help/get_bibentries.html">get_bibentries</a></code> but note that while direct calls to
+<code>insert_ref()</code> can specify a different file, the filename and the
+places where it is looked for are fixed for the Rd macros.
+</p>
+<p>The description below assumes that <span class="pkg">Rdpack</span> has been added to file
+DESCRIPTION, as described in <code><a href="../../Rdpack/help/Rdpack-package.html">Rdpack-package</a></code> and vignette
+<code>"Inserting_bibtex_references"</code>. The Rd macros are put in the
+text of documentation sources (&lsquo;Rd&rsquo; files or &lsquo;roxygen2&rsquo;
+chunks).
+</p>
+
+
+<h4>Rd macro insertRef</h4>
+
+<p><code style="white-space: pre;">\insertRef{key}{package}</code> inserts the reference with bibtex key
+<code style="white-space: pre;">key</code> from file <code>"REFERENCES.bib"</code> in package
+<code style="white-space: pre;">package</code>. Argument &lsquo;package&rsquo; can be any installed <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>
+package, not necessarily the one of the documentation object, as long
+as it contains file <code>"REFERENCES.bib"</code> in the root of its
+installation directory.  The references are partially processed when
+the package is built.
+</p>
+<p>References inserted with <code style="white-space: pre;">\insertRef</code> appear in the place where
+the macro is put, usually in a dedicated references section
+(<code style="white-space: pre;">\references</code> in Rd files, <code style="white-space: pre;">@references</code> in roxygen
+chunks).
+</p>
+<p>For example, section &lsquo;References&rsquo; of this help page shows
+(among other things)) the rendered results of the following lines in
+the Rd source file:
+</p>
+<pre>
+        \insertRef{Rpackage:rbibutils}{Rdpack}
+    
+        \insertRef{parseRd}{Rdpack}
+        
+        \insertRef{bibutils6.10}{rbibutils}
+    </pre>
+<p>A roxygen2 documentation chunk might look like this:
+</p>
+<pre>
+        #' @references
+        #' \insertRef{Rpackage:rbibutils}{Rdpack}
+        #' 
+        #' \insertRef{parseRd}{Rdpack}
+        #' 
+        #' \insertRef{bibutils6.10}{rbibutils}
+    </pre>
+<p>The first reference has label <code style="white-space: pre;">Rpackage:rbibutils</code> and is taken
+from file <code>"REFERENCES.bib"</code> in package <span class="pkg">Rdpack</span>. The third
+reference is from the file <code>"REFERENCES.bib"</code> in package
+<span class="pkg">rbibutils</span>.
+</p>
+<p>For more details see vignette <code>"Inserting_bibtex_references"</code>.
+</p>
+
+
+
+<h4>Rd macro insertCite</h4>
+
+<p><code>\insertCite{key}{package}</code> cites the key and records it for use
+by <code>\insertAllCited</code>, see below. <code>key</code> can contain more
+keys separated by commas.
+</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: left;">
+       <code>\insertCite{parseRd,Rpackage:rbibutils}{Rdpack}</code> </td><td style="text-align: left;"> (Murdoch 2010; Boshnakov and Putman 2020) </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+       <code>\insertCite{Rpackage:rbibutils}{Rdpack}</code>   </td><td style="text-align: left;"> (Boshnakov and Putman 2020) </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+       <code>\insertCite{bibutils6.10}{rbibutils}</code> </td><td style="text-align: left;"> (Putnam 2020)
+    </td>
+</tr>
+
+</table>
+
+<p>By default the citations are parenthesised
+(Murdoch 2010).  To get textual citations, like
+Murdoch (2010), put the string <code>;textual</code>
+at the end of the key. The references in the last two sentences were
+produced with <code>\insertCite{parseRd}{Rdpack}</code> and
+<code>\insertCite{parseRd;textual}{Rdpack}</code>, respectively.  This
+also works with several citations, e.g.
+<br />
+<code>\insertCite{parseRd,Rpackage:rbibutils;textual}{Rdpack}</code>
+produces: Murdoch (2010); Boshnakov and Putman (2020).
+</p>
+<p>To mix the citations with other text, such as &lsquo;see also&rsquo; and
+&lsquo;chapter 3&rsquo;, write the list of keys as free text, starting it
+with the symbol <code>@</code> and prefixing each key with it.  The
+<code>@</code> symbol will not appear in the output. For example, the
+following code
+</p>
+<pre>
+        \insertCite{@see also @parseRd and @Rpackage:rbibutils}{Rdpack},
+    
+        \insertCite{@see also @parseRd; @Rpackage:rbibutils}{Rdpack},
+    
+        \insertCite{@see also @parseRd and @Rpackage:rbibutils;textual}{Rdpack}.
+    </pre>
+<p>produces:
+</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: left;">
+      (see also Murdoch 2010 and Boshnakov and Putman 2020), </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+      (see also Murdoch 2010; Boshnakov and Putman 2020), </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+      see also Murdoch (2010) and Boshnakov and Putman (2020).
+    </td>
+</tr>
+
+</table>
+
+<p>In the parenthesised form, adding <code style="white-space: pre;">;nobrackets</code> at the end of the
+list of keys causes the enclosing parentheses to be dropped. This is
+useful if you wish to use markup for the text surrounding the
+references. For example,
+</p>
+<pre>
+        (\emph{see also}  \insertCite{@@parseRd; @Rpackage:rbibutils;nobrackets}{Rdpack}).
+      </pre>
+<p>gives: (<em>see also</em>  Murdoch 2010; Boshnakov and Putman 2020).
+Without &lsquo;<code style="white-space: pre;">;nobrackets</code>&rsquo; the result would be
+(<em>see also</em>  (Murdoch 2010; Boshnakov and Putman 2020)).
+</p>
+
+
+
+<h4>Rd macro insertNoCite</h4>
+
+<p>The macro <code>\insertNoCite{key}{package}</code> records one or more
+references for <code>\insertAllCited</code> but does not cite it. Setting
+<code>key</code> to <code>*</code> will include all references from the specified
+package. For example, <code>\insertNoCite{parseRd}{Rdpack}</code> and
+<code>\insertNoCite{*}{rbibutils}</code> record the specified references
+for inclusion by <code>\insertAllCited</code>.
+</p>
+
+
+
+<h4>Rd macro insertAllCited</h4>
+
+<p><code>\insertAllCited</code> inserts all references cited with
+<code>\insertCite</code> and <code>\insertNoCite</code>. Putting this macro
+in the references section will keep the references up to date automatically. 
+The Rd section may look something like:
+</p>
+<pre>
+       \references{    
+         \insertAllCited{}
+       }
+    </pre>
+<p>or in roxygen2, the references chunk might look like this:
+</p>
+<pre>
+       #' @references
+       #'   \insertAllCited{}
+    </pre>
+
+
+
+<h4>Rd macro insertCiteOnly</h4>
+
+<p><code>\insertCiteOnly{key}{package}</code> is as <code>\insertCite</code> but
+does not include the key in the list of references for
+<code>\insertAllCited</code>.
+</p>
+
+
+
+<h3>Value</h3>
+
+<p>for <code>insert_ref</code>, a character string
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Georgi N. Boshnakov</p>
+
+
+<h3>References</h3>
+
+<p>For illustrative purposes there are two sets of citations below
+The first set of references is obtained with <code>\insertRef</code> for
+each reference: 
+</p>
+<p>Duncan Murdoch (2010).
+&ldquo;Parsing Rd files.&rdquo;
+<a href="https://developer.r-project.org/parseRd.pdf">https://developer.r-project.org/parseRd.pdf</a>.
+</p>
+<p>Georgi
+N. Boshnakov, Chris Putman (2020).
+<em>rbibutils: Convert Between Bibliography Formats</em>.
+<a href="https://CRAN.R-project.org/package=rbibutils">https://CRAN.R-project.org/package=rbibutils</a>.
+</p>
+<p>Putnam C (2020).
+&ldquo;Library bibutils, version 6.10.&rdquo;
+<a href="https://sourceforge.net/projects/bibutils/">https://sourceforge.net/projects/bibutils/</a>.
+</p>
+<p>&mdash;- 
+</p>
+<p>The following references are obtained with a single <code>\insertAllCited{}</code>. 
+The references are sorted automatically by the surnames of the authors:
+</p>
+<p>Georgi
+N. Boshnakov, Chris Putman (2020).
+<em>rbibutils: Convert Between Bibliography Formats</em>.
+<a href="https://CRAN.R-project.org/package=rbibutils">https://CRAN.R-project.org/package=rbibutils</a>.<br /><br /> Duncan Murdoch (2010).
+&ldquo;Parsing Rd files.&rdquo;
+<a href="https://developer.r-project.org/parseRd.pdf">https://developer.r-project.org/parseRd.pdf</a>.<br /><br /> Chris Putnam (2020).
+&ldquo;Library bibutils, version 6.10.&rdquo;
+<a href="https://sourceforge.net/projects/bibutils/">https://sourceforge.net/projects/bibutils/</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../Rdpack/help/Rdpack-package.html">Rdpack-package</a></code> for overview,
+</p>
+<p><code>vignette("Inserting_bibtex_references", package = "Rdpack")</code> for
+further details on the citation macros
+</p>
+<p><code><a href="../../Rdpack/help/insert_citeOnly.html">insert_citeOnly</a></code> for the function generating citations
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+cat(insert_ref("Rpackage:rbibutils", "Rdpack"), "\n")
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>Rdpack</em> version 2.6.6 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

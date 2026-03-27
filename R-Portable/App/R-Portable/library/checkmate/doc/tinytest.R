@@ -1,5 +1,5 @@
 ## ----eval=FALSE---------------------------------------------------------------
-#  library("tinytest")
-#  library("checkmate")
-#  using("checkmate")
+# library("tinytest")
+# library("checkmate")
+# using("checkmate")
 

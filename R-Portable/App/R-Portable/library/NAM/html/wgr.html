@@ -1,0 +1,198 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Genome-wide prediction</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for GWP {NAM}"><tr><td>GWP {NAM}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Genome-wide prediction
+</h2>
+
+<h3>Description</h3>
+
+<p>Univariate model to find breeding values through regression with optional resampling techniques (SBMC) and polygenic term (Kernel).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+wgr(y,X,it=1500,bi=500,th=1,bag=1,rp=FALSE,iv=FALSE,de=FALSE,
+    pi=0,df=5,R2=0.5,eigK=NULL,VarK=0.95,verb=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>y</code></td>
+<td>
+
+<p>Numeric vector of observations (<i>n</i>) describing the trait to be analyzed. <code>NA</code> is allowed.
+</p>
+</td></tr>
+<tr valign="top"><td><code>X</code></td>
+<td>
+
+<p>Numeric matrix containing the genotypic data. A matrix with <i>n</i>
+rows of observations and (<i>m</i>) columns of molecular markers.
+</p>
+</td></tr>
+<tr valign="top"><td><code>it</code></td>
+<td>
+
+<p>Integer. Number of iterations or samples to be generated.
+</p>
+</td></tr>
+<tr valign="top"><td><code>bi</code></td>
+<td>
+
+<p>Integer. Burn-in, the number of iterations or samples to be discarted.
+</p>
+</td></tr>
+<tr valign="top"><td><code>th</code></td>
+<td>
+
+<p>Integer. Thinning parameter, used to save memory by storing only one every 'th' samples.
+</p>
+</td></tr>
+<tr valign="top"><td><code>bag</code></td>
+<td>
+
+<p>If different than one, it indicates the proportion of data to be subsampled in each Markov chain. For datasets with moderate number of observations, values of bag from 0.30 to 0.60 may speed up computation without losses in predicion properties. This argument enable users to enhance MCMC through Subsampling bootstrap Markov chain (SBMC).
+</p>
+</td></tr>
+<tr valign="top"><td><code>rp</code></td>
+<td>
+
+<p>Logical. Use replacement for bootstrap samples when bag is different than one.
+</p>
+</td></tr>
+<tr valign="top"><td><code>iv</code></td>
+<td>
+
+<p>Logical. Assign markers independent variance, a T prior from a mixture of normals. If true, turns the default model BLUP into BayesA.
+</p>
+</td></tr>
+<tr valign="top"><td><code>de</code></td>
+<td>
+
+<p>Logical. Assign markers independent variance through double-exponential prior. If true, turns the default model BLUP into Bayesian LASSO. This argument overides iv.
+</p>
+</td></tr>
+<tr valign="top"><td><code>pi</code></td>
+<td>
+
+<p>Value between 0 and 1. If greater than zero it activates variable selection, where markers have expected probability pi of having null effect.
+</p>
+</td></tr>
+<tr valign="top"><td><code>df</code></td>
+<td>
+
+<p>Prior degrees of freedom of variance components.
+</p>
+</td></tr>
+<tr valign="top"><td><code>R2</code></td>
+<td>
+
+<p>Expected R2, used to calculate the prior shape.
+</p>
+</td></tr>
+<tr valign="top"><td><code>eigK</code></td>
+<td>
+
+<p>Output of function 'eigen'. Spectral decomposition of the kernel used to compute the polygenic term.
+</p>
+</td></tr>
+<tr valign="top"><td><code>VarK</code></td>
+<td>
+
+<p>Numeric between 0 and 1. For reduction of dimensionality. Indicates the proportion of variance explained by Eigenpairs used to fit the polygenic term.
+</p>
+</td></tr>
+<tr valign="top"><td><code>verb</code></td>
+<td>
+
+<p>Logical. If verbose is TRUE, function displays MCMC progress bar.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The model for the whole-genome regression is as follows:
+</p>
+<p style="text-align: center;"><i>y = mu + Xb + u + e</i></p>
+
+<p>where <i>y</i> is the response variable, <i>mu</i> is the intercept, <i>X</i> is the genotypic matrix, <i>b</i> is the regression coefficient or effect of an allele substitution, with <i>d</i> probability of being included into the model, <i>u</i> is the polygenic term if a kernel is used, and <i>e</i> is the residual term.
+</p>
+<p>Users can obtain four WGR methods out of this function: BRR (pi=0,iv=F), BayesA (pi=0,iv=T), BayesB (pi=0.95,iv=T), BayesC (pi=0.95,iv=F) and Bayesian LASSO or BayesL (pi=0,de=T). Theoretical basis of each model is described by de los Campos et al. (2013).
+</p>
+<p>Gibbs sampler that updates regression coefficients is adapted from GSRU algorithm (Legarra and Misztal 2008). The variable selection works through the unconditional prior algorithm proposed by Kuo and Mallick (1998). Prior shape estimates are computed as Sb = R2*df*var(y)/MSx and Se = (1-R2)*df*var(y). The polygenic term is solved by Bayesian algorithm of reproducing kernel Hilbert Spaces proposed by de los Campos et al. (2010).
+</p>
+
+
+<h3>Value</h3>
+
+<p>The function wgr returns a list with expected value from the marker effect (<i>b</i>), probability of marker being in the model (<i>d</i>), regression coefficient (<i>g</i>), variance of each marker (<i>Vb</i>), the intercept (<i>mu</i>), the polygene (<i>u</i>) and polygenic variance (<i>Vk</i>), residual variance (<i>Ve</i>) and the fitted value (<i>hat</i>).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Alencar Xavier
+</p>
+
+
+<h3>References</h3>
+
+<p>de los Campos, G., Hickey, J. M., Pong-Wong, R., Daetwyler, H. D., and Calus, M. P. (2013). Whole-genome regression and prediction methods applied to plant and animal breeding. Genetics, 193(2), 327-345.
+</p>
+<p>de los Campos, G., Gianola, D., Rosa, G. J., Weigel, K. A., &amp; Crossa, J. (2010). Semi-parametric genomic-enabled prediction of genetic values using reproducing kernel Hilbert spaces methods. Genetics Research, 92(04), 295-308.
+</p>
+<p>Kuo, L., &amp; Mallick, B. (1998). Variable selection for regression models. Sankhya: The Indian Journal of Statistics, Series B, 65-81.
+</p>
+<p>Legarra, A., &amp; Misztal, I. (2008). Technical note: Computing strategies in genome-wide selection. Journal of dairy science, 91(1), 360-366.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+    ## Not run: 
+# Load data
+data(tpod)
+
+# BLUP
+BRR = wgr(y,gen,iv=FALSE,pi=0)
+cor(y,BRR$hat)
+
+# BayesA
+BayesA = wgr(y,gen,iv=TRUE,pi=0)
+cor(y,BayesA$hat)
+
+# BayesB
+BayesB = wgr(y,gen,iv=TRUE,pi=.95)
+cor(y,BayesB$hat)
+
+# BayesC
+BayesC = wgr(y,gen,iv=FALSE,pi=.95)
+cor(y,BayesC$hat)
+
+# BayesCpi
+BayesCpi = BCpi(y,gen)
+cor(y,BayesCpi$hat)        
+        
+# BayesL
+BayesL = wgr(y,gen,de=TRUE)
+cor(y,BayesL$hat)
+        
+   
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>NAM</em> version 1.8.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

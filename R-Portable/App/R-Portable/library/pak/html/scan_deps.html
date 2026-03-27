@@ -1,0 +1,228 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Scan R code for dependent packages</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for scan_deps {pak}"><tr><td>scan_deps {pak}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Scan R code for dependent packages</h2>
+
+<h3>Description</h3>
+
+<p>Scan all R files of a project or directory for packages used within
+them. It parses R code to find <code>library(package)</code>, <code>package::func()</code>,
+and similar calls that imply package dependencies. See details below.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+scan_deps(path = NULL, root = NULL)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>path</code></td>
+<td>
+<p>Files and/or directories to scan. Defaults to the current
+project, detected by finding the first parent directory of the current
+working directory, that contains a file or directory called
+DESCRIPTION, .git, .Rproj.user, renv.lock, or renv.
+(Note that this is different from <code>renv::dependencies()</code>, which only
+scans the current working directory by default!)
+</p>
+<p>If <code>path</code> is not <code>NULL</code>, then only the specified files and directories
+are scanned, the directories recursively. In this case the <code>root</code>
+argument is used as the project root, to find <code>.gitignore</code> and
+<code>.renvignore</code> files. All entries of <code>path</code> must be within the <code>root</code>,
+the project root.</p>
+</td></tr>
+<tr valign="top"><td><code>root</code></td>
+<td>
+<p>The root directory of the project. It is used to find the
+<code>.gitignore</code> and <code>.renvignore</code> files. By default the same algorithm
+is used to detect this as for <code>path</code>. If <code>path</code> is specified and it is
+not within the detected or specified <code>root</code>, <code>scan_path()</code> throws an
+error.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>Data frame with columns:
+</p>
+
+<ul>
+<li> <p><code>path</code>: Path to the file in which the dependencies was found.
+</p>
+</li>
+<li> <p><code>package</code>: Detected package dependency. Typically a package name,
+but it can also be a package reference, e.g. a package from GitHub.
+</p>
+</li>
+<li> <p><code>type</code>: Dependency type. It is <code>"prod"</code>, <code>"test"</code> or <code>"dev"</code>. See
+'Dependency types' below.
+</p>
+</li>
+<li> <p><code>code</code>: The piece of code the dependency was extracted from.
+</p>
+</li>
+<li> <p><code>start_row</code>: Start row of the code the dependency was extracted
+from.
+</p>
+</li>
+<li> <p><code>start_column</code>: Start column of the code the dependency was
+extracted from.
+</p>
+</li>
+<li> <p><code>start_byte</code>: Start byte of the code the dependency was extracted
+from.
+</p>
+</li></ul>
+
+<p>Note the data frame may contain the same package multiple times, if it
+was detected multiple times, e.g. multiple <code>library()</code> calls load the
+same package.
+</p>
+
+
+<h3>Detected dependencies</h3>
+
+<p><code>scan_deps()</code> detects package dependencies from these R expressions:
+</p>
+
+<ul>
+<li> <p><code>library()</code>, <code>require()</code>, <code>loadNamespace()</code> and <code>requireNamespace</code>
+calls.
+</p>
+</li>
+<li> <p><code>::</code> and <code>:::</code> operators.
+</p>
+</li>
+<li><p> Any of the calls in this list in R code from R markdown or quarto
+<code>R</code> and <code>Rscript</code> (case insensitive) code blocks or inline R code.
+</p>
+</li>
+<li><p> A dependency on the methods package is inferred from finding
+<code>setClass()</code> and/or <code>setGeneric()</code> calls.
+</p>
+</li>
+<li> <p><code>xfun::pkg_attach()</code> and <code>xfun::pkg_attach2()</code> calls.
+</p>
+</li>
+<li> <p><code>pacman::p_load()</code> calls.
+</p>
+</li>
+<li> <p><code>modules::import()</code> and <code>modules::module()</code> calls.
+</p>
+</li>
+<li> <p><code>import::from()</code>, <code>import::here()</code> and <code>import::into()</code> calls.
+</p>
+</li>
+<li> <p><code>box::use()</code> calls.
+</p>
+</li>
+<li> <p><code>targets::tar_option_set(packages = ...)</code> calls.
+</p>
+</li>
+<li><p> Any of the calls in this list in R code from <code>glue::glue()</code> strings.
+</p>
+</li>
+<li><p> A dependency on the svglite package is inferred from
+<code>ggplot2::ggsave()</code> calls saving <code>.svg</code> files.
+</p>
+</li>
+<li><p> Dependencies from <code>parsnip::set_engine()</code> calls, the default engine
+to package mapping is:
+</p>
+
+<ul>
+<li> <p><code>"glm"</code> -&gt; stats,
+</p>
+</li>
+<li> <p><code>"glmnet"</code> -&gt; glmnet,
+</p>
+</li>
+<li> <p><code>"keras"</code> -&gt; keras,
+</p>
+</li>
+<li> <p><code>"kknn"</code> -&gt; kknn,
+</p>
+</li>
+<li> <p><code>"nnet"</code> -&gt; nnet,
+</p>
+</li>
+<li> <p><code>"rpart"</code> -&gt; rpart,
+</p>
+</li>
+<li> <p><code>"spark"</code> -&gt; sparklyr,
+</p>
+</li>
+<li> <p><code>"stan"</code> -&gt; rstanarm.
+You can override the default mapping by setting the
+<code>renv.parsnip.engines</code> option to a named list.
+</p>
+</li></ul>
+
+</li>
+<li><p> A dependency on the xml2 package is inferred from using the
+&quot;Junit&quot; reporter (<code>JunitReporter</code>) from the testthat package.
+</p>
+</li>
+<li><p> A dependency on the ragg package is inferred from setting the default
+knitr device (<code>dev</code> option) to <code>"ragg_png"</code>.
+</p>
+</li>
+<li><p> A dependency on the hexbin package is inferred from using
+<code>ggplot2::geom_hex()</code>.
+</p>
+</li>
+<li><p> A custom symbol name to package name mapping can be defined in the
+<code>renv.dependencies.database</code> option. This must be a named list of
+named lists, where the outer names are package names, the inner names
+are function or object names, and the values are package names. E.g.
+</p>
+<div class="sourceCode"><pre>options(renv.dependencies.database = list(
+  ggplot2 = list(geom_hex = "hexbin"),
+  testthat = list(JunitReporter = "xml2")
+))
+</pre></div>
+</li></ul>
+
+
+
+<h3>Dependency types</h3>
+
+<p><code>scan_deps()</code> classifies package dependencies into three groups, based
+on which files they were found:
+</p>
+
+<ul>
+<li><p> Production dependencies: <code>"prod"</code>.
+</p>
+</li>
+<li><p> Test dependencies: <code>"test"</code>.
+</p>
+</li>
+<li><p> Development dependencies: <code>"dev"</code>.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+
+scan_deps("myproject")
+scan_deps("myproject")[]
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>pak</em> version 0.9.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

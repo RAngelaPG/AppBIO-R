@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Stefan Siegert, Jonah Gabry, Martin Lysy, and Ben Goodrich" />
+
+<meta name="date" content="2026-01-08" />
+
+<title>Step by step guide for creating a package that depends on RStan</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Step by step guide for creating a package
+that depends on RStan</h1>
+<h4 class="author">Stefan Siegert, Jonah Gabry, Martin Lysy, and Ben
+Goodrich</h4>
+<h4 class="date">2026-01-08</h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction" id="toc-introduction">Introduction</a></li>
+<li><a href="#creating-the-package-skeleton" id="toc-creating-the-package-skeleton">Creating the package
+skeleton</a></li>
+<li><a href="#read-and-delete-me-file" id="toc-read-and-delete-me-file">Read-and-delete-me file</a></li>
+<li><a href="#stan-files" id="toc-stan-files">Stan files</a></li>
+<li><a href="#r-files" id="toc-r-files">R files</a></li>
+<li><a href="#documentation" id="toc-documentation">Documentation</a></li>
+<li><a href="#install-and-use" id="toc-install-and-use">Install and
+use</a></li>
+<li><a href="#advanced-options" id="toc-advanced-options">Advanced
+options</a></li>
+<li><a href="#adding-additional-stan-models-to-an-existing-r-package-with-stan-models" id="toc-adding-additional-stan-models-to-an-existing-r-package-with-stan-models">Adding
+additional Stan models to an existing R package with Stan
+models</a></li>
+<li><a href="#links" id="toc-links">Links</a></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>In this vignette we will walk through the steps necessary for
+creating an R package that depends on Stan by creating a package with
+one function that fits a simple linear regression. Before continuing, we
+recommend that you first read the other vignette <a href="https://mc-stan.org/rstantools/articles/developer-guidelines.html"><em>Guidelines
+for Developers of R Packages Interfacing with Stan</em></a>.</p>
+</div>
+<div id="creating-the-package-skeleton" class="section level2">
+<h2>Creating the package skeleton</h2>
+<p>The <strong>rstantools</strong> package offers two methods for adding
+Stan functionality to R packages:</p>
+<ul>
+<li><code>rstan_create_package()</code>: set up a new R package with
+Stan programs</li>
+<li><code>use_rstan()</code>: add Stan functionality to an
+<em>existing</em> R package</li>
+</ul>
+<p>Here we will use <code>rstan_create_package()</code> to initialize a
+bare-bones package directory. The name of our demo package will be
+<strong>rstanlm</strong>; it will fit a simple linear regression model
+using Stan.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;rstantools&quot;</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">rstan_create_package</span>(<span class="at">path =</span> <span class="st">&#39;rstanlm&#39;</span>)</span></code></pre></div>
+<pre><code>This is rstantools version 2.6.0</code></pre>
+<pre><code>Creating package skeleton for package: rstanlm</code></pre>
+<pre><code>Package: rstanlm
+Title: What the Package Does (One Line, Title Case)
+Version: 0.0.0.9000
+Authors@R (parsed):
+    * First Last &lt;first.last@example.com&gt; [aut, cre] (YOUR-ORCID-ID)
+Description: What the package does (one paragraph).
+License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
+    license
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3</code></pre>
+<pre><code>Creating inst/stan/include directory ...</code></pre>
+<pre><code>Creating inst/include directory ...</code></pre>
+<pre><code>Creating src directory ...</code></pre>
+<pre><code>Updating DESCRIPTION ...</code></pre>
+<pre><code>Adding &#39;configure&#39; files ...</code></pre>
+<pre><code>
+Next, add the following lines (e.g., via &lt;package-name&gt;-package.R if using roxygen) to your NAMESPACE:
+
+import(Rcpp)
+import(methods)
+importFrom(rstan, sampling)
+importFrom(rstantools, rstan_config)
+importFrom(RcppParallel, RcppParallelLibs)
+useDynLib(rstanlm, .registration = TRUE)</code></pre>
+<pre><code>Done.</code></pre>
+<pre><code>Adding rstanlm-package.R file ...</code></pre>
+<pre><code>Adding .gitignore file ...</code></pre>
+<pre><code>Adding .Rbuildignore file ...</code></pre>
+<pre><code>Configuring Stan compile and module export instructions ...</code></pre>
+<pre><code>Further Stan-specific steps are described in &#39;rstanlm/Read-and-delete-me&#39;.</code></pre>
+<p>If we had existing <code>.stan</code> files to include with the
+package we could use the optional <code>stan_files</code> argument to
+<code>rstan_create_package()</code> to include them. Another option,
+which we’ll use below, is to add the Stan files once the basic structure
+of the package is in place.</p>
+<p>We can now set the new working directory to the new package directory
+and view the contents. (Note: if using RStudio then by default the newly
+created project for the package will be opened in a new session and you
+will not need the call to <code>setwd()</code>.)</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="fu">setwd</span>(<span class="st">&quot;rstanlm&quot;</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a><span class="fu">list.files</span>(<span class="at">all.files =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<pre><code> [1] &quot;.&quot;                  &quot;..&quot;                 &quot;.Rbuildignore&quot;     
+ [4] &quot;.gitignore&quot;         &quot;DESCRIPTION&quot;        &quot;NAMESPACE&quot;         
+ [7] &quot;R&quot;                  &quot;Read-and-delete-me&quot; &quot;configure&quot;         
+[10] &quot;configure.win&quot;      &quot;inst&quot;               &quot;src&quot;               </code></pre>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu">file.show</span>(<span class="st">&quot;DESCRIPTION&quot;</span>)</span></code></pre></div>
+<pre><code>Package: rstanlm
+Title: What the Package Does (One Line, Title Case)
+Version: 0.0.0.9000
+Authors@R: 
+    person(&quot;First&quot;, &quot;Last&quot;, , &quot;first.last@example.com&quot;, role = c(&quot;aut&quot;, &quot;cre&quot;),
+           comment = c(ORCID = &quot;YOUR-ORCID-ID&quot;))
+Description: What the package does (one paragraph).
+License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
+    license
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Biarch: true
+Depends: 
+    R (&gt;= 3.4.0)
+Imports: 
+    Rcpp (&gt;= 0.12.0),
+    RcppParallel (&gt;= 5.0.1),
+    methods,
+    rstan (&gt;= 2.18.1),
+    rstantools (&gt;= 2.6.0)
+LinkingTo: 
+    BH (&gt;= 1.66.0),
+    Rcpp (&gt;= 0.12.0),
+    RcppEigen (&gt;= 0.3.3.3.0),
+    RcppParallel (&gt;= 5.0.1),
+    StanHeaders (&gt;= 2.18.0),
+    rstan (&gt;= 2.18.1)
+SystemRequirements: GNU make</code></pre>
+<p>Some of the sections in the <code>DESCRIPTION</code> file need to be
+edited by hand (e.g., <code>Title</code>, <code>Author</code>,
+<code>Maintainer</code>, and <code>Description</code>, but these also
+can be set with the <code>fields</code> argument to
+<code>rstan_create_package()</code>). However,
+<code>rstan_create_package()</code> has added the necessary packages and
+versions to <code>Depends</code>, <code>Imports</code>, and
+<code>LinkingTo</code> to enable Stan functionality.</p>
+</div>
+<div id="read-and-delete-me-file" class="section level2">
+<h2>Read-and-delete-me file</h2>
+<p>Before deleting the <code>Read-and-delete-me</code> file in the new
+package directory make sure to read it because it contains some
+important instructions about customizing your package:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="fu">file.show</span>(<span class="st">&quot;Read-and-delete-me&quot;</span>)</span></code></pre></div>
+<pre><code>Stan-specific notes:
+
+* All &#39;.stan&#39; files containing stanmodel definitions must be placed in &#39;inst/stan&#39;.
+* Additional files to be included by stanmodel definition files
+  (via e.g., #include &quot;mylib.stan&quot;) must be placed in any subfolder of &#39;inst/stan&#39;.
+* Additional C++ files needed by any &#39;.stan&#39; file must be placed in &#39;inst/include&#39;,
+  and can only interact with the Stan C++ library via &#39;#include&#39; directives
+  placed in the file &#39;inst/include/stan_meta_header.hpp&#39;.
+* The precompiled stanmodel objects will appear in a named list called &#39;stanmodels&#39;,
+  and you can call them with e.g., &#39;rstan::sampling(stanmodels$foo, ...)&#39;</code></pre>
+<p>You can move this file out of the directory, delete it, or list it in
+the <code>.Rbuildignore</code> file if you want to keep it in the
+directory.</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="fu">file.remove</span>(<span class="st">&#39;Read-and-delete-me&#39;</span>)</span></code></pre></div>
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div id="stan-files" class="section level2">
+<h2>Stan files</h2>
+<p>Our package will call <strong>rstan</strong>’s
+<code>sampling()</code> method to use MCMC to fit a simple linear
+regression model for an outcome variable <code>y</code> with a single
+predictor <code>x</code>. After writing the necessary Stan program, the
+file should be saved with a <code>.stan</code> extension in the
+<code>inst/stan</code> subdirectory. We’ll save the following program to
+<code>inst/stan/lm.stan</code>:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="co">// Save this file as inst/stan/lm.stan</span></span>
+<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a><span class="kw">data</span> {</span>
+<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; N;</span>
+<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a>  <span class="dt">vector</span>[N] x;</span>
+<span id="cb25-5"><a href="#cb25-5" tabindex="-1"></a>  <span class="dt">vector</span>[N] y;</span>
+<span id="cb25-6"><a href="#cb25-6" tabindex="-1"></a>}</span>
+<span id="cb25-7"><a href="#cb25-7" tabindex="-1"></a><span class="kw">parameters</span> {</span>
+<span id="cb25-8"><a href="#cb25-8" tabindex="-1"></a>  <span class="dt">real</span> intercept;</span>
+<span id="cb25-9"><a href="#cb25-9" tabindex="-1"></a>  <span class="dt">real</span> beta;</span>
+<span id="cb25-10"><a href="#cb25-10" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; sigma;</span>
+<span id="cb25-11"><a href="#cb25-11" tabindex="-1"></a>}</span>
+<span id="cb25-12"><a href="#cb25-12" tabindex="-1"></a><span class="kw">model</span> {</span>
+<span id="cb25-13"><a href="#cb25-13" tabindex="-1"></a>  <span class="co">// ... priors, etc.</span></span>
+<span id="cb25-14"><a href="#cb25-14" tabindex="-1"></a></span>
+<span id="cb25-15"><a href="#cb25-15" tabindex="-1"></a>  y ~ normal(intercept + beta * x, sigma);</span>
+<span id="cb25-16"><a href="#cb25-16" tabindex="-1"></a>}</span></code></pre></div>
+<p>The <code>inst/stan</code> subdirectory can contain additional Stan
+programs if required by your package. During installation, all Stan
+programs will be compiled and saved in the list <code>stanmodels</code>
+that can then be used by R function in the package. The rule is that the
+Stan program compiled from the model code in
+<code>inst/stan/foo.stan</code> is stored as list element
+<code>stanmodels$foo</code>. Thus, the filename of the Stan program in
+the <code>inst/stan</code> directory should not contain spaces or dashes
+and nor should it start with a number or utilize non-ASCII
+characters.</p>
+</div>
+<div id="r-files" class="section level2">
+<h2>R files</h2>
+<p>We next create the file <code>R/lm_stan.R</code> where we define the
+function <code>lm_stan()</code> in which our compiled Stan model is
+being used. Setting the <code>rstan_create_package()</code> argument
+<code>roxygen = TRUE</code> (the default value) enables <a href="https://CRAN.R-project.org/package=roxygen2"><strong>roxygen2</strong></a>
+documentation for the package functions. The following comment block
+placed in <code>lm_stan.R</code> ensures that the function has a help
+file and that it is added to the package <code>NAMESPACE</code>:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="co"># Save this file as `R/lm_stan.R`</span></span>
+<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a></span>
+<span id="cb26-3"><a href="#cb26-3" tabindex="-1"></a><span class="co">#&#39; Bayesian linear regression with Stan</span></span>
+<span id="cb26-4"><a href="#cb26-4" tabindex="-1"></a><span class="co">#&#39;</span></span>
+<span id="cb26-5"><a href="#cb26-5" tabindex="-1"></a><span class="co">#&#39; @export</span></span>
+<span id="cb26-6"><a href="#cb26-6" tabindex="-1"></a><span class="co">#&#39; @param x Numeric vector of input values.</span></span>
+<span id="cb26-7"><a href="#cb26-7" tabindex="-1"></a><span class="co">#&#39; @param y Numeric vector of output values.</span></span>
+<span id="cb26-8"><a href="#cb26-8" tabindex="-1"></a><span class="co">#&#39; @param ... Arguments passed to `rstan::sampling` (e.g. iter, chains).</span></span>
+<span id="cb26-9"><a href="#cb26-9" tabindex="-1"></a><span class="co">#&#39; @return An object of class `stanfit` returned by `rstan::sampling`</span></span>
+<span id="cb26-10"><a href="#cb26-10" tabindex="-1"></a><span class="co">#&#39;</span></span>
+<span id="cb26-11"><a href="#cb26-11" tabindex="-1"></a>lm_stan <span class="ot">&lt;-</span> <span class="cf">function</span>(x, y, ...) {</span>
+<span id="cb26-12"><a href="#cb26-12" tabindex="-1"></a>  standata <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">x =</span> x, <span class="at">y =</span> y, <span class="at">N =</span> <span class="fu">length</span>(y))</span>
+<span id="cb26-13"><a href="#cb26-13" tabindex="-1"></a>  out <span class="ot">&lt;-</span> rstan<span class="sc">::</span><span class="fu">sampling</span>(stanmodels<span class="sc">$</span>lm, <span class="at">data =</span> standata, ...)</span>
+<span id="cb26-14"><a href="#cb26-14" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
+<span id="cb26-15"><a href="#cb26-15" tabindex="-1"></a>}</span></code></pre></div>
+<p>When <strong>roxygen2</strong> documentation is enabled, a top-level
+package file <code>R/rstanlm-package.R</code> is created by
+<code>rstan_create_package()</code> to import necessary functions for
+other packages and to set up the package for compiling Stan C++
+code:</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="fu">file.show</span>(<span class="fu">file.path</span>(<span class="st">&quot;R&quot;</span>, <span class="st">&quot;rstanlm-package.R&quot;</span>))</span></code></pre></div>
+<pre><code>#&#39; The &#39;rstanlm&#39; package.
+#&#39;
+#&#39; @description A DESCRIPTION OF THE PACKAGE
+#&#39;
+#&#39; @docType package
+#&#39; @name rstanlm-package
+#&#39; @aliases rstanlm
+#&#39; @useDynLib rstanlm, .registration = TRUE
+#&#39; @import methods
+#&#39; @import Rcpp
+#&#39; @importFrom rstan sampling
+#&#39; @importFrom rstantools rstan_config
+#&#39; @importFrom RcppParallel RcppParallelLibs
+#&#39;
+#&#39; @references
+#&#39; Stan Development Team (NA). RStan: the R interface to Stan. R package version 2.32.7. https://mc-stan.org
+#&#39;
+NULL</code></pre>
+<p>The <code>#&#39; @description</code> section can be manually edited to
+provided specific information about the package.</p>
+</div>
+<div id="documentation" class="section level2">
+<h2>Documentation</h2>
+<p>With <strong>roxygen</strong> documentation enabled, we need to
+generate the documentation for <code>lm_stan</code> and update the
+<code>NAMESPACE</code> so the function is exported, i.e., available to
+users when the package is installed. This can be done with the function
+<code>roxygen2::roxygenize()</code>, which needs to be called twice
+initially.</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="fu">try</span>(roxygen2<span class="sc">::</span><span class="fu">roxygenize</span>(<span class="at">load_code =</span> rstantools_load_code), <span class="at">silent =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a>roxygen2<span class="sc">::</span><span class="fu">roxygenize</span>()</span></code></pre></div>
+<pre><code>Writing &#39;NAMESPACE&#39;
+ℹ Loading rstanlm
+ℹ Re-compiling rstanlm (debug build)
+
+✖ rstanlm-package.R:18: `@docType &quot;package&quot;` is deprecated.
+ℹ Please document &quot;_PACKAGE&quot; instead.
+Writing &#39;NAMESPACE&#39;
+Writing &#39;lm_stan.Rd&#39;
+Writing &#39;rstanlm-package.Rd&#39;</code></pre>
+</div>
+<div id="install-and-use" class="section level2">
+<h2>Install and use</h2>
+<p>Finally, the package is ready to be installed:</p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="co"># using ../rstanlm because already inside the rstanlm directory</span></span>
+<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">&quot;../rstanlm&quot;</span>, <span class="at">repos =</span> <span class="cn">NULL</span>, <span class="at">type =</span> <span class="st">&quot;source&quot;</span>)</span></code></pre></div>
+<pre><code>Installing package into &#39;/private/var/folders/s0/zfzm55px2nd2v__zlw5xfj2h0000gn/T/Rtmp6mLwmo/Rinst8ca93b02cfce&#39;
+(as &#39;lib&#39; is unspecified)</code></pre>
+<p>It is also possible to use
+<code>devtools::install(quick=FALSE)</code> to install the package. The
+argument <code>quick=FALSE</code> is necessary if you want to recompile
+the Stan models. Going forward, if you only make a change to the R code
+or the documentation, you can set <code>quick=TRUE</code> to speed up
+the process, or use <code>devtools::load_all()</code>.</p>
+<p>After installation, the package can be loaded and used like any other
+R package:</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;rstanlm&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm_stan</span>(<span class="at">y =</span> <span class="fu">rnorm</span>(<span class="dv">10</span>), <span class="at">x =</span> <span class="fu">rnorm</span>(<span class="dv">10</span>), </span>
+<span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a>               <span class="co"># arguments passed to sampling</span></span>
+<span id="cb34-3"><a href="#cb34-3" tabindex="-1"></a>               <span class="at">iter =</span> <span class="dv">2000</span>, <span class="at">refresh =</span> <span class="dv">500</span>)</span></code></pre></div>
+<pre><code>
+SAMPLING FOR MODEL &#39;lm&#39; NOW (CHAIN 1).
+Chain 1: 
+Chain 1: Gradient evaluation took 0.000104 seconds
+Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.04 seconds.
+Chain 1: Adjust your expectations accordingly!
+Chain 1: 
+Chain 1: 
+Chain 1: Iteration:    1 / 2000 [  0%]  (Warmup)
+Chain 1: Iteration:  500 / 2000 [ 25%]  (Warmup)
+Chain 1: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+Chain 1: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+Chain 1: Iteration: 1500 / 2000 [ 75%]  (Sampling)
+Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
+Chain 1: 
+Chain 1:  Elapsed Time: 0.339 seconds (Warm-up)
+Chain 1:                0.358 seconds (Sampling)
+Chain 1:                0.697 seconds (Total)
+Chain 1: 
+
+SAMPLING FOR MODEL &#39;lm&#39; NOW (CHAIN 2).
+Chain 2: 
+Chain 2: Gradient evaluation took 3.4e-05 seconds
+Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.34 seconds.
+Chain 2: Adjust your expectations accordingly!
+Chain 2: 
+Chain 2: 
+Chain 2: Iteration:    1 / 2000 [  0%]  (Warmup)
+Chain 2: Iteration:  500 / 2000 [ 25%]  (Warmup)
+Chain 2: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+Chain 2: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+Chain 2: Iteration: 1500 / 2000 [ 75%]  (Sampling)
+Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
+Chain 2: 
+Chain 2:  Elapsed Time: 0.329 seconds (Warm-up)
+Chain 2:                0.33 seconds (Sampling)
+Chain 2:                0.659 seconds (Total)
+Chain 2: 
+
+SAMPLING FOR MODEL &#39;lm&#39; NOW (CHAIN 3).
+Chain 3: 
+Chain 3: Gradient evaluation took 3.4e-05 seconds
+Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.34 seconds.
+Chain 3: Adjust your expectations accordingly!
+Chain 3: 
+Chain 3: 
+Chain 3: Iteration:    1 / 2000 [  0%]  (Warmup)
+Chain 3: Iteration:  500 / 2000 [ 25%]  (Warmup)
+Chain 3: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+Chain 3: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+Chain 3: Iteration: 1500 / 2000 [ 75%]  (Sampling)
+Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
+Chain 3: 
+Chain 3:  Elapsed Time: 0.326 seconds (Warm-up)
+Chain 3:                0.277 seconds (Sampling)
+Chain 3:                0.603 seconds (Total)
+Chain 3: 
+
+SAMPLING FOR MODEL &#39;lm&#39; NOW (CHAIN 4).
+Chain 4: 
+Chain 4: Gradient evaluation took 3.4e-05 seconds
+Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.34 seconds.
+Chain 4: Adjust your expectations accordingly!
+Chain 4: 
+Chain 4: 
+Chain 4: Iteration:    1 / 2000 [  0%]  (Warmup)
+Chain 4: Iteration:  500 / 2000 [ 25%]  (Warmup)
+Chain 4: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+Chain 4: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+Chain 4: Iteration: 1500 / 2000 [ 75%]  (Sampling)
+Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
+Chain 4: 
+Chain 4:  Elapsed Time: 0.339 seconds (Warm-up)
+Chain 4:                0.36 seconds (Sampling)
+Chain 4:                0.699 seconds (Total)
+Chain 4: </code></pre>
+<div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" tabindex="-1"></a><span class="fu">print</span>(fit)</span></code></pre></div>
+<pre><code>Inference for Stan model: lm.
+4 chains, each with iter=2000; warmup=1000; thin=1; 
+post-warmup draws per chain=1000, total post-warmup draws=4000.
+
+           mean se_mean   sd  2.5%   25%   50%   75% 97.5% n_eff Rhat
+intercept  0.66    0.01 0.33  0.01  0.46  0.66  0.86  1.33  2610 1.00
+beta      -0.30    0.01 0.35 -0.99 -0.51 -0.30 -0.09  0.37  2310 1.00
+sigma      0.99    0.01 0.32  0.57  0.78  0.92  1.13  1.82  1264 1.00
+lp__      -3.97    0.05 1.46 -7.87 -4.65 -3.57 -2.91 -2.30   849 1.01
+
+Samples were drawn using NUTS(diag_e) at Thu Jan  8 14:17:42 2026.
+For each parameter, n_eff is a crude measure of effective sample size,
+and Rhat is the potential scale reduction factor on split chains (at 
+convergence, Rhat=1).</code></pre>
+</div>
+<div id="advanced-options" class="section level2">
+<h2>Advanced options</h2>
+<p>Details can be found in the documentation for
+<code>rstan_create_package()</code> so we only mention some of these
+briefly here:</p>
+<ul>
+<li><p>Running <code>rstan_create_package()</code> with
+<code>auto_config = TRUE</code> (the default value) automatically
+synchronizes the Stan C++ files with the <code>.stan</code> model files
+located in <code>inst/stan</code>, although this creates a dependency of
+your package on <strong>rstantools</strong> itself (i.e.,
+<strong>rstantools</strong> must be installed for your package to work).
+Setting <code>auto_config = FALSE</code> removes this dependency, at the
+cost of having to manually synchronize Stan C++ files by running
+<code>rstan_config()</code> every time a package <code>.stan</code> file
+is added, removed, or even just modified.</p></li>
+<li><p>The function <code>use_rstan()</code> can be used to add Stan
+functionality to an existing package, instead of building the package
+from scratch.</p>
+<ul>
+<li>Note: If you are already using roxygen in your package, you’ll have
+to use roxygen to update your Namespace file via the
+<code>R/&lt;package-name&gt;-package.R</code> file. Check the roxygen
+documentation for more details.</li>
+</ul></li>
+</ul>
+</div>
+<div id="adding-additional-stan-models-to-an-existing-r-package-with-stan-models" class="section level2">
+<h2>Adding additional Stan models to an existing R package with Stan
+models</h2>
+<p>One may add additional Stan models to an existing package. The
+following steps are required if one is using <code>devtools</code>:</p>
+<ol style="list-style-type: decimal">
+<li>Add new Stan file, e.g., <code>inst/stan/new.stan</code></li>
+<li>Run <code>pkgbuild::compile_dll()</code> to preform a fake R CMD
+install.</li>
+<li>Run <code>roxygen2::roxygenize()</code> to update the
+documentation.</li>
+<li>Run <code>devtools::install()</code> to install the package
+locally.</li>
+</ol>
+</div>
+<div id="links" class="section level2">
+<h2>Links</h2>
+<ul>
+<li><p><a href="https://mc-stan.org/rstantools/articles/developer-guidelines.html"><em>Guidelines
+for Developers of R Packages Interfacing with Stan</em></a></p></li>
+<li><p>Ask a question at the <a href="https://discourse.mc-stan.org/">Stan Forums</a></p></li>
+<li><p><a href="https://r-pkgs.org/">R packages</a> by Hadley Wickham
+and Jenny Bryan provides a solid foundation in R package development as
+well as the release process.</p></li>
+</ul>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

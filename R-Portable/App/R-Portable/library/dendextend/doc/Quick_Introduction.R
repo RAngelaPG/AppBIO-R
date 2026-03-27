@@ -1,4 +1,4 @@
-## ---- echo = FALSE, message = FALSE, warning=FALSE----------------------------
+## ----echo = FALSE, message = FALSE, warning=FALSE-----------------------------
 library(dendextend)
 library(knitr)
 knitr::opts_chunk$set(

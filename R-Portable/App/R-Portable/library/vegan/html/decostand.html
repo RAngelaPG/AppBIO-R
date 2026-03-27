@@ -18,8 +18,8 @@ methods for community ecologists.
 <h3>Usage</h3>
 
 <pre>
-decostand(x, method, MARGIN, range.global, logbase = 2, na.rm=FALSE, ...)
-wisconsin(x)
+decostand(x, method, MARGIN, range.global, logbase = 2, na.rm = FALSE, ...)
+wisconsin(x, na.rm = FALSE)
 decobackstand(x, zap = TRUE)
 </pre>
 
@@ -54,7 +54,9 @@ subsets of data.  The dimensions of <code>MARGIN</code> must match with
 </td></tr>
 <tr valign="top"><td><code>na.rm</code></td>
 <td>
-<p>Ignore missing values in row or column standardizations.</p>
+<p>Ignore missing values in row or column
+standardizations. The <code>NA</code> values remain as <code>NA</code>, but they
+are ignored in standardization of other values.</p>
 </td></tr>
 <tr valign="top"><td><code>zap</code></td>
 <td>
@@ -148,7 +150,7 @@ transformation is defined formally as follows:
 
 <p>where the denominator sample <i>x_D</i> can be chosen
 arbitrarily. This transformation is often used with pH and other
-chemistry measurenments. It is also commonly used as multinomial
+chemistry measurements. It is also commonly used as multinomial
 logistic regression. Default <code>MARGIN = 1</code> uses row as the
 <code>reference</code>.
 </p>
@@ -168,26 +170,36 @@ a common way to deal with zeroes is to add pseudocount
 (e.g. the smallest positive value in the data), either by
 adding it manually to the input data, or by using the argument
 <code>pseudocount</code> as in
-<code>decostand(x, method = "clr", pseudocount = 1)</code>. Adding
+<code>decostand(x, method = "clr", na.rm = TRUE, pseudocount = 1)</code>. Adding
 pseudocount will inevitably introduce some bias; see
-the <code>rclr</code> method for one available solution.
+the <code>rclr</code> method for an alternative.
 </p>
 </li>
 <li> <p><code>rclr</code>: robust clr (&quot;rclr&quot;) is similar to regular clr
-(see above) but allows data that contains zeroes. This method
-does not use pseudocounts, unlike the standard clr.
-The robust clr (rclr) divides the values by geometric mean
-of the observed features; zero values are kept as zeroes, and not
-taken into account. In high dimensional data,
-the geometric mean of rclr approximates the true
-geometric mean; see e.g. Martino et al. (2019)
-The <code>rclr</code> transformation is defined formally as follows:
+(see above) but it allows data with zeroes. This method can avoid
+the use of pseudocounts, unlike the standard clr. The robust clr
+(rclr) the logarithmizes the data and divides it by the geometric
+mean of the observed features within each sample. In high
+dimensional data the geometric mean of rclr approximates the true
+geometric mean; see e.g. Martino et al. (2019). The <code>rclr</code>
+transformation is defined formally as follows:
 </p>
 <p style="text-align: center;"><i>
-     rclr = log(x/g(x &gt; 0))</i></p>
-
-<p>where <i>x</i> is a single value, and <i>g(x &gt; 0)</i> is the geometric 
-mean of sample-wide values <i>x</i> that are positive (&gt; 0).
+           rclr = log(x/g(x &gt; 0))</i></p>
+<p> where <i>x</i> is
+a single value, and <i>g(x &gt; 0)</i> is the geometric mean of
+sample-wide values <i>x</i> that are positive (&gt; 0). The optspace
+algorithm performs matrix completion for the missing values
+that result from log transformation of the zero entries in the
+original input data. See <a href="../help/optspace.html">optspace</a> for more details.
+The following parameters can be passed to optspace
+through decostand: &quot;ropt&quot; NA to guess the rank, or a positive
+integer as a pre-defined rank (default: 3); &quot;niter&quot; maximum
+number of iterations allowed (default: 5); &quot;tol&quot; stopping
+criterion for reconstruction in Frobenius norm (default: 1e-5);
+&quot;verbose&quot; a logical value; TRUE to show progress, FALSE otherwise
+(default: FALSE); &quot;impute&quot; to switch on/off the matrix completion
+(default: impute=TRUE).
 </p>
 </li></ul>
 
@@ -257,6 +269,10 @@ compositional data analysis. <em>Mathematical Geology</em>
 Microbiome Datasets Are Compositional: And This Is Not Optional.
 <em>Frontiers in Microbiology</em> <strong>8</strong>, 2224. 
 </p>
+<p>Keshavan, R. H., Montanari, A., Oh, S. (2010).
+Matrix Completion From a Few Entries.
+<em>IEEE Transactions on Information Theory</em> <strong>56</strong>, 2980&ndash;2998.
+</p>
 <p>Legendre, P. &amp; Gallagher, E.D. (2001) Ecologically meaningful
 transformations for ordination of species data. <em>Oecologia</em>
 <strong>129</strong>, 271&ndash;280.
@@ -281,16 +297,20 @@ apply(sptrans, 2, max)
 sptrans &lt;- wisconsin(varespec)
 
 # CLR transformation for rows, with pseudocount
-varespec.clr &lt;- decostand(varespec, "clr", pseudocount=1)
+varespec.clr &lt;- decostand(varespec, "clr", pseudocount = 1)
+
+# Robust CLR (rclr) transformation for rows, no pseudocount necessary
+varespec.rclr &lt;- decostand(varespec, "rclr", impute = TRUE)
 
 # ALR transformation for rows, with pseudocount and reference sample
-varespec.alr &lt;- decostand(varespec, "alr", pseudocount=1, reference=1)
+varespec.alr &lt;- decostand(varespec, "alr", pseudocount = 1, reference = 1)
 
 ## Chi-square: PCA similar but not identical to CA.
 ## Use wcmdscale for weighted analysis and identical results.
 sptrans &lt;- decostand(varespec, "chi.square")
 plot(procrustes(rda(sptrans), cca(varespec)))
+
 </pre>
 
-<hr /><div style="text-align: center;">[Package <em>vegan</em> version 2.6-6.1 <a href="00Index.html">Index</a>]</div>
+<hr /><div style="text-align: center;">[Package <em>vegan</em> version 2.7-3 <a href="00Index.html">Index</a>]</div>
 </div></body></html>

@@ -1,0 +1,355 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Bound-Constrained and Nonlinear Constrained Multimodal...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for NCDEoptim {DEoptimR}"><tr><td>NCDEoptim {DEoptimR}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Bound-Constrained and Nonlinear Constrained Multimodal Optimization
+via Differential Evolution
+</h2>
+
+<h3>Description</h3>
+
+<p>A bespoke implementation of the &lsquo;NCDE&rsquo;
+(neighborhood based crowding DE) algorithm by
+Qu <em>et al.</em> (2012) doi: <a href="https://doi.org/10.1109/TEVC.2011.2161873">10.1109/TEVC.2011.2161873</a>,
+assisted with the dynamic archive mechanism of
+Epitropakis <em>et al.</em> (2013) doi: <a href="https://doi.org/10.1109/CEC.2013.6557556">10.1109/CEC.2013.6557556</a>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+NCDEoptim(lower, upper, fn,
+          constr = NULL, meq = 0, eps = 1e-5,
+          crit = 1e-5, niche_radius = NULL, archive_size = 100,
+          reinit_if_solu_in_arch = TRUE,
+          NP = 100, Fl = 0.1, Fu = 1, CRl = 0, CRu = 1.1,
+          nbngbrsl = NP/20, nbngbrsu = NP/5,
+          tau_F = 0.1, tau_CR = 0.1, tau_pF = 0.1,
+          tau_nbngbrs = 0.1,
+          jitter_factor = 0.001,
+          maxiter = 2000,
+          add_to_init_pop = NULL,
+          trace = FALSE, triter = 1,
+          ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>lower, upper</code></td>
+<td>
+<p>numeric vectors, the lower and upper bounds of the
+search space (<em>box constraints</em>); must be finite
+(<code><a href="../../base/html/is.finite.html">is.finite</a></code>).</p>
+</td></tr>
+<tr valign="top"><td><code>fn</code></td>
+<td>
+<p>a <code><a href="../../base/html/function.html">function</a></code> to be <strong>minimized</strong> that takes a
+numeric vector <i>X_i</i> as first argument and returns the value of the
+objective.</p>
+</td></tr>
+<tr valign="top"><td><code>constr</code></td>
+<td>
+<p>a vector <code><a href="../../base/html/function.html">function</a></code> specifying the
+<strong>left-hand side</strong> of equality constraints defined to equal zero
+(<i>h_j(X_i) = 0,\; j = 1,&hellip;,\mathrm{meq}</i>),
+followed by inequality constraints defined as lesser than zero
+(<i>g_j(X_i) &le; 0,\; j = \mathrm{meq}+1,&hellip;</i>).  This function takes
+<i>X_i</i> as its first argument and returns a numeric vector with the same
+length of the total number of constraints.  It defaults to <code>NULL</code>,
+which means that <strong>bound-constrained</strong> minimization is used.</p>
+</td></tr>
+<tr valign="top"><td><code>meq</code></td>
+<td>
+<p>an integer, the first <code>meq</code> constraints are
+<em>equality</em> constraints whereas the remaining ones are
+<em>inequality</em> constraints.  Defaults to <code>0</code>
+(inequality constraints only).</p>
+</td></tr>
+<tr valign="top"><td><code>eps</code></td>
+<td>
+<p>the maximal admissible constraint violation for
+equality constraints.  A numeric vector of small positive tolerance values
+with length <code>meq</code> used in the transformation of equalities into
+inequalities of the form <i>|h_j(X_i)| - &epsilon; &le; 0</i>.  A scalar value
+is expanded to apply to all equality constraints.  Default is <code>1e-5</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>crit</code></td>
+<td>
+<p>a numeric, the acceptance threshold on the archive strategy.  If
+<code><a href="../../base/html/Logic.html">isTRUE</a>(<a href="../../base/html/all.equal.html">all.equal</a>(fn(X_best_so_far_in_archive), fn(X_i), tolerance = crit))</code>,
+a solution <i>X_i</i> is checked for possible insertion into the
+dynamic archive.  Defaults to <code>1e-5</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>niche_radius</code></td>
+<td>
+<p>a numeric, the absolute tolerance used to decide whether
+the solution <i>X_i</i> is <em>identical</em> to an already existing
+local or global solution <em>in the archive</em>.  It defaults to <code>NULL</code>,
+meaning that the niche radius is adaptively chosen during the search.
+Results are <strong>much better</strong> if one is able to provide
+a reasonable value.</p>
+</td></tr>
+<tr valign="top"><td><code>archive_size</code></td>
+<td>
+<p>an integer, the maximum number of solutions that
+can be kept in the archive; entries above this limit are discarded.
+Default is <code>100</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>reinit_if_solu_in_arch</code></td>
+<td>
+<p>a logical, if <code>TRUE</code>, any solution
+<i>X_i</i> already in the archive <strong>reinitializes</strong> its nearest neighbor
+<em>in the population</em> within the range
+<i>[\mathrm{lower}, \mathrm{upper}]</i>.  Default is <code>TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>NP</code></td>
+<td>
+<p>an integer, the population size.  Defaults to <code>100</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>Fl</code></td>
+<td>
+<p>a numeric, the minimum value that the
+<em>scaling factor</em> <code>F</code> could take.  It defaults to <code>0.1</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>Fu</code></td>
+<td>
+<p>a numeric, the maximum value that the
+<em>scaling factor</em> <code>F</code> could take.  It defaults to <code>1</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>CRl</code></td>
+<td>
+<p>a numeric, the minimum value to be used for the
+<em>crossover constant</em> <code>CR</code>.  It defaults to <code>0</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>CRu</code></td>
+<td>
+<p>a numeric, the maximum value to be used for the
+<em>crossover constant</em> <code>CR</code>.  It defaults to <code>1.1</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>nbngbrsl</code></td>
+<td>
+<p>an integer, the lower limit for the
+<em>neighborhood size</em> <code>nbngbrs</code>.
+It defaults to <code>1/20</code> of the population size.</p>
+</td></tr>
+<tr valign="top"><td><code>nbngbrsu</code></td>
+<td>
+<p>an integer, the upper limit for the
+<em>neighborhood size</em> <code>nbngbrs</code>.
+It defaults to <code>1/5</code> of the population size.</p>
+</td></tr>
+<tr valign="top"><td><code>tau_F</code></td>
+<td>
+<p>a numeric, the probability that the
+<em>scaling factor</em> <code>F</code> is updated.  Defaults to <code>0.1</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>tau_CR</code></td>
+<td>
+<p>a numeric, the probability that the
+<em>crossover constant</em> <code>CR</code> is updated.  Defaults to <code>0.1</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>tau_pF</code></td>
+<td>
+<p>a numeric, the probability that the
+<em>mutation probability</em> <i>pF</i> in the mutation strategy
+DE/rand/1/either-or is updated.  Defaults to <code>0.1</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>tau_nbngbrs</code></td>
+<td>
+<p>a numeric, the probability that the
+<em>neighborhood size</em> <code>nbngbrs</code> is updated.  Defaults to <code>0.1</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>jitter_factor</code></td>
+<td>
+<p>a numeric, the tuning constant for <em>jitter</em>.
+If <code>NULL</code> only <em>dither</em> is used.  Default is <code>0.001</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>maxiter</code></td>
+<td>
+<p>an integer, the maximum number of iterations allowed which is
+the <strong>stopping condition</strong>.  Default is <code>2000</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>add_to_init_pop</code></td>
+<td>
+<p>numeric vector of length <code>length(lower)</code> or
+column-wise <code><a href="../../base/html/matrix.html">matrix</a></code> with <code>length(lower)</code> rows specifying
+initial candidate solutions which are appended to the randomly generated
+initial population.  Default is <code>NULL</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>trace</code></td>
+<td>
+<p>a logical, determines whether or not to monitor the
+iteration process.  Default is <code>FALSE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>triter</code></td>
+<td>
+<p>an integer, trace output is printed at every
+<code>triter</code> iterations.  Default is <code>1</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>additional arguments passed to <code>fn</code> and <code>constr</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This implementation differs mainly from the original &lsquo;NCDE&rsquo; algorithm
+of Qu <em>et al.</em> (2012) by employing the archiving procedure proposed
+in Epitropakis <em>et al.</em> (2013) and the adaptive &lsquo;jDE&rsquo; strategy
+instead of canonical Diferential Evolution.  The key reason for archiving
+good solutions during the search process is to prevent them from being lost
+during evolution.  Constraints are tackled through the
+<i>epsilon</i>-constrained method as proposed
+in Poole and Allen (2019).  The &lsquo;jDE&rsquo; and
+<i>epsilon</i>-constrained mechanisms are applied in the same way
+as in <code><a href="../../DEoptimR/help/JDEoptim.html">JDEoptim</a></code>, but with <em>synchronous</em> mode of
+population update.  In contrast, the reinitialization in the current
+population triggered by already found solutions is done <em>asynchronously</em>.
+</p>
+<p>Each line of trace output follows the format of:
+</p>
+<p><code>iteration : &lt; value of niche radius &gt; population&gt;&gt; ( value of best solution ) best solution { index of violated constraints } archive&gt;&gt; [ number of solutions found ] ( value of best solution ) best solution</code>
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with the following components:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>solution_arch</code></td>
+<td>
+<p>a <code><a href="../../base/html/matrix.html">matrix</a></code> whose columns are the
+local and global minima stored in the <strong>archive</strong> of feasible solutions
+in ascending order of the objective function values.</p>
+</td></tr>
+<tr valign="top"><td><code>objective_arch</code></td>
+<td>
+<p>the values of <i>\mathrm{fn}(X_i)</i> for the
+corresponding columns of <code>solution_arch</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>solution_pop</code></td>
+<td>
+<p>a <code><a href="../../base/html/matrix.html">matrix</a></code> whose columns are the
+local and global minima stored in the <strong>final population</strong>
+in ascending order of the objective function values;
+feasible solutions come first followed by the infeasible ones.</p>
+</td></tr>
+<tr valign="top"><td><code>objective_pop</code></td>
+<td>
+<p>the values of <i>\mathrm{fn}(X_i)</i> for the
+corresponding columns of <code>solution_pop</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>iter</code></td>
+<td>
+<p>the number of iterations used.</p>
+</td></tr>
+</table>
+<p>and if there are general constraints present:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>constr_value_arch</code></td>
+<td>
+<p>a <code><a href="../../base/html/matrix.html">matrix</a></code> whose columns contain
+the values of the constraints for <code>solution_arch</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>constr_value_pop</code></td>
+<td>
+<p>a <code><a href="../../base/html/matrix.html">matrix</a></code> whose columns contain
+the values of the constraints for <code>solution_pop</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Note</h3>
+
+<p><b>This function is in an experimental stage.</b>
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Eduardo L. T. Conceicao <a href="mailto:mail@eduardoconceicao.org">mail@eduardoconceicao.org</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Epitropakis, M. G., Li, X. and Burke, E. K. (2013)
+A dynamic archive niching differential evolution algorithm
+for multimodal optimization;
+in <em>2013 IEEE Congress on Evolutionary Computation (CEC)</em>.
+IEEE, pp. 79&ndash;86.
+doi: <a href="https://doi.org/10.1109/CEC.2013.6557556">10.1109/CEC.2013.6557556</a>.
+</p>
+<p>Poole, D. J. and Allen, C. B. (2019)
+Constrained niching using differential evolution.
+<em>Swarm and Evolutionary Computation</em> <b>44</b>, 74&ndash;100.
+doi: <a href="https://doi.org/10.1016/j.swevo.2018.11.004">10.1016/j.swevo.2018.11.004</a>.
+</p>
+<p>Qu, B. Y., Suganthan, P. N. and Liang, J. J. (2012)
+Differential evolution with neighborhood mutation for multimodal optimization.
+<em>IEEE Transactions on Evolutionary Computation</em> <b>16</b>, 601&ndash;614.
+doi: <a href="https://doi.org/10.1109/TEVC.2011.2161873">10.1109/TEVC.2011.2161873</a>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# NOTE: Examples were excluded from testing
+#       to reduce package check time.
+
+# Use a preset seed so test values are reproducible.
+set.seed(1234)
+
+# Warning: the examples are run using a very small number of
+# iterations to decrease execution time.
+
+# Bound-constrained optimization
+
+#   Vincent function
+#
+#   f(x) = -mean(sin(10*log(x)))
+#
+#   0.25 &lt;= xi &lt;= 10, i = {1, 2, ..., n}
+#   The function has 6^n global minima without local minima.
+
+NCDEoptim(c(0.25, 0.25), c(10, 10),
+          function(x) -mean(sin(10*log(x))),
+          niche_radius = 0.2,
+          maxiter = 200, trace = TRUE, triter = 20)
+
+# Nonlinear constrained optimization
+
+#   Function F10 of Poole and Allen (2019)
+#
+#   f(x) = -sin(5*pi*x)^6 + 1
+#   subject to:
+#   g(x) = -cos(10*pi*x) &lt;= 0
+#
+#   0 &lt;= x &lt;= 1
+#   The 10 global optima are
+#   (x1*, ..., x10*; f*) = ((2*(1:10) - 1)/20; 0.875).
+
+NCDEoptim(0, 1,
+          function(x) -sin(5*pi*x)^6 + 1,
+          function(x) -cos(10*pi*x),
+          niche_radius = 0.05,
+          maxiter = 200, trace = TRUE, triter = 20)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>DEoptimR</em> version 1.1-4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

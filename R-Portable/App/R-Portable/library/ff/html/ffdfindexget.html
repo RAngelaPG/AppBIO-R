@@ -1,0 +1,140 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Reading and writing ffdf data.frame using ff subscripts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for ffdfindexget {ff}"><tr><td>ffdfindexget {ff}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Reading and writing ffdf data.frame using ff subscripts
+</h2>
+
+<h3>Description</h3>
+
+<p>Function <code>ffdfindexget</code> allows to extract rows from an ffdf data.frame according to positive integer suscripts stored in an ff vector.
+<br />
+Function <code>ffdfindexset</code> allows the inverse operation: assigning to rows of an ffdf data.frame according to positive integer suscripts stored in an ff vector.
+These functions allow more control than the method dispatch of <code>[</code> and  <code>[&lt;-</code> if an ff integer subscript is used.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+  ffdfindexget(x, index, indexorder = NULL, autoindexorder = 3, FF_RETURN = NULL
+  , BATCHSIZE = NULL, BATCHBYTES = getOption("ffmaxbytes"), VERBOSE = FALSE)
+  ffdfindexset(x, index, value, indexorder = NULL, autoindexorder = 3
+  , BATCHSIZE = NULL, BATCHBYTES = getOption("ffmaxbytes"), VERBOSE = FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+
+<p>A <code><a href="../../ff/help/ffdf.html">ffdf</a></code> data.frame containing the elements
+</p>
+</td></tr>
+<tr valign="top"><td><code>index</code></td>
+<td>
+
+<p>A <code><a href="../../ff/help/ff.html">ff</a></code> integer vector with integer subscripts in the range from <code>1</code> to <code>length(x)</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>value</code></td>
+<td>
+
+<p>A <code><a href="../../ff/help/ffdf.html">ffdf</a></code> data.frame like <code>x</code> with the rows to be assigned
+</p>
+</td></tr>
+<tr valign="top"><td><code>indexorder</code></td>
+<td>
+
+<p>Optionally the return value of <code><a href="../../ff/help/ffindexorder.html">ffindexorder</a></code>, see details
+</p>
+</td></tr>
+<tr valign="top"><td><code>autoindexorder</code></td>
+<td>
+
+<p>The minimum number of columns (which need chunked indexordering) for which we switch from on-the-fly ordering to stored <code><a href="../../ff/help/ffindexorder.html">ffindexorder</a></code>
+</p>
+</td></tr>
+<tr valign="top"><td><code>FF_RETURN</code></td>
+<td>
+
+<p>Optionally an <code><a href="../../ff/help/ffdf.html">ffdf</a></code> data.frame of the same type as x in which the returned values shall be stored, see details.
+</p>
+</td></tr>
+<tr valign="top"><td><code>BATCHSIZE</code></td>
+<td>
+
+<p>Optinal limit for the batchsize (see details)
+</p>
+</td></tr>
+<tr valign="top"><td><code>BATCHBYTES</code></td>
+<td>
+
+<p>Limit for the number of bytes per batch
+</p>
+</td></tr>
+<tr valign="top"><td><code>VERBOSE</code></td>
+<td>
+
+<p>Logical scalar for verbosing
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Accessing rows of an ffdf data.frame identified by integer positions in an ff vector is a non-trivial task, because it could easily lead to random-access to disk files.
+We avoid random access by loading batches of the subscript values into RAM, order them ascending, and only then access the ff values on disk.
+Such ordering is don on-thy-fly for upto <code>autoindexorder-1</code> columns that need ordering.
+For <code>autoindexorder</code> o more columns we do the batched ordering upfront with <code><a href="../../ff/help/ffindexorder.html">ffindexorder</a></code> and then re-use it in each call to <code><a href="../../ff/help/ffindexget.html">ffindexget</a></code> resp. <code><a href="../../ff/help/ffindexset.html">ffindexset</a></code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Function <code>ffdfindexget</code> returns a ffdf data.frame with those rows selected by the ff <code>index</code> vector.
+<br />
+Function <code>ffdfindexset</code> returns <code>x</code> with those rows replaced that had been requested by <code>index</code> and <code>value</code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Jens Oehlschlägel
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../ff/help/Extract.ff.html">Extract.ff</a></code>, <code><a href="../../ff/help/ffindexget.html">ffindexget</a></code>, <code><a href="../../ff/help/ffindexorder.html">ffindexorder</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+message("ff integer subscripts with ffdf return/assign values")
+x &lt;- ff(factor(letters))
+y &lt;- ff(1:26)
+d &lt;- ffdf(x,y)
+i &lt;- ff(2:9)
+di &lt;- d[i,]
+di
+d[i,] &lt;- di
+message("ff integer subscripts: more control with ffindexget/ffindexset")
+di &lt;- ffdfindexget(d, i, FF_RETURN=di)
+d &lt;- ffdfindexset(d, i, di)
+rm(x, y, d, i, di)
+gc()
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ff</em> version 4.5.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

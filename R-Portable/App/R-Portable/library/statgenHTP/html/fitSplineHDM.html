@@ -1,0 +1,295 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Fit P-Spline Hierarchical Curve Data Models</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for fitSplineHDM {statgenHTP}"><tr><td>fitSplineHDM {statgenHTP}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Fit P-Spline Hierarchical Curve Data Models</h2>
+
+<h3>Description</h3>
+
+<p>Fit the P-spline Hierarchical Curve Data Model used in the second stage of
+the two-stage approach proposed by Pérez-Valencia et al. (2022). This model
+assumes a three-level hierarchical structure in the data, with plants nested
+in genotypes, genotypes nested in populations. The input for this function
+is the spatially corrected data, as obtained from the first stage of the
+approach (see <code><a href="../../statgenHTP/help/fitModels.html">fitModels</a></code> and <code><a href="../../statgenHTP/help/getCorrected.html">getCorrected</a></code>).
+The number of segments is chosen by the user, as well as the B-spline degree,
+and the penalty order for the three-levels of the hierarchy. The user can
+also decide if different variances for random effects at genotype (separately
+for each population) and plant (separately for each genotype) levels are
+desired. The function outputs are estimated curves (time series of trajectories
+and deviations) and their first and second derivatives for the three-levels
+of the hierarchy. The outputs can then be used to estimate relevant parameters
+from the curves for further analysis (see <code><a href="../../statgenHTP/help/estimateSplineParameters.html">estimateSplineParameters</a></code>).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+fitSplineHDM(
+  inDat,
+  genotypes = NULL,
+  plotIds = NULL,
+  trait,
+  useTimeNumber = FALSE,
+  timeNumber = NULL,
+  pop = "pop",
+  genotype = "genotype",
+  plotId = "plotId",
+  weights = NULL,
+  difVar = list(geno = FALSE, plot = FALSE),
+  smoothPop = list(nseg = 10, bdeg = 3, pord = 2),
+  smoothGeno = list(nseg = 10, bdeg = 3, pord = 2),
+  smoothPlot = list(nseg = 10, bdeg = 3, pord = 2),
+  offset = NULL,
+  family = gaussian(),
+  maxit = 200,
+  trace = TRUE,
+  thr = 0.001,
+  minNoTP = NULL
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>inDat</code></td>
+<td>
+<p>A data.frame with corrected spatial data.</p>
+</td></tr>
+<tr valign="top"><td><code>genotypes</code></td>
+<td>
+<p>A character vector indicating the genotypes for which
+hierarchical models should be fitted. If <code>NULL</code>, splines will be fitted
+for all genotypes.</p>
+</td></tr>
+<tr valign="top"><td><code>plotIds</code></td>
+<td>
+<p>A character vector indicating the plotIds for which
+hierarchical models should be fitted. If <code>NULL</code>, splines will be
+fitted for all plotIds.</p>
+</td></tr>
+<tr valign="top"><td><code>trait</code></td>
+<td>
+<p>A character string indicating the trait for which the spline
+should be fitted.</p>
+</td></tr>
+<tr valign="top"><td><code>useTimeNumber</code></td>
+<td>
+<p>Should the timeNumber be used instead of the timePoint?.
+If <code>useTimeNumber = FALSE</code>, inDat should contain a column called timePoint
+of class <code>POSIXct</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>timeNumber</code></td>
+<td>
+<p>If <code>useTimeNumber = TRUE</code>, a character vector
+indicating the column containing the numerical time to use.</p>
+</td></tr>
+<tr valign="top"><td><code>pop</code></td>
+<td>
+<p>A character string indicating the the populations to which each
+genotype/variety belongs. This variable must be a factor in the data frame.</p>
+</td></tr>
+<tr valign="top"><td><code>genotype</code></td>
+<td>
+<p>A character string indicating the populations to which each
+genotype/variety belongs. This variable must be a factor in the data frame.</p>
+</td></tr>
+<tr valign="top"><td><code>plotId</code></td>
+<td>
+<p>A character string indicating the genotypes/varieties to which
+each plant/plot/individual belongs. This variable must be a factor in the
+data frame.</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>A character string indicating the column in the data containing
+the weights to be used in the fitting process (for error propagation from
+first stage to second stage). By default, when <code>weights = NULL</code>, the
+weights are considered to be one.</p>
+</td></tr>
+<tr valign="top"><td><code>difVar</code></td>
+<td>
+<p>Should different variances for random effects at genotype
+(separately for each population) and plant level (separately for each
+genotype) be considered?.</p>
+</td></tr>
+<tr valign="top"><td><code>smoothPop</code></td>
+<td>
+<p>A list specifying the P-Spline model at the population
+level (nseg: number of segments; bdeg: degree of the B-spline basis; pord:
+penalty order).</p>
+</td></tr>
+<tr valign="top"><td><code>smoothGeno</code></td>
+<td>
+<p>A list specifying the P-Spline model at the genotype
+level.</p>
+</td></tr>
+<tr valign="top"><td><code>smoothPlot</code></td>
+<td>
+<p>A list specifying the P-Spline model at the plant level.</p>
+</td></tr>
+<tr valign="top"><td><code>offset</code></td>
+<td>
+<p>A character string indicating the column in the data with
+an a priori known component to be included in the linear predictor during
+fitting. By default, when <code>offset = NULL</code>, the offset is considered to
+be zero.</p>
+</td></tr>
+<tr valign="top"><td><code>family</code></td>
+<td>
+<p>An object of class <code>family</code> specifying the distribution
+and link function. The default is <code>gaussian()</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>maxit</code></td>
+<td>
+<p>An optional value that controls the maximum number of iterations
+of the algorithm. The default is 200.</p>
+</td></tr>
+<tr valign="top"><td><code>trace</code></td>
+<td>
+<p>An optional value that controls the function trace.
+The default is <code>TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>thr</code></td>
+<td>
+<p>An optional value that controls the convergence threshold of the
+algorithm. The default is 1.e-03.</p>
+</td></tr>
+<tr valign="top"><td><code>minNoTP</code></td>
+<td>
+<p>The minimum number of time points for which data should be
+available for a plant. Defaults to 60% of all time points present in the
+TP object. No splines are fitted for plants with less than the minimum number
+of timepoints.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>psHDM</code>, a list with the following outputs:
+<code>time</code>, a numeric vector with the timepoints.
+<code>popLevs</code>, a data.frame with the names of the populations
+<code>genoLevs</code>, a factor with the names of the genotypes.
+<code>plotLevs</code>, a factor with the names of the plants
+<code>nPlotPop</code>, a numeric vector with the number of plants per
+population.
+<code>nGenoPop</code>, a numeric vector with the number of genotypes per
+population.
+<code>nPlotGeno</code>, a numeric vector with the number of plants per
+genotype.
+<code>MM</code>, a list with the design matrices at plant, genotype and
+population levels.
+<code>ed</code>, a numeric vector with the estimated effective dimension
+(or effective degrees of freedom) for each random component of the
+model (intercept, slope and non-linear trend) at each level of the
+hierarchy (population, genotype and plant)
+<code>tot_ed</code>, a numeric value with the sum of the effective
+dimensions for all components of the model.
+<code>vc</code>, a numeric vector with the (REML) variance component
+estimates for each random component of the model (intercept,
+slope and non-linear trend) at each level of the hierarchy
+(population, genotype and plant)
+<code>phi</code>, a numeric value with the error variance estimate.
+<code>coeff</code>, a numeric vector with the estimated fixed and random
+effect coefficients.
+<code>popLevel</code>, a data.frame with the estimated population trajectories
+and first and second order derivatives.
+<code>genoLevel</code>, a data.frame with the estimated genotype-specific
+deviations and trajectories, and their respective first and second
+order derivatives.
+<code>plotLevel</code>, a data.frame with the estimated plant-specific
+deviations and trajectories, and their respective first and second
+order derivatives.
+<code>deviance</code>, the (REML) deviance at convergence.
+<code>convergence</code>, a logical value indicating whether the algorithm
+managed to converge before the given number of iterations.
+<code>dim</code>, a numeric vector with the (model) dimension of each
+model component (fixed and/or random) at each level of the
+hierarchy (population, genotype, and plant).
+These values correspond to the number of parameters to be estimated.
+<code>family</code>, an object of class family specifying the distribution
+and link function.
+<code>cholHn</code>, the inverse of the variance-covariance matrix for the
+coefficients.
+<code>smooth</code>, a list with the information about number of segments
+(nseg), degree of the B-spline basis (bdeg) and penalty order (pord)
+used for the three levels of the hierarchy.
+</p>
+
+
+<h3>References</h3>
+
+<p>Pérez-Valencia, D.M., Rodríguez-Álvarez, M.X., Boer, M.P. et al.
+A two-stage approach for the spatio-temporal analysis of high-throughput
+phenotyping data. Sci Rep 12, 3177 (2022). doi: <a href="https://doi.org/10.1038/s41598-022-06935-9">10.1038/s41598-022-06935-9</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other functions for fitting hierarchical curve data models: 
+<code><a href="../../statgenHTP/help/plot.psHDM.html">plot.psHDM</a>()</code>,
+<code><a href="../../statgenHTP/help/predict.psHDM.html">predict.psHDM</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## The data from the Phenovator platform have been corrected for spatial
+## trends and outliers for single observations have been removed.
+head(spatCorrectedArch)
+ggplot2::ggplot(data = spatCorrectedArch,
+                ggplot2::aes(x= timeNumber, y = LeafArea_corr, group = plotId)) +
+  ggplot2::geom_line(na.rm = TRUE) +
+  ggplot2::facet_grid(~geno.decomp)
+
+## We need to specify the genotype-by-treatment interaction.
+## Treatment: water regime (WW, WD).
+spatCorrectedArch[["treat"]] &lt;- substr(spatCorrectedArch[["geno.decomp"]],
+                                      start = 1, stop = 2)
+spatCorrectedArch[["genoTreat"]] &lt;-
+  interaction(spatCorrectedArch[["genotype"]],
+             spatCorrectedArch[["treat"]], sep = "_")
+
+## Fit P-Splines Hierarchical Curve Data Model for selection of genotypes.
+fit.psHDM  &lt;- fitSplineHDM(inDat = spatCorrectedArch,
+                          trait = "LeafArea_corr",
+                          useTimeNumber = TRUE,
+                          timeNumber = "timeNumber",
+                          genotypes = c("GenoA14_WD", "GenoA51_WD",
+                                       "GenoB11_WW", "GenoB02_WD",
+                                       "GenoB02_WW"),
+                          pop = "geno.decomp",
+                          genotype = "genoTreat",
+                          plotId = "plotId",
+                          weights = "wt",
+                          difVar = list(geno = FALSE, plot = FALSE),
+                          smoothPop = list(nseg = 4, bdeg = 3, pord = 2),
+                          smoothGeno = list(nseg = 4, bdeg = 3, pord = 2),
+                          smoothPlot = list(nseg = 4, bdeg = 3, pord = 2),
+                          trace = FALSE)
+
+## Visualize the data.frames with predicted values at the three levels of
+## the hierarchy.
+
+# Population level
+head(fit.psHDM$popLevel)
+
+# Genotype level
+head(fit.psHDM$genoLevel)
+
+# Plot level
+head(fit.psHDM$plotLevel)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>statgenHTP</em> version 1.0.9.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

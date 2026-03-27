@@ -1,0 +1,397 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Fit single trial mixed model</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for fitTD {statgenSTA}"><tr><td>fitTD {statgenSTA}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Fit single trial mixed model</h2>
+
+<h3>Description</h3>
+
+<p>Perform REML analysis given a specific experimental design using either
+SpATS, lme4 or asreml. SpATS is used as a default method when row
+coordinates (rowCoord) and column coordinates (colCoord) are present, lme4
+otherwise.
+See details for the exact models fitted.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+fitTD(
+  TD,
+  trials = names(TD),
+  design = NULL,
+  traits,
+  what = c("fixed", "random"),
+  covariates = NULL,
+  useCheckId = FALSE,
+  spatial = FALSE,
+  engine = NA,
+  control = NULL,
+  progress = FALSE,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>TD</code></td>
+<td>
+<p>An object of class <code><a href="../../statgenSTA/help/TD.html">TD</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>trials</code></td>
+<td>
+<p>A character vector specifying the trials for which the models
+should be fitted.</p>
+</td></tr>
+<tr valign="top"><td><code>design</code></td>
+<td>
+<p>A character string specifying the experimental design. Either
+&quot;ibd&quot; (incomplete block design), &quot;res.ibd&quot; (resolvable incomplete block
+design), &quot;rcbd&quot; (randomized complete block design), &quot;rowcol&quot; (row column
+design) or &quot;res.rowcol&quot; (resolvable row column design). Can be ignored when
+the trial design is specified in the meta data (see <code><a href="../../statgenSTA/help/setMeta.html">setMeta</a></code>).</p>
+</td></tr>
+<tr valign="top"><td><code>traits</code></td>
+<td>
+<p>A character vector specifying the traits for which the models
+should be fitted.</p>
+</td></tr>
+<tr valign="top"><td><code>what</code></td>
+<td>
+<p>A character vector specifying whether &quot;genotype&quot; should
+be fitted as fixed or random effect. If not specified, both models are
+fitted.</p>
+</td></tr>
+<tr valign="top"><td><code>covariates</code></td>
+<td>
+<p>A character vector specifying covariates to be fitted as
+extra fixed effects in the model.</p>
+</td></tr>
+<tr valign="top"><td><code>useCheckId</code></td>
+<td>
+<p>Should checkId be used as a fixed effect in the model?<br />
+If <code>TRUE</code>, <code>TD</code> has to contain a column 'checkId'. Using checkId
+as fixed effect can only be done when genotype is fitted as a random effect
+in the model.</p>
+</td></tr>
+<tr valign="top"><td><code>spatial</code></td>
+<td>
+<p>Should spatial models be tried? Spatial models can
+only be fitted with SpATS and asreml. If SpATS is used for modeling, only
+spatial models can be fitted and spatial is always set to <code>TRUE</code>. If
+asreml is used, fitting spatial models is optional.</p>
+</td></tr>
+<tr valign="top"><td><code>engine</code></td>
+<td>
+<p>A character string specifying the name of the mixed modeling
+engine to use, either &quot;SpATS&quot;, &quot;lme4&quot; or &quot;asreml.&quot; For spatial models,
+&quot;SpaTS&quot; is used as default, for other models &quot;lme4&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+<p>An optional list with control parameters to be passed to the
+actual fitting functions. Currently <code>nSeg</code> and <code>nestDiv</code> are valid
+parameters when fitting a model using SpATS. They pass a value to nseg and
+nest.div in <code><a href="../../SpATS/help/PSANOVA.html">PSANOVA</a></code> respectively. For <code>nSeg</code> also a
+named list can be supplied containing values for nSeg per trial.<br />
+<code>criterion</code> is a valid parameter when fitting a spatial model using
+asreml. It may be used to pass a goodness-of-fit criterion for comparing
+different spatial models. See also in details. Other parameters are ignored.</p>
+</td></tr>
+<tr valign="top"><td><code>progress</code></td>
+<td>
+<p>Should the progress of the modeling be printed. If
+<code>TRUE</code>, for every trial a line is output indicating the traits fitted
+for the particular trial.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Further arguments to be passed to <code>SpATS</code>, <code>lme4</code> or
+<code>asreml</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The actual model fitted depends on the design. For the supported designs, the
+following models are used:</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: left;">
+   Design </td><td style="text-align: left;"> Code </td><td style="text-align: left;"> Model fitted </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+   incomplete block design </td><td style="text-align: left;"> ibd </td><td style="text-align: left;"> trait = <strong>subBlock</strong> + genotype + <i>&epsilon;</i> </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+   resolvable incomplete block design </td><td style="text-align: left;"> res.ibd </td><td style="text-align: left;"> trait = <em>repId</em> + <strong>repId:subBlock</strong> + genotype + <i>&epsilon;</i> </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+   randomized complete block design </td><td style="text-align: left;"> rcbd </td><td style="text-align: left;"> trait = <em>repId</em> + genotype + <i>&epsilon;</i> </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+   row column design </td><td style="text-align: left;"> rowcol </td><td style="text-align: left;"> trait = <strong>rowId</strong> + <strong>colId</strong> + genotype + <i>&epsilon;</i> </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+   resolvable row column design </td><td style="text-align: left;"> res.rowcol </td><td style="text-align: left;"> trait = <em>repId</em> + <strong>repId:rowId</strong> + <strong>repId:colId</strong> + genotype + <i>&epsilon;</i> </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+</td>
+</tr>
+
+</table>
+
+<p>In the models above, fixed effects are indicated in <em>italics</em> whereas random
+effects are indicated in <strong>bold</strong>. genotype can be fitted as fixed or as
+random effect depending on the value of the parameter <code>what</code>. Extra
+fixed effects may be fitted using the parameter <code>covariates</code>.<br /><br />
+If <code>SpATS</code> is used as modeling engine, an extra spatial term is always
+included  in the model. This term is constructed using the function
+<code><a href="../../SpATS/help/PSANOVA.html">PSANOVA</a></code> from the SpATS package as<br />
+<code>PSANOVA(colCoord, rowCoord, nseg = nSeg, nest.div = 2)</code>
+where<br /> <code>nSeg = (number of columns / 2, number of rows / 2)</code>. nseg and
+nest.div can be modified using the <code>control</code> parameter.<br /><br />
+When <code>asreml</code> is used for modeling and <code>spatial</code> is <code>TRUE</code>
+seven models are fitted with different random terms and covariance structure.
+The best model is determined based on a goodness-of-fit criterion, either
+AIC or BIC. This can be set using the control parameter <code>criterion</code>,
+default is AIC.
+The fitted random terms depend on the structure of the data. If the trial
+has a regular structure, i.e. all replicates appear the same amount of times
+in the trial, the following combinations of random and spatial terms are
+fitted:</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: left;">
+   Random part </td><td style="text-align: left;"> Spatial part </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+   random effects based on design </td><td style="text-align: left;"> none </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+   random effects based on design </td><td style="text-align: left;"> AR1(rowId):colId </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+   random effects based on design </td><td style="text-align: left;"> rowId:AR1(colId) </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+   random effects based on design </td><td style="text-align: left;"> AR1(rowId):ar1(colId) </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+   random effects based on design + nugget </td><td style="text-align: left;"> AR1(rowId):colId </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+   random effects based on design + nugget </td><td style="text-align: left;"> rowId:AR1(colId) </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+   random effects based on design + nugget </td><td style="text-align: left;"> AR1(rowId):AR1(colId) </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+</td>
+</tr>
+
+</table>
+
+<p>If the design is not regular the following combinations of random and spatial
+terms are fitted:</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: left;">
+   Random part </td><td style="text-align: left;"> Spatial part </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+   random effects based on design </td><td style="text-align: left;"> none </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+   random effects based on design </td><td style="text-align: left;"> exp(rowCoord):colCoord </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+   random effects based on design </td><td style="text-align: left;"> rowCoord:exp(colCoord) </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+   random effects based on design </td><td style="text-align: left;"> iexp(rowCoord, colCoord) </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+   random effects based on design  + nugget </td><td style="text-align: left;"> exp(rowCoord):colCoord </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+   random effects based on design + nugget </td><td style="text-align: left;"> rowCoord:exp(colCoord) </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+   random effects based on design + nugget </td><td style="text-align: left;"> iexp(rowCoord,colCoord) </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+</td>
+</tr>
+
+</table>
+
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>STA</code>, a list containing, per trial
+that has been analyzed, a list of:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>mRand</code></td>
+<td>
+<p>A list of models with fitted with genotype as random effect.</p>
+</td></tr>
+<tr valign="top"><td><code>mFix</code></td>
+<td>
+<p>A list of models fitted with genotype as fixed effect.</p>
+</td></tr>
+<tr valign="top"><td><code>TD</code></td>
+<td>
+<p>An object of class <code><a href="../../statgenSTA/help/TD.html">TD</a></code> containing the data on which
+<code>mRand</code> and <code>mFix</code> are based.</p>
+</td></tr>
+<tr valign="top"><td><code>traits</code></td>
+<td>
+<p>A character vector indicating the traits for which the models
+are fitted.</p>
+</td></tr>
+<tr valign="top"><td><code>design</code></td>
+<td>
+<p>A character string containing the design of the trial.
+(see <code><a href="../../statgenSTA/help/fitTD.html">fitTD</a></code> for the possible designs).</p>
+</td></tr>
+<tr valign="top"><td><code>spatial</code></td>
+<td>
+<p>A character string indicating the spatial part of the model.
+<code>FALSE</code> if no spatial design has been used.</p>
+</td></tr>
+<tr valign="top"><td><code>engine</code></td>
+<td>
+<p>A character string containing the engine used for the
+analysis.</p>
+</td></tr>
+<tr valign="top"><td><code>predicted</code></td>
+<td>
+<p>A character string indicating the variable that has been
+predicted.</p>
+</td></tr>
+<tr valign="top"><td><code>sumTab</code></td>
+<td>
+<p>A data.frame with a summary table for the spatial models tried
+when <code>engine = "asreml"</code> and <code>spatial = TRUE</code></p>
+</td></tr>
+<tr valign="top"><td><code>useCheckId</code></td>
+<td>
+<p>A boolean indicating if checkId was used when fitting the
+models</p>
+</td></tr>
+</table>
+
+
+<h3>References</h3>
+
+<p>Maria Xose Rodriguez-Alvarez, Martin P. Boer, Fred A. van Eeuwijk, Paul H.C.
+Eilers (2017). Correcting for spatial heterogeneity in plant breeding
+experiments with P-splines. Spatial Statistics
+doi: <a href="https://doi.org/10.1016/j.spasta.2017.10.003">10.1016/j.spasta.2017.10.003</a>
+</p>
+<p>Butler, D. G., et al. (2010). Analysis of Mixed Models for S language
+environments: ASReml-R reference manual. Brisbane, DPI Publications
+</p>
+<p>Douglas Bates, Martin Maechler, Ben Bolker, Steve Walker (2015). Fitting
+Linear Mixed-Effects Models Using lme4. Journal of Statistical Software,
+67(1), 1-48. <a href="https://www.jstatsoft.org/article/view/v067i01/0">https://www.jstatsoft.org/article/view/v067i01/0</a>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## Fit model using lme4.
+lmeMod &lt;- fitTD(TD = TDHeat05,
+                design = "ibd",
+                traits = "yield",
+                what = "fixed",
+                engine = "lme4")
+
+## Summarize results.
+summary(lmeMod)
+
+## Create base plots of the results.
+plot(lmeMod)
+
+## Create a pdf report summarizing results.
+report(lmeMod,
+       outfile = tempfile(fileext = ".pdf"),
+       what = "fixed")
+
+## Fit model using SpATS.
+spaMod &lt;- fitTD(TD = TDHeat05,
+                design = "res.rowcol",
+                traits = "yield",
+                what = "fixed")
+summary(spaMod)
+
+## Create spatial plots of the results.
+plot(spaMod, plotType = "spatial")
+
+## Fit model using SpATS.
+## Specify the number of segments to use in PSANOVA
+spaMod2 &lt;- fitTD(TD = TDHeat05,
+                 design = "res.rowcol",
+                 traits = "yield",
+                 what = "fixed",
+                 control = list(nSeg = c(13, 26)))
+
+## Create a pdf report summarizing results.
+report(spaMod, outfile = tempfile(fileext = ".pdf"), what = "fixed")
+
+## Fit model using asreml.
+if (requireNamespace("asreml", quietly = TRUE)) {
+  asrMod &lt;- fitTD(TD = TDHeat05,
+                  design = "res.rowcol",
+                  traits = "yield",
+                  what = "fixed",
+                  engine = "asreml")
+  summary(asrMod)
+
+  report(asrMod,
+         outfile = tempfile(fileext = ".pdf"),
+         what = "fixed")
+}
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>statgenSTA</em> version 1.0.15 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

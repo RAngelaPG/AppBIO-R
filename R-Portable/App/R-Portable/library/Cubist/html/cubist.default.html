@@ -1,0 +1,243 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Fit a Cubist model</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for cubist.default {Cubist}"><tr><td>cubist.default {Cubist}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Fit a Cubist model</h2>
+
+<h3>Description</h3>
+
+<p>This function fits the rule-based model described in Quinlan
+(1992) (aka M5) with additional corrections based on nearest
+neighbors in the training set, as described in Quinlan (1993a).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## Default S3 method:
+cubist(x, y, committees = 1, control = cubistControl(), weights = NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>a matrix or data frame of predictor variables. Missing
+data are allowed but (at this time) only numeric, character and
+factor values are allowed. Must have column names.</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>a numeric vector of outcome</p>
+</td></tr>
+<tr valign="top"><td><code>committees</code></td>
+<td>
+<p>an integer: how many committee models (e.g..
+boosting iterations) should be used?</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+<p>options that control details of the <code>cubist</code>
+algorithm. See <code><a href="../../Cubist/help/cubistControl.html">cubistControl()</a></code></p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>an optional vector of case weights (the same
+length as <code>y</code>) for how much each instance should contribute to
+the model fit. From the RuleQuest website: &quot;The relative
+weight assigned to each case is its value of this attribute
+divided by the average value; if the value is undefined, not
+applicable, or is less than or equal to zero, the case's
+relative weight is set to 1.&quot;</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>optional arguments to pass (not currently used)</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Cubist is a prediction-oriented regression model that combines
+the ideas in Quinlan (1992) and Quinlan (1993).
+</p>
+<p>Although it initially creates a tree structure, it collapses
+each path through the tree into a rule. A regression model is
+fit for each rule based on the data subset defined by the rules.
+The set of rules are pruned or possibly combined. and the
+candidate variables for the linear regression models are the
+predictors that were used in the parts of the rule that were
+pruned away. This part of the algorithm is consistent with the
+&quot;M5&quot; or Model Tree approach.
+</p>
+<p>Cubist generalizes this model to add boosting (when
+<code>committees &gt; 1</code>) and instance based corrections (see
+<code><a href="../../Cubist/help/predict.cubist.html">predict.cubist()</a></code>). The number of instances is set at
+prediction time by the user and is not needed for model
+building.
+</p>
+<p>This function links R to the GPL version of the C code given on
+the RuleQuest website.
+</p>
+<p>The RuleQuest code differentiates missing values from values
+that are not applicable. Currently, this packages does not make
+such a distinction (all values are treated as missing). This
+will produce slightly different results.
+</p>
+<p>Factor levels with special characters (colons, semicolons, commas) will cause
+the underlying C code to error. These are documented limitations
+of the Cubist C code.
+</p>
+<p>Known unsupported special characters in factor/character levels:
+</p>
+
+<ul>
+<li><p> Colons (<code>:</code>)
+</p>
+</li>
+<li><p> Semicolons (<code style="white-space: pre;">;</code>)
+</p>
+</li>
+<li><p> Commas (<code style="white-space: pre;">,</code>)
+</p>
+</li>
+<li><p> Pipes (<code>|</code>)
+</p>
+</li></ul>
+
+<p>Users should avoid these characters in categorical predictor values.
+</p>
+<p>To tune the cubist model over the number of committees and
+neighbors, the <code><a href="../../caret/help/train.html">caret::train()</a></code> function in the <code>caret</code> package
+has bindings to find appropriate settings of these parameters.
+The <span class="pkg">rules</span> and <span class="pkg">tune</span> packages can be used to tune this model using
+the tidymodels framework.
+</p>
+
+
+<h3>Value</h3>
+
+<p>an object of class <code>cubist</code> with elements:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>data, names, model</code></td>
+<td>
+<p>character strings that correspond to
+their counterparts for the command-line program available from
+RuleQuest</p>
+</td></tr>
+<tr valign="top"><td><code>output</code></td>
+<td>
+<p>basic cubist output captured from the C code,
+including the rules, their terminal models and variable usage
+statistics</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+<p>a list of control parameters passed in by the
+user</p>
+</td></tr>
+<tr valign="top"><td><code>composite, neighbors, committees</code></td>
+<td>
+<p>mirrors of the values to
+these arguments that were passed in by the user</p>
+</td></tr>
+<tr valign="top"><td><code>dims</code></td>
+<td>
+<p>the output if <code>dim(x)</code></p>
+</td></tr>
+<tr valign="top"><td><code>splits</code></td>
+<td>
+<p>information about the variables and values used in
+the rule conditions</p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>the function call</p>
+</td></tr>
+<tr valign="top"><td><code>coefs</code></td>
+<td>
+<p>a data frame of regression coefficients for each
+rule within each committee</p>
+</td></tr>
+<tr valign="top"><td><code>vars</code></td>
+<td>
+<p>a list with elements <code>all</code> and <code>used</code> listing the
+predictors passed into the function and used by any rule or
+model</p>
+</td></tr>
+<tr valign="top"><td><code>fitted.values</code></td>
+<td>
+<p>a numeric vector of predictions on the
+training set.</p>
+</td></tr>
+<tr valign="top"><td><code>usage</code></td>
+<td>
+<p>a data frame with the percent of models where each
+variable was used. See <code><a href="../../Cubist/help/summary.cubist.html">summary.cubist()</a></code> for a discussion.</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>R code by Max Kuhn, original C sources by R Quinlan and
+modifications be Steve Weston
+</p>
+
+
+<h3>References</h3>
+
+<p>Quinlan. Learning with continuous classes.
+Proceedings of the 5th Australian Joint Conference On Artificial
+Intelligence (1992) pp. 343-348
+</p>
+<p>Quinlan. Combining instance-based and model-based learning.
+Proceedings of the Tenth International Conference on Machine
+Learning (1993a) pp. 236-243
+</p>
+<p>Quinlan. <strong>C4.5: Programs For Machine Learning</strong> (1993b)
+Morgan Kaufmann Publishers Inc. San Francisco, CA
+</p>
+<p>Wang and Witten. Inducing model trees for continuous classes.
+Proceedings of the Ninth European Conference on Machine Learning
+(1997) pp. 128-137
+</p>
+<p><a href="http://rulequest.com/cubist-info.html">http://rulequest.com/cubist-info.html</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../Cubist/help/cubistControl.html">cubistControl()</a></code>, <code><a href="../../Cubist/help/predict.cubist.html">predict.cubist()</a></code>,
+<code><a href="../../Cubist/help/summary.cubist.html">summary.cubist()</a></code>, <code><a href="../../Cubist/help/dotplot.cubist.html">dotplot.cubist()</a></code>, <code><a href="../../caret/help/train.html">caret::train()</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+library(mlbench)
+data(BostonHousing)
+
+## 1 committee, so just an M5 fit:
+mod1 &lt;- cubist(x = BostonHousing[, -14], y = BostonHousing$medv)
+mod1
+
+## Now with 10 committees
+mod2 &lt;- cubist(x = BostonHousing[, -14], y = BostonHousing$medv, committees = 10)
+mod2
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>Cubist</em> version 0.6.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -3,69 +3,6 @@
 \newcommand{\ghpr}{\href{https://github.com/RcppCore/RcppArmadillo/pull/#1}{##1}}
 \newcommand{\ghit}{\href{https://github.com/RcppCore/RcppArmadillo/issues/#1}{##1}}
 
-\section{Changes in RcppArmadillo version 14.0.0-1 (2024-07-05)}{
-  \itemize{
-    \item Upgraded to Armadillo release 14.0.0 (Stochastic Parrot)
-    \itemize{
-      \item C++14 is now the minimum recommended C++ standard
-      \item Faster handling of compound expressions by \code{as_scalar()},
-      \code{accu()}, \code{dot()}
-      \item Faster interactions between sparse and dense matrices
-      \item Expanded \code{stddev()} to handle sparse matrices
-      \item Expanded relational operators to handle expressions between
-      sparse matrices and scalars
-      \item Added \code{.as_dense()} to obtain dense vector/matrix
-      representation of any sparse matrix expression
-      \item Updated physical constants to NIST 2022 CODATA values
-    }
-    \item New package version numbering scheme following upstream versions
-    \item Re-enabling \code{ARMA_IGNORE_DEPRECATED_MARKE} for silent CRAN
-    builds
-  }
-}
-
-\section{Changes in RcppArmadillo version 0.12.8.4.0 (2024-05-30)}{
-  \itemize{
-    \item Upgraded to Armadillo release 12.8.4 (Cortisol Injector)
-    \itemize{
-      \item Faster handling of sparse submatrix views
-    }
-    \item Update versioned Depends on \pkg{Rcpp} to 1.0.8 or later to match
-    use of Light/Lighter/Lightest headers.
-   }
-}
-
-\section{Changes in RcppArmadillo version 0.12.8.3.0 (2024-05-07)}{
-  \itemize{
-    \item Upgraded to Armadillo release 12.8.3 (Cortisol Injector)
-    \itemize{
-      \item Fix issue in \code{fft()} and \code{fft2()} in multi-threaded
-      contexts with FFTW3 enabled
-    }
-    \item No longer set C++11 for the \pkg{Rcpp} plugin as this standard has
-    been the default by R for very long time now.
-  }
-}
-
-\section{Changes in RcppArmadillo version 0.12.8.2.1 (2024-04-15)}{
-  \itemize{
-    \item One-char bug fix release commenting out one test that upsets
-    \pkg{reticulate} when accessing a \pkg{scipy} sparse matrix
-  }
-}
-
-\section{Changes in RcppArmadillo version 0.12.8.2.0 (2024-04-02)}{
-  \itemize{
-    \item Upgraded to Armadillo release 12.8.2 (Cortisol Injector)
-    \itemize{
-      \item Workaround for FFTW3 header clash
-      \item Workaround in testing framework for issue under macOS
-      \item Minor cleanups to reduce code bloat
-      \item Improved documentation
-    }
-  }
-}
-
 \section{Changes in RcppArmadillo version 0.12.8.1.0 (2024-03-02)}{
   \itemize{
     \item Upgraded to Armadillo release 12.8.1 (Cortisol Injector)

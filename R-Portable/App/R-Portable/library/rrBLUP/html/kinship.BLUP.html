@@ -1,0 +1,143 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Genomic prediction by kinship-BLUP (deprecated)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for kinship.BLUP {rrBLUP}"><tr><td>kinship.BLUP {rrBLUP}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Genomic prediction by kinship-BLUP (deprecated)
+</h2>
+
+<h3>Description</h3>
+
+<p>***This function has been superseded by <code><a href="../../rrBLUP/help/kin.blup.html">kin.blup</a></code>; please refer to its help page.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+kinship.BLUP(y, G.train, G.pred=NULL, X=NULL, Z.train=NULL, 
+     K.method="RR", n.profile=10, mixed.method="REML", n.core=1)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>y</code></td>
+<td>
+
+<p>Vector (<i>n.obs \times 1</i>) of observations.  Missing values (NA) are omitted.
+</p>
+</td></tr>
+<tr valign="top"><td><code>G.train</code></td>
+<td>
+
+<p>Matrix (<i>n.train \times m</i>) of unphased genotypes for the training population: <i>n.train</i> lines with <i>m</i> bi-allelic markers.
+Genotypes should be coded as {-1,0,1}; fractional (imputed) and missing (NA) alleles are allowed.  
+</p>
+</td></tr>
+<tr valign="top"><td><code>G.pred</code></td>
+<td>
+
+<p>Matrix (<i>n.pred \times m</i>) of unphased genotypes for the prediction population: <i>n.pred</i> lines with <i>m</i> bi-allelic markers.
+Genotypes should be coded as {-1,0,1}; fractional (imputed) and missing (NA) alleles are allowed.  
+</p>
+</td></tr>
+<tr valign="top"><td><code>X</code></td>
+<td>
+
+<p>Design matrix (<i>n.obs \times p</i>) of fixed effects.  If not passed, a vector of 1's is used 
+to model the intercept.
+</p>
+</td></tr>
+<tr valign="top"><td><code>Z.train</code></td>
+<td>
+
+<p>0-1 matrix (<i>n.obs \times n.train</i>) relating observations to lines in the training set.  If not passed
+the identity matrix is used.
+</p>
+</td></tr>
+<tr valign="top"><td><code>K.method</code></td>
+<td>
+
+<p>&quot;RR&quot; (default) is ridge regression, for which K is the realized additive relationship matrix computed with <code><a href="../../rrBLUP/help/A.mat.html">A.mat</a></code>.  The option &quot;GAUSS&quot; is a Gaussian kernel (<i>K = e^{-D^2/&theta;^2}</i>) and &quot;EXP&quot; is an exponential kernel (<i>K = e^{-D/&theta;}</i>), where Euclidean distances <i>D</i> are computed with <code><a href="../../stats/html/dist.html">dist</a></code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>n.profile</code></td>
+<td>
+
+<p>For K.method = &quot;GAUSS&quot; or &quot;EXP&quot;, the number of points to use in the log-likelihood profile for the scale parameter <i>&theta;</i>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>mixed.method</code></td>
+<td>
+
+<p>Either &quot;REML&quot; (default) or &quot;ML&quot;.
+</p>
+</td></tr>
+<tr valign="top"><td><code>n.core</code></td>
+<td>
+
+<p>Setting n.core &gt; 1 will enable parallel execution of the Gaussian kernel computation (use only at UNIX command line).   
+</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+
+<dl>
+<dt>$g.train</dt><dd><p>BLUP solution for the training set</p>
+</dd>
+<dt>$g.pred</dt><dd><p>BLUP solution for the prediction set (when G.pred != NULL)</p>
+</dd>
+<dt>$beta</dt><dd><p>ML estimate of fixed effects</p>
+</dd>
+</dl>
+
+<p>For GAUSS or EXP, function also returns
+</p>
+
+<dl>
+<dt>$profile</dt><dd><p>log-likelihood profile for the scale parameter</p>
+</dd>
+</dl>
+
+
+
+<h3>References</h3>
+
+<p>Endelman, J.B. 2011. Ridge regression and other kernels for genomic selection with R package rrBLUP. Plant Genome 4:250-255.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+#random population of 200 lines with 1000 markers
+G &lt;- matrix(rep(0,200*1000),200,1000)
+for (i in 1:200) {
+  G[i,] &lt;- ifelse(runif(1000)&lt;0.5,-1,1)
+}
+
+#random phenotypes
+g &lt;- as.vector(crossprod(t(G),rnorm(1000)))
+h2 &lt;- 0.5 
+y &lt;- g + rnorm(200,mean=0,sd=sqrt((1-h2)/h2*var(g)))
+
+#split in half for training and prediction
+train &lt;- 1:100
+pred &lt;- 101:200
+ans &lt;- kinship.BLUP(y=y[train],G.train=G[train,],G.pred=G[pred,],K.method="GAUSS")
+
+#correlation accuracy
+r.gy &lt;- cor(ans$g.pred,y[pred])
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rrBLUP</em> version 4.6.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

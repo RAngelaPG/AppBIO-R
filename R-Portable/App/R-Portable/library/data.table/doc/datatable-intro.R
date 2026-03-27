@@ -1,3 +1,28 @@
+## ----echo=FALSE, file='_translation_links.R'----------------------------------
+# build a link list of alternative languages (may be character(0))
+# idea is to look like 'Other languages: en | fr | de'
+.write.translation.links <- function(fmt) {
+    url = "https://rdatatable.gitlab.io/data.table/articles"
+    path = dirname(knitr::current_input(TRUE))
+    if (basename(path) == "vignettes") {
+      lang = "en"
+    } else {
+      lang = basename(path)
+      path = dirname(path)
+    }
+    translation = dir(path,
+      recursive = TRUE,
+      pattern = glob2rx(knitr::current_input(FALSE))
+    )
+    transl_lang = ifelse(dirname(translation) == ".", "en", dirname(translation))
+    block = if (!all(transl_lang == lang)) {
+      linked_transl = sprintf("[%s](%s)", transl_lang, file.path(url, sub("(?i)\\.Rmd$", ".html", translation)))
+      linked_transl[transl_lang == lang] = lang
+      sprintf(fmt, paste(linked_transl, collapse = " | "))
+    } else ""
+    knitr::asis_output(block)
+}
+
 ## ----echo = FALSE, message = FALSE--------------------------------------------
 require(data.table)
 knitr::opts_chunk$set(
@@ -33,10 +58,10 @@ DT
 class(DT$ID)
 
 ## ----eval = FALSE---------------------------------------------------------------------------------
-#  DT[i, j, by]
-#  
-#  ##   R:                 i                 j        by
-#  ## SQL:  where | order by   select | update  group by
+# DT[i, j, by]
+# 
+# ##   R:                 i                 j        by
+# ## SQL:  where | order by   select | update  group by
 
 ## -------------------------------------------------------------------------------------------------
 ans <- flights[origin == "JFK" & month == 6L]
@@ -107,23 +132,23 @@ DF[DF$x > 1, ] # data.frame needs that ',' as well
 DF[with(DF, x > 1), ]
 
 ## ----eval = FALSE---------------------------------------------------------------------------------
-#  ## not run
-#  
-#  # returns all columns except arr_delay and dep_delay
-#  ans <- flights[, !c("arr_delay", "dep_delay")]
-#  # or
-#  ans <- flights[, -c("arr_delay", "dep_delay")]
+# ## not run
+# 
+# # returns all columns except arr_delay and dep_delay
+# ans <- flights[, !c("arr_delay", "dep_delay")]
+# # or
+# ans <- flights[, -c("arr_delay", "dep_delay")]
 
 ## ----eval = FALSE---------------------------------------------------------------------------------
-#  ## not run
-#  
-#  # returns year,month and day
-#  ans <- flights[, year:day]
-#  # returns day, month and year
-#  ans <- flights[, day:year]
-#  # returns all columns except year, month and day
-#  ans <- flights[, -(year:day)]
-#  ans <- flights[, !(year:day)]
+# ## not run
+# 
+# # returns year,month and day
+# ans <- flights[, year:day]
+# # returns day, month and year
+# ans <- flights[, day:year]
+# # returns all columns except year, month and day
+# ans <- flights[, -(year:day)]
+# ans <- flights[, !(year:day)]
 
 ## -------------------------------------------------------------------------------------------------
 ans <- flights[, .(.N), by = .(origin)]
@@ -171,10 +196,10 @@ ans <- flights[carrier == "AA", .N, by = .(origin, dest)][order(origin, -dest)]
 head(ans, 10)
 
 ## ----eval = FALSE---------------------------------------------------------------------------------
-#  DT[ ...
-#     ][ ...
-#       ][ ...
-#         ]
+# DT[ ...
+#    ][ ...
+#      ][ ...
+#        ]
 
 ## -------------------------------------------------------------------------------------------------
 ans <- flights[, .N, .(dep_delay>0, arr_delay>0)]
@@ -205,14 +230,33 @@ DT[, .(val = c(a,b)), by = ID]
 DT[, .(val = list(c(a,b))), by = ID]
 
 ## -------------------------------------------------------------------------------------------------
-## (1) look at the difference between
-DT[, print(c(a,b)), by = ID]
+## look at the difference between
+DT[, print(c(a,b)), by = ID] # (1)
 
-## (2) and
-DT[, print(list(c(a,b))), by = ID]
+## and
+DT[, print(list(c(a,b))), by = ID] # (2)
+
+## -------------------------------------------------------------------------------------------------
+## Do long distance flights cover up departure delay more than short distance flights?
+## Does cover up vary by month?
+flights[, `:=`(makeup = dep_delay - arr_delay)]
+
+makeup.models <- flights[, .(fit = list(lm(makeup ~ distance))), by = .(month)]
+makeup.models[, .(coefdist = coef(fit[[1]])[2], rsq = summary(fit[[1]])$r.squared), by = .(month)]
+
+## -------------------------------------------------------------------------------------------------
+setDF(flights)
+flights.split <- split(flights, f = flights$month)
+makeup.models.list <- lapply(flights.split, function(df) c(month = df$month[1], fit = list(lm(makeup ~ distance, data = df))))
+makeup.models.df <- do.call(rbind, makeup.models.list)
+data.frame(t(sapply(
+  makeup.models.df[, "fit"],
+  function(model) c(coefdist = coef(model)[2L], rsq =  summary(model)$r.squared)
+)))
+setDT(flights)
 
 ## ----eval = FALSE---------------------------------------------------------------------------------
-#  DT[i, j, by]
+# DT[i, j, by]
 
 ## ----echo=FALSE-----------------------------------------------------------------------------------
 setDTthreads(.old.th)

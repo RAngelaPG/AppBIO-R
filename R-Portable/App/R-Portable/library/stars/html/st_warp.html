@@ -1,0 +1,124 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Warp (resample) grids in stars objects to a new grid,...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for st_warp {stars}"><tr><td>st_warp {stars}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Warp (resample) grids in stars objects to a new grid, possibly in an new coordinate reference system</h2>
+
+<h3>Description</h3>
+
+<p>Warp (resample) grids in stars objects to a new grid, possibly in an new coordinate reference system
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+st_warp(
+  src,
+  dest,
+  ...,
+  crs = NA_crs_,
+  cellsize = NA_real_,
+  segments = 100,
+  use_gdal = FALSE,
+  options = character(0),
+  no_data_value = NA_real_,
+  debug = FALSE,
+  method = "near",
+  threshold = NA_real_
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>src</code></td>
+<td>
+<p>object of class <code>stars</code> with source raster</p>
+</td></tr>
+<tr valign="top"><td><code>dest</code></td>
+<td>
+<p>object of class <code>stars</code> with target raster geometry</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>ignored</p>
+</td></tr>
+<tr valign="top"><td><code>crs</code></td>
+<td>
+<p>coordinate reference system for destination grid, only used when <code>dest</code> is missing</p>
+</td></tr>
+<tr valign="top"><td><code>cellsize</code></td>
+<td>
+<p>length 1 or 2 numeric; cellsize in target coordinate reference system units</p>
+</td></tr>
+<tr valign="top"><td><code>segments</code></td>
+<td>
+<p>(total) number of segments for segmentizing the bounding box before transforming to the new crs</p>
+</td></tr>
+<tr valign="top"><td><code>use_gdal</code></td>
+<td>
+<p>logical; if <code>TRUE</code>, use gdal's warp or warper, through <a href="../../sf/help/gdal_utils.html">gdal_utils</a></p>
+</td></tr>
+<tr valign="top"><td><code>options</code></td>
+<td>
+<p>character vector with options, passed on to gdalwarp</p>
+</td></tr>
+<tr valign="top"><td><code>no_data_value</code></td>
+<td>
+<p>value used by gdalwarp for no_data (NA) when writing to temporary file; 
+not setting this when <code>use_gdal</code> is <code>TRUE</code> leads to a warning</p>
+</td></tr>
+<tr valign="top"><td><code>debug</code></td>
+<td>
+<p>logical; if <code>TRUE</code>, do not remove the temporary gdalwarp destination file, and print its name</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>character; see details for options; methods other than <code>near</code> only work when <code>use_gdal=TRUE</code></p>
+</td></tr>
+<tr valign="top"><td><code>threshold</code></td>
+<td>
+<p>numeric; distance threshold for warping curvilinear grids: new cells at distances larger than threshold are assigned NA values.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>method</code> should be one of <code>near</code>, <code>bilinear</code>, <code>cubic</code>, <code>cubicspline</code>, <code>lanczos</code>, <code>average</code>, <code>mode</code>, <code>max</code>, <code>min</code>, <code>med</code>, <code>q1</code> or <code>q3</code>; see https://github.com/r-spatial/stars/issues/109
+</p>
+<p>For gridded spatial data (dimensions <code>x</code> and <code>y</code>), see figure; the existing grid is transformed into a regular grid defined by <code>dest</code>, possibly in a new coordinate reference system. If <code>dest</code> is not specified, but <code>crs</code> is, the procedure used to choose a target grid is similar to that of <a href="../../raster/help/projectRaster.html">projectRaster</a>. This entails: (i) the envelope (bounding box polygon) is transformed into the new crs, possibly after segmentation (red box); (ii) a grid is formed in this new crs, touching the transformed envelope on its East and North side, with (if cellsize is not given) a cellsize similar to the cell size of <code>src</code>, with an extent that at least covers <code>x</code>; (iii) for each cell center of this new grid, the matching grid cell of <code>x</code> is used; if there is no match, an <code>NA</code> value is used.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+geomatrix = system.file("tif/geomatrix.tif", package = "stars")
+(x = read_stars(geomatrix))
+new_crs = st_crs('OGC:CRS84')
+y = st_warp(x, crs = new_crs)
+plot(st_transform(st_as_sfc(st_bbox(x)), new_crs), col = NA, border = 'red')
+plot(st_as_sfc(y, as_points=FALSE), col = NA, border = 'green', axes = TRUE, add = TRUE)
+image(y, add = TRUE, nbreaks = 6)
+plot(st_as_sfc(y, as_points=TRUE), pch=3, cex=.5, col = 'blue', add = TRUE)
+plot(st_transform(st_as_sfc(x, as_points=FALSE), new_crs), add = TRUE)
+# warp 0-360 raster to -180-180 raster:
+r = read_stars(system.file("nc/reduced.nc", package = "stars"))
+r %&gt;% st_set_crs('OGC:CRS84') %&gt;% st_warp(st_as_stars(st_bbox(), dx = 2)) -&gt; s
+plot(r, axes = TRUE) # no CRS set, so no degree symbols in labels
+plot(s, axes = TRUE)
+# downsample raster (90 to 270 m)
+r = read_stars(system.file("tif/olinda_dem_utm25s.tif", package = "stars"))
+r270 = st_as_stars(st_bbox(r), dx = 270)
+r270 = st_warp(r, r270)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>stars</em> version 0.7-1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

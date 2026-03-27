@@ -1,0 +1,164 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Echelon Rotation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for echelon {GPArotation}"><tr><td>echelon {GPArotation}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Echelon Rotation</h2>
+
+<h3>Description</h3>
+
+<p>Rotate to an echelon parameterization.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+    echelon(L, reference=seq(NCOL(L)), ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>L</code></td>
+<td>
+<p>a factor loading matrix</p>
+</td></tr>
+<tr valign="top"><td><code>reference</code></td>
+<td>
+<p>indicates rows of loading matrix that should be 
+used to determine the rotation transformation.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>additional arguments discarded.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The loadings matrix is rotated so the <i>k</i> rows of the loading matrix 
+indicated by <code>reference</code> are the Cholesky factorization given by 
+<code>t(chol(L[reference,] %*% t(L[reference,])))</code>.
+This defines the
+rotation transformation, which is then also applied to other rows to 
+give the new loadings matrix.
+</p>
+<p>The optimization is not iterative and does not use the GPA algorithm.  
+The function can be used directly or the
+function name can be passed to factor analysis functions like <code>factanal</code>.
+An orthogonal solution is assumed (so <i>Phi</i> is identity).
+</p>
+<p>The default uses the first <i>k</i> rows 
+as the reference. If the submatrix of <code>L</code> indicated by reference is 
+singular then the rotation will fail and the
+user needs to supply a different choice of rows.
+</p>
+<p>One use of this parameterization is
+for obtaining good starting values (so it may appear strange
+to rotate towards this solution afterwards). It has a few other purposes: 
+</p>
+<p>(1) It can be useful for comparison with
+published results in this parameterization.
+</p>
+<p>(2) The S.E.s are more straightforward to compute, because it is the solution 
+to an unconstrained optimization (though not necessarily computed as such). 
+</p>
+<p>(3) The models with k and (k+1) factors are nested, so it
+is more straightforward to test the k-factor model versus the
+(k+1)-factor model. In particular, in addition to the LR test
+(which does not depend on the rotation), now the Wald test
+and LM test can be used as well. For these, the test of a
+k-factor model versus a (k+1)-factor model is a 
+joint test whether all the free parameters (loadings) in the (k+1)st 
+column of <code>L</code> are zero.
+</p>
+<p>(4) For some purposes, only the subspace spanned by the factors
+is important, not the specific parameterization within this subspace.
+</p>
+<p>(5) The back-predicted indicators (explained portion of the indicators) 
+do not depend
+on the rotation method. Combined with the greater ease to obtain
+correct standard errors of this method, this allows easier and more
+accurate prediction-standard errors.  
+</p>
+<p>(6) This parameterization and its standard errors can be used to
+detect identification problems (McDonald, 1999, pp. 181-182).
+</p>
+
+
+<h3>Value</h3>
+
+<p>A GPArotation object which is a list with elements
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>loadings</code></td>
+<td>
+<p>The new loadings matrix.</p>
+</td></tr> 
+<tr valign="top"><td><code>Th</code></td>
+<td>
+<p>The rotation.</p>
+</td></tr> 
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>A string indicating the rotation objective function (&quot;echelon&quot;).</p>
+</td></tr>
+<tr valign="top"><td><code>orthogonal</code></td>
+<td>
+<p>For consistency with other rotation results. Always TRUE.</p>
+</td></tr>
+<tr valign="top"><td><code>convergence</code></td>
+<td>
+<p>For consistency with other rotation results. Always TRUE.</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Erik Meijer and Paul Gilbert.</p>
+
+
+<h3>References</h3>
+
+<p>Roderick P. McDonald (1999)
+<em>Test Theory: A Unified Treatment</em>, Mahwah, NJ: Erlbaum.
+</p>
+<p>Tom Wansbeek and Erik Meijer (2000) <em>Measurement Error and 
+Latent Variables in Econometrics</em>, Amsterdam: North-Holland.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../GPArotation/help/eiv.html">eiv</a></code>, 
+<code><a href="../../GPArotation/help/rotations.html">rotations</a></code>, 
+<code><a href="../../GPArotation/help/GPForth.html">GPForth</a></code>, 
+<code><a href="../../GPArotation/help/GPFoblq.html">GPFoblq</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+  data("WansbeekMeijer", package="GPArotation")
+  fa.unrotated  &lt;- factanal(factors = 2, covmat=NetherlandsTV, rotation="none")
+
+  fa.ech &lt;- echelon(fa.unrotated$loadings)
+ 
+  fa.ech2 &lt;- factanal(factors = 2, covmat=NetherlandsTV, rotation="echelon")
+  
+  cbind(loadings(fa.unrotated), loadings(fa.ech), loadings(fa.ech2))
+
+  fa.ech3 &lt;- echelon(fa.unrotated$loadings, reference=6:7)
+  cbind(loadings(fa.unrotated), loadings(fa.ech), loadings(fa.ech3))
+  </pre>
+
+<hr /><div style="text-align: center;">[Package <em>GPArotation</em> version 2025.3-1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

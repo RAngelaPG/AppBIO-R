@@ -1,0 +1,111 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Configure what SQLite should do when the database is locked</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for sqliteSetBusyHandler {RSQLite}"><tr><td>sqliteSetBusyHandler {RSQLite}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Configure what SQLite should do when the database is locked</h2>
+
+<h3>Description</h3>
+
+<p>When a transaction cannot lock the database, because it is already
+locked by another one, SQLite by default throws an error:
+<code style="white-space: pre;">database is locked</code>. This behavior is usually not appropriate when
+concurrent access is needed, typically when multiple processes write to
+the same database.
+</p>
+<p><code>sqliteSetBusyHandler()</code> lets you set a timeout or a handler for these
+events. When setting a timeout, SQLite will try the transaction multiple
+times within this timeout. To set a timeout, pass an integer scalar to
+<code>sqliteSetBusyHandler()</code>.
+</p>
+<p>Another way to set a timeout is to use a <code>PRAGMA</code>, e.g. the SQL query
+</p>
+<div class="sourceCode sql"><pre>PRAGMA busy_timeout=3000
+</pre></div>
+<p>sets the busy timeout to three seconds.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+sqliteSetBusyHandler(dbObj, handler)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>dbObj</code></td>
+<td>
+<p>A <a href="../../RSQLite/help/SQLiteConnection-class.html">SQLiteConnection</a> object.</p>
+</td></tr>
+<tr valign="top"><td><code>handler</code></td>
+<td>
+<p>Specifies what to do when the database is locked by
+another transaction. It can be:
+</p>
+
+<ul>
+<li> <p><code>NULL</code>: fail immediately,
+</p>
+</li>
+<li><p> an integer scalar: this is a timeout in milliseconds that corresponds
+to <code style="white-space: pre;">PRAGMA busy_timeout</code>,
+</p>
+</li>
+<li><p> an R function: this function is called with one argument, see details
+below.
+</p>
+</li></ul>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Note that SQLite currently does <em>not</em> schedule concurrent transactions
+fairly. If multiple transactions are waiting on the same database,
+any one of them can be granted access next. Moreover, SQLite does not
+currently ensure that access is granted as soon as the database is
+available. Make sure that you set the busy timeout to a high enough
+value for applications with high concurrency and many writes.
+</p>
+<p>If the <code>handler</code> argument is a function, then it is used as a callback
+function. When the database is locked, this will be called with a single
+integer, which is the number of calls for same locking event. The
+callback function must return an integer scalar. If it returns <code>0L</code>,
+then no additional attempts are made to access the database, and
+an error is thrown. Otherwise another attempt is made to access the
+database and the cycle repeats.
+</p>
+<p>Handler callbacks are useful for debugging concurrent behavior, or to
+implement a more sophisticated busy algorithm. The latter is currently
+considered experimental in RSQLite. If the callback function fails, then
+RSQLite will print a warning, and the transaction is aborted with a
+&quot;database is locked&quot; error.
+</p>
+<p>Note that every database connection has its own busy timeout or handler
+function.
+</p>
+<p>Calling <code>sqliteSetBusyHandler()</code> on a connection that is not connected
+is an error.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Invisible <code>NULL</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><a href="https://www.sqlite.org/c3ref/busy_handler.html">https://www.sqlite.org/c3ref/busy_handler.html</a>
+</p>
+
+<hr /><div style="text-align: center;">[Package <em>RSQLite</em> version 2.4.6 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

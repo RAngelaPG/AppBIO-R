@@ -11,9 +11,7 @@
 <h3>Description</h3>
 
 <p>Low-level bindings to write data from a URL into memory, disk or a callback
-function. These are mainly intended for <code>httr</code>, most users will be better
-off using the <code><a href="../../curl/help/curl.html">curl</a></code> or <code><a href="../../curl/help/curl_download.html">curl_download</a></code> function, or the
-http specific wrappers in the <code>httr</code> package.
+function.
 </p>
 
 
@@ -36,6 +34,8 @@ curl_fetch_multi(
 )
 
 curl_fetch_echo(url, handle = new_handle())
+
+handle_data(handle)
 </pre>
 
 
@@ -48,7 +48,7 @@ curl_fetch_echo(url, handle = new_handle())
 </td></tr>
 <tr valign="top"><td><code>handle</code></td>
 <td>
-<p>a curl handle object</p>
+<p>A curl handle object.</p>
 </td></tr>
 <tr valign="top"><td><code>path</code></td>
 <td>
@@ -87,24 +87,52 @@ the <code>done</code> callback (which is usually what you want).</p>
 
 <h3>Details</h3>
 
-<p>The curl_fetch functions automatically raise an error upon protocol problems
-(network, disk, ssl) but do not implement application logic. For example for
-you need to check the status code of http requests yourself in the response,
+<p>The <code style="white-space: pre;">curl_fetch_*()</code> functions automatically raise an error upon protocol problems
+(network, disk, TLS, etc.) but do not implement application logic. For example,
+you need to check the status code of HTTP requests in the response by yourself,
 and deal with it accordingly.
 </p>
-<p>Both <code>curl_fetch_memory</code> and <code>curl_fetch_disk</code> have a blocking and
+<p>Both <code>curl_fetch_memory()</code> and <code>curl_fetch_disk</code> have a blocking and a
 non-blocking C implementation. The latter is slightly slower but allows for
 interrupting the download prematurely (using e.g. CTRL+C or ESC). Interrupting
 is enabled when R runs in interactive mode or when
 <code>getOption("curl_interrupt") == TRUE</code>.
 </p>
-<p>The <code>curl_fetch_multi</code> function is the asynchronous equivalent of
-<code>curl_fetch_memory</code>. It wraps <code>multi_add</code> to schedule requests which
-are executed concurrently when calling <code>multi_run</code>. For each successful
-request the <code>done</code> callback is triggered with response data. For failed
-requests (when <code>curl_fetch_memory</code> would raise an error), the <code>fail</code>
-function is triggered with the error message.
+<p>The <code>curl_fetch_multi()</code> function is the asynchronous equivalent of
+<code>curl_fetch_memory()</code>. It wraps <code><a href="../../curl/help/multi_add.html">multi_add()</a></code> to
+schedule requests which are executed concurrently when calling
+<code><a href="../../curl/help/multi_run.html">multi_run()</a></code>. For each successful request, the
+<code>done</code> callback is triggered with response data. For failed requests
+(when <code>curl_fetch_memory()</code> would raise an error), the <code>fail</code> function
+is triggered with the error message.
 </p>
+<p>After a request has been performed, metadata from the request can be read
+from the handle object using <code>handle_data()</code> (this same information also gets
+returned by <code>curl_fetch_memory()</code> directly). It includes things like:
+</p>
+
+<ul>
+<li><p> Final URL (after redirects)
+</p>
+</li>
+<li><p> HTTP status code
+</p>
+</li>
+<li><p> Content-type
+</p>
+</li>
+<li><p> Response headers
+</p>
+</li>
+<li><p> Timings
+</p>
+</li>
+<li><p> Http-version
+This data remains available in the handle until it is either re-used for a
+new request, or <code>handle_reset()</code> is called.
+</p>
+</li></ul>
+
 
 
 <h3>Examples</h3>
@@ -143,5 +171,5 @@ str(data)
 
 </pre>
 
-<hr /><div style="text-align: center;">[Package <em>curl</em> version 5.2.1 <a href="00Index.html">Index</a>]</div>
+<hr /><div style="text-align: center;">[Package <em>curl</em> version 7.0.0 <a href="00Index.html">Index</a>]</div>
 </div></body></html>

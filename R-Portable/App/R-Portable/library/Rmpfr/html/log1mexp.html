@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Compute f(a) = log(1 +/- exp(-a)) Numerically Optimally</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for log1mexp {Rmpfr}"><tr><td>log1mexp {Rmpfr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Compute  f(a) = <i>log</i>(1 +/- <i>exp</i>(-a))
+Numerically Optimally</h2>
+
+<h3>Description</h3>
+
+<p>Compute f(a) = log(1 - exp(-a)), respectively
+g(x) = log(1 + exp(x))  quickly numerically accurately.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+log1mexp(a, cutoff = log(2))
+log1pexp(x, c0 = -37, c1 = 18, c2 = 33.3)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>a</code></td>
+<td>
+<p>numeric (or <code><a href="../../Rmpfr/help/mpfr.html">mpfr</a></code>) vector of positive values.</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>numeric vector, may also be an <code>"<a href="../../Rmpfr/help/mpfr.html">mpfr</a>"</code> object.</p>
+</td></tr>
+<tr valign="top"><td><code>cutoff</code></td>
+<td>
+<p>positive number; <code>log(2)</code> is &ldquo;optimal&rdquo;,
+
+but the exact value is unimportant, and anything in
+<i>[0.5, 1]</i> is fine.</p>
+</td></tr>
+<tr valign="top"><td><code>c0, c1, c2</code></td>
+<td>
+<p>cutoffs for <code>log1pexp</code>; see below.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p style="text-align: center;"><i>
+      log1mexp(a) := f(a) =  log(1 -  exp(-a)) = log1p(- exp(-a)) = log(- expm1(-a))</i></p>
+
+<p>or, respectively,
+</p>
+<p style="text-align: center;"><i>
+      log1pexp(x) := g(x) =  log(1 +  exp(x)) = log1p(exp(x))</i></p>
+
+<p>computed accurately and quickly.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Martin Maechler, May 2002; <code>log1pexp()</code> in 2012</p>
+
+
+<h3>References</h3>
+
+
+<p>Martin Mächler (2012).
+Accurately Computing <i>\log(1-\exp(-|a|))</i>;
+<a href="https://CRAN.R-project.org/package=Rmpfr/vignettes/log1mexp-note.pdf">https://CRAN.R-project.org/package=Rmpfr/vignettes/log1mexp-note.pdf</a>.
+
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+fExpr &lt;- expression(
+          DEF   = log(1 - exp(-a)),
+          expm1 = log(-expm1(-a)),
+          log1p = log1p(-exp(-a)),
+          F     = log1mexp(a))
+a. &lt;- 2^seq(-58, 10, length = 256)
+a &lt;- a. ; str(fa &lt;- do.call(cbind, as.list(fExpr)))
+head(fa)# expm1() works here
+tail(fa)# log1p() works here
+
+## graphically:
+lwd &lt;- 1.5*(5:2); col &lt;- adjustcolor(1:4, 0.4)
+op &lt;- par(mfcol=c(1,2), mgp = c(1.25, .6, 0), mar = .1+c(3,2,1,1))
+  matplot(a, fa, type = "l", log = "x", col=col, lwd=lwd)
+  legend("topleft", fExpr, col=col, lwd=lwd, lty=1:4, bty="n")
+  # expm1() &amp; log1mexp() work here
+
+  matplot(a, -fa, type = "l", log = "xy", col=col, lwd=lwd)
+  legend("left", paste("-",fExpr), col=col, lwd=lwd, lty=1:4, bty="n")
+  # log1p() &amp; log1mexp() work here
+par(op)
+
+aM &lt;- 2^seqMpfr(-58, 10, length=length(a.)) # =&gt; default prec = 128
+a &lt;- aM; dim(faM &lt;- do.call(cbind, as.list(fExpr))) # 256 x 4, "same" as 'fa'
+## Here, for small 'a' log1p() and even 'DEF' is still good enough
+l_f &lt;- asNumeric(log(-faM))
+all.equal(l_f[,"F"], l_f[,"log1p"], tol=0) # see TRUE (Lnx 64-bit)
+io &lt;- a. &lt; 80 # for these, the differences are small
+all.equal(l_f[io,"F"], l_f[io,"expm1"], tol=0) # see 6.662e-9
+all.equal(l_f[io,"F"], l_f[io, "DEF" ], tol=0)
+stopifnot(exprs = {
+  all.equal(l_f[,"F"], l_f[,"log1p"],     tol= 1e-15)
+  all.equal(l_f[io,"F"], l_f[io,"expm1"], tol= 1e-7)
+  all.equal(l_f[io,"F"], l_f[io, "DEF" ], tol= 1e-7)
+})
+## For 128-bit prec, if we go down to 2^-130, "log1p" is no longer ok:
+aM2 &lt;- 2^seqMpfr(-130, 10, by = 1/2)
+a &lt;- aM2; fa2 &lt;- do.call(cbind, as.list(fExpr))
+head(asNumeric(fa2), 12)
+tail(asNumeric(fa2), 12)
+
+matplot(a, log(-fa2[,1:3]) -log(-fa2[,"F"]),  type="l", log="x",
+        lty=1:3, lwd=2*(3:1)-1, col=adjustcolor(2:4, 1/3))
+legend("top", colnames(fa2)[1:3], lty=1:3, lwd=2*(3:1)-1, col=adjustcolor(2:4, 1/3))
+
+cols &lt;- adjustcolor(2:4, 1/3); lwd &lt;- 2*(3:1)-1
+matplot(a, 1e-40+abs(log(-fa2[,1:3]) -log(-fa2[,"F"])),  type="o", log="xy",
+        main = "log1mexp(a) -- approximation rel.errors, mpfr(*, prec=128)",
+        pch=21:23, cex=.6, bg=5:7, lty=1:2, lwd=lwd, col=cols)
+legend("top", colnames(fa2)[1:3], bty="n", lty=1:2, lwd=lwd, col=cols,
+        pch=21:23, pt.cex=.6, pt.bg=5:7)
+
+
+## -------------------------- log1pexp() [simpler] --------------------
+
+curve(log1pexp, -10, 10, asp=1)
+abline(0,1, h=0,v=0, lty=3, col="gray")
+
+## Cutoff c1 for log1pexp() -- not often "needed":
+curve(log1p(exp(x)) - log1pexp(x), 16, 20, n=2049)
+## need for *some* cutoff:
+x &lt;- seq(700, 720, by=2)
+cbind(x, log1p(exp(x)), log1pexp(x))
+
+## Cutoff c2 for log1pexp():
+curve((x+exp(-x)) - x, 20, 40, n=1025)
+curve((x+exp(-x)) - x, 33.1, 33.5, n=1025)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>Rmpfr</em> version 1.1-2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

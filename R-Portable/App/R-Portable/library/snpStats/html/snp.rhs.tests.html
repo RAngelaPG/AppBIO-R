@@ -1,0 +1,203 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Score tests with SNP genotypes as independent variable</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for snp.rhs.tests {snpStats}"><tr><td>snp.rhs.tests {snpStats}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Score tests with SNP genotypes as independent variable</h2>
+
+<h3>Description</h3>
+
+<p>This function fits a generalized linear model with phenotype as
+dependent variable and, optionally, one or more potential confounders of
+a phenotype-genotype association as independent variable. A series of
+SNPs (or small groups of SNPs) are then tested for additional
+association with phenotype. In order to protect against misspecification
+of the variance function,  &quot;robust&quot; tests may be selected.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+snp.rhs.tests(formula, family = "binomial", link, weights, subset, data = parent.frame(),
+   snp.data, rules=NULL, tests=NULL, robust = FALSE, uncertain=FALSE, 
+   control=glm.test.control(), allow.missing=0.01, score=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>The base model formula, with phenotype as dependent variable</p>
+</td></tr>
+<tr valign="top"><td><code>family</code></td>
+<td>
+<p>A string defining the generalized linear model
+family. This currently should (partially)  match one of
+<code>"binomial"</code>, <code>"Poisson"</code>, <code>"Gaussian"</code> or
+<code>"gamma"</code> (case-insensitive)</p>
+</td></tr>
+<tr valign="top"><td><code>link</code></td>
+<td>
+<p>A string defining the link function for the GLM. This
+currently should (partially) match one of <code>"logit"</code>,
+<code>"log"</code>, <code>"identity"</code> or <code>"inverse"</code>. The
+default action is to use the &quot;canonical&quot; link for the family selected</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>The dataframe in which the base model is to be fitted</p>
+</td></tr>
+<tr valign="top"><td><code>snp.data</code></td>
+<td>
+<p>An object of class <code>"SnpMatrix"</code> or
+<code>"XSnpMatrix"</code> containing the SNP data</p>
+</td></tr> 
+<tr valign="top"><td><code>rules</code></td>
+<td>
+<p>An object of class
+<code>"ImputationRules"</code>. If
+supplied, the rules coded in this object are used, together with
+<code>snp.data</code>, to calculate tests for imputed SNPs</p>
+</td></tr>
+<tr valign="top"><td><code>tests</code></td>
+<td>
+<p>Either a vector of SNP names (or  numbers) for the SNPs
+to be tested, or a logical vector of length equal to the number of
+columns in <code>snp.data</code>,
+or a list of short numeric or character
+vectors defining groups of SNPs to be
+tested (see <code>Details</code>)</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>&quot;Prior&quot; weights in the generalized linear model</p>
+</td></tr>
+<tr valign="top"><td><code>subset</code></td>
+<td>
+<p>Array defining the subset of rows of  <code>data</code> to use</p>
+</td></tr>
+<tr valign="top"><td><code>robust</code></td>
+<td>
+<p>If <code>TRUE</code>, robust tests will be carried out</p>
+</td></tr>
+<tr valign="top"><td><code>uncertain</code></td>
+<td>
+<p>If <code>TRUE</code>, uncertain genotypes are used and
+scored by their posterior expectations. Otherwise they are treated
+as missing</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+<p>An object giving parameters for the IRLS algorithm
+fitting of the base model and for the acceptable aliasing amongst
+new terms to be tested. See <code><a href="../../snpStats/help/glm.test.control.html">glm.test.control</a></code></p>
+</td></tr>
+<tr valign="top"><td><code>allow.missing</code></td>
+<td>
+<p>The maximum proportion of SNP genotype that can
+be missing before it becomes necessary to refit the base model</p>
+</td></tr>
+<tr valign="top"><td><code>score</code></td>
+<td>
+<p>Is extended score information to be returned?</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The tests used are asymptotic chi-squared tests based on the vector of
+first and second derivatives of the log-likelihood with respect to the
+parameters of the additional model. The &quot;robust&quot; form is a generalized
+score test in the sense discussed by Boos(1992). The &quot;base&quot; model is
+first fitted, and a score test is performed for addition of one or
+more SNP genotypes to the model. Homozygous SNP genotypes are coded 0
+or 2 and heterozygous genotypes are coded 1. For SNPs on the X
+chromosome, males are coded as homozygous females. For X SNPs, it will
+often be
+appropriate to include sex of subject in the base model (this is
+not done automatically).
+</p>
+<p>If a <code>data</code> argument is supplied, the <code>snp.data</code> and
+<code>data</code> objects are aligned by rowname. Otherwise all variables in
+the model formulae are assumed to be stored in the same order as the
+columns of the <code>snp.data</code> object.
+</p>
+<p>Usually SNPs to be used in tests will be referenced by name. However,
+they can
+also be referenced by number, a positive number indicating the
+appropriate column in the input <code>snp.data</code>, and a negative number
+indicating (minus) a position in the <code>rules</code> list. They can also
+be referenced by a logical selection vector of length equal to the
+number of columns in <code>snp.data</code>. Sets of tests
+involving more than one SNP are referenced by a list and
+can use a mixture of observed and imputed
+SNPs. If the <code>tests</code> argument is missing, single SNP tests are
+carried out; if a <code>rules</code> is given, all <em>imputed</em> SNP tests
+are calculated, otherwise all SNPs in the input <code>snp.data</code> matrix
+are tested. But note that, for single SNP tests, the function
+<code><a href="../../snpStats/help/single.snp.tests.html">single.snp.tests</a></code> will often achieve the same
+result much faster.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code><a href="../../snpStats/help/GlmTests-class.html">GlmTests</a></code>
+or <code><a href="../../snpStats/help/GlmTestsScore-class.html">GlmTestsScore</a></code>
+depending on whether <code>score</code> is set to <code>FALSE</code> or <code>TRUE</code>
+in the call.
+</p>
+
+
+<h3>Note</h3>
+
+<p>A factor (or
+several factors) may be included as arguments to the function
+<code>strata(...)</code> in the <code>formula</code>. This fits all
+interactions of the factors so included, but leads to faster
+computation  than fitting these in the normal way. Additionally, a
+<code>cluster(...)</code> call may be included in the base model
+formula. This identifies clusters of potentially correlated
+observations (e.g. for members of the same family); in this case, an
+appropriate robust estimate of the variance of the score test is used.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>David Clayton <a href="mailto:dc208@cam.ac.uk">dc208@cam.ac.uk</a></p>
+
+
+<h3>References</h3>
+
+<p>Boos, Dennis D. (1992) On generalized score tests. <em>The
+American Statistician</em>, <strong>46</strong>:327-333.</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../snpStats/help/GlmTests-class.html">GlmTests-class</a></code>,
+<code><a href="../../snpStats/help/GlmTestsScore-class.html">GlmTestsScore-class</a></code>,
+<code><a href="../../snpStats/help/single.snp.tests.html">single.snp.tests</a></code>, <code><a href="../../snpStats/help/snp.lhs.tests.html">snp.lhs.tests</a></code>,
+<code><a href="../../snpStats/help/impute.snps.html">impute.snps</a></code>, <code><a href="../../snpStats/help/ImputationRules-class.html">ImputationRules-class</a></code>,
+<code><a href="../../snpStats/help/SnpMatrix-class.html">SnpMatrix-class</a></code>, <code><a href="../../snpStats/help/XSnpMatrix-class.html">XSnpMatrix-class</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(testdata)
+slt3 &lt;- snp.rhs.tests(cc~strata(region), family="binomial",
+   data=subject.data, snp.data= Autosomes, tests=1:10)
+print(slt3)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>snpStats</em> version 1.44.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

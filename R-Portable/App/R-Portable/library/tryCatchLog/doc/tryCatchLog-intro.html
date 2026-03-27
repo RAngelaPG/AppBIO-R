@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Jürgen Altfeld" />
+
+<meta name="date" content="2025-12-02" />
+
+<title>Error handling in R with tryCatchLog: Catching, logging, post-mortem analysis</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Error handling in R with tryCatchLog:
+Catching, logging, post-mortem analysis</h1>
+<h4 class="author">Jürgen Altfeld</h4>
+<h4 class="date">2025-12-02</h4>
+
+
+
+<p>For a slide version of this vignette (e. g. for trainings and
+presentations) see:</p>
+<p><a href="https://aryoda.github.io/tutorials/tryCatchLog/tryCatchLog-intro-slides.html" class="uri">https://aryoda.github.io/tutorials/tryCatchLog/tryCatchLog-intro-slides.html</a></p>
+<div id="license-gpl-3" class="section level2">
+<h2>License (GPL-3)</h2>
+<div class="float">
+<img role="img" aria-label="gplv3 logo" src="data:image/png;base64,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" alt="gplv3 logo" />
+<div class="figcaption">gplv3 logo</div>
+</div>
+<p>Copyright (C) 2016++ Jürgen Altfeld (<a href="mailto:R@altfeld-im.de" class="email">R@altfeld-im.de</a>)</p>
+<p>This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your
+option) any later version.</p>
+<p>This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+Public License for more details.</p>
+<p>You should have received <a href="https://github.com/aryoda/tryCatchLog/blob/master/LICENSE">a copy
+of the GNU General Public License</a> along with this program. If not,
+see <a href="https://www.gnu.org/licenses/" class="uri">https://www.gnu.org/licenses/</a>.</p>
+</div>
+<div id="overview" class="section level2">
+<h2>Overview</h2>
+<p>The <code>tryCatchLog</code> package provides an advanced
+<code>tryCatch</code> function for the programming language <a href="https://www.r-project.org/">R</a>.</p>
+<p>The main advantages of the <code>tryCatchLog</code> function over
+<code>tryCatch</code> are:</p>
+<ul>
+<li><strong>Easy logging</strong> of errors, warnings and messages into
+a file or console</li>
+<li><strong>Complete stack trace with references to the source file
+names and line numbers</strong> to identify the source of errors and
+warnings (R’s <code>traceback</code> does not contain the full stack
+trace if you catch errors and warnings!)</li>
+<li><strong><a href="#post-mortem-analysis">Post-mortem analysis</a> or
+R errors by creating a dump file</strong> with all variables of the
+global environment (workspace) and the function call stack
+(<code>dump.frames</code>) to enable the analysis of “crashed” batch
+jobs that you cannot debug on the server directly to reproduce the
+error!</li>
+<li><strong>Logging</strong> of warnings (and other non-error
+conditions) <strong>without stopping the execution</strong> of the
+evaluated expression (unlike <code>tryCatch</code> does if you pass a
+warning handler function)</li>
+</ul>
+</div>
+<div id="table-of-contents" class="section level2">
+<h2>Table of contents</h2>
+<p>Part 1: <code>tryCatch</code> in standard R</p>
+<p><a href="#introduction-into-conditions-in-standard-r">Introduction
+into conditions in standard R</a> <a href="#throw-your-own-conditions">Throw your own conditions</a> <a href="#handling-conditions-in-r">Handling conditions in R</a> <a href="#the-drawbacks-of-trycatch">The drawbacks of tryCatch</a> <a href="#workaround-1-interactive-debugging">Workaround 1: Interactive
+debugging</a> <a href="#workaround-2-withcallinghandlers-trycatch">Workaround 2:
+withCallingHandlers + tryCatch</a></p>
+<p>Part 2: Package <code>tryCatchLog</code></p>
+<p><a href="#better-error-handling-with-the-trycatchlog-package">Better
+error handling with the tryCatchLog package</a> <a href="#post-mortem-analysis">Post-mortem analysis</a> <a href="#trycatchlog-function-reference">tryCatchLog Function
+Reference</a> <a href="#trycatchlog-best-practices">tryCatchLog Best
+Practices</a></p>
+<p><a href="#appendix">Appendix</a></p>
+</div>
+<div id="introduction-into-conditions-in-standard-r" class="section level1">
+<h1>Introduction into conditions in standard R</h1>
+<div id="what-is-a-condition" class="section level2">
+<h2>What is a condition?</h2>
+<p>The execution of an R script can be interrupted to signal special
+states (<em>conditions</em>) like:</p>
+<ul>
+<li>errors</li>
+<li>warnings</li>
+<li>info messages</li>
+<li>user requested interrupts (by hitting CTRL + C/BRK or ESC)</li>
+</ul>
+<p>For details see the R help: <code>?conditions</code></p>
+</div>
+<div id="condition-examples" class="section level2">
+<h2>Condition examples</h2>
+<p>An error condition:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">log</span>(<span class="st">&quot;text&quot;</span>)   <span class="co"># calculating the logarithm of a string throws an error</span></span></code></pre></div>
+<pre><code>## Error in log(&quot;text&quot;): non-numeric argument to mathematical function</code></pre>
+<p>A warning condition:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">log</span>(<span class="sc">-</span><span class="dv">1</span>)                <span class="co"># logarithm of a negative number throws a warning</span></span></code></pre></div>
+<pre><code>## Warning in log(-1): NaNs produced</code></pre>
+<pre><code>## [1] NaN</code></pre>
+</div>
+</div>
+<div id="throw-your-own-conditions" class="section level1">
+<h1>Throw your own conditions</h1>
+<p>Note: This text will never be shown due to a “limitation by design”
+of pandoc:</p>
+<p><a href="https://stackoverflow.com/a/31778080/4468078" class="uri">https://stackoverflow.com/a/31778080/4468078</a></p>
+<div id="throw-an-error" class="section level2">
+<h2>Throw an Error</h2>
+<p>Use <code>stop</code> to throw an error “condition” to signal an
+invalid program state:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="cf">if</span> (<span class="dv">1</span> <span class="sc">!=</span> <span class="dv">2</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  <span class="fu">stop</span>(<span class="st">&quot;something is wrong&quot;</span>)</span></code></pre></div>
+<pre><code>## Error: something is wrong</code></pre>
+<p></br> Or shorter (but without a way to specify an error text):</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="dv">1</span> <span class="sc">==</span> <span class="dv">2</span>)</span></code></pre></div>
+<pre><code>## Error: 1 == 2 is not TRUE</code></pre>
+<p><code>stopifnot</code> is quite often used to ensure pre-conditions
+in function calls.</p>
+</div>
+<div id="throw-a-warning" class="section level2">
+<h2>Throw a Warning</h2>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">warning</span>(<span class="st">&quot;bad weather today, don&#39;t forget your umbrella&quot;</span>)</span></code></pre></div>
+<pre><code>## Warning: bad weather today, don&#39;t forget your umbrella</code></pre>
+</div>
+<div id="throw-a-message" class="section level2">
+<h2>Throw a Message</h2>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">message</span>(<span class="st">&quot;good morning&quot;</span>)</span></code></pre></div>
+<pre><code>## good morning</code></pre>
+</div>
+</div>
+<div id="handling-conditions-in-r" class="section level1">
+<h1>Handling conditions in R</h1>
+<p>Scroll down for examples…</p>
+<div id="unhandled-errors-stop-r" class="section level2">
+<h2>Unhandled errors stop R</h2>
+<p>By default R will stop the execution if an error occurs:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="fu">options</span>(<span class="at">error =</span> <span class="cn">NULL</span>)  <span class="co"># switch to default behaviour of pure R</span></span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>test <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a>  <span class="fu">log</span>(<span class="st">&quot;not a number&quot;</span>)</span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">&quot;R does stop due to an error and never executes this line&quot;</span>)</span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>}</span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="fu">test</span>()     <span class="co"># throws an error</span></span></code></pre></div>
+<pre><code>## Error in log(&quot;not a number&quot;): non-numeric argument to mathematical function</code></pre>
+<p>Note that the output does <strong>not</strong> show the
+<code>print</code> result since the execution stops in case of an
+error.</p>
+</div>
+<div id="use-try-to-ignore-errors" class="section level2">
+<h2>Use <code>try</code> to ignore errors</h2>
+<p>With the <code>try</code> function you can handle errors to continue
+the execution (by ignoring the error):</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="fu">try</span>(<span class="fu">log</span>(<span class="st">&quot;not a number&quot;</span>), <span class="at">silent =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="fu">print</span>(<span class="st">&quot;errors can&#39;t stop me&quot;</span>)</span></code></pre></div>
+<pre><code>## [1] &quot;errors can&#39;t stop me&quot;</code></pre>
+<p><strong>Note:</strong> If an error occurs then the error message is
+printed to the <code>stderr</code> connection unless the call includes
+<code>silent = TRUE</code>.</p>
+</div>
+<div id="use-trycatch-to-handle-errors" class="section level2">
+<h2>Use <code>tryCatch</code> to handle errors</h2>
+<p>With <code>tryCatch</code> you can handle errors as you want:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a>an.error.occured <span class="ot">&lt;-</span> <span class="cn">FALSE</span></span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a><span class="fu">tryCatch</span>( { result <span class="ot">&lt;-</span> <span class="fu">log</span>(<span class="st">&quot;not a number&quot;</span>); <span class="fu">print</span>(res) }</span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a>          , <span class="at">error =</span> <span class="cf">function</span>(e) {an.error.occured <span class="ot">&lt;&lt;-</span> <span class="cn">TRUE</span>})</span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a><span class="fu">print</span>(an.error.occured)</span></code></pre></div>
+<pre><code>## [1] TRUE</code></pre>
+<p></br> If you use an error handler function</p>
+<ul>
+<li>the error is not shown anymore and</li>
+<li>the execution continues after the <code>tryCatch</code>
+statement.</li>
+</ul>
+</div>
+<div id="trycatch-can-handle-all-conditions-12" class="section level2">
+<h2><code>tryCatch</code> can handle all conditions 1/2</h2>
+<p>… not only errors. Just use the condition name as parameter to handle
+conditions of this type, e. g. warnings:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="fu">tryCatch</span>( { result <span class="ot">&lt;-</span> <span class="fu">log</span>(<span class="sc">-</span><span class="dv">1</span>); <span class="fu">print</span>(result) }</span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>          , <span class="at">warning =</span> <span class="cf">function</span>(w) { <span class="fu">print</span>(<span class="st">&quot;Hey, a warning&quot;</span>) })</span></code></pre></div>
+<pre><code>## [1] &quot;Hey, a warning&quot;</code></pre>
+</div>
+<div id="trycatch-can-handle-all-conditions-22" class="section level2">
+<h2><code>tryCatch</code> can handle all conditions 2/2</h2>
+<p>You can use <code>error</code>, <code>warning</code>,
+<code>message</code> or <code>interrupt</code> as parameter name to
+assign a handler for these “standard” conditions, e. g. to catch
+messages:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a>last.message <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a><span class="fu">tryCatch</span>( { <span class="fu">message</span>(<span class="st">&quot;please handle me&quot;</span>); <span class="fu">print</span>(<span class="st">&quot;Done&quot;</span>) }</span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a>          , <span class="at">message =</span> <span class="cf">function</span>(m) { last.message <span class="ot">&lt;&lt;-</span> m })</span>
+<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a><span class="fu">print</span>(last.message<span class="sc">$</span>message)</span></code></pre></div>
+<pre><code>## [1] &quot;please handle me\n&quot;</code></pre>
+</div>
+<div id="advanced-topic-user-defined-conditions" class="section level2">
+<h2>Advanced topic: User defined conditions</h2>
+<p>You can even define your own user-defined condition classes, but
+there is no built-in function to generate a new object of class
+<code>condition</code>. So do it yourself:*</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a>condition <span class="ot">&lt;-</span> <span class="cf">function</span>(subclass, message, <span class="at">call =</span> <span class="fu">sys.call</span>(<span class="sc">-</span><span class="dv">1</span>), ...) {</span>
+<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a>  <span class="fu">structure</span>( <span class="at">class =</span> <span class="fu">c</span>(subclass, <span class="st">&quot;condition&quot;</span>),</span>
+<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a>             <span class="fu">list</span>(<span class="at">message =</span> message, <span class="at">call =</span> call, ...))</span>
+<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a>}</span>
+<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a></span>
+<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="fu">tryCatch</span>( { work <span class="ot">&lt;-</span> <span class="fu">condition</span>(<span class="st">&quot;my.work.condition&quot;</span>, <span class="st">&quot;after work party&quot;</span>)</span>
+<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a>            <span class="fu">signalCondition</span>(work); <span class="fu">print</span>(<span class="st">&quot;Done&quot;</span>) }</span>
+<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a>          , <span class="at">my.work.condition =</span> <span class="cf">function</span>(c) { <span class="fu">print</span>(c<span class="sc">$</span>message) })</span></code></pre></div>
+<pre><code>## [1] &quot;after work party&quot;</code></pre>
+<p>User-defined condition classes are only required if you want to
+implement a specific recovery strategy for this condition. This is out
+of scope of this presentation.</p>
+<p>*) Source: <a href="http://adv-r.had.co.nz/beyond-exception-handling.html" class="uri">http://adv-r.had.co.nz/beyond-exception-handling.html</a></p>
+</div>
+<div id="but-trycatch-is-not-perfect" class="section level2">
+<h2>But <code>tryCatch</code> is not perfect</h2>
+<p>Have you discovered the problem in the previous examples?</p>
+<p>See the next chapter for the answer!</p>
+</div>
+</div>
+<div id="the-drawbacks-of-trycatch" class="section level1">
+<h1>The drawbacks of <code>tryCatch</code></h1>
+<div id="handling-a-condition-stops-the-execution-12" class="section level2">
+<h2>Handling a condition stops the execution 1/2</h2>
+<p>Calling the function <strong>without</strong> a <code>tryCatch</code>
+handler does <strong>not stop</strong> the execution of the function
+<code>f()</code>:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a>{ <span class="co"># required to execute the code as one block to summarize the output in this Rmd</span></span>
+<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a>  f <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb26-3"><a href="#cb26-3" tabindex="-1"></a>    <span class="fu">warning</span>(<span class="st">&quot;deprecated function called&quot;</span>)</span>
+<span id="cb26-4"><a href="#cb26-4" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">&quot;Hello world&quot;</span>)</span>
+<span id="cb26-5"><a href="#cb26-5" tabindex="-1"></a>  }</span>
+<span id="cb26-6"><a href="#cb26-6" tabindex="-1"></a>  <span class="fu">f</span>()</span>
+<span id="cb26-7"><a href="#cb26-7" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">&quot;Done&quot;</span>)</span>
+<span id="cb26-8"><a href="#cb26-8" tabindex="-1"></a>}</span></code></pre></div>
+<pre><code>## Warning in f(): deprecated function called</code></pre>
+<pre><code>## [1] &quot;Hello world&quot;
+## [1] &quot;Done&quot;</code></pre>
+<p>but…</p>
+</div>
+<div id="handling-a-condition-stops-the-execution-22" class="section level2">
+<h2>Handling a condition stops the execution 2/2</h2>
+<p>Handling a condition <strong>cancels</strong> the execution of the
+code block that raised (throwed) the condition:</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a>  <span class="fu">warning</span>(<span class="st">&quot;deprecated function called&quot;</span>)</span>
+<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">&quot;Hello world&quot;</span>)</span>
+<span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a>}</span>
+<span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a><span class="fu">tryCatch</span>(<span class="fu">f</span>(), <span class="at">warning =</span> <span class="cf">function</span>(w) { <span class="fu">write.to.log</span>(w) })</span>
+<span id="cb29-6"><a href="#cb29-6" tabindex="-1"></a><span class="fu">print</span>(<span class="st">&quot;Done&quot;</span>)</span></code></pre></div>
+<pre><code>## [1] &quot;Done&quot;</code></pre>
+<p><strong>Observe:</strong> <em>Hello world</em> is never printed just
+because we catched a warning!</p>
+<p><strong>If you catch a condition with <code>tryCatch</code> (even
+just a warning or message) then R</strong></p>
+<ol style="list-style-type: decimal">
+<li>executes the condition handler function</li>
+<li>aborts the execution of the code block that throwed the
+condition</li>
+<li>continues the execution with <strong>the next command after the
+<code>tryCatch</code> command</strong></li>
+</ol>
+</div>
+<div id="handling-errors-unrolls-the-stack-trace-12" class="section level2">
+<h2>Handling errors unrolls the stack trace 1/2</h2>
+<p>If you do <strong>not catch an error</strong> R stops and you can get
+the complete function call stack using <code>traceback</code> to
+identify the code that throwed the error:</p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="fu">options</span>(<span class="at">error=</span><span class="cf">function</span>() <span class="fu">traceback</span>(<span class="dv">2</span>)) <span class="co"># http://stackoverflow.com/a/13119318/4468078</span></span>
+<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a>  <span class="fu">log</span>(<span class="st">&quot;not a number&quot;</span>)</span>
+<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">&quot;Hello world&quot;</span>)</span>
+<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a>}</span>
+<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a><span class="fu">f</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a>Error <span class="cf">in</span> <span class="fu">log</span>(<span class="st">&quot;not a number&quot;</span>) <span class="sc">:</span></span>
+<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a>  non<span class="sc">-</span>numeric argument to mathematical <span class="cf">function</span></span>
+<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a><span class="dv">6</span><span class="sc">:</span> (<span class="cf">function</span> ()</span>
+<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a>   <span class="fu">traceback</span>(<span class="dv">2</span>))() at f.R<span class="co">#3</span></span>
+<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a><span class="dv">5</span><span class="sc">:</span> <span class="fu">f</span>() at f.R<span class="co">#6</span></span>
+<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a>...</span>
+<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a><span class="dv">1</span><span class="sc">:</span> <span class="fu">source</span>(<span class="st">&quot;f.R&quot;</span>)</span></code></pre></div>
+<p><strong>Note:</strong> The call stack shows the line number after the
+file name and hash sign, e. g. <code>file1.R#7</code> = line number
+7</p>
+</div>
+<div id="handling-errors-unrolls-the-stack-trace-22" class="section level2">
+<h2>Handling errors unrolls the stack trace 2/2</h2>
+<p>But if you handle the error, the call stack is truncated:</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb33-2"><a href="#cb33-2" tabindex="-1"></a>  <span class="fu">log</span>(<span class="st">&quot;not a number&quot;</span>)</span>
+<span id="cb33-3"><a href="#cb33-3" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">&quot;Hello world&quot;</span>)</span>
+<span id="cb33-4"><a href="#cb33-4" tabindex="-1"></a>}</span>
+<span id="cb33-5"><a href="#cb33-5" tabindex="-1"></a><span class="fu">tryCatch</span>(<span class="fu">f</span>(), <span class="at">error =</span> <span class="cf">function</span>(e) { <span class="fu">traceback</span>() })</span></code></pre></div>
+<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a><span class="dv">8</span><span class="sc">:</span> value[[<span class="dv">3</span><span class="dt">L</span>]](cond)</span>
+<span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a><span class="dv">7</span><span class="sc">:</span> <span class="fu">tryCatchOne</span>(expr, names, parentenv, handlers[[<span class="dv">1</span><span class="dt">L</span>]])</span>
+<span id="cb34-3"><a href="#cb34-3" tabindex="-1"></a><span class="dv">6</span><span class="sc">:</span> <span class="fu">tryCatchList</span>(expr, classes, parentenv, handlers)</span>
+<span id="cb34-4"><a href="#cb34-4" tabindex="-1"></a><span class="dv">5</span><span class="sc">:</span> <span class="fu">tryCatch</span>(<span class="fu">f</span>(), <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
+<span id="cb34-5"><a href="#cb34-5" tabindex="-1"></a>       <span class="fu">traceback</span>(<span class="dv">2</span>)</span>
+<span id="cb34-6"><a href="#cb34-6" tabindex="-1"></a>   }) at f.R<span class="co">#5</span></span>
+<span id="cb34-7"><a href="#cb34-7" tabindex="-1"></a>...</span>
+<span id="cb34-8"><a href="#cb34-8" tabindex="-1"></a><span class="dv">1</span><span class="sc">:</span> <span class="fu">source</span>(<span class="st">&quot;f.R&quot;</span>)</span></code></pre></div>
+<p>The call stack ends basically with the <code>tryCatch</code> call but
+<strong>does not show you the code line in <code>f()</code> where the
+error was thrown</strong>.</p>
+</div>
+<div id="summary-the-drawbacks-of-trycatch" class="section level2">
+<h2>Summary: The drawbacks of <code>tryCatch</code></h2>
+<ol style="list-style-type: decimal">
+<li><p><strong>You can not find out the exact reason for errors</strong>
+because the full stack trace is truncated</p></li>
+<li><p>Handling of warnings and messages (e. g. just to log them)
+cancels the execution of the code block that throwed the condition (what
+is unexpected!)</p></li>
+</ol>
+<p>See the next chapters for possible work-arounds…</p>
+</div>
+</div>
+<div id="workaround-1-interactive-debugging" class="section level1">
+<h1>Workaround 1: Interactive debugging</h1>
+<div id="interactive-debugging" class="section level2">
+<h2>Interactive debugging</h2>
+<p>You can run and debug your R script interactively in the
+<em>RGui</em> or <a href="https://www.rstudio.com/products/rstudio/">RStudio</a> instead of
+condition handling with <code>tryCatch</code>.</p>
+<p>For more details on interactive debugging see
+<code>?debug</code>.</p>
+<p><strong>Note: Interactive debugging is out of scope of this
+presentation.</strong></p>
+</div>
+<div id="limitations-of-interactive-debugging" class="section level2">
+<h2>Limitations of interactive debugging</h2>
+<p>Interactive debugging is very difficult in case of</p>
+<ul>
+<li>errors that are not (easily) reproducible.</li>
+<li>errors that occur only after a long run time</li>
+<li>batch jobs running on a server (you have no interactive GUI
+then!)</li>
+</ul>
+</div>
+</div>
+<div id="workaround-2-withcallinghandlers-trycatch" class="section level1">
+<h1>Workaround 2: <code>withCallingHandlers</code> +
+<code>tryCatch</code></h1>
+<div id="how-withcallinghandlers-works" class="section level2">
+<h2>How <code>withCallingHandlers</code> works</h2>
+<p><code>withCallingHandlers</code> works similar to
+<code>tryCatch</code> but</p>
+<ol style="list-style-type: decimal">
+<li>remembers the call stack down to the point where the condition was
+signaled</li>
+<li>resumes the execution after the point where the condition was
+signaled</li>
+</ol>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a>  <span class="fu">warning</span>(<span class="st">&quot;deprecated function called&quot;</span>)</span>
+<span id="cb35-3"><a href="#cb35-3" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">&quot;Hello world&quot;</span>)</span>
+<span id="cb35-4"><a href="#cb35-4" tabindex="-1"></a>}</span>
+<span id="cb35-5"><a href="#cb35-5" tabindex="-1"></a><span class="fu">withCallingHandlers</span>(<span class="fu">f</span>(), <span class="at">warning =</span> <span class="cf">function</span>(w) { <span class="fu">write.to.log</span>(<span class="fu">sys.calls</span>()) })</span></code></pre></div>
+<pre><code>## Warning in f(): deprecated function called</code></pre>
+<pre><code>## [1] &quot;Hello world&quot;</code></pre>
+<p><strong>Note:</strong> Use <strong><code>sys.calls</code></strong>
+within <code>withCallingHandlers</code> to return the full <strong>call
+stack</strong>.</p>
+</div>
+<div id="withcallinghandlers-supports-restarts" class="section level2">
+<h2><code>withCallingHandlers</code> supports restarts</h2>
+<p><em>Restarts</em> allow to recover from conditions using a predefined
+behaviour:</p>
+<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb38-2"><a href="#cb38-2" tabindex="-1"></a>  <span class="fu">warning</span>(<span class="st">&quot;deprecated function called&quot;</span>)</span>
+<span id="cb38-3"><a href="#cb38-3" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">&quot;Hello old world&quot;</span>)</span>
+<span id="cb38-4"><a href="#cb38-4" tabindex="-1"></a>}</span>
+<span id="cb38-5"><a href="#cb38-5" tabindex="-1"></a><span class="fu">withCallingHandlers</span>(<span class="fu">f</span>(), <span class="at">warning =</span> <span class="cf">function</span>(w) { <span class="fu">write.to.log</span>(<span class="fu">sys.calls</span>())</span>
+<span id="cb38-6"><a href="#cb38-6" tabindex="-1"></a>                                                 <span class="fu">invokeRestart</span>(<span class="st">&quot;muffleWarning&quot;</span>)})</span>
+<span id="cb38-7"><a href="#cb38-7" tabindex="-1"></a><span class="fu">print</span>(<span class="st">&quot;Done&quot;</span>)</span></code></pre></div>
+<pre><code>## [1] &quot;Hello old world&quot;
+## [1] &quot;Done&quot;</code></pre>
+<p><code>invokeRestart(&quot;muffleWarning&quot;)</code> has a simple recovery
+strategy: “Suppress the warning”.</p>
+<p>It consumes the warning (so it does not “bubble up” to higher
+function call levels) and resumes the execution.</p>
+<p><em>TODO: Mention other restarts and their behaviour…</em></p>
+</div>
+<div id="differences-between-withcallinghandlers-and-trycatch" class="section level2">
+<h2>Differences between <code>withCallingHandlers</code> and
+<code>tryCatch</code></h2>
+<table>
+<colgroup>
+<col width="30%" />
+<col width="30%" />
+<col width="38%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th>tryCatch</th>
+<th>withCallingHandlers</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Program execution</strong></td>
+<td><strong>breaks</strong> and continues with the first expression
+after the <code>tryCatch</code> function call</td>
+<td><strong>resumes</strong> the execution at the code line that throwed
+the condition</td>
+</tr>
+<tr class="even">
+<td><strong>Call stack</strong> (<code>traceback</code> and
+<code>sys.calls</code>)</td>
+<td><strong>unwinds the call stack</strong> up to the
+<code>tryCatch</code> function call</td>
+<td><strong>keeps the full call stack</strong> down to the code line
+that throwed the condition</td>
+</tr>
+<tr class="odd">
+<td><strong>Rethrowing of conditions</strong></td>
+<td><strong>Conditions are consumed</strong> by the called handler
+function (do not bubble up)</td>
+<td><strong>Conditions bubble up</strong> (are not consumed by the
+called handler function)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Note: <code>tryCatch</code> is different from Java’s
+<code>try-catch</code> statement: It unwinds the call stack (in Java you
+get the full call stack with the <code>printStackTrace</code>
+method)!</strong></p>
+</div>
+<div id="combine-withcallinghandlers-with-trycatch" class="section level2">
+<h2>Combine <code>withCallingHandlers</code> with
+<code>tryCatch</code></h2>
+<p>The requirements for better condition handling in R are:</p>
+<ul>
+<li>Get the full call stack for all catched conditions</li>
+<li>Resume execution after handling warnings and messages</li>
+<li>Catch errors and continue the execution after the handler
+function</li>
+</ul>
+<p>Solution:</p>
+<ul>
+<li>Handle all conditions in <code>withCallingHandlers</code> to log
+them with the full stack trace</li>
+<li>Invoke a restart in <code>withCallingHandlers</code> to resume after
+a non-error condition</li>
+<li>Handle only errors in <code>tryCatch</code> to recover from the
+error and continue execution after the <code>tryCatch</code> function
+call</li>
+</ul>
+</div>
+<div id="code-snippet-for-better-error-handling" class="section level2">
+<h2>Code snippet for better error handling</h2>
+<p>An improved “error handler” in R looks similar to this code
+snippet:</p>
+<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb40-2"><a href="#cb40-2" tabindex="-1"></a>  <span class="fu">warning</span>(<span class="st">&quot;deprecated function called&quot;</span>)</span>
+<span id="cb40-3"><a href="#cb40-3" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">&quot;A warning cannot stop me&quot;</span>)</span>
+<span id="cb40-4"><a href="#cb40-4" tabindex="-1"></a>  <span class="fu">log</span>(<span class="st">&quot;not a number&quot;</span>)</span>
+<span id="cb40-5"><a href="#cb40-5" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">&quot;Hello old world&quot;</span>)</span>
+<span id="cb40-6"><a href="#cb40-6" tabindex="-1"></a>}</span>
+<span id="cb40-7"><a href="#cb40-7" tabindex="-1"></a></span>
+<span id="cb40-8"><a href="#cb40-8" tabindex="-1"></a><span class="fu">tryCatch</span>(<span class="fu">withCallingHandlers</span>(<span class="fu">f</span>(), <span class="at">error=</span><span class="cf">function</span>(e) {<span class="fu">write.to.log</span>(<span class="fu">sys.calls</span>())}</span>
+<span id="cb40-9"><a href="#cb40-9" tabindex="-1"></a>                                , <span class="at">warning=</span><span class="cf">function</span>(w) {<span class="fu">write.to.log</span>(<span class="fu">sys.calls</span>())</span>
+<span id="cb40-10"><a href="#cb40-10" tabindex="-1"></a>                                                <span class="fu">invokeRestart</span>(<span class="st">&quot;muffleWarning&quot;</span>)})</span>
+<span id="cb40-11"><a href="#cb40-11" tabindex="-1"></a>         , <span class="at">error =</span> <span class="cf">function</span>(e) { <span class="fu">print</span>(<span class="st">&quot;recovered from error&quot;</span>) })</span>
+<span id="cb40-12"><a href="#cb40-12" tabindex="-1"></a><span class="fu">print</span>(<span class="st">&quot;Done&quot;</span>)</span></code></pre></div>
+<pre><code>## [1] &quot;A warning cannot stop me&quot;
+## [1] &quot;recovered from error&quot;
+## [1] &quot;Done&quot;</code></pre>
+<p><strong>This is basically how the <code>tryCatchLog</code> package
+works internally!</strong></p>
+</div>
+<div id="how-about-usability" class="section level2">
+<h2>How about usability?</h2>
+<p><strong>Do you really want to use that much boilerplate code in your
+R scripts at every place where you have to catch errors and
+conditions?</strong></p>
+<p>If not: See the the next chapter to learn how the package
+<code>tryCatchLog</code> could make your life much easier!</p>
+</div>
+</div>
+<div id="better-error-handling-with-the-trycatchlog-package" class="section level1">
+<h1>Better error handling with the <code>tryCatchLog</code> package</h1>
+<div id="installation" class="section level2">
+<h2>Installation</h2>
+<p>To install the package <code>tryCatchLog</code> from the source code
+use:</p>
+<div class="sourceCode" id="cb42"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" tabindex="-1"></a><span class="co"># install.packages(&quot;devtools&quot;)</span></span>
+<span id="cb42-2"><a href="#cb42-2" tabindex="-1"></a><span class="fu">library</span>(devtools)</span>
+<span id="cb42-3"><a href="#cb42-3" tabindex="-1"></a><span class="fu">install_github</span>(<span class="st">&quot;aryoda/tryCatchLog&quot;</span>)</span></code></pre></div>
+<p>For more details see the Project site at: <a href="https://github.com/aryoda/tryCatchLog" class="uri">https://github.com/aryoda/tryCatchLog</a></p>
+</div>
+<div id="overview-1" class="section level2">
+<h2>Overview</h2>
+<p>The <code>tryCatchLog</code> package improves the standard R’s
+<code>try</code> and <code>tryCatch</code> functions by offering
+extended functions:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Condition handling strategy</th>
+<th>Standard R</th>
+<th>tryCatchLog package</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Return an error object in case of errors</td>
+<td><code>try()</code></td>
+<td><code>tryLog()</code></td>
+</tr>
+<tr class="even">
+<td>Call condition handler functions</td>
+<td><code>tryCatch()</code></td>
+<td><code>tryCatchLog()</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Improvements:</strong></p>
+<ol style="list-style-type: decimal">
+<li>Configurable <strong>logging</strong> (“for free”)</li>
+<li>Logging of full or compact <strong>call stack</strong> with line
+numbers</li>
+<li><strong>Resume</strong> after warnings and messages</li>
+<li>Support for <strong>post-mortem analysis</strong> after errors via
+dump files</li>
+</ol>
+</div>
+<div id="trylog-example-with-an-error" class="section level2">
+<h2><code>tryLog</code> example with an error</h2>
+<p>Errors are logged but the execution continues after the
+<code>tryLog</code> call:</p>
+<div class="sourceCode" id="cb43"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" tabindex="-1"></a><span class="fu">library</span>(tryCatchLog)</span>
+<span id="cb43-2"><a href="#cb43-2" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span>(value) {</span>
+<span id="cb43-3"><a href="#cb43-3" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">&quot;begin&quot;</span>)</span>
+<span id="cb43-4"><a href="#cb43-4" tabindex="-1"></a>  <span class="fu">log</span>(value)            <span class="co"># negative number -&gt; warning; string -&gt; error</span></span>
+<span id="cb43-5"><a href="#cb43-5" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">&quot;end&quot;</span>)</span>
+<span id="cb43-6"><a href="#cb43-6" tabindex="-1"></a>}</span>
+<span id="cb43-7"><a href="#cb43-7" tabindex="-1"></a><span class="fu">tryLog</span>(<span class="fu">f</span>(<span class="st">&quot;not a number&quot;</span>))</span>
+<span id="cb43-8"><a href="#cb43-8" tabindex="-1"></a><span class="fu">print</span>(<span class="st">&quot;Errors don&#39;t stop me!&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb44"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" tabindex="-1"></a><span class="do">## [1] &quot;begin&quot;</span></span>
+<span id="cb44-2"><a href="#cb44-2" tabindex="-1"></a><span class="do">## ERROR [2016-12-06 21:44:21] non-numeric argument to mathematical function</span></span>
+<span id="cb44-3"><a href="#cb44-3" tabindex="-1"></a><span class="do">## Compact call stack:</span></span>
+<span id="cb44-4"><a href="#cb44-4" tabindex="-1"></a><span class="do">##   1 test.R#7: tryLog(f(&quot;not a number&quot;))</span></span>
+<span id="cb44-5"><a href="#cb44-5" tabindex="-1"></a><span class="do">##   2 tryCatchLog.R#345: tryCatchLog(expr = expr, write.error.dump.file = write.error.dump.file, error = function(e) {</span></span>
+<span id="cb44-6"><a href="#cb44-6" tabindex="-1"></a><span class="do">##   3 tryCatchLog.R#259: tryCatch(withCallingHandlers(expr, error = function(e) {</span></span>
+<span id="cb44-7"><a href="#cb44-7" tabindex="-1"></a><span class="do">##   4 test.R#4: .handleSimpleError(function (e)</span></span>
+<span id="cb44-8"><a href="#cb44-8" tabindex="-1"></a><span class="do">## ...</span></span>
+<span id="cb44-9"><a href="#cb44-9" tabindex="-1"></a><span class="do">## [1] &quot;Errors don&#39;t stop me!&quot;</span></span></code></pre></div>
+</div>
+<div id="trylog-example-with-a-warning" class="section level2">
+<h2><code>tryLog</code> example with a warning</h2>
+<p><code>tryLog</code> catches conditions and logs them onto console or
+into a file (depending of the settings of the logging framework
+<code>futile.logger</code> that is used internally):</p>
+<div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" tabindex="-1"></a><span class="fu">library</span>(tryCatchLog)</span>
+<span id="cb45-2"><a href="#cb45-2" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span>(value) {</span>
+<span id="cb45-3"><a href="#cb45-3" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">&quot;begin&quot;</span>)</span>
+<span id="cb45-4"><a href="#cb45-4" tabindex="-1"></a>  <span class="fu">log</span>(value)            <span class="co"># negative number -&gt; warning; string -&gt; error</span></span>
+<span id="cb45-5"><a href="#cb45-5" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">&quot;end&quot;</span>)</span>
+<span id="cb45-6"><a href="#cb45-6" tabindex="-1"></a>}</span>
+<span id="cb45-7"><a href="#cb45-7" tabindex="-1"></a><span class="fu">tryLog</span>(<span class="fu">f</span>(<span class="sc">-</span><span class="dv">1</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb46"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" tabindex="-1"></a><span class="do">## [1] &quot;begin&quot;</span></span>
+<span id="cb46-2"><a href="#cb46-2" tabindex="-1"></a><span class="do">## WARN [2016-12-06 21:33:41] NaNs produced</span></span>
+<span id="cb46-3"><a href="#cb46-3" tabindex="-1"></a><span class="do">## Compact call stack:</span></span>
+<span id="cb46-4"><a href="#cb46-4" tabindex="-1"></a><span class="do">##   1 test.R#7: tryLog(f(-1))</span></span>
+<span id="cb46-5"><a href="#cb46-5" tabindex="-1"></a><span class="do">##   2 tryCatchLog.R#345: tryCatchLog(expr = expr, write.error.dump.file = write.error.dump.file, error = function(e) {</span></span>
+<span id="cb46-6"><a href="#cb46-6" tabindex="-1"></a><span class="do">##   3 tryCatchLog.R#259: tryCatch(withCallingHandlers(expr, error = function(e) {</span></span>
+<span id="cb46-7"><a href="#cb46-7" tabindex="-1"></a><span class="do">##   4 test.R#4: .signalSimpleWarning(&quot;NaNs produced&quot;, quote(log(value)))</span></span>
+<span id="cb46-8"><a href="#cb46-8" tabindex="-1"></a>...</span>
+<span id="cb46-9"><a href="#cb46-9" tabindex="-1"></a><span class="do">## [1] &quot;end&quot;</span></span></code></pre></div>
+</div>
+<div id="trycatchlog-example-to-log-and-recover-from-an-error" class="section level2">
+<h2><code>tryCatchLog</code> example to log and recover from an
+error</h2>
+<p>Use <code>tryCatchLog</code> to establish an error handler:</p>
+<div class="sourceCode" id="cb47"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" tabindex="-1"></a><span class="fu">library</span>(tryCatchLog)</span>
+<span id="cb47-2"><a href="#cb47-2" tabindex="-1"></a></span>
+<span id="cb47-3"><a href="#cb47-3" tabindex="-1"></a>send.email <span class="ot">&lt;-</span> <span class="cf">function</span>(receiver, body) { }  <span class="co"># dummy function (does nothing)</span></span>
+<span id="cb47-4"><a href="#cb47-4" tabindex="-1"></a></span>
+<span id="cb47-5"><a href="#cb47-5" tabindex="-1"></a><span class="fu">tryCatchLog</span>(<span class="fu">log</span>(<span class="st">&quot;not a number&quot;</span>),</span>
+<span id="cb47-6"><a href="#cb47-6" tabindex="-1"></a>            <span class="at">error =</span> <span class="cf">function</span>(e) { <span class="fu">send.email</span>(<span class="st">&quot;admin@home&quot;</span>, e)</span>
+<span id="cb47-7"><a href="#cb47-7" tabindex="-1"></a>            })</span></code></pre></div>
+<p>The console shows the log output then and the execution
+continues:</p>
+<div class="sourceCode" id="cb48"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" tabindex="-1"></a>ERROR [<span class="dv">2017-01-22</span> <span class="dv">22</span><span class="sc">:</span><span class="dv">04</span><span class="sc">:</span><span class="dv">56</span>] non<span class="sc">-</span>numeric argument to mathematical <span class="cf">function</span></span>
+<span id="cb48-2"><a href="#cb48-2" tabindex="-1"></a>Compact call stack<span class="sc">:</span></span>
+<span id="cb48-3"><a href="#cb48-3" tabindex="-1"></a>  <span class="dv">1</span> tryCatchLog_error_example.R<span class="co">#5: tryCatchLog(log(&quot;not a number&quot;), error = function(e) {</span></span>
+<span id="cb48-4"><a href="#cb48-4" tabindex="-1"></a>  <span class="dv">2</span> tryCatchLog.R<span class="co">#273: tryCatch(withCallingHandlers(expr, error = function(e) {</span></span>
+<span id="cb48-5"><a href="#cb48-5" tabindex="-1"></a>...</span></code></pre></div>
+<p><strong>Note:</strong> <code>send.email</code> is a dummy function
+for demonstration purposes!</p>
+</div>
+<div id="how-to-change-the-logging-behaviour" class="section level2">
+<h2>How to change the logging behaviour</h2>
+<p>To log to a file instead of the console or to change the logging
+level you call the usual <code>futile.logger</code> functions:</p>
+<div class="sourceCode" id="cb49"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" tabindex="-1"></a>  <span class="fu">library</span>(futile.logger)</span>
+<span id="cb49-2"><a href="#cb49-2" tabindex="-1"></a></span>
+<span id="cb49-3"><a href="#cb49-3" tabindex="-1"></a>  <span class="fu">flog.appender</span>(<span class="fu">appender.file</span>(<span class="st">&quot;app.log&quot;</span>))</span>
+<span id="cb49-4"><a href="#cb49-4" tabindex="-1"></a></span>
+<span id="cb49-5"><a href="#cb49-5" tabindex="-1"></a>  <span class="fu">flog.threshold</span>(ERROR)    <span class="co"># TRACE, DEBUG, INFO, WARN, ERROR, FATAL</span></span>
+<span id="cb49-6"><a href="#cb49-6" tabindex="-1"></a></span>
+<span id="cb49-7"><a href="#cb49-7" tabindex="-1"></a>  <span class="fu">try</span>(<span class="fu">log</span>(<span class="sc">-</span><span class="dv">1</span>))             <span class="co"># the warning will not be logged!</span></span></code></pre></div>
+<p>For more details about <code>futile.logger</code> see:</p>
+<p><a href="https://cran.r-project.org/package=futile.logger" class="uri">https://cran.r-project.org/package=futile.logger</a></p>
+</div>
+</div>
+<div id="post-mortem-analysis" class="section level1">
+<h1>Post-mortem analysis</h1>
+<div id="known-limitations-of-interactive-debugging-in-r" class="section level2">
+<h2>Known limitations of interactive debugging in R</h2>
+<p>Interactive debugging using an IDE or the console is very difficult
+in case of</p>
+<ul>
+<li>errors that are not (easily) reproducible</li>
+<li>long running code that produces an error at the end</li>
+<li>batch jobs running on a server</li>
+</ul>
+</div>
+<div id="solution-post-mortem-analysis" class="section level2">
+<h2>Solution: Post-mortem analysis</h2>
+<p><strong>Post-mortem analysis</strong> means to create a dump file in
+case of an error that contains</p>
+<ul>
+<li>all objects of the global environment (workspace) and</li>
+<li>all objects within the scope of each called function (via
+<code>dump.frames</code>)</li>
+</ul>
+<p>so that you can</p>
+<ul>
+<li>use any computer</li>
+<li>to load the dump file into a new R session</li>
+<li>after the script has stopped the execution
+(<strong>“post-mortem”</strong>) and</li>
+<li>examine the call stack and object values (“analysis”)</li>
+</ul>
+<p>to find out the reason for the error.</p>
+</div>
+<div id="enable-post-mortem-analysis" class="section level2">
+<h2>Enable post-mortem analysis</h2>
+<p><code>tryCatchLog</code> supports post-mortem analysis by creating
+dump files in case of errors:</p>
+<div class="sourceCode" id="cb50"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" tabindex="-1"></a><span class="fu">library</span>(tryCatchLog)</span>
+<span id="cb50-2"><a href="#cb50-2" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span>(value) {</span>
+<span id="cb50-3"><a href="#cb50-3" tabindex="-1"></a>  <span class="fu">log</span>(value)</span>
+<span id="cb50-4"><a href="#cb50-4" tabindex="-1"></a>}</span>
+<span id="cb50-5"><a href="#cb50-5" tabindex="-1"></a>a <span class="ot">&lt;-</span> <span class="st">&quot;100&quot;</span></span>
+<span id="cb50-6"><a href="#cb50-6" tabindex="-1"></a><span class="fu">tryLog</span>(<span class="fu">f</span>(a), <span class="at">write.error.dump.file =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb51"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" tabindex="-1"></a>ERROR [<span class="dv">2016-12-12</span> <span class="dv">22</span><span class="sc">:</span><span class="dv">29</span><span class="sc">:</span><span class="dv">52</span>] non<span class="sc">-</span>numeric argument to mathematical <span class="cf">function</span></span>
+<span id="cb51-2"><a href="#cb51-2" tabindex="-1"></a>Call stack environments dumped into file<span class="sc">:</span> dump_20161212_222952.rda</span>
+<span id="cb51-3"><a href="#cb51-3" tabindex="-1"></a>Compact call stack<span class="sc">:</span></span>
+<span id="cb51-4"><a href="#cb51-4" tabindex="-1"></a>  <span class="dv">1</span> <span class="fu">source</span>(<span class="st">&quot;~/R_trainings/tryCatchLog/src/test.R&quot;</span>)</span>
+<span id="cb51-5"><a href="#cb51-5" tabindex="-1"></a>  <span class="dv">2</span> test.R<span class="co">#6: tryLog(f(a), write.error.dump.file = TRUE)</span></span>
+<span id="cb51-6"><a href="#cb51-6" tabindex="-1"></a>  <span class="dv">3</span> tryCatchLog.R<span class="co">#348: tryCatchLog(expr = expr, write.error.dump.file = write.error.dump.file, error = function(e) {</span></span>
+<span id="cb51-7"><a href="#cb51-7" tabindex="-1"></a>  <span class="dv">4</span> tryCatchLog.R<span class="co">#262: tryCatch(withCallingHandlers(expr, error = function(e) {</span></span>
+<span id="cb51-8"><a href="#cb51-8" tabindex="-1"></a>  <span class="dv">5</span> test.R<span class="co">#3: .handleSimpleError(function (e)</span></span>
+<span id="cb51-9"><a href="#cb51-9" tabindex="-1"></a>  ...</span></code></pre></div>
+</div>
+<div id="start-a-post-mortem-analysis" class="section level2">
+<h2>Start a post-mortem analysis</h2>
+<p>Open a new R session and start the post-mortem analysis of the
+error:</p>
+<div class="sourceCode" id="cb52"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" tabindex="-1"></a><span class="fu">load</span>(<span class="st">&quot;dump_20161212_222952.rda&quot;</span>)    <span class="co"># load the dump into the global environment</span></span>
+<span id="cb52-2"><a href="#cb52-2" tabindex="-1"></a><span class="fu">debugger</span>(last.dump)                 <span class="co"># start the post-mortem analysis</span></span></code></pre></div>
+<div class="sourceCode" id="cb53"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" tabindex="-1"></a>Message<span class="sc">:</span>  non<span class="sc">-</span>numeric argument to mathematical functionAvailable environments had calls<span class="sc">:</span></span>
+<span id="cb53-2"><a href="#cb53-2" tabindex="-1"></a><span class="dv">1</span><span class="sc">:</span> <span class="fu">source</span>(<span class="st">&quot;test.R&quot;</span>)</span>
+<span id="cb53-3"><a href="#cb53-3" tabindex="-1"></a>...</span>
+<span id="cb53-4"><a href="#cb53-4" tabindex="-1"></a><span class="dv">5</span><span class="sc">:</span> test.R<span class="co">#6: tryLog(f(a), write.error.dump.file = TRUE)</span></span>
+<span id="cb53-5"><a href="#cb53-5" tabindex="-1"></a><span class="dv">6</span><span class="sc">:</span> tryCatchLog.R<span class="co">#348: tryCatchLog(expr = expr, write.error.dump.file = dump.erro</span></span>
+<span id="cb53-6"><a href="#cb53-6" tabindex="-1"></a><span class="dv">7</span><span class="sc">:</span> tryCatchLog.R<span class="co">#262: tryCatch(withCallingHandlers(expr, error = function(e) {</span></span>
+<span id="cb53-7"><a href="#cb53-7" tabindex="-1"></a>...</span>
+<span id="cb53-8"><a href="#cb53-8" tabindex="-1"></a><span class="dv">12</span><span class="sc">:</span> <span class="fu">f</span>(a)</span>
+<span id="cb53-9"><a href="#cb53-9" tabindex="-1"></a><span class="dv">13</span><span class="sc">:</span> test.R<span class="co">#3: .handleSimpleError(function (e)</span></span>
+<span id="cb53-10"><a href="#cb53-10" tabindex="-1"></a><span class="dv">14</span><span class="sc">:</span> <span class="fu">h</span>(<span class="fu">simpleError</span>(msg, call))</span>
+<span id="cb53-11"><a href="#cb53-11" tabindex="-1"></a></span>
+<span id="cb53-12"><a href="#cb53-12" tabindex="-1"></a>Enter an environment number, or <span class="dv">0</span> to exit</span>
+<span id="cb53-13"><a href="#cb53-13" tabindex="-1"></a>Selection<span class="sc">:</span> <span class="er">&lt;</span>Cursor is waiting <span class="cf">for</span> your input here<span class="sc">&gt;</span></span></code></pre></div>
+<p>The function call #13 shows: The error was thrown in the file
+<code>test.R</code> at line #3: <code>log(value)</code></p>
+</div>
+<div id="post-mortem-debugging-examine-an-environment" class="section level2">
+<h2>Post-mortem debugging: Examine an environment</h2>
+<p>Switch into the environment of the function call #12 which called the
+function that throwed the error and examine the objects visible within
+this function:</p>
+<div class="sourceCode" id="cb54"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" tabindex="-1"></a>Enter an environment number, or <span class="dv">0</span> to exit</span>
+<span id="cb54-2"><a href="#cb54-2" tabindex="-1"></a>Selection<span class="sc">:</span> <span class="dv">12</span></span>
+<span id="cb54-3"><a href="#cb54-3" tabindex="-1"></a>Browsing <span class="cf">in</span> the environment with call<span class="sc">:</span></span>
+<span id="cb54-4"><a href="#cb54-4" tabindex="-1"></a>   <span class="fu">f</span>(a)</span>
+<span id="cb54-5"><a href="#cb54-5" tabindex="-1"></a>Called from<span class="sc">:</span> <span class="fu">debugger.look</span>(ind)</span>
+<span id="cb54-6"><a href="#cb54-6" tabindex="-1"></a>Browse[<span class="dv">1</span>]<span class="sc">&gt;</span> <span class="fu">ls</span>()</span>
+<span id="cb54-7"><a href="#cb54-7" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">&quot;value&quot;</span></span>
+<span id="cb54-8"><a href="#cb54-8" tabindex="-1"></a>Browse[<span class="dv">1</span>]<span class="sc">&gt;</span> value</span>
+<span id="cb54-9"><a href="#cb54-9" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">&quot;100&quot;</span></span>
+<span id="cb54-10"><a href="#cb54-10" tabindex="-1"></a>Browse[<span class="dv">1</span>]<span class="sc">&gt;</span> <span class="fu">typeof</span>(value)</span>
+<span id="cb54-11"><a href="#cb54-11" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">&quot;character&quot;</span></span>
+<span id="cb54-12"><a href="#cb54-12" tabindex="-1"></a>Browse[<span class="dv">1</span>]<span class="sc">&gt;</span></span></code></pre></div>
+<p>By looking at the (function argument) variable <code>value</code> it
+is easy to identify the reason for the error: <strong>The passed value
+“100” had the wrong data type!</strong></p>
+<p><em>You can exit the debugger now with “Q” (or “f” followed by “0”)
+and fix the bug.</em></p>
+</div>
+<div id="post-mortem-debugging-limitations" class="section level2">
+<h2>Post-mortem debugging: Limitations</h2>
+<p>R dump files (created with <code>save.image</code>) do
+<strong>not</strong> contain the loaded packages when the dump file was
+created.</p>
+<p>Therefore a dump loaded into memory later does <strong>not</strong>
+load these packages automatically.</p>
+<p><strong>This means the program state as of the error is not exactly
+reproducible:</strong></p>
+<ul>
+<li>Objects that were stored within a package namespace are not
+available</li>
+<li>The search path to find objects may be different during post-mortem
+analysis</li>
+<li>You cannot step through your source code after loading the image if
+your source code calls functions of non-default packages. You have to
+load these packages manually before starting the debugger</li>
+</ul>
+<p>For more details see: <a href="https://github.com/aryoda/tryCatchLog/issues/12" class="uri">https://github.com/aryoda/tryCatchLog/issues/12</a></p>
+</div>
+</div>
+<div id="trycatchlog-function-reference" class="section level1">
+<h1><code>tryCatchLog</code> Function Reference</h1>
+<div id="trycatchlog" class="section level2">
+<h2>tryCatchLog()</h2>
+<p>Function signature:</p>
+<div class="sourceCode" id="cb55"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" tabindex="-1"></a><span class="fu">tryCatchLog</span>(expr, ..., <span class="at">finally =</span> <span class="cn">NULL</span>,</span>
+<span id="cb55-2"><a href="#cb55-2" tabindex="-1"></a>  <span class="at">write.error.dump.file =</span> <span class="fu">getOption</span>(<span class="st">&quot;tryCatchLog.write.error.dump.file&quot;</span>, <span class="cn">FALSE</span>),</span>
+<span id="cb55-3"><a href="#cb55-3" tabindex="-1"></a>  <span class="at">silent.warnings       =</span> <span class="fu">getOption</span>(<span class="st">&quot;tryCatchLog.silent.warnings&quot;</span>, <span class="cn">FALSE</span>),</span>
+<span id="cb55-4"><a href="#cb55-4" tabindex="-1"></a>  <span class="at">silent.messages       =</span> <span class="fu">getOption</span>(<span class="st">&quot;tryCatchLog.silent.messages&quot;</span>, <span class="cn">FALSE</span>))</span></code></pre></div>
+<p>This function evaluates the expression in <code>expr</code> and
+passes all condition handlers in <code>...</code> to
+<code>tryCatch</code> as-is while error, warning and message conditions
+are logged together with the function call stack (including file names
+and line numbers).</p>
+<p>The expression in <code>finally</code> is always evaluated at the
+end.</p>
+<p>Warnings and messages can be “silenced” (only logged but not
+propagated to the caller) using the <code>silent.*</code>
+parameters.</p>
+<p>The default values of some parameters can be set globally via
+<code>options</code> to avoid passing the same parameter values in each
+call and to support easy reconfiguration for all calls without changing
+the code.</p>
+</div>
+<div id="trylog" class="section level2">
+<h2>tryLog()</h2>
+<p>Function signature:</p>
+<div class="sourceCode" id="cb56"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" tabindex="-1"></a><span class="fu">tryLog</span>(expr,</span>
+<span id="cb56-2"><a href="#cb56-2" tabindex="-1"></a>  <span class="at">write.error.dump.file =</span> <span class="fu">getOption</span>(<span class="st">&quot;tryCatchLog.write.error.dump.file&quot;</span>, <span class="cn">FALSE</span>),</span>
+<span id="cb56-3"><a href="#cb56-3" tabindex="-1"></a>  <span class="at">silent.warnings       =</span> <span class="fu">getOption</span>(<span class="st">&quot;tryCatchLog.silent.warnings&quot;</span>, <span class="cn">FALSE</span>),</span>
+<span id="cb56-4"><a href="#cb56-4" tabindex="-1"></a>  <span class="at">silent.messages       =</span> <span class="fu">getOption</span>(<span class="st">&quot;tryCatchLog.silent.messages&quot;</span>, <span class="cn">FALSE</span>))</span></code></pre></div>
+<p>This function is a short version of <code>tryCatchLog()</code> that
+traps any errors that occur during the evaluation of the expression
+<code>expr</code> without stopping the execution of the script (similar
+to <code>try</code> in R). Errors, warnings and messages are logged.</p>
+<p>In contrast to <code>tryCatchLog()</code> it returns an object of the
+class “try-error” in case of an error and continues after the
+<code>tryLog</code> expression. Therefore <code>tryLog</code> does not
+support the <code>error</code> and <code>finally</code> parameters for
+passing custom handler functions.</p>
+<p>The default values of some parameters can be set globally via
+<code>options</code> to avoid passing the same parameter values in each
+call and to support easy reconfiguration for all calls without changing
+the code.</p>
+</div>
+<div id="change-global-options-of-trycatchlog" class="section level2">
+<h2>Change global options of <code>tryCatchLog</code></h2>
+<p>The default values of many options can be changed globally by
+configuring them once to reduce lengthy function calls later and support
+easy reconfiguration for all calls without changing the code:</p>
+<div class="sourceCode" id="cb57"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" tabindex="-1"></a><span class="co"># Initialize your own default values globally for tryLog and tryCatchLog</span></span>
+<span id="cb57-2"><a href="#cb57-2" tabindex="-1"></a><span class="fu">options</span>(<span class="at">tryCatchLog.write.error.dump.file =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb57-3"><a href="#cb57-3" tabindex="-1"></a><span class="fu">options</span>(<span class="at">tryCatchLog.silent.messages       =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb57-4"><a href="#cb57-4" tabindex="-1"></a><span class="fu">options</span>(<span class="at">tryCatchLog.silent.warnings       =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb57-5"><a href="#cb57-5" tabindex="-1"></a></span>
+<span id="cb57-6"><a href="#cb57-6" tabindex="-1"></a>test <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb57-7"><a href="#cb57-7" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&quot;hello&quot;</span>)</span>
+<span id="cb57-8"><a href="#cb57-8" tabindex="-1"></a>  <span class="fu">warning</span>(<span class="st">&quot;a warning&quot;</span>)</span>
+<span id="cb57-9"><a href="#cb57-9" tabindex="-1"></a>}</span>
+<span id="cb57-10"><a href="#cb57-10" tabindex="-1"></a></span>
+<span id="cb57-11"><a href="#cb57-11" tabindex="-1"></a><span class="co"># Use your own default values by ommiting those parameters...</span></span>
+<span id="cb57-12"><a href="#cb57-12" tabindex="-1"></a><span class="fu">tryLog</span>(<span class="fu">f</span>())</span>
+<span id="cb57-13"><a href="#cb57-13" tabindex="-1"></a></span>
+<span id="cb57-14"><a href="#cb57-14" tabindex="-1"></a><span class="co"># .. instead of the longer version which passes each parameter again and again</span></span>
+<span id="cb57-15"><a href="#cb57-15" tabindex="-1"></a><span class="fu">tryLog</span>(<span class="fu">f</span>(), <span class="at">silent.warnings=</span><span class="cn">TRUE</span>, <span class="at">silent.messages=</span><span class="cn">TRUE</span>, <span class="at">write.error.dump.file=</span><span class="cn">FALSE</span>)</span></code></pre></div>
+</div>
+</div>
+<div id="trycatchlog-best-practices" class="section level1">
+<h1><code>tryCatchLog</code> Best Practices</h1>
+<div id="easiest-way-to-add-logging-of-all-conditions" class="section level2">
+<h2>Easiest way to add logging of all conditions</h2>
+<p>Just wrap the call to the main function or main script with
+<code>tryCatchLog()</code>:</p>
+<div class="sourceCode" id="cb58"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" tabindex="-1"></a><span class="fu">library</span>(futile.logger)</span>
+<span id="cb58-2"><a href="#cb58-2" tabindex="-1"></a><span class="fu">library</span>(tryCatchLog)</span>
+<span id="cb58-3"><a href="#cb58-3" tabindex="-1"></a></span>
+<span id="cb58-4"><a href="#cb58-4" tabindex="-1"></a><span class="fu">options</span>(<span class="at">keep.source =</span> <span class="cn">TRUE</span>)        <span class="co"># source code file name and line number tracking</span></span>
+<span id="cb58-5"><a href="#cb58-5" tabindex="-1"></a><span class="fu">options</span>(<span class="st">&quot;tryCatchLog.write.error.dump.file&quot;</span> <span class="ot">=</span> <span class="cn">TRUE</span>) <span class="co"># dump for post-mortem analysis</span></span>
+<span id="cb58-6"><a href="#cb58-6" tabindex="-1"></a></span>
+<span id="cb58-7"><a href="#cb58-7" tabindex="-1"></a><span class="fu">flog.appender</span>(<span class="fu">appender.file</span>(<span class="st">&quot;my_app.log&quot;</span>))  <span class="co"># to log into a file instead of console</span></span>
+<span id="cb58-8"><a href="#cb58-8" tabindex="-1"></a><span class="fu">flog.threshold</span>(INFO)    <span class="co"># TRACE, DEBUG, INFO, WARN, ERROR, FATAL</span></span>
+<span id="cb58-9"><a href="#cb58-9" tabindex="-1"></a></span>
+<span id="cb58-10"><a href="#cb58-10" tabindex="-1"></a><span class="fu">tryCatchLog</span>(<span class="fu">source</span>(<span class="st">&quot;your_main_script.R&quot;</span>))</span></code></pre></div>
+</div>
+<div id="enabling-source-code-references-file-names-and-line-numbers" class="section level2">
+<h2>Enabling source code references (file names and line numbers)</h2>
+<p>To show <strong>file names and line numbers</strong> in the stack
+trace of the log output:</p>
+<ul>
+<li><p>For R script files</p>
+<p>R does track source code references of scripts only if you set
+<code>options(keep.source = TRUE)</code> before.</p>
+<p>If you use <code>Rscript</code> to start a non-interactive R script
+as batch job you have to set this option since it is FALSE by
+default.</p>
+<p>You can add this option to your <code>.Rprofile</code> file or use a
+startup R script as stub to set this option</p></li>
+<li><p>For installed packages</p>
+<p>By default, most packages are built without source reference
+information. Setting the environment variable
+<code>R_KEEP_PKG_SOURCE=yes</code> before installing a source package
+will tell R to keep the source references.</p>
+<p>You can also use set <code>{options(keep.source.pkgs = TRUE)</code>
+before you install a package.</p></li>
+</ul>
+</div>
+<div id="faq" class="section level2">
+<h2>FAQ</h2>
+<p>You can find a FAQ with best practices at:</p>
+<p><a href="https://github.com/aryoda/tryCatchLog#faq" class="uri">https://github.com/aryoda/tryCatchLog#faq</a></p>
+</div>
+</div>
+<div id="appendix" class="section level1">
+<h1>Appendix</h1>
+<div id="references" class="section level2">
+<h2>References</h2>
+<p>Documentation of the <code>futile.logger</code> logging framework: <a href="https://github.com/zatonovo/futile.logger" class="uri">https://github.com/zatonovo/futile.logger</a></p>
+<p>Download of these slides: <a href="https://github.com/aryoda/R_trainings" class="uri">https://github.com/aryoda/R_trainings</a></p>
+<p>Project home of the <code>tryCatchLog</code> package: <a href="https://github.com/aryoda/tryCatchLog" class="uri">https://github.com/aryoda/tryCatchLog</a></p>
+<p><a href="https://journal.r-project.org/articles/RJ-2010-010/" class="uri">https://journal.r-project.org/articles/RJ-2010-010/</a></p>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: DTS Test</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for two_sample {twosamples}"><tr><td>two_sample {twosamples}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>DTS Test</h2>
+
+<h3>Description</h3>
+
+<p>A two-sample test based on the DTS test statistic (<code>dts_stat</code>). This is the recommended two-sample test in this package because of its power. The DTS statistic is the reweighted integral of the distance between the two ECDFs.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+dts_test(a, b, nboots = 2000, p = default.p, keep.boots = T, keep.samples = F)
+
+two_sample(
+  a,
+  b,
+  nboots = 2000,
+  p = default.p,
+  keep.boots = T,
+  keep.samples = F
+)
+
+dts_stat(a, b, power = def_power)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>a</code></td>
+<td>
+<p>a vector of numbers (or factors &ndash; see details)</p>
+</td></tr>
+<tr valign="top"><td><code>b</code></td>
+<td>
+<p>a vector of numbers</p>
+</td></tr>
+<tr valign="top"><td><code>nboots</code></td>
+<td>
+<p>Number of bootstrap iterations</p>
+</td></tr>
+<tr valign="top"><td><code>p</code></td>
+<td>
+<p>power to raise test stat to</p>
+</td></tr>
+<tr valign="top"><td><code>keep.boots</code></td>
+<td>
+<p>Should the bootstrap values be saved in the output?</p>
+</td></tr>
+<tr valign="top"><td><code>keep.samples</code></td>
+<td>
+<p>Should the samples be saved in the output?</p>
+</td></tr>
+<tr valign="top"><td><code>power</code></td>
+<td>
+<p>also the power to raise the test stat to</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The DTS test compares two ECDFs by looking at the reweighted Wasserstein distance between the two. See the companion paper at <a href="https://arxiv.org/abs/2007.01360">arXiv:2007.01360</a> or <a href="https://codowd.com/public/DTS.pdf">https://codowd.com/public/DTS.pdf</a> for details of this test statistic, and non-standard uses of the package (parallel for big N, weighted observations, one sample tests, etc).
+</p>
+<p>If the <code><a href="../../twosamples/help/wass_test.html">wass_test()</a></code> extends <code><a href="../../twosamples/help/cvm_test.html">cvm_test()</a></code> to interval data, then <code><a href="../../twosamples/help/dts_test.html">dts_test()</a></code> extends <code><a href="../../twosamples/help/ad_test.html">ad_test()</a></code> to interval data. Formally &ndash; if E is the ECDF of sample 1, F is the ECDF of sample 2, and G is the ECDF of the combined sample, then </p>
+<p style="text-align: center;"><i>DTS =  Integral (|E(x)-F(x)|/sqrt(2G(x)(1-G(x))/n))^p</i></p>
+<p> for all x.
+The test p-value is calculated by randomly resampling two samples of the same size using the combined sample. Intuitively the DTS test improves on the AD test by allowing more extreme observations to carry more weight. At a higher level &ndash; CVM/AD/KS/etc only require ordinal data. DTS (and Wasserstein) gain power because they take advantages of the properties of interval data &ndash; i.e. the distances have some meaning. However, DTS, like Anderson-Darling (AD) also downweights noisier observations relative to Wass, thus (hopefully) giving it extra power.
+</p>
+<p>In the example plot below, the DTS statistic is the shaded area between the ECDFs, weighted by the variances &ndash; shown by the color of the shading.
+</p>
+<p><img src="../help/figures/dts.png" alt="Example Wasserstein stat plot" />
+</p>
+<p>Inputs <code>a</code> and <code>b</code> can also be vectors of ordered (or unordered) factors, so long as both have the same levels and orderings. When possible, ordering factors will substantially increase power. The dts test will assume the distance between adjacent factors is 1.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Output is a length 2 Vector with test stat and p-value in that order. That vector has 3 attributes &ndash; the sample sizes of each sample, and the number of bootstraps performed for the pvalue.
+</p>
+
+
+<h3>Functions</h3>
+
+
+<ul>
+<li> <p><code>dts_test()</code>: Permutation based two sample test
+</p>
+</li>
+<li> <p><code>two_sample()</code>: Recommended two-sample test
+</p>
+</li>
+<li> <p><code>dts_stat()</code>: Permutation based two sample test
+</p>
+</li></ul>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../twosamples/help/wass_test.html">wass_test()</a></code>, <code><a href="../../twosamples/help/ad_test.html">ad_test()</a></code> for the predecessors of this test statistic. <a href="https://arxiv.org/abs/2007.01360">arXiv:2007.01360</a> or <a href="https://codowd.com/public/DTS.pdf">https://codowd.com/public/DTS.pdf</a> for details of this test statistic
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+set.seed(314159)
+vec1 = rnorm(20)
+vec2 = rnorm(20,0.5)
+dts_stat(vec1,vec2)
+out = dts_test(vec1,vec2)
+out
+summary(out)
+plot(out)
+two_sample(vec1,vec2)
+
+# Example using ordered factors
+vec1 = factor(LETTERS[1:5],levels = LETTERS,ordered = TRUE)
+vec2 = factor(LETTERS[c(1,2,2,2,4)],levels = LETTERS, ordered=TRUE)
+dts_test(vec1,vec2)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>twosamples</em> version 2.0.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

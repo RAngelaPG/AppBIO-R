@@ -1,0 +1,114 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Facilitate expression substitution</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for recreate {admisc}"><tr><td>recreate {admisc}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Facilitate expression substitution</h2>
+
+<h3>Description</h3>
+
+<p>Utility function based on <code>substitute()</code>, to recover an unquoted input.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+recreate(x, snames = NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A substituted input.</p>
+</td></tr>
+<tr valign="top"><td><code>snames</code></td>
+<td>
+<p>A character string containing set names.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Other arguments, mainly for internal use.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This function is especially useful when users have to provide lots of quoted
+inputs, such as the name of the columns from a data frame to be considered
+for a particular function.
+</p>
+<p>This is actually one of the main uses of the base function
+<b><code><a href="../../base/help/substitute.html">substitute</a>()</code></b>, but here it can be employed to also
+detect SOP (sum of products) expressions, explained for instance in function
+<b><code><a href="../../admisc/help/translate.html">translate</a>()</code></b>.
+</p>
+<p>Such SOP expressions are usually used in contexts of sufficieny and necessity,
+which are indicated with the usual signs <code>-&gt;</code> and <code>&lt;-</code>. These are
+both allowed by the R parser, indicating standard assignment. Due to the R's
+internal parsing system, a sufficient expression using <code>-&gt;</code> is automatically
+flipped to a necessity statement <code>&lt;-</code> with reversed LHS to RHS, but this
+function is able to determine what is the expression and what is the output.
+</p>
+<p>The other necessity code <code>&lt;=</code> is also recognized, but the equivalent
+sufficiency code <code>=&gt;</code> is not allowed in unquoted expressions.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A quoted, equivalent expression or a substituted object.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Adrian Dusa
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../base/help/substitute.html">substitute</a></code>, <code><a href="../../admisc/help/simplify.html">simplify</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+recreate(substitute(A + ~B*C))
+
+foo &lt;- function(x, ...) recreate(substitute(list(...)))
+
+foo(arg1 = 3, arg2 = A + ~B*C)
+
+df &lt;- data.frame(A = 1, B = 2, C = 3, Y = 4)
+
+# substitute from the global environment
+# the result is the builtin C() function
+res &lt;- recreate(substitute(C))
+
+is.function(res) # TRUE
+
+# search first within the column name space from df
+recreate(substitute(C), colnames(df))
+# "C"
+
+# necessity well recognized
+recreate(substitute(A &lt;- B))
+
+# but sufficiency is flipped
+recreate(substitute(A -&gt; B))
+
+# more complex SOP expressions are still recovered
+recreate(substitute(A + ~B*C -&gt; Y))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>admisc</em> version 0.39 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

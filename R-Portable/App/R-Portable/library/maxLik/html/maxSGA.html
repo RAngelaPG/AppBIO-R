@@ -1,0 +1,464 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Stochastic Gradient Ascent</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for maxSGA {maxLik}"><tr><td>maxSGA {maxLik}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Stochastic Gradient Ascent</h2>
+
+<h3>Description</h3>
+
+<p>Stochastic Gradient Ascent&ndash;based optimizers
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+maxSGA(fn = NULL, grad = NULL, hess = NULL, start,
+       nObs,
+       constraints = NULL, finalHessian = FALSE, 
+       fixed = NULL, control=NULL, ... )
+maxAdam(fn = NULL, grad = NULL, hess = NULL, start,
+        nObs,
+        constraints = NULL, finalHessian = FALSE, 
+        fixed = NULL, control=NULL, ... )
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>fn</code></td>
+<td>
+<p>the function to be maximized.  As the objective function
+values are not directly used for optimization, this argument is
+optional, given <code>grad</code> is provided.
+It must have the parameter vector as the first argument, and it must
+have an argument <code>index</code> to specify the integer index of the selected
+observations.  
+It must return either a single number, or a numeric vector (this is
+is summed internally).
+If the parameters are out of range, <code>fn</code> should
+return <code>NA</code>.  See details for constant parameters.
+</p>
+<p><code>fn</code> may also return attributes &quot;gradient&quot; and/or &quot;hessian&quot;.
+If these attributes are set, the algorithm uses the corresponding
+values as
+gradient and Hessian.
+</p>
+</td></tr>
+<tr valign="top"><td><code>grad</code></td>
+<td>
+<p>gradient of the objective function.
+It must have the parameter vector as the first argument, and it must
+have an argument <code>index</code> to specify the integer index of selected
+observations.
+It must return either a gradient vector of the objective function,
+or a matrix, where columns correspond to individual parameters.
+The column sums are treated as gradient components.
+If <code>NULL</code>, finite-difference gradients are computed.
+If <code>fn</code> returns an object with attribute <code>gradient</code>,
+this argument is ignored.
+</p>
+<p>If <code>grad</code> is not supplied, it is computed by finite-difference
+method using <code>fn</code>.  However, this is only adviseable for
+small-scale tests, not for any production run.  Obviously, <code>fn</code>
+must be correctly defined in that case.
+</p>
+</td></tr>
+<tr valign="top"><td><code>hess</code></td>
+<td>
+<p>Hessian matrix of the function.  Mainly for compatibility
+reasons, only used for computing the final Hessian if asked to do
+so by setting <code>finalHessian</code> to <code>TRUE</code>. 
+It must have the parameter vector as the first argument and
+it must return the Hessian matrix of the objective function.
+If missing, either finite-difference Hessian, based on
+<code>gradient</code> or BHHH approach
+is computed if asked to do so.
+</p>
+</td></tr>
+<tr valign="top"><td><code>start</code></td>
+<td>
+<p>initial parameter values.  If these have names, the
+names are also used for results.</p>
+</td></tr>
+<tr valign="top"><td><code>nObs</code></td>
+<td>
+<p>number of observations.  This is used to partition the data
+into individual batches.  The resulting batch
+indices are forwarded to the <code>grad</code> function through the
+argument <code>index</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>constraints</code></td>
+<td>
+<p>either <code>NULL</code> for unconstrained optimization
+or a list with two components.  The components may be either
+<code>eqA</code> and <code>eqB</code> for equality-constrained optimization
+<i>A %*% theta + B = 0</i>; or <code>ineqA</code> and
+<code>ineqB</code> for inequality constraints <i>A
+      %*% theta + B &gt; 0</i>.  More
+than one
+row in <code>ineqA</code> and <code>ineqB</code> corresponds to more than
+one linear constraint, in that case all these must be zero
+(equality) or positive (inequality constraints).
+The equality-constrained problem is forwarded
+to <code><a href="../../maxLik/help/sumt.html">sumt</a></code>, the inequality-constrained case to
+<code><a href="../../maxLik/help/constrOptim2.html">constrOptim2</a></code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>finalHessian</code></td>
+<td>
+<p>how (and if) to calculate the final Hessian.  Either
+<code>FALSE</code> (do not calculate), <code>TRUE</code> (use analytic/finite-difference
+Hessian) or <code>"bhhh"</code>/<code>"BHHH"</code> for the information equality
+approach.  The latter approach is only suitable when working with a
+log-likelihood function, and it requires the gradient/log-likelihood to
+be supplied by individual observations.
+</p>
+<p>Hessian matrix is not often used for optimization problems where one
+applies SGA, but even if one is not interested in standard errors,
+it may provide useful information about the model performance.  If
+computed by finite-difference method, the Hessian computation may be
+very slow.
+</p>
+</td></tr>
+<tr valign="top"><td><code>fixed</code></td>
+<td>
+<p>parameters to be treated as constants at their
+<code>start</code> values.  If present, it is treated as an index vector of
+<code>start</code> parameters.</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+<p>list of control parameters.  The ones
+used by these optimizers are
+</p>
+
+<dl>
+<dt>SGA_momentum</dt><dd><p>0, numeric momentum parameter for SGA.  Must lie
+in interval <i>[0,1]</i>.  See details.
+</p>
+</dd>
+</dl>
+<p>Adam-specific parameters
+</p>
+<dl>
+<dt>Adam_momentum1</dt><dd><p>0.9, numeric in interval <i>(0,1)</i>, the first moment momentum</p>
+</dd>
+<dt>Adam_momentum2</dt><dd><p>0.999, numeric in interval <i>(0,1)</i>, the second moment momentum</p>
+</dd>
+</dl>
+<p>General stochastic gradient parameters:
+</p>
+<dl>
+<dt>SG_learningRate</dt><dd><p>step size the SGA algorithm takes in the
+gradient direction.  If 1, the step equals to the gradient value.  A
+good value is often 0.01&ndash;0.3</p>
+</dd>
+<dt>SG_batchSize</dt><dd><p>SGA batch size, an integer between 1 and
+<code>nObs</code>.
+If <code>NULL</code> (default), the full batch gradient is computed.
+</p>
+</dd>
+<dt>SG_clip</dt><dd><p><code>NULL</code>, gradient clipping threshold.  The
+algorithm ensures that <i>norm(gradient)^2 &lt;= kappa</i> where <i>kappa</i> is
+the <code>SG_clip</code> value.  If the
+actual norm of the gradient exceeds (square root of)
+<i>kappa</i>,
+the gradient will be scaled back accordingly while
+preserving its direction.  <code>NULL</code> means no clipping.
+</p>
+</dd>
+</dl>
+<p>Stopping conditions:
+</p>
+<dl>
+<dt>gradtol</dt><dd><p>stopping condition.  Stop if norm of the gradient is
+less than <code>gradtol</code>.  Default 0, i.e. do not use this
+condition.  This condition is useful if the
+objective is to drive full batch gradient to zero on training data.
+It is not a good objective in case of the stochastic
+gradient, and if the objective is to optimize the objective on
+validation data.
+</p>
+</dd>
+<dt>SG_patience</dt><dd><p><code>NULL</code>, or integer.  Stopping condition:
+the algorithm counts how many times
+the objective function has been worse than its best value so
+far, and if this exceeds <code>SG_patience</code>, the algorithm stops.
+</p>
+</dd>
+<dt>SG_patienceStep</dt><dd><p>1L, integer.  After how many epochs to check
+the patience value.  <code>1</code> means to check at each epoch, and hence to compute the
+objective function.  This may be undesirable if the objective
+function is costly to compute.
+</p>
+</dd>
+<dt>iterlim</dt><dd><p>stopping condition.  Stop if more than <code>iterlim</code>
+epochs, return <code>code=4</code>.
+Epoch is a set of iterations that cycles through all
+observations.  In case of full batch, iterations and epochs are
+equivalent.  If <code>iterlim = 0</code>, does not do any learning and
+returns the initial values unchanged.
+</p>
+</dd>
+<dt>printLevel</dt><dd><p>this argument determines the level of
+printing which is done during the optimization process. The default
+value 0 means that no printing occurs, 1 prints the
+initial and final details, 2 prints all the
+main tracing information for every epoch.  Higher
+values will result in even more output.
+</p>
+</dd>
+<dt>storeParameters</dt><dd><p>logical, whether to store and return the
+parameter
+values at each epoch.  If <code>TRUE</code>, the stored values
+can be retrieved with <code><a href="../../maxLik/help/storedParameters.html">storedParameters</a></code>-method.  The
+parameters are stored as a matrix with rows corresponding to the
+epochs and columns to the parameter components.  There are
+<code>iterlim</code> + 1 rows, where the first one corresponds to the
+initial parameters.
+</p>
+<p>Default <code>FALSE</code>.
+</p>
+</dd>
+<dt>storeValues</dt><dd><p>logical, whether to store and return the objective
+function values at each epoch.  If <code>TRUE</code>, the stored values
+can be retrieved with <code><a href="../../maxLik/help/storedValues.html">storedValues</a></code>-method.  There are
+<code>iterlim</code> + 1 values, where the first one corresponds to
+the value at the
+initial parameters.
+</p>
+<p>Default <code>FALSE</code>.
+</p>
+</dd>
+</dl>
+
+<p>See <code><a href="../../maxLik/help/maxControl.html">maxControl</a></code> for more information.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>further arguments to <code>fn</code>, <code>grad</code> and
+<code>hess</code>.
+To maintain compatibility with the earlier versions, ... also
+passes certain control options to the optimizers.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Gradient Ascent (GA) is a optimization method where the algorithm
+repeatedly takes small steps in the gradient's direction, the
+parameter vector <i>theta</i> is updated as <i>theta &lt;- learning rate * gradient f(theta)</i>.
+In case of Stochastic GA (SGA), the gradient is not computed on the
+full set of observations but on a small subset, <em>batch</em>,
+potentially a single observation only.  In certain circumstances
+this converges much faster
+than when using all observation (see
+<cite>Bottou et al, 2018</cite>).
+</p>
+<p>If <code>SGA_momentum</code> is positive, the SGA algorithm updates the parameters
+<i>theta</i> in two steps.  First, the momentum is used to update
+the &ldquo;velocity&rdquo; <i>v</i> as
+<i>v &lt;- momentum*v + learning
+    rate* gradient f(theta)</i>, and thereafter the parameter
+<i>theta</i> is updates as
+<i>theta &lt;- theta + v</i>.  Initial
+velocity is set to 0.
+</p>
+<p>The Adam algorithm is more complex and uses first and second moments
+of stochastic gradients to automatically adjust the learning rate.
+See <cite>Goodfellow et al, 2016, page 301</cite>.
+</p>
+<p>The function <code>fn</code> is not directly used for optimization, only
+for printing or as a stopping condition.  In this sense
+it is up to the user to decide what the function
+returns, if anything.  For instance, it may be useful for <code>fn</code> to compute the
+objective function on either full training data, or on validation data,
+and just ignore the <code>index</code> argument.  The latter is useful if
+using <em>patience</em>-based stopping.
+However, one may also
+choose to select the observations determined by the index to
+compute the objective function on the current data batch.
+
+</p>
+
+
+<h3>Value</h3>
+
+<p>object of class &quot;maxim&quot;.  Data can be extracted through the following
+methods: 
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code><code><a href="../../maxLik/help/maxValue.html">maxValue</a></code></code></td>
+<td>
+<p><code>fn</code> value at maximum (the last calculated value
+if not converged.)</p>
+</td></tr>
+<tr valign="top"><td><code><code><a href="../../stats/html/coef.html">coef</a></code></code></td>
+<td>
+<p>estimated parameter value.</p>
+</td></tr>
+<tr valign="top"><td><code><code><a href="../../maxLik/help/gradient.html">gradient</a></code></code></td>
+<td>
+<p>vector, last calculated gradient value.  Should be
+close to 0 in case of normal convergence.</p>
+</td></tr>
+<tr valign="top"><td><code>estfun</code></td>
+<td>
+<p>matrix of gradients at parameter value <code>estimate</code>
+evaluated at each observation (only if <code>grad</code> returns a matrix
+or <code>grad</code> is not specified and <code>fn</code> returns a vector).</p>
+</td></tr>
+<tr valign="top"><td><code><code><a href="../../maxLik/help/hessian.html">hessian</a></code></code></td>
+<td>
+<p>Hessian at the maximum (the last calculated value if
+not converged).</p>
+</td></tr>
+<tr valign="top"><td><code><code><a href="../../maxLik/help/storedValues.html">storedValues</a></code></code></td>
+<td>
+<p>return values stored at each epoch</p>
+</td></tr>
+<tr valign="top"><td><code><code><a href="../../maxLik/help/storedParameters.html">storedParameters</a></code></code></td>
+<td>
+<p>return parameters stored at each epoch</p>
+</td></tr>
+<tr valign="top"><td><code><code><a href="../../maxLik/help/returnCode.html">returnCode</a></code></code></td>
+<td>
+
+<p>a numeric code that describes the convergence or error.
+</p>
+</td></tr>
+<tr valign="top"><td><code><code><a href="../../maxLik/help/returnMessage.html">returnMessage</a></code></code></td>
+<td>
+<p>a short message, describing the return code.</p>
+</td></tr>
+<tr valign="top"><td><code><code><a href="../../maxLik/help/activePar.html">activePar</a></code></code></td>
+<td>
+<p>logical vector, which parameters are optimized over.
+Contains only <code>TRUE</code>-s if no parameters are fixed.</p>
+</td></tr>
+<tr valign="top"><td><code><code><a href="../../maxLik/help/nIter.html">nIter</a></code></code></td>
+<td>
+<p>number of iterations.</p>
+</td></tr>
+<tr valign="top"><td><code><code><a href="../../maxLik/help/maximType.html">maximType</a></code></code></td>
+<td>
+<p>character string, type of maximization.</p>
+</td></tr>
+<tr valign="top"><td><code><code><a href="../../maxLik/help/maxControl.html">maxControl</a></code></code></td>
+<td>
+<p>the optimization control parameters in the form of a
+<code><a href="../../maxLik/help/MaxControl-class.html">MaxControl</a></code> object.</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Ott Toomet, Arne Henningsen</p>
+
+
+<h3>References</h3>
+
+<p>Bottou, L.; Curtis, F. &amp; Nocedal, J.:
+Optimization Methods for
+Large-Scale Machine Learning <em>SIAM Review</em>, 2018, <b>60</b>,
+223&ndash;311.
+</p>
+<p>Goodfellow, I.; Bengio, Y.; Courville, A. (2016): Deep Learning,
+<em>MIT Press</em>
+</p>
+<p>Henningsen, A. and Toomet, O. (2011): maxLik: A package for maximum likelihood
+estimation in R <em>Computational Statistics</em> <b>26</b>, 443&ndash;458
+</p>
+
+
+<h3>See Also</h3>
+
+<p>A good starting point to learn about the usage of stochastic gradient
+ascent in <span class="pkg">maxLik</span> package is the vignette &ldquo;Stochastic
+Gradient Ascent in maxLik&rdquo;.
+</p>
+<p>The other related functions are
+<code><a href="../../maxLik/help/maxNR.html">maxNR</a></code> for Newton-Raphson, a popular Hessian-based maximization;
+<code><a href="../../maxLik/help/maxBFGS.html">maxBFGS</a></code> for maximization using the BFGS, Nelder-Mead (NM),
+and Simulated Annealing (SANN) method (based on <code><a href="../../stats/help/optim.html">optim</a></code>),
+also supporting inequality constraints;
+<code><a href="../../maxLik/help/maxLik.html">maxLik</a></code> for a general framework for maximum likelihood
+estimation (MLE);
+<code><a href="../../stats/html/optim.html">optim</a></code> for different gradient-based optimization
+methods.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## estimate the exponential distribution parameter by ML
+set.seed(1)
+t &lt;- rexp(100, 2)
+loglik &lt;- function(theta, index) sum(log(theta) - theta*t[index])
+## Note the log-likelihood and gradient are summed over observations
+gradlik &lt;- function(theta, index) sum(1/theta - t[index])
+## Estimate with full-batch
+a &lt;- maxSGA(loglik, gradlik, start=1, control=list(iterlim=1000,
+            SG_batchSize=10), nObs=100)
+            # note that loglik is not really needed, and is not used
+            # here, unless more print verbosity is asked
+summary(a)
+##
+## demonstrate the usage of index, and using
+## fn for computing the objective function on validation data.
+## Create a linear model where variables are very unequally scaled
+##
+## OLS loglik function: compute the function value on validation data only
+loglik &lt;- function(beta, index) {
+   e &lt;- yValid - XValid %*% beta
+   -crossprod(e)/length(y)
+}
+## OLS gradient: compute it on training data only
+## Use 'index' to select the subset corresponding to the minibatch
+gradlik &lt;- function(beta, index)  {
+   e &lt;- yTrain[index] - XTrain[index,,drop=FALSE] %*% beta
+   g &lt;- t(-2*t(XTrain[index,,drop=FALSE]) %*% e)
+   -g/length(index)
+}
+N &lt;- 1000
+## two random variables: one with scale 1, the other with 100
+X &lt;- cbind(rnorm(N), rnorm(N, sd=100))
+beta &lt;- c(1, 1)  # true parameter values
+y &lt;- X %*% beta + rnorm(N, sd=0.2)
+## training-validation split
+iTrain &lt;- sample(N, 0.8*N)
+XTrain &lt;- X[iTrain,,drop=FALSE]
+XValid &lt;- X[-iTrain,,drop=FALSE]
+yTrain &lt;- y[iTrain]
+yValid &lt;- y[-iTrain]
+##
+## do this without momentum: learning rate must stay small for the gradient not to explode
+cat("  No momentum:\n")
+a &lt;- maxSGA(loglik, gradlik, start=c(10,10),
+           control=list(printLevel=1, iterlim=50,
+                        SG_batchSize=30, SG_learningRate=0.0001, SGA_momentum=0
+                        ), nObs=length(yTrain))
+print(summary(a))  # the first component is off, the second one is close to the true value
+## do with momentum 0.99
+cat("  Momentum 0.99:\n")
+a &lt;- maxSGA(loglik, gradlik, start=c(10,10),
+           control=list(printLevel=1, iterlim=50,
+                        SG_batchSize=30, SG_learningRate=0.0001, SGA_momentum=0.99
+                        # no momentum
+                        ), nObs=length(yTrain))
+print(summary(a))  # close to true value
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>maxLik</em> version 1.5-2.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,227 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: MSEP, RMSEP and R2 of PLSR and PCR models</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mvrVal {pls}"><tr><td>mvrVal {pls}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>MSEP, RMSEP and R2 of PLSR and PCR models</h2>
+
+<h3>Description</h3>
+
+<p>Functions to estimate the mean squared error of prediction (MSEP), root mean
+squared error of prediction (RMSEP) and <i>R^2</i> (A.K.A. coefficient of
+multiple determination) for fitted PCR and PLSR models.  Test-set,
+cross-validation and calibration-set estimates are implemented.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+mvrValstats(
+  object,
+  estimate,
+  newdata,
+  ncomp = 1:object$ncomp,
+  comps,
+  intercept = cumulative,
+  se = FALSE,
+  ...
+)
+
+R2(object, ...)
+
+## S3 method for class 'mvr'
+R2(
+  object,
+  estimate,
+  newdata,
+  ncomp = 1:object$ncomp,
+  comps,
+  intercept = cumulative,
+  se = FALSE,
+  ...
+)
+
+MSEP(object, ...)
+
+## S3 method for class 'mvr'
+MSEP(
+  object,
+  estimate,
+  newdata,
+  ncomp = 1:object$ncomp,
+  comps,
+  intercept = cumulative,
+  se = FALSE,
+  ...
+)
+
+RMSEP(object, ...)
+
+## S3 method for class 'mvr'
+RMSEP(object, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>an <code>mvr</code> object</p>
+</td></tr>
+<tr valign="top"><td><code>estimate</code></td>
+<td>
+<p>a character vector.  Which estimators to use.  Should be a
+subset of <code>c("all", "train", "CV", "adjCV", "test")</code>.  <code>"adjCV"</code>
+is only available for (R)MSEP.  See below for how the estimators are chosen.</p>
+</td></tr>
+<tr valign="top"><td><code>newdata</code></td>
+<td>
+<p>a data frame with test set data.</p>
+</td></tr>
+<tr valign="top"><td><code>ncomp, comps</code></td>
+<td>
+<p>a vector of positive integers.  The components or number
+of components to use.  See below.</p>
+</td></tr>
+<tr valign="top"><td><code>intercept</code></td>
+<td>
+<p>logical.  Whether estimates for a model with zero
+components should be returned as well.</p>
+</td></tr>
+<tr valign="top"><td><code>se</code></td>
+<td>
+<p>logical.  Whether estimated standard errors of the estimates
+should be calculated.  Not implemented yet.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>further arguments sent to underlying functions or (for
+<code>RMSEP</code>) to <code>MSEP</code></p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>RMSEP</code> simply calls <code>MSEP</code> and takes the square root of the
+estimates.  It therefore accepts the same arguments as <code>MSEP</code>.
+</p>
+<p>Several estimators can be used.  <code>"train"</code> is the training or
+calibration data estimate, also called (R)MSEC.  For <code>R2</code>, this is the
+unadjusted <i>R^2</i>.  It is overoptimistic and should not be used for
+assessing models.  <code>"CV"</code> is the cross-validation estimate, and
+<code>"adjCV"</code> (for <code>RMSEP</code> and <code>MSEP</code>) is the bias-corrected
+cross-validation estimate.  They can only be calculated if the model has
+been cross-validated.  Finally, <code>"test"</code> is the test set estimate,
+using <code>newdata</code> as test set.
+</p>
+<p>Which estimators to use is decided as follows (see below for
+<code>mvrValstats</code>).  If <code>estimate</code> is not specified, the test set
+estimate is returned if <code>newdata</code> is specified, otherwise the CV and
+adjusted CV (for <code>RMSEP</code> and <code>MSEP</code>) estimates if the model has
+been cross-validated, otherwise the training data estimate.  If
+<code>estimate</code> is <code>"all"</code>, all possible estimates are calculated.
+Otherwise, the specified estimates are calculated.
+</p>
+<p>Several model sizes can also be specified.  If <code>comps</code> is missing (or
+is <code>NULL</code>), <code>length(ncomp)</code> models are used, with <code>ncomp[1]</code>
+components, ..., <code>ncomp[length(ncomp)]</code> components.  Otherwise, a
+single model with the components <code>comps[1]</code>, ...,
+<code>comps[length(comps)]</code> is used.  If <code>intercept</code> is <code>TRUE</code>, a
+model with zero components is also used (in addition to the above).
+</p>
+<p>The <i>R^2</i> values returned by <code>"R2"</code> are calculated as <i>1 -
+SSE/SST</i>, where <i>SST</i> is the (corrected) total sum of squares of the
+response, and <i>SSE</i> is the sum of squared errors for either the fitted
+values (i.e., the residual sum of squares), test set predictions or
+cross-validated predictions (i.e., the <i>PRESS</i>).  For <code>estimate =
+"train"</code>, this is equivalent to the squared correlation between the fitted
+values and the response.  For <code>estimate = "train"</code>, the estimate is
+often called the prediction <i>R^2</i>.
+</p>
+<p><code>mvrValstats</code> is a utility function that calculates the statistics
+needed by <code>MSEP</code> and <code>R2</code>.  It is not intended to be used
+interactively.  It accepts the same arguments as <code>MSEP</code> and <code>R2</code>.
+However, the <code>estimate</code> argument must be specified explicitly: no
+partial matching and no automatic choice is made.  The function simply
+calculates the types of estimates it knows, and leaves the other untouched.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>mvrValstats</code> returns a list with components </p>
+
+<dl>
+<dt>SSE</dt><dd><p>three-dimensional array of SSE values.  The first dimension is
+the different estimators, the second is the response variables and the third
+is the models.</p>
+</dd> <dt>SST</dt><dd><p>matrix of SST values.  The first dimension is the
+different estimators and the second is the response variables.</p>
+</dd>
+<dt>nobj</dt><dd><p>a numeric vector giving the number of objects used for each
+estimator.</p>
+</dd> <dt>comps</dt><dd><p>the components specified, with <code>0</code> prepended
+if <code>intercept</code> is <code>TRUE</code>.</p>
+</dd> <dt>cumulative</dt><dd><p><code>TRUE</code> if
+<code>comps</code> was <code>NULL</code> or not specified.</p>
+</dd> </dl>
+
+<p>The other functions return an object of class <code>"mvrVal"</code>, with
+components </p>
+ <dl>
+<dt>val</dt><dd><p>three-dimensional array of estimates.  The
+first dimension is the different estimators, the second is the response
+variables and the third is the models.</p>
+</dd> <dt>type</dt><dd><p><code>"MSEP"</code>,
+<code>"RMSEP"</code> or <code>"R2"</code>.</p>
+</dd> <dt>comps</dt><dd><p>the components specified, with
+<code>0</code> prepended if <code>intercept</code> is <code>TRUE</code>.</p>
+</dd>
+<dt>cumulative</dt><dd><p><code>TRUE</code> if <code>comps</code> was <code>NULL</code> or not
+specified.</p>
+</dd> <dt>call</dt><dd><p>the function call</p>
+</dd> </dl>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Ron Wehrens and Bjørn-Helge Mevik
+</p>
+
+
+<h3>References</h3>
+
+<p>Mevik, B.-H., Cederkvist, H. R. (2004) Mean Squared Error of
+Prediction (MSEP) Estimates for Principal Component Regression (PCR) and
+Partial Least Squares Regression (PLSR).  <em>Journal of Chemometrics</em>,
+<b>18</b>(9), 422&ndash;429.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../pls/help/mvr.html">mvr</a></code>, <code><a href="../../pls/help/crossval.html">crossval</a></code>, <code><a href="../../pls/help/mvrCv.html">mvrCv</a></code>,
+<code><a href="../../pls/help/validationplot.html">validationplot</a></code>, <code><a href="../../pls/help/plot.mvrVal.html">plot.mvrVal</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+data(oliveoil)
+mod &lt;- plsr(sensory ~ chemical, ncomp = 4, data = oliveoil, validation = "LOO")
+RMSEP(mod)
+## Not run: plot(R2(mod))
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>pls</em> version 2.9-0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

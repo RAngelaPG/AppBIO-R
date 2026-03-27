@@ -1,0 +1,241 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Combines estimates from a tidy table</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for pool.table {mice}"><tr><td>pool.table {mice}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Combines estimates from a tidy table</h2>
+
+<h3>Description</h3>
+
+<p>Combines estimates from a tidy table
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+pool.table(
+  w,
+  type = c("all", "minimal", "tests"),
+  conf.int = TRUE,
+  conf.level = 0.95,
+  exponentiate = FALSE,
+  dfcom = Inf,
+  custom.t = NULL,
+  rule = c("rubin1987", "reiter2003"),
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>w</code></td>
+<td>
+<p>A <code>data.frame</code> with parameter estimates
+in tidy format (see details).</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>A string, either <code>"minimal"</code>, <code>"tests"</code> or <code>"all"</code>.
+Use minimal to mimick the output of <code>summary(pool(fit))</code>. The default
+is <code>"all"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>conf.int</code></td>
+<td>
+<p>Logical indicating whether to include
+a confidence interval.</p>
+</td></tr>
+<tr valign="top"><td><code>conf.level</code></td>
+<td>
+<p>Confidence level of the interval, used only if
+<code>conf.int = TRUE</code>. Number between 0 and 1.</p>
+</td></tr>
+<tr valign="top"><td><code>exponentiate</code></td>
+<td>
+<p>Flag indicating whether to exponentiate the
+coefficient estimates and confidence intervals (typical for
+logistic regression).</p>
+</td></tr>
+<tr valign="top"><td><code>dfcom</code></td>
+<td>
+<p>A positive number representing the degrees of freedom of the
+residuals in the complete-data analysis. The <code>dfcom</code> argument is
+used for the Barnard-Rubin adjustment. In a linear regression, <code>dfcom</code>
+would be equivalent to the number of independent observation minus the number
+of fitted parameters, but the expression becomes more complex for
+regularized, proportional hazards, or other semi-parametric
+techniques. Only used if <code>w</code> lacks a column named <code>"df.residual"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>custom.t</code></td>
+<td>
+<p>A custom character string to be parsed as a calculation
+rule for the total variance <code>t</code>. The custom rule can use the
+other calculated pooling statistics. The default <code>t</code> calculation
+has the form <code>".data$ubar + (1 + 1 / .data$m) * .data$b"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>rule</code></td>
+<td>
+<p>A string indicating the pooling rule. Currently supported are
+<code>"rubin1987"</code> (default, for analyses applied to multiply-imputed
+incomplete data) and <code>"reiter2003"</code> (for analyses applied to
+synthetic data created from complete data).</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Arguments passed down</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The input data <code>w</code> is a <code>data.frame</code> with columns named:
+</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: left;">
+<code>term</code>        </td><td style="text-align: left;"> a character or factor with the parameter names</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+<code>estimate</code>    </td><td style="text-align: left;"> a numeric vector with parameter estimates</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+<code>std.error</code>   </td><td style="text-align: left;"> a numeric vector with standard errors of <code>estimate</code></td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+<code>residual.df</code> </td><td style="text-align: left;"> a numeric vector with the degrees of freedom
+</td>
+</tr>
+
+</table>
+
+<p>Columns 1-3 are obligatory. Column 4 is optional. Usually,
+all entries in column 4 are the same. The user can omit column 4,
+and specify argument <code>pool.table(..., dfcom = ...)</code> instead.
+If both are given, then column <code>residual.df</code> takes precedence.
+If neither are specified, then <code>mice</code> tries to calculate the
+residual degrees of freedom. If that fails (e.g. because there is
+no information on sample size), <code>mice</code> sets <code>dfcom = Inf</code>.
+The value <code>dfcom = Inf</code> is acceptable for large samples
+(n &gt; 1000) and relatively concise parametric models.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>pool.table()</code> returns a <code>data.frame</code> with aggregated
+estimates, standard errors, confidence intervals and statistical tests.
+</p>
+<p>The meaning of the columns is as follows:
+</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: left;">
+<code>term</code>      </td><td style="text-align: left;"> Parameter name</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+<code>m</code>         </td><td style="text-align: left;"> Number of multiple imputations</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+<code>estimate</code>  </td><td style="text-align: left;"> Pooled complete data estimate</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+<code>std.error</code> </td><td style="text-align: left;"> Standard error of <code>estimate</code></td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+<code>statistic</code> </td><td style="text-align: left;"> t-statistic = <code>estimate</code> / <code>std.error</code></td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+<code>df</code>        </td><td style="text-align: left;"> Degrees of freedom for <code>statistic</code></td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+<code>p.value</code>   </td><td style="text-align: left;"> One-sided P-value under null hypothesis</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+<code>conf.low</code>  </td><td style="text-align: left;"> Lower bound of c.i. (default 95 pct)</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+<code>conf.high</code> </td><td style="text-align: left;"> Upper bound of c.i. (default 95 pct)</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+<code>riv</code>       </td><td style="text-align: left;"> Relative increase in variance</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+<code>fmi</code>       </td><td style="text-align: left;"> Fraction of missing information</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+<code>ubar</code>      </td><td style="text-align: left;"> Within-imputation variance of <code>estimate</code></td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+<code>b</code>         </td><td style="text-align: left;"> Between-imputation variance of <code>estimate</code></td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+<code>t</code>         </td><td style="text-align: left;"> Total variance, of <code>estimate</code></td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+<code>dfcom</code>     </td><td style="text-align: left;"> Residual degrees of freedom in complete data</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+</td>
+</tr>
+
+</table>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+# conventional mice workflow
+imp &lt;- mice(nhanes2, m = 2, maxit = 2, seed = 1, print = FALSE)
+fit &lt;- with(imp, lm(chl ~ age + bmi + hyp))
+pld1 &lt;- pool(fit)
+pld1$pooled
+
+# using pool.table() on tidy table
+tbl &lt;- summary(fit)[, c("term", "estimate", "std.error", "df.residual")]
+tbl
+pld2 &lt;- pool.table(tbl, type = "minimal")
+pld2
+
+identical(pld1$pooled, pld2)
+
+# conventional workflow: all numerical output
+all1 &lt;- summary(pld1, type = "all", conf.int = TRUE)
+all1
+
+# pool.table workflow: all numerical output
+all2 &lt;- pool.table(tbl)
+all2
+
+class(all1) &lt;- "data.frame"
+identical(all1, all2)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mice</em> version 3.19.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

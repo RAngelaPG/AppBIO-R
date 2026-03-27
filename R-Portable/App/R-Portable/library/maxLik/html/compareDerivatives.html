@@ -1,0 +1,212 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: function to compare analytic and numeric derivatives</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for compareDerivatives {maxLik}"><tr><td>compareDerivatives {maxLik}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>function to compare analytic and numeric derivatives</h2>
+
+<h3>Description</h3>
+
+<p>This function compares analytic and numerical derivative and prints related
+diagnostics information.  It is intended for testing and debugging
+code for analytic derivatives
+for maximization algorithms.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+compareDerivatives(f, grad, hess=NULL, t0, eps=1e-6,
+                   printLevel=1, print=printLevel &gt; 0,
+                   max.rows=getOption("max.rows", 20),
+                   max.cols=getOption("max.cols", 7),
+                   ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>f</code></td>
+<td>
+
+<p>function to be differentiated. The parameter (vector) of interest
+must be the first argument. The function may return a vector, in
+that case the derivative will be a matrix.
+</p>
+</td></tr>
+<tr valign="top"><td><code>grad</code></td>
+<td>
+
+<p>analytic gradient.  This may be either a function,
+returning the analytic gradient, or a numeric vector, the pre-computed
+gradient.  The function must use the same set of
+parameters as <code>f</code>.  If <code>f</code> is a vector-valued function,
+grad must return/be a matrix where the number of rows equals the number
+of components of <code>f</code>, and the number of columns must equal to
+the number of components in <code>t0</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>hess</code></td>
+<td>
+
+<p>function returning the analytic hessian.  If present, hessian
+matrices are compared too.  Only appropriate for scalar-valued
+functions.
+</p>
+</td></tr>
+<tr valign="top"><td><code>t0</code></td>
+<td>
+
+<p>numeric vector, parameter at which the derivatives are
+compared. The derivative is taken with respect to this vector.  both
+<code>f</code>m <code>grad</code> (if function) and <code>hess</code> (if present)
+must accept this value as the first parameter.
+</p>
+</td></tr>
+<tr valign="top"><td><code>eps</code></td>
+<td>
+
+<p>numeric. Step size for numeric differentiation. Central derivative
+is used.
+</p>
+</td></tr>
+<tr valign="top"><td><code>printLevel</code></td>
+<td>
+
+<p>numeric: a positive number prints summary of the comparison.  0 does
+not do any printing, only returns the comparison results (invisibly).
+</p>
+</td></tr>
+<tr valign="top"><td><code>print</code></td>
+<td>
+
+<p>deprecated (for backward compatibility only).
+</p>
+</td></tr>
+<tr valign="top"><td><code>max.rows</code></td>
+<td>
+<p>maximum number of matrix rows to be printed.
+</p>
+</td></tr>
+<tr valign="top"><td><code>max.cols</code></td>
+<td>
+<p>maximum number of columns to be printed.  
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>further arguments to <code>f</code>, <code>grad</code> and <code>hess</code>.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Analytic derivatives (and Hessian) substantially improve the
+estimation speed and reliability.  However, these are
+typically hard to program.  This utility compares the programmed result
+and the (internally calculated) numeric derivative.  
+For every component of <code>f</code>, it prints the parameter value, analytic and
+numeric derivative, and their relative difference
+</p>
+<p style="text-align: center;"><i>rel.diff = (analytic -
+    numeric)/(0.5*(abs(analytic) + abs(numeric))).</i></p>
+
+<p>If <i>analytic == 0</i> and
+<i>numeric == 0</i>, then rel.diff is also set to
+0.  If
+analytic derivatives are correct and the function is sufficiently
+smooth, expect the relative differences to be less than <i>1e-7</i>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list with following components:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>t0</code></td>
+<td>
+<p>the input argument <code>t0</code></p>
+</td></tr>
+<tr valign="top"><td><code>f.t0</code></td>
+<td>
+<p>f(t0)</p>
+</td></tr>
+<tr valign="top"><td><code>compareGrad</code></td>
+<td>
+
+<p>a list with components <code>analytic</code> = grad(t0), <code>nmeric</code> =
+numericGradient(f, t0), and their <code>rel.diff</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>maxRelDiffGrad</code></td>
+<td>
+<p>max(abs(rel.diff))</p>
+</td></tr>
+</table>
+<p>If <code>hess</code> is also provided, the following optional components
+are also present:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>compareHessian</code></td>
+<td>
+
+<p>a list with components <code>analytic</code> = hess(t0), <code>numeric</code>
+= numericGradient(grad, t0), and their <code>rel.diff</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>maxRelDiffHess</code></td>
+<td>
+<p>max(abs(rel.diff)) for the Hessian</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Ott Toomet <a href="mailto:otoomet@ut.ee">otoomet@ut.ee</a> and Spencer Graves</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../maxLik/help/numericGradient.html">numericGradient</a></code>
+<code><a href="../../stats/html/deriv.html">deriv</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## A simple example with sin(x)' = cos(x)
+f &lt;- function(x) c(sin=sin(x))
+Dsin &lt;- compareDerivatives(f, cos, t0=c(angle=1))
+##
+## Example of normal log-likelihood.  Two-parameter
+## function.
+##
+x &lt;- rnorm(100, 1, 2) # generate rnorm x
+l &lt;- function(b) sum(dnorm(x, mean=b[1], sd=b[2], log=TRUE))
+gradl &lt;- function(b) {
+    c(mu=sum(x - b[1])/b[2]^2,
+    sigma=sum((x - b[1])^2/b[2]^3 - 1/b[2]))
+}
+gradl. &lt;- compareDerivatives(l, gradl, t0=c(mu=1,sigma=2))
+
+##
+## An example with f returning a vector, t0 = a scalar
+##
+trig &lt;- function(x)c(sin=sin(x), cos=cos(x))
+Dtrig &lt;- function(x)c(sin=cos(x), cos=-sin(x))
+Dtrig. &lt;- compareDerivatives(trig, Dtrig, t0=1)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>maxLik</em> version 1.5-2.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Class &quot;BinaryTree&quot;</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for BinaryTree Class {party}"><tr><td>BinaryTree Class {party}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Class &quot;BinaryTree&quot;</h2>
+
+<h3>Description</h3>
+
+<p>A class for representing binary trees.</p>
+
+
+<h3>Objects from the Class</h3>
+
+<p>Objects can be created by calls of the form <code>new("BinaryTree", ...)</code>.
+The most important slot is <code>tree</code>, a (recursive) list with elements
+</p>
+
+<dl>
+<dt>nodeID</dt><dd><p> an integer giving the number of the node, starting with
+<code>1</code> in the root node.</p>
+</dd>
+<dt>weights</dt><dd><p> the case weights (of the learning sample) corresponding to
+this node.</p>
+</dd>
+<dt>criterion</dt><dd><p> a list with test statistics and p-values for each partial
+hypothesis.</p>
+</dd>
+<dt>terminal</dt><dd><p> a logical specifying if this is a terminal node.</p>
+</dd>
+<dt>psplit</dt><dd><p> primary split: a list with elements <code>variableID</code> (the
+number of the input variable splitted), <code>ordered</code> (a
+logical whether the input variable is ordered),
+<code>splitpoint</code> (the cutpoint or set of levels to the left),
+<code>splitstatistics</code> saves the process of standardized 
+two-sample statistics the split point estimation is based on.
+The logical <code>toleft</code> determines if observations
+go left or right down the tree. For nominal splits, the slot
+<code>table</code> is a vector being greater zero if the
+corresponding level is available in the corresponding node.</p>
+</dd>
+<dt>ssplits</dt><dd><p> a list of surrogate splits, each with the same elements as
+<code>psplit</code>.</p>
+</dd>
+<dt>prediction</dt><dd><p> the prediction of the node: the mean for numeric
+responses and the conditional class probabilities for 
+nominal or ordered respones. For censored responses,
+this is the mean of the logrank scores and useless as
+such.</p>
+</dd>
+<dt>left</dt><dd><p> a list representing the left daughter node. </p>
+</dd>
+<dt>right</dt><dd><p> a list representing the right daugther node.</p>
+</dd>
+</dl>
+
+<p>Please note that this data structure may be subject to change in future
+releases of the package.
+</p>
+
+
+<h3>Slots</h3>
+
+
+<dl>
+<dt><code>data</code>:</dt><dd><p> an object of class <code>"ModelEnv"</code>.</p>
+</dd>
+<dt><code>responses</code>:</dt><dd><p> an object of class <code>"VariableFrame"</code>
+storing the values of the response variable(s). </p>
+</dd>
+<dt><code>cond_distr_response</code>:</dt><dd><p> a function computing the conditional
+distribution of the response. </p>
+</dd> 
+<dt><code>predict_response</code>:</dt><dd><p> a function for computing predictions. </p>
+</dd>
+<dt><code>tree</code>:</dt><dd><p> a recursive list representing the tree. See above. </p>
+</dd>
+<dt><code>where</code>:</dt><dd><p> an integer vector of length n (number of
+observations in the learning sample) giving the
+number of the terminal node the corresponding
+observations is element of. </p>
+</dd>
+<dt><code>prediction_weights</code>:</dt><dd><p> a function for extracting weights from
+terminal nodes. </p>
+</dd>
+<dt><code>get_where</code>:</dt><dd><p> a function for determining the number
+of terminal nodes observations fall into. </p>
+</dd>
+<dt><code>update</code>:</dt><dd><p> a function for updating weights.</p>
+</dd>
+</dl>
+
+
+
+<h3>Extends</h3>
+
+<p>Class <code>"BinaryTreePartition"</code>, directly.
+</p>
+
+
+<h3>Methods</h3>
+
+
+<dl>
+<dt><code>response(object, ...)</code>:</dt><dd><p>extract the response variables the
+tree was fitted to.</p>
+</dd>
+<dt><code>treeresponse(object, newdata = NULL, ...)</code>:</dt><dd><p>compute
+statistics for the conditional distribution of the response as
+modelled by the tree. For regression problems, this is just the mean.
+For nominal or ordered responses, estimated conditional class
+probabilities are returned. Kaplan-Meier curves are computed for
+censored responses. Note that a list with one element for each
+observation is returned.</p>
+</dd>
+<dt><code>Predict(object, newdata = NULL, ...)</code>:</dt><dd><p> compute predictions.</p>
+</dd>
+<dt><code>weights(object, newdata = NULL, ...)</code>:</dt><dd><p> extract the weight
+vector from terminal nodes each element of the learning sample is
+element of (<code>newdata = NULL</code>) and for new observations, 
+respectively.</p>
+</dd>
+<dt><code>where(object, newdata = NULL, ...)</code>:</dt><dd><p> extract the number of 
+the terminal nodes each element of the learning sample is
+element of (<code>newdata = NULL</code>) and for new observations, 
+respectively.</p>
+</dd>
+<dt><code>nodes(object, where, ...)</code>:</dt><dd><p> extract the nodes with
+given number (<code>where</code>).</p>
+</dd>
+<dt><code>plot(x, ...)</code>:</dt><dd><p> a plot method for <code>BinaryTree</code>
+objects, see <code><a href="../../party/help/plot.BinaryTree.html">plot.BinaryTree</a></code>.</p>
+</dd>
+<dt><code>print(x, ...)</code>:</dt><dd><p> a print method for <code>BinaryTree</code>
+objects.</p>
+</dd>
+</dl>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+
+  set.seed(290875)
+
+  airq &lt;- subset(airquality, !is.na(Ozone))
+  airct &lt;- ctree(Ozone ~ ., data = airq,   
+                 controls = ctree_control(maxsurrogate = 3))
+
+  ### distribution of responses in the terminal nodes
+  plot(airq$Ozone ~ as.factor(where(airct)))
+
+  ### get all terminal nodes from the tree
+  nodes(airct, unique(where(airct)))
+
+  ### extract weights and compute predictions
+  pmean &lt;- sapply(weights(airct), function(w) weighted.mean(airq$Ozone, w))
+
+  ### the same as
+  drop(Predict(airct))
+
+  ### or
+  unlist(treeresponse(airct))
+
+  ### don't use the mean but the median as prediction in each terminal node
+  pmedian &lt;- sapply(weights(airct), function(w) 
+                 median(airq$Ozone[rep(1:nrow(airq), w)]))
+
+  plot(airq$Ozone, pmean, col = "red")
+  points(airq$Ozone, pmedian, col = "blue")
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>party</em> version 1.3-19 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

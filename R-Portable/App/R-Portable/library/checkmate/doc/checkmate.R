@@ -51,18 +51,18 @@ f <- function(x) {
 }
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  # file: tests/test-all.R
-#  library(testthat)
-#  library(checkmate) # for testthat extensions
-#  test_check("mypkg")
+# # file: tests/test-all.R
+# library(testthat)
+# library(checkmate) # for testthat extensions
+# test_check("mypkg")
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  test_that("checkmate is a sweet extension for testthat", {
-#    x = runif(100)
-#    expect_numeric(x, len = 100, any.missing = FALSE, lower = 0, upper = 1)
-#    # or, equivalent, using the lazy style:
-#    qexpect(x, "N100[0,1]")
-#  })
+# test_that("checkmate is a sweet extension for testthat", {
+#   x = runif(100)
+#   expect_numeric(x, len = 100, any.missing = FALSE, lower = 0, upper = 1)
+#   # or, equivalent, using the lazy style:
+#   qexpect(x, "N100[0,1]")
+# })
 
 ## ----fig.width=6,fig.height=4,dependson="init",eval=requireNamespace("microbenchmark", quietly = TRUE)----
 library(checkmate)
@@ -153,12 +153,12 @@ expect_square_matrix = makeExpectationFunction(checkSquareMatrix)
 print(expect_square_matrix)
 
 ## ----eval = FALSE, hilang = "c"-----------------------------------------------
-#  SEXP qassert(SEXP x, const char *rule, const char *name);
-#  Rboolean qtest(SEXP x, const char *rule);
+# SEXP qassert(SEXP x, const char *rule, const char *name);
+# Rboolean qtest(SEXP x, const char *rule);
 
 ## ----eval = FALSE, hilang = "c"-----------------------------------------------
-#  #include <checkmate.h>
-#  #include <checkmate_stub.c>
+# #include <checkmate.h>
+# #include <checkmate_stub.c>
 
 ## -----------------------------------------------------------------------------
 sessionInfo()

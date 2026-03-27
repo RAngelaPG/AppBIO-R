@@ -1,0 +1,156 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Reproducible Parallel Foreach Backend</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for %dorng% {doRNG}"><tr><td>%dorng% {doRNG}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Reproducible Parallel Foreach Backend</h2>
+
+<h3>Description</h3>
+
+<p>'
+'
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+obj %dorng% ex
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>obj</code></td>
+<td>
+<p>a foreach object as returned by a call to <code><a href="../../foreach/help/foreach.html">foreach</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>ex</code></td>
+<td>
+<p>the <code>R</code> expression to evaluate.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>'
+The whole sequence of RNG seeds is stored in the result object as an attribute.
+Use <code>attr(res, 'rng')</code> to retrieve it.
+</p>
+
+
+<h3>Global options</h3>
+
+<p>These options are for advanced users that develop 'foreach backends:
+</p>
+<p>* 'doRNG.rng_change_warning_skip': if set to a single logical 'FALSE/TRUE', it indicates 
+whether a warning should be thrown if the RNG seed is changed by the registered 
+parallel backend (default=FALSE). 
+Set it to 'TRUE' if you know that running your backend will change the RNG state and 
+want to disable the warning. 
+This option can also be set to a character vector that specifies the name(s) of the backend(s) 
+for which the warning should be skipped.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../foreach/help/foreach.html">foreach</a></code>, <code><a href="../../doParallel/help/doParallel.html">doParallel</a></code>,
+<code><a href="../../doParallel/help/registerDoParallel.html">registerDoParallel</a></code>, <code><a href="../../doMPI/help/doMPI.html">doMPI</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+if (requireNamespace("doParallel", quietly = TRUE)) {
+  cl &lt;- parallel::makeCluster(2)
+  doParallel::registerDoParallel(cl)
+  on.exit(parallel::stopCluster(cl), add = TRUE)
+
+  # standard %dopar% loops are _not_ reproducible
+  set.seed(1234)
+  s1 &lt;- foreach(i=1:4) %dopar% { runif(1) }
+  set.seed(1234)
+  s2 &lt;- foreach(i=1:4) %dopar% { runif(1) }
+  identical(s1, s2)
+
+  # single %dorng% loops are reproducible
+  r1 &lt;- foreach(i=1:4, .options.RNG=1234) %dorng% { runif(1) }
+  r2 &lt;- foreach(i=1:4, .options.RNG=1234) %dorng% { runif(1) }
+  identical(r1, r2)
+  # the sequence of RNG seeds is stored as an attribute
+  attr(r1, "rng")
+} else {
+  message("Package 'doParallel' is not installed; skipping this example.")
+}
+
+# More examples can be found in demo `doRNG`
+## Not run: 
+demo('doRNG')
+
+## End(Not run)
+
+## Some features of the %dorng% foreach operator 
+if (requireNamespace("doParallel", quietly = TRUE)) {
+  ## Fork backend on Unix
+  if (.Platform$OS.type == "unix") {
+    doParallel::registerDoParallel(2)
+
+    r1 &lt;- foreach(i=1:4, .options.RNG=1234) %dorng% { runif(1) }
+    r2 &lt;- foreach(i=1:4, .options.RNG=1234) %dorng% { runif(1) }
+    identical(r1, r2)
+    attr(r1, "rng")
+
+    set.seed(1234)
+    s1 &lt;- foreach(i=1:4) %dorng% { runif(1) }
+    s2 &lt;- foreach(i=1:4) %dorng% { runif(1) }
+    identical(s1, s2)
+
+    set.seed(1234)
+    s1.2 &lt;- foreach(i=1:4) %dorng% { runif(1) }
+    s2.2 &lt;- foreach(i=1:4) %dorng% { runif(1) }
+    identical(s1, s1.2) &amp;&amp; identical(s2, s2.2)
+    identical(r1, s1)
+  }
+
+  ## PSOCK cluster (works everywhere)
+  cl &lt;- parallel::makeCluster(2)
+  doParallel::registerDoParallel(cl)
+  on.exit(parallel::stopCluster(cl), add = TRUE)
+
+  s1 &lt;- foreach(i=1:4, .options.RNG=1234) %dorng% { runif(1) }
+  s2 &lt;- foreach(i=1:4, .options.RNG=1234) %dorng% { runif(1) }
+  identical(s1, s2)
+
+  registerDoSEQ()
+} else {
+  message("Package 'doParallel' is not installed; skipping these examples.")
+}
+
+## Not run: 
+# MPI cluster (requires a working MPI + Rmpi setup)
+library(doMPI)
+cl &lt;- startMPIcluster(2)
+registerDoMPI(cl)
+
+s1 &lt;- foreach(i=1:4, .options.RNG=1234) %dorng% { runif(1) }
+s2 &lt;- foreach(i=1:4, .options.RNG=1234) %dorng% { runif(1) }
+identical(s1, s2)
+
+closeCluster(cl)
+registerDoSEQ()
+
+## End(Not run)
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>doRNG</em> version 1.8.6.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

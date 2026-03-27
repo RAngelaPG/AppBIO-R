@@ -1,0 +1,248 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Response-transformation extensions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for make.tran {emmeans}"><tr><td>make.tran {emmeans}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Response-transformation extensions</h2>
+
+<h3>Description</h3>
+
+<p>The <code>make.tran</code> function creates the needed information to perform
+transformations of the response
+variable, including inverting the transformation and estimating variances of
+back-transformed predictions via the delta method. <code>make.tran</code> is
+similar to <code><a href="../../stats/html/make.link.html">make.link</a></code>, but it covers additional transformations.
+The result can be used as an environment in which the model is fitted, or as
+the <code>tran</code> argument in <code><a href="../../emmeans/help/update.emmGrid.html">update.emmGrid</a></code> (when the given
+transformation was already applied in an existing model).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+make.tran(type = c("genlog", "power", "boxcox", "sympower", "asin.sqrt",
+  "atanh", "bcnPower", "scale"), alpha = 1, beta = 0, param, y, inner, ...)
+
+inverse(y)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>The name of a standard transformation supported by <code>stat::make.link</code>,
+or of a special transformation described under Details.</p>
+</td></tr>
+<tr valign="top"><td><code>alpha, beta</code></td>
+<td>
+<p>Numeric parameters needed for special transformations.</p>
+</td></tr>
+<tr valign="top"><td><code>param</code></td>
+<td>
+<p>If non-missing, this specifies either
+<code>alpha</code> or <code>c(alpha, beta)</code> (provided for backward compatibility).
+Also, for the same reason, if <code>alpha</code> is of length more than 1,
+it is taken as <code>param</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>A numeric response variable used (<em>and required</em>) with <code>type = "scale"</code>, 
+where <code>scale(y)</code> determines <code>alpha</code> and <code>beta</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>inner</code></td>
+<td>
+<p>another transformation. See the section on compound transformations</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Additional arguments passed to other functions/methods</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A <code>list</code> having at least the same elements as those returned by
+<code><a href="../../stats/html/make.link.html">make.link</a></code>. The <code>linkfun</code> component is the transformation
+itself. Each of the functions is associated with an environment where any 
+parameter values are defined.
+</p>
+<p><code>inverse</code> returns the reciprocal of its argument. It allows
+the <code>"inverse"</code> link to be auto-detected as a response transformation.
+</p>
+
+
+<h3>Details</h3>
+
+<p>The <code>make.tran</code> function returns a
+suitable list of functions for several popular transformations. Besides being
+usable with <code>update</code>, the user may use this list as an enclosing
+environment in fitting the model itself, in which case the transformation is
+auto-detected when the special name <code>linkfun</code> (the transformation
+itself) is used as the response transformation in the call. See the examples
+below.
+</p>
+<p>The primary purpose of <code>make.tran</code> is to support transformations that
+require additional parameters, specified as <code>alpha</code> and <code>beta</code>;
+these are the onse shown in the argument-matching list. However, standard
+transformations supported by <code>stats::make.link</code> are also supported.
+In the following discussion of ones requiring parameters, 
+we use <i>&alpha;</i> and <i>&beta;</i> to
+denote <code>alpha</code> and <code>beta</code>, and <i>y</i> to denote the response variable.
+The <code>type</code> argument specifies the following transformations:
+</p>
+
+<dl>
+<dt><code>"genlog"</code></dt><dd><p>Generalized logarithmic transformation: <i>\log_&beta;(y +
+  &alpha;)</i>, where <i>y &gt; -&alpha;</i>.
+When <i>&beta; = 0</i> (the default), we use <i>\log_e(y + &alpha;)</i></p>
+</dd>
+<dt><code>"power"</code></dt><dd><p>Power transformation: <i>(y-&beta;)^&alpha;</i>, where <i>y &gt; &beta;</i>.
+When <i>&alpha; = 0</i>, <i>\log(y-&beta;)</i> is used instead.</p>
+</dd>
+<dt><code>"boxcox"</code></dt><dd><p>The Box-Cox transformation (unscaled by the geometric
+mean): <i>((y - &beta;)^&alpha; - 1) / &alpha;</i>, where <i>y &gt; &beta;</i>. 
+When <i>&alpha; = 0</i>, <i>\log(y - &beta;)</i>
+is used.</p>
+</dd>
+<dt><code>"sympower"</code></dt><dd><p>A symmetrized power transformation on the whole real
+line:
+<i>|y - &beta;|^&alpha;\cdot sign(y - &beta;)</i>. There are no restrictions on <i>y</i>, but we
+require <i>&alpha; &gt; 0</i> in order for the transformation to be monotone and
+continuous.</p>
+</dd>
+<dt><code>"asin.sqrt"</code></dt><dd><p>Arcsin-square-root transformation:
+<i>\sin^{-1}(y/&alpha;)^{1/2}</i>. Typically, <code>alpha</code> will be either 1 (default) or 100.</p>
+</dd>
+<dt><code>"atanh"</code></dt><dd><p>Arctanh transformation:
+<i>\tanh^{-1}(y/&alpha;)</i>. Typically, <code>alpha</code> will be either 1 (default) or 100.</p>
+</dd>
+<dt><code>"bcnPower"</code></dt><dd><p>Box-Cox with negatives allowed, as described for the 
+<code>bcnPower</code> function in the <span class="pkg">car</span> package. It is defined as the Box-Cox
+transformation <i>(z^&alpha; - 1) / &alpha;</i> of the variable <i>z = y + (y^2+&beta;^2)^{1/2}</i>. 
+Note that this requires both parameters and that <code>beta &gt; 0</code>.</p>
+</dd>
+<dt><code>"scale"</code></dt><dd><p>This one is a little different than the others, in that
+<code>alpha</code> and <code>beta</code> are ignored; instead, they are determined by calling 
+<code>scale(y, ...)</code>. The user should give as <code>y</code> the response variable in the
+model to be fitted to its scaled version.</p>
+</dd>
+</dl>
+
+<p>Note that with the <code>"power"</code>, <code>"boxcox"</code>, or <code>"sympower"</code> transformations, 
+the argument <code>beta</code> specifies a location shift. 
+In the <code>"genpower"</code> transformation, <code>beta</code> specifies
+the base of the logarithm &ndash; however, quirkily, the default of <code>beta = 0</code>
+is taken to be the natural logarithm. For example,
+<code>make.tran(0.5, 10)</code> sets up the <i>\log_{10}(y + \frac12)</i>
+transformation. In the <code>"bcnPower"</code> transformation, <code>beta</code>
+must be specified as a positive value.
+</p>
+<p>For purposes of back-transformation, the <span class="samp">sqrt(y) + sqrt(y+1)</span>
+transformation is treated exactly the same way as <span class="samp">2*sqrt(y)</span>, because
+both are regarded as estimates of <i>2&radic;&mu;</i>.
+</p>
+
+
+<h3>Cases where <code>make.tran</code> may not be needed</h3>
+
+<p>For standard transformations with no parameters, we usually don't need to use
+<code>make.tran</code>; just the name of the transformation is all that is needed.
+The functions <code><a href="../../emmeans/help/emmeans.html">emmeans</a></code>, <code><a href="../../emmeans/help/ref_grid.html">ref_grid</a></code>, and related ones
+automatically detect response transformations that are recognized by
+examining the model formula. These are <code>log</code>, <code>log2</code>, <code>log10</code>,
+<code>log1p</code>,
+<code>sqrt</code>, <code>logit</code>, <code>probit</code>, <code>cauchit</code>, <code>cloglog</code>; as
+well as (for a response variable <code>y</code>) <code>asin(sqrt(y))</code>,
+<code>asinh(sqrt(y))</code>, <code>atanh(y)</code>, and <code>sqrt(y) + sqrt(y+1)</code>. 
+In addition, any
+constant multiple of these (e.g., <code>2*sqrt(y)</code>) is auto-detected and
+appropriately scaled (see also the <code>tran.mult</code> argument in
+<code><a href="../../emmeans/help/update.emmGrid.html">update.emmGrid</a></code>).
+</p>
+<p>A few additional transformations may be specified as character strings and
+are auto-detected: <code>"identity"</code>, <code>"1/mu^2"</code>,
+<code>"inverse"</code>, <code>"reciprocal"</code>, <code>"log10"</code>, <code>"log2"</code>,
+<code>"asin.sqrt"</code>, <code>"asinh.sqrt"</code>, and <code>"atanh"</code>.
+</p>
+
+
+<h3>Compound transformations</h3>
+
+<p>A transformation that is a function of another function can be created by
+specifying <code>inner</code> for the other function. For example, the
+transformation <i>1/&radic;{y}</i> can be created either by
+<code>make.tran("inverse", inner = "sqrt")</code> or by <code>make.tran("power",
+-0.5)</code>. In principle, transformations can be compounded to any depth.
+Also, if <code>type</code> is <code>"scale"</code>, <code>y</code> is replaced by 
+<code>inner$linkfun(y)</code>, because that will be the variable that is scaled.
+</p>
+
+
+<h3>Note</h3>
+
+<p>The <code>genlog</code> transformation is technically unneeded, because
+a response transformation of the form <code>log(y + c)</code> is now auto-detected 
+by <code><a href="../../emmeans/help/ref_grid.html">ref_grid</a></code>.
+</p>
+<p>We modify certain <code><a href="../../stats/html/make.link.html">make.link</a></code> results in transformations
+where there is a restriction on valid prediction values, so that reasonable
+inverse predictions are obtained, no matter what. For example, if a
+<code>sqrt</code> transformation was used but a predicted value is negative, the
+inverse transformation is zero rather than the square of the prediction. A
+side effect of this is that it is possible for one or both confidence
+limits, or even a standard error, to be zero.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Fit a model using an oddball transformation:
+bctran &lt;- make.tran("boxcox", 0.368)
+warp.bc &lt;- with(bctran, 
+    lm(linkfun(breaks) ~ wool * tension, data = warpbreaks))
+# Obtain back-transformed LS means:    
+emmeans(warp.bc, ~ tension | wool, type = "response")
+
+### Using a scaled response...
+# Case where it is auto-detected:
+mod &lt;- lm(scale(yield[, 1]) ~ Variety, data = MOats)
+emmeans(mod, "Variety", type = "response")
+
+# Case where scaling is not auto-detected -- and what to do about it:
+copt &lt;- options(contrasts = c("contr.sum", "contr.poly"))
+mod.aov &lt;- aov(scale(yield[, 1]) ~ Variety + Error(Block), data = MOats)
+emm.aov &lt;- suppressWarnings(emmeans(mod.aov, "Variety", type = "response"))
+
+# Scaling was not retrieved, but we can do:
+emm.aov &lt;- update(emm.aov, tran = make.tran("scale", y = MOats$yield[, 1]))
+emmeans(emm.aov, "Variety", type = "response")
+
+### Compound transformations
+# The following amount to the same thing:
+t1 &lt;- make.tran("inverse", inner = "sqrt")
+t2 &lt;- make.tran("power", -0.5)
+
+options(copt)
+
+
+## Not run: 
+### An existing model 'mod' was fitted with a y^(2/3) transformation...
+  ptran = make.tran("power", 2/3)
+  emmeans(mod, "treatment", tran = ptran)
+
+## End(Not run)
+
+pigs.lm &lt;- lm(inverse(conc) ~ source + factor(percent), data = pigs)
+emmeans(pigs.lm, "source", type = "response")
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>emmeans</em> version 2.0.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

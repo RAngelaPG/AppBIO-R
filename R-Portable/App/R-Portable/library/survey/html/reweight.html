@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Reweight (optimise) the weights on frames</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for reweight {survey}"><tr><td>reweight {survey}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Reweight (optimise) the weights on frames
+</h2>
+
+<h3>Description</h3>
+
+<p>Evaluates a set of expressions for different frame weights in a
+dual-frame/multi-frame design, so that an optimal or
+compromise-optimal set of frame weights can be chosen
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+reweight(design, ...)
+## S3 method for class 'dualframe'
+reweight(design, targets=NULL, totals=NULL,
+                             estimator=c("constant","expected"),
+                             theta=NULL, theta_grid=seq(0,1,by=0.05),...)
+## S3 method for class 'dualframe_with_rewt'
+plot(x,y,type="b",...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>design</code></td>
+<td>
+
+<p>dual-frame or multiframe design object
+</p>
+</td></tr>
+<tr valign="top"><td><code>targets, totals</code></td>
+<td>
+<p>A list of quoted expressions estimating the
+variance of a survey estimator (<code>targets</code>), or a list of formulas
+that will be turned into targets for the variances of totals.</p>
+</td></tr>
+<tr valign="top"><td><code>estimator</code></td>
+<td>
+<p>As in <code><a href="../../survey/help/multiframe.html">multiframe</a></code>: <code>"constant"</code> is a
+constant weight for all observations in an overlap between frames,
+<code>"expected"</code> weights by the reciprocal of the expected numbers of
+times a unit is sampled and is not optimisable.</p>
+</td></tr>
+<tr valign="top"><td><code>theta</code></td>
+<td>
+<p>As in <code><a href="../../survey/help/multiframe.html">multiframe</a></code>, a fixed weight for
+observations in frame 1 also sampled in frame 2</p>
+</td></tr>
+<tr valign="top"><td><code>theta_grid</code></td>
+<td>
+<p>Grid for optimising theta over, with <code>estimator="constant"</code></p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>object produced by <code>reweight</code></p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>ignored</p>
+</td></tr>
+<tr valign="top"><td><code>type,...</code></td>
+<td>
+
+<p>in the <code>plot</code> method these are passed to <code><a href="../../graphics/html/matplot.html">matplot</a></code>
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Traditionally, this optimisation has been done with totals, which is a
+good default and more mathematically tractable. However, when
+the point of multiple-frame sampling is to improve precision for a rare
+sub-population, or when you're doing regression modelling, you might
+want to optimise for something else.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class &quot;dualframe_with_rewt&quot;.
+</p>
+<p>The <code>coef</code> method returns the optimal theta for each target.
+The <code>rewt</code> element includes the variances of each target on a grid of
+<code>theta</code> in <code>variances</code>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../survey/help/multiframe.html">multiframe</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data(phoneframes)
+A_in_frames&lt;-cbind(1, DatA$Domain=="ab")
+B_in_frames&lt;-cbind(DatB$Domain=="ba",1)
+
+Bdes_pps&lt;-svydesign(id=~1, fpc=~ProbB, data=DatB,pps=ppsmat(PiklB))
+Ades_pps &lt;-svydesign(id=~1, fpc=~ProbA,data=DatA,pps=ppsmat(PiklA))
+
+## Not very good weighting
+mf_pps&lt;-multiframe(list(Ades_pps,Bdes_pps),list(A_in_frames,B_in_frames),theta=0.5) 
+svytotal(~Lei+Feed+Tax+Clo,mf_pps, na.rm=TRUE)
+
+## try to optimise
+mf_opt&lt;-reweight(mf_pps, totals=list(~Lei, ~Feed,~Tax,~Clo))
+coef(mf_opt)
+plot(mf_opt)
+
+## a good compromise is 0.80 for everything except Tax
+## and it's still pretty good there
+## (Tax will be biased because it's missing for landline-only)
+mf_pps_opt&lt;-reweight(mf_opt,theta=0.80) 
+svytotal(~Lei+Feed+Tax+Clo,mf_pps_opt, na.rm=TRUE)
+
+
+## Targets other than totals
+mf_reg&lt;-reweight(mf_pps,
+	targets=list(quote(vcov(svyglm(Lei~Feed+Clo, design=.DESIGN))[1,1]),
+	             quote(vcov(svytotal(~Lei,.DESIGN))))
+	)
+plot(mf_reg,type="l")
+legend("topright",bty="n",lty=1:2,col=1:2, legend=c("regression","total"))
+
+## Zooming in on optimality for a particular variable (for compatibility)
+mf_opt1&lt;-reweight(mf_pps, totals=list(~Feed),theta_grid=seq(0.7,0.9,length=100))
+coef(mf_opt1) # Frames2::Hartley gives 0.802776
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>survey</em> version 4.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

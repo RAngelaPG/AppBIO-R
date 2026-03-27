@@ -1,0 +1,250 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Generates a molecular matrix M for hypothetical crosses based...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for synthetic.cross {ASRgenomics}"><tr><td>synthetic.cross {ASRgenomics}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Generates a molecular matrix M for hypothetical crosses based on the
+genomic information of the parents</h2>
+
+<h3>Description</h3>
+
+<p>This function generates (or imputes) a molecular matrix for offspring
+from hypothetical crosses based on the genomic information from the parents.
+This is a common procedure in species such as maize, where only the parents
+(inbred lines) are genotyped, and this information is used to generate/impute
+the genotypic data of each of the hybrid offspring.
+This function can be also used for bulked DNA analyses, in order to obtain an
+bulked molecular matrix for full-sib individuals were only parents are genotyped.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+synthetic.cross(
+  M = NULL,
+  ped = NULL,
+  indiv = NULL,
+  mother = NULL,
+  father = NULL,
+  heterozygote.action = c("useNA", "exact", "fail", "expected"),
+  na.action = c("useNA", "expected"),
+  message = TRUE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>M</code></td>
+<td>
+<p>A matrix with marker data of full form (<i>n \times p</i>), with <i>n</i> individuals
+(mothers and fathers) and <i>p</i> markers.
+Individual and marker names are assigned to <code>rownames</code> and <code>colnames</code>, respectively.
+Data in matrix is coded as 0, 1, 2 (integer or numeric) (default = <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>ped</code></td>
+<td>
+<p>A data frame with three columns containing only the pedigree of the hypothetical offspring.
+(not pedigree of parents)
+It should include the three columns for individual, mother and father (default = <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>indiv</code></td>
+<td>
+<p>A character indicating the column in <code>ped</code> data frame containing the identification
+of the offspring (default = <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>mother</code></td>
+<td>
+<p>A character indicating the column in <code>ped</code> data frame containing the identification
+of the mother (default = <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>father</code></td>
+<td>
+<p>A character indicating the column in <code>ped</code> data frame containing the identification
+of the father (default = <code>NULL</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>heterozygote.action</code></td>
+<td>
+<p>Indicates the action to take when heterozygotes are found in a marker.
+Options are: <code>"useNA"</code>, <code>"exact"</code>, <code>"fail"</code>, and <code>"expected"</code>.
+See details for more information (default = <code>"useNA"</code>)</p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+<p>Indicates the action to take when missing values are found in a marker.
+Options are: <code>"useNA"</code> and <code>"expected"</code>.
+See details for more information (default = <code>"useNA"</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>message</code></td>
+<td>
+<p>If <code>TRUE</code> diagnostic messages are printed on screen (default = <code>TRUE</code>).</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>For double-haploids, almost the totality of the markers (except for genotyping errors)
+will be homozygotic reads. But in many other cases (including recombinant inbred lines)
+there will be a proportion of heterozygotic reads. In these case, it is
+very difficult to infer (impute) the exact genotype of a given offspring individual.
+For example, if parents are 0 (AA) and 1 (AC) then offsprings will differ given this
+Mendelian sampling. However, different strategies exist to determine the
+expected value for that specific cross (if required), which are detailed below
+using the option <code>heterozygote.action</code>.
+</p>
+
+<ul>
+<li><p>If <code>heterozygote.action =  "useNA"</code>,
+the generated offspring will have, for the heterozygote read, an <code>NA</code>,
+and no markers are removed.
+Hence, no attempt will be done to impute/estimate this value.
+
+</p>
+</li>
+<li><p>If <code>heterozygote.action = "exact"</code>,
+any marker containing one or more heterozygote reads will be removed.
+Hence, inconsistent markers are fully removed from the <i>\boldsymbol{M}</i> matrix.
+
+</p>
+</li>
+<li><p>If <code>heterozygote.action = "fail"</code>,
+function stops and informs of the presence of heterozygote reads.
+
+</p>
+</li>
+<li><p>If <code>heterozygote.action = "expected"</code>,
+then an algorithm is implemented, on the heterozygote read to determine its
+expected value. For example, if parents are 0 and 1, then the expected value
+(with equal probability) is 0.5. For a cross between two heterozygotes,
+the expected value is: <i>0(1/4) + 1(1/2) + 2(1/4) = 1</i>. And for a cross
+between 1 and 2, the expected value is: <i>1(1/2) + 2(1/2) = 1.5</i>
+</p>
+</li></ul>
+
+<p>Missing value require special treatment, and an imputation strategy is detailed
+below as indicated using the option <code>na.action</code>.
+</p>
+
+<ul>
+<li><p>If <code>na.action = "useNA"</code>, if at least one of the parental reads
+is missing values for a given marker then it will be assigned as missing for
+the hypothetical cross. Hence, no attempt will be done to impute/estimate
+this value.
+</p>
+</li>
+<li><p>If <code>na.action = "expected"</code>, then an algorithm is implemented that
+will impute the expected read of the cross if the genotype of <strong>one of
+the parents is missing</strong> (<em>e.g.</em>, cross between 0 and NA). Calculations
+are based on parental allelic frequencies <i>p</i> and <i>q</i> for the given
+marker. The expressions for expected values are detailed below.
+</p>
+
+<ul>
+<li><p>If the genotype of the non-missing parent read is 0.
+</p>
+<p><i>q^2</i> (probability that the missing parent is 0) x 0 (expected value of the offspring from a 0 x 0 cross: <i>0(1/1)</i>) +
+</p>
+<p><i>2pq</i> (probability that the missing parent is 1) x 0.5 (expected offspring from a 0 x 1 cross: <i>0(1/2) + 1(1/2)</i>) +
+</p>
+<p><i>q^2</i> (probability that the missing parent is 2) x 1 (expected offspring from a 0 x 2 cross: <i>1(1/1)</i>)
+</p>
+</li>
+<li><p>If the genotype of the non-missing parent read is 1.
+</p>
+<p><i>q^2</i> (probability that the missing parent is 0) x 0.5 (offspring: <i>0(1/2) + 1(1/2)</i>) +
+</p>
+<p><i>2pq</i> (probability that the missing parent is 1) x 1 (offspring: <i>0(1/4) + 1(1/2) + 2(1/4)</i>) +
+</p>
+<p><i>q^2</i> (probability that the missing parent is 2) x 1.5 (offspring: <i>1(1/2) + 2(1/2)</i>)
+</p>
+</li>
+<li><p>If the genotype of the non-missing parent read is 2.
+</p>
+<p><i>q^2</i> (probability that the missing parent is 0) x 1 (offspring: <i>1(1/1)</i>) +
+</p>
+<p><i>2pq</i> (probability that the missing parent is 1) x 1.5 (offspring: <i>1(1/2) + 2(1/2)</i>) +
+</p>
+<p><i>q^2</i> (probability that the missing parent is 2) x 2 (offspring: <i>2(1/1)</i>)
+</p>
+</li></ul>
+
+<p>Similarly, the calculation of the expected read of a cross when <strong>both parents are missing</strong> is
+also based on population allelic frequencies for the given marker.
+The expressions for expected values are detailed below.
+</p>
+<p>              <i>q^2 \times q^2</i> (probability that both parents are 0) x 0 (expected value of the offspring from a 0 x 0 cross: 0(1/1)) +
+</p>
+<p>              <i>2 \times (q^2 \times 2pq)</i> (probability that the first parent is 0 and the second is 1; this requires
+the multiplication by 2 because it is also possible that the first parent is 1 and the second is 0)
+x 0.5 (offspring: <i>0(1/2) + 1(1/2)</i>) +
+</p>
+<p>              <i>2 \times (q^2 \times p^2)</i> (this could be 0 x 2 or 2 x 0) x 1 (offspring: <i>1(1/1)</i>) +
+</p>
+<p>              <i>2pq \times 2pq</i> (both parents are 1) x 1 (offspring: <i>0(1/4) + 1(1/2) + 2(1/4)</i>) +
+</p>
+<p>              <i>2 \times (2pq \times q2)</i> (this could be 1 x 2 or 2 x 1) x 1.5 (offspring: <i>1(1/2) + 2(1/2)</i>) +
+</p>
+<p>              <i>p^2 \times p^2</i> (both parents are 2) x 2 (offspring: <i>2(1/1)</i>)
+</p>
+<p>Note that the use of <code>na.action = "expected"</code> is recommended when
+a large number of offspring will conform the hybrid cross (such as
+with bulked DNA analyses) for family groups with reasonable number of individuals.
+</p>
+<p><strong>Warning</strong>. If <code>"expected"</code> is used for <code>heterozygote.action</code> or <code>na.action</code>,
+direct transformation of the molecular data to other codings (<em>e.g.</em>,
+dominance matrix coded as <code>c(0,1,0)</code>) is not recommended.
+</p>
+</li></ul>
+
+
+
+<h3>Value</h3>
+
+<p>A molecular matrix <i>\boldsymbol{M}</i> containing the genotypes generated/imputed for the
+hypothetical cross.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Create dummy pedigree (using first 10 as parents).
+ped &lt;- data.frame(
+ male = rownames(geno.apple)[1:5],
+ female = rownames(geno.apple)[6:10])
+ped$offs &lt;- paste(ped$male, ped$female, sep = "_")
+ped
+
+# Select portion of M for parents.
+Mp &lt;- geno.apple[c(ped$male, ped$female), 1:15]
+
+# Get genotype of crosses removing markers with heterozygotes.
+synthetic.cross(
+ M = Mp, ped = ped,
+ indiv = "offs", mother = "female", father = "male",
+ heterozygote.action = "exact",
+ na.action = "useNA")
+
+# Request the synthetic cross to be NA in the respective samples.
+synthetic.cross(
+ M = Mp, ped = ped,
+ indiv = "offs", mother = "female", father = "male",
+ heterozygote.action = "useNA",
+ na.action = "useNA")
+
+# Get genotype of crosses and use expected values.
+synthetic.cross(
+ M = Mp, ped = ped,
+ indiv = "offs", mother = "female", father = "male",
+ heterozygote.action = "expected", na.action = "expected")
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ASRgenomics</em> version 1.1.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

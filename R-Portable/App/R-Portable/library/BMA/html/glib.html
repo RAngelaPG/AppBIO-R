@@ -1,0 +1,391 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Model uncertainty in generalized linear models using Bayes...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for glib {BMA}"><tr><td>glib {BMA}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Model uncertainty in generalized linear models using Bayes factors</h2>
+
+<h3>Description</h3>
+
+<p>Function to evaluate Bayes factors and account for model uncertainty in generalized linear models. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+glib(x, ...)
+
+## S3 method for class 'matrix'
+glib(x, y, n = rep(1, nrow(x)), 
+     error = "poisson", link = "log", scale = 1, 
+     models = NULL, phi = c(1, 1.65, 5), psi = 1, 
+     nu = 0, pmw = rep(1, nrow(models)), glimest = TRUE, 
+     glimvar = FALSE, output.priorvar = FALSE, 
+     post.bymodel = TRUE, output.postvar = FALSE, 
+     priormean = NULL, priorvar = NULL, 
+     nbest = 150, call = NULL, ...)
+
+## S3 method for class 'data.frame'
+glib(x, y, n = rep(1, nrow(x)), 
+     error = "poisson", link = "log", scale = 1, 
+     models = NULL,  phi = c(1, 1.65, 5), 
+     psi = 1, nu = 0, pmw = rep(1, nrow(models)), 
+     glimest = TRUE, glimvar = FALSE, output.priorvar = FALSE, 
+     post.bymodel = TRUE, output.postvar = FALSE, 
+     priormean = NULL, priorvar = NULL, 
+     nbest = 150, call = NULL, ...)
+
+## S3 method for class 'bic.glm'
+glib(x, scale = 1, phi = 1, psi = 1, nu = 0, 
+     glimest = TRUE, glimvar = FALSE, output.priorvar = FALSE, 
+     post.bymodel = TRUE, output.postvar = FALSE, 
+     priormean = NULL, priorvar = NULL, call = NULL, ...)
+
+as.bic.glm(g, ...)
+
+## S3 method for class 'glib'
+as.bic.glm( g, index.phi=1, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p> an <code>n</code> x <code>p</code> matrix of independent variables  </p>
+</td></tr>
+<tr valign="top"><td><code>g</code></td>
+<td>
+<p> an object of type <code>bic.glm</code></p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p> a vector of values for the dependent variable </p>
+</td></tr>
+<tr valign="top"><td><code>n</code></td>
+<td>
+<p> an optional vector of weights to be used. </p>
+</td></tr>
+<tr valign="top"><td><code>error</code></td>
+<td>
+<p>a string indicating the error family to use. Currently &quot;gaussian&quot;, &quot;gamma&quot;, &quot;inverse gaussian&quot;, &quot;binomial&quot; and &quot;poisson&quot; are implemented. </p>
+</td></tr>
+<tr valign="top"><td><code>link</code></td>
+<td>
+<p>a string indicating the link to use. Currently &quot;identity&quot;, &quot;log&quot;, &quot;logit&quot;, &quot;probit&quot;, &quot;sqrt&quot;, &quot;inverse&quot; and &quot;loglog&quot; are implemented.</p>
+</td></tr>
+<tr valign="top"><td><code>scale</code></td>
+<td>
+<p>the scale factor for the model. May be either a numeric constant or a string specifying the estimation, either &quot;deviance&quot; or &quot;pearson&quot;. The default value is 1 for &quot;binomial&quot; and &quot;poisson&quot; error structures, and &quot;pearson&quot; for the others.</p>
+</td></tr>
+<tr valign="top"><td><code>models</code></td>
+<td>
+<p> an optional matrix representing the models to be averaged over. 
+<code>models</code> is a <code>n</code> x <code>p</code> matrix in which each row represents a model. 
+The corresponding entry in the row is 1 if that variable is included in the model; 0 if not. 
+The default value is <code>NULL</code> which will cause <code>glib</code> to call <code>bic.glm</code> with the parameter <code>occam.window</code> set to <code>FALSE</code> to obtain the models to average over.</p>
+</td></tr>
+<tr valign="top"><td><code>phi</code></td>
+<td>
+<p>a vector of phi values. Default: <code>1</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>psi</code></td>
+<td>
+<p>a scalar prior parameter. Default: <code>1</code>. </p>
+</td></tr>
+<tr valign="top"><td><code>nu</code></td>
+<td>
+<p>a scalar prior parameter. Default: 0 </p>
+</td></tr>
+<tr valign="top"><td><code>pmw</code></td>
+<td>
+<p>a vector of prior model weights. These must be positive, but do not have to sum to one. 
+The prior model probabilities are given by  <code>pmw/sum(pmw)</code>. 
+The default is a vector of 1's of length <code>nrow(models)</code></p>
+</td></tr>
+<tr valign="top"><td><code>glimest</code></td>
+<td>
+<p> a logical value specifying whether to output estimates and standard errors for each model. </p>
+</td></tr>
+<tr valign="top"><td><code>glimvar</code></td>
+<td>
+<p> a logical value specifying whether glim variance matrices are output for each model.</p>
+</td></tr>
+<tr valign="top"><td><code>output.priorvar</code></td>
+<td>
+<p> a logical value specifying whether the prior variance is output for each model and value of phi combination.</p>
+</td></tr>
+<tr valign="top"><td><code>post.bymodel</code></td>
+<td>
+<p>a logical value specifying whether to output the posterior mean and sd for each model and value of phi combination.</p>
+</td></tr>
+<tr valign="top"><td><code>output.postvar</code></td>
+<td>
+<p>a logical value specifying whether to output the posterior variance matrix for each model and value of phi combination.</p>
+</td></tr>
+<tr valign="top"><td><code>priormean</code></td>
+<td>
+<p>an optional vector of length p+1 containing a user specified prior mean on the variables (including the intercept),
+where p=number of independent variables. </p>
+</td></tr>
+<tr valign="top"><td><code>priorvar</code></td>
+<td>
+<p>an optional matrix containing a user specified prior variance matrix, a (p+1) x (p+1) matrix. 
+Default has the prior variance estimated as in Raftery(1996). </p>
+</td></tr>
+<tr valign="top"><td><code>nbest</code></td>
+<td>
+<p> an integer giving the number of best models of each size to be returned by bic.glm if <code>models == NULL</code></p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>the call to the function</p>
+</td></tr>
+<tr valign="top"><td><code>index.phi</code></td>
+<td>
+<p>an index to the value of phi to use when converting a <code>glib</code> object to a <code>bic.glm</code> object</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>unused</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Function to evaluate Bayes factors and account for model
+uncertainty in generalized linear models. 
+This also calculates posterior distributions from a set of reference
+proper priors. 
+<code>as.bic.glm</code> creates a 'bic.glm' object from a 'glib' object.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>glib</code> returns an object of type <code>glib</code>, which is a list
+containing the following items:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>inputs </code></td>
+<td>
+<p>a list echoing the inputs
+(x,y,n,error,link,models,phi,psi,nu)</p>
+</td></tr>
+<tr valign="top"><td><code>bf </code></td>
+<td>
+<p>a list containing the model comparison results:
+</p>
+
+<dl>
+<dt>twologB10</dt><dd><p>an <code>nmodel</code> x <code>nphi</code> matrix whose
+<code>[i,j]</code> element is 2logB10 for model i against the null model
+with <code>phi=phi[j]</code>. A Laplace approximation (one-step Newton)
+is used. </p>
+</dd>
+<dt>postprob</dt><dd><p> a matrix containing the posterior probabilities
+of the models for each value of phi. </p>
+</dd>
+<dt>deviance</dt><dd><p> a vector containing the deviances for the models. </p>
+</dd>
+<dt>chi2</dt><dd><p> a vector containing the (DV0-DV1)/scale for the models </p>
+</dd>
+<dt>npar</dt><dd><p> a vector containing the number of parameters estimated
+for each model. </p>
+</dd>
+<dt>scale</dt><dd><p> the estimated or assigned scale used </p>
+</dd>
+</dl>
+</td></tr>
+<tr valign="top"><td><code>posterior </code></td>
+<td>
+<p>a list containing the Bayesian model mixing results:
+</p>
+
+<dl>
+<dt>prob0</dt><dd><p> an <code>ncol(x)</code> x <code>nphi</code> matrix whose [k,j]
+element is the posterior probability that the
+parameter corresponding to the k-th column of x is zero,
+for the j-th value of phi. </p>
+</dd>
+<dt>mean</dt><dd><p> a <code>ncol(x)</code> x <code>nphi</code> matrix whose [k,j]
+element is the posterior mean of the parameter corresponding to
+the k-th column of x, for the j-th value of phi.</p>
+</dd>
+<dt>sd</dt><dd><p> as for mean, but for the posterior standard deviation.
+NOTE: Both mean and sd are CONDITIONAL on the parameter being
+non-zero. They do not include the intercept. </p>
+</dd>
+</dl>
+</td></tr>
+<tr valign="top"><td><code>glim.est </code></td>
+<td>
+<p>a list containing the GLIM estimates for the different
+models:
+</p>
+
+<dl>
+<dt>coef</dt><dd><p>An nmodel-list, each of whose elements is the coef
+value from &quot;glim&quot; for one of the models.</p>
+</dd>
+<dt>se</dt><dd><p> as coef, but contains standard errors.</p>
+</dd>
+<dt>var</dt><dd><p> as coef, but contains variance matrices of the
+estimates.</p>
+</dd>
+</dl>
+</td></tr>
+<tr valign="top"><td><code>posterior.bymodel </code></td>
+<td>
+<p>a list containing model-specific posterior
+means and sds:
+</p>
+
+<dl>
+<dt>mean</dt><dd><p>a list with <code>nmodel</code> elements, whose <code>i</code>th element
+is a <code>npar[i]xnphi</code> matrix, containing the posterior means of
+the npar[i] parameters of model <code>i</code>,  for each value of phi.</p>
+</dd>
+<dt>sd</dt><dd><p> as for mean, but for posterior standard deviations.</p>
+</dd>
+<dt>var</dt><dd><p> a list with <code>nmodel</code> elements, whose <code>i</code>th element
+is a <code>npar[i]</code> by <code>npar[i]</code> by <code>nphi</code> array,
+containing the posterior variance matrix of the parameters of
+model i for each value of phi.</p>
+</dd>
+</dl>
+</td></tr>  <tr valign="top"><td><code>prior </code></td>
+<td>
+<p>a list containing the prior distributions:
+</p>
+
+<dl>
+<dt>mean</dt><dd><p> prior mean for the biggest model
+(this doesn't depend on phi)</p>
+</dd>
+<dt>var</dt><dd><p> similar to corresponding member of posterior.bymodel.</p>
+</dd>
+</dl>
+</td></tr>
+<tr valign="top"><td><code>models </code></td>
+<td>
+<p> an array containing the models used.</p>
+</td></tr>
+<tr valign="top"><td><code>glm.out </code></td>
+<td>
+<p>an object of type 'bic.glm' containing the results of
+any call to <code>bic.glm</code> </p>
+</td></tr>
+<tr valign="top"><td><code>call </code></td>
+<td>
+<p>the call to the function</p>
+</td></tr>
+</table>
+
+
+<h3>Note</h3>
+
+<p>The outputs controlled by glimvar, output.priorvar and output.postvar can take up a lot of space, 
+which is why these control parameters are F by default. </p>
+
+
+<h3>Author(s)</h3>
+
+<p> Original Splus code developed by Adrian Raftery <a href="mailto:raftery@uw.edu">raftery@uw.edu</a> and revised by Chris T. Volinsky. Translation to R by Ian S. Painter. </p>
+
+
+<h3>References</h3>
+
+<p> Raftery, A.E. (1988). Approximate Bayes factors for generalized linear  models. Technical Report no. 121, Department of Statistics, University of Washington. 
+</p>
+<p>Raftery, Adrian E. (1995). Bayesian model selection in social research (with Discussion). Sociological Methodology 1995 (Peter V. Marsden, ed.), pp. 111-196, Cambridge, Mass.: Blackwells. 
+</p>
+<p>Raftery, A.E. (1996). Approximate Bayes factors and accounting for model uncertainty in generalized linear models. Biometrika (83: 251-266). 
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../BMA/help/bic.glm.html">bic.glm</a></code>, <code><a href="../../BMA/help/summary.glib.html">summary.glib</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## Not run: 
+### Finney data
+data(vaso)
+x&lt;- vaso[,1:2]
+y&lt;- vaso[,3]
+n&lt;- rep(1,times=length(y))
+
+finney.models&lt;- rbind(
+    c(1, 0),
+    c(0, 1),
+    c(1, 1))
+
+finney.glib &lt;- glib (x,y,n, error="binomial", link="logit", 
+                     models=finney.models, glimvar=TRUE, 
+                     output.priorvar=TRUE, output.postvar=TRUE)
+summary(finney.glib)
+
+finney.bic.glm&lt;- as.bic.glm(finney.glib)
+plot(finney.bic.glm,mfrow=c(2,1))
+
+## End(Not run)
+
+### Yates (teeth) data. 
+
+x&lt;- rbind(
+    c(0, 0, 0),
+    c(0, 1, 0),
+    c(1, 0, 0),
+    c(1, 1, 1))
+
+y&lt;-c(4, 16, 1, 21)
+n&lt;-c(1,1,1,1)
+
+models&lt;- rbind(
+    c(1, 1, 0),
+    c(1, 1, 1))
+
+glib.yates &lt;- glib ( x, y, n, models=models, glimvar=TRUE,
+                     output.priorvar=TRUE, output.postvar=TRUE) 
+summary(glib.yates)
+
+## Not run: 
+### logistic regression with no models specified
+library("MASS")
+data(birthwt)
+y&lt;- birthwt$lo
+x&lt;- data.frame(birthwt[,-1])
+x$race&lt;- as.factor(x$race)
+x$ht&lt;- (x$ht&gt;=1)+0
+x&lt;- x[,-9]
+x$smoke &lt;- as.factor(x$smoke)
+x$ptl&lt;- as.factor(x$ptl)
+x$ht &lt;- as.factor(x$ht)
+x$ui &lt;- as.factor(x$ui)
+
+glib.birthwt&lt;- glib(x,y, error="binomial", link = "logit")
+summary(glib.birthwt)
+
+glm.birthwt&lt;- as.bic.glm(glib.birthwt)
+
+imageplot.bma(glm.birthwt)
+plot(glm.birthwt)
+
+## End(Not run)
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>BMA</em> version 3.18.21 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

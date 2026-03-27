@@ -1,0 +1,124 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Genotypic and Phenotypic data for a potato polyploid...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for DT_polyploid {enhancer}"><tr><td>DT_polyploid {enhancer}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Genotypic and Phenotypic data for a potato polyploid population
+</h2>
+
+<h3>Description</h3>
+
+<p>This dataset contains phenotpic data for 18 traits measured in 187 individuals from a potato diversity panel. In addition contains genotypic data for 221 individuals genotyped with 3522 SNP markers. Please if using this data for your own research make sure you cite Rosyara's (2015) publication (see References).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>data("DT_polyploid")</pre>
+
+
+<h3>Format</h3>
+
+<p>The format is:
+chr &quot;DT_polyploid&quot;
+</p>
+
+
+<h3>Source</h3>
+
+<p>This data was extracted from Rosyara (2016).
+</p>
+
+
+<h3>References</h3>
+
+<p>If using this data for your own research please cite:
+</p>
+<p>Rosyara Umesh R., Walter S. De Jong, David S. Douches, Jeffrey B. Endelman. Software for genome-wide association studies in autopolyploids and its application to potato. The Plant Genome 2015.
+</p>
+<p>Other references:
+</p>
+<p>Covarrubias-Pazaran G (2016) Genome assisted prediction of quantitative traits using the R package sommer. PLoS ONE 11(6): doi:10.1371/journal.pone.0156744 
+</p>
+<p>Giovanny Covarrubias-Pazaran (2024).  lme4breeding: enabling genetic evaluation in the age of genomic data. To be submitted to Bioinformatics.
+</p>
+<p>Douglas Bates, Martin Maechler, Ben Bolker, Steve Walker (2015). Fitting Linear Mixed-Effects Models Using lme4. Journal of Statistical Software, 67(1), 1-48.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+data(DT_polyploid)
+DT &lt;- DT_polyploid
+GT &lt;- GT_polyploid
+MP &lt;- MP_polyploid
+## convert markers to numeric format
+numo &lt;- atcg1234(data=GT[,1:100], ploidy=4);
+numo$M[1:5,1:5];
+numo$ref.allele[,1:5]
+
+## plants with both genotypes and phenotypes
+common &lt;- intersect(DT$Name,rownames(numo$M))
+
+## get the markers and phenotypes for such inds
+marks &lt;- numo$M[common,]; marks[1:5,1:5]
+DT2 &lt;- DT[match(common,DT$Name),];
+DT2 &lt;- as.data.frame(DT2)
+DT2[1:5,]
+
+## Additive relationship matrix, specify ploidy
+A &lt;- A.matr(marks)
+
+
+
+##############################################
+###############  sommer.     #################
+##############################################
+if(requireNamespace("sommer")){
+library(sommer)
+A &lt;- A.mat(marks)
+D &lt;- D.mat(marks)
+###=========================================####
+### run as mixed model
+###=========================================####
+ans &lt;- mmes(tuber_shape~1,
+            random=~vsm(ism(Name), Gu=A),
+            data=DT2)
+summary(ans)$varcomp
+# if using mmes=TRUE provide Gu as inverse
+Ai &lt;- solve(A + diag(1e-4,ncol(A),ncol(A)))
+Ai &lt;- as(as(as( Ai,  "dMatrix"), "generalMatrix"), "CsparseMatrix")
+attr(Ai, 'inverse')=TRUE
+
+}
+
+##############################################
+############### lme4breeding #################
+##############################################
+if(requireNamespace("lme4breeding")){
+library(lme4breeding)
+## run as mixed model
+A &lt;- A + diag(1e-4,ncol(A),ncol(A))
+ans &lt;- lmeb(tuber_shape~ (1|Name),
+                relmat = list(Name=A),
+                data=DT2)
+vc &lt;- VarCorr(ans); print(vc,comp=c("Variance"))
+sigma(ans)^2 # error variance
+
+BLUP &lt;- ranef(ans, condVar=TRUE)
+condVAR &lt;- lapply(BLUP, function(x){attr(x, which="postVar")}) # take sqrt() for SEs
+
+}
+
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>enhancer</em> version 1.1.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

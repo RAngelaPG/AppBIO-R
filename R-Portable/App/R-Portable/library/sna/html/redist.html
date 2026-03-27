@@ -1,0 +1,143 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Find a Matrix of Distances Between Positions Based on Regular...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for redist {sna}"><tr><td>redist {sna}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Find a Matrix of Distances Between Positions Based on Regular Equivalence
+</h2>
+
+<h3>Description</h3>
+
+<p><code>redist</code> uses the graphs indicated by <code>g</code> in <code>dat</code> to assess the extent to which each vertex is regularly equivalent; <code>method</code> determines the measure of approximate equivalence which is used (currently, only CATREGE).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+redist(dat, g = NULL, method = c("catrege"), mode = "digraph", 
+    diag = FALSE, seed.partition = NULL, code.diss = TRUE, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>dat</code></td>
+<td>
+
+<p>a graph or set thereof.
+</p>
+</td></tr>
+<tr valign="top"><td><code>g</code></td>
+<td>
+
+<p>a vector indicating which elements of <code>dat</code> should be examined (by default, all are used).
+</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+
+<p>method to use when assessing regular equivalence (currently, only <code>"catrege"</code>).
+</p>
+</td></tr>
+<tr valign="top"><td><code>mode</code></td>
+<td>
+
+<p><code>"digraph"</code> for directed data, otherwise <code>"graph"</code>. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>diag</code></td>
+<td>
+
+<p>logical; should diagonal entries (loops) should be treated as meaningful data?
+</p>
+</td></tr>
+<tr valign="top"><td><code>seed.partition</code></td>
+<td>
+
+<p>optionally, an initial equivalence partition to &ldquo;seed&rdquo; the CATREGE algorithm.
+</p>
+</td></tr>
+<tr valign="top"><td><code>code.diss</code></td>
+<td>
+
+<p>logical; return as dissimilarities (rather than similarities)?
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>additional parameters (currently ignored).
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>redist</code> provides a basic tool for assessing the (approximate) regular equivalence of actors.  Two vertices <i>i</i> and <i>j</i> are said to be regularly equivalent with respect to role assignment <code>r</code> if <i>{r(u): u in N^+(i)} = {r(u): u in N^+(j)}</i> and <i>{r(u): u in N^-(i)} = {r(u): u in N^-(j)}</i>, where <i>N^+</i> and <i>N^-</i> denote out- and in-neighborhoods (respectively).  RE similarity/difference scores are computed by <code>method</code>, currently Borgatti and Everett's CATREGE algorithm (which is based on the multiplex maximal regular equivalence on <i>G</i> and its transpose).  The &ldquo;distance&rdquo; between positions in this case is the inverse of the number of iterative refinements of the initial equivalence (i.e., role) structure required to allocate the positions to regularly equivalent roles (with 0 indicating positions which ultimately belong in the same role).  By default, the initial equivalence structure is one in which all vertices are treated as occupying the same role; the <code>seed.partition</code> option can be used to impose alternative constraints.  From this initial structure, vertices within the same role having non-identical mixes of neighbor types are re-allocated to different roles (where &ldquo;neighbor type&rdquo; is initially due to the pattern of (possibly valued) in- and out-ties, cross-classified by current alter type).  This procedure is then iterated until no further division of roles is necessary to satisfy the regularity condition.
+</p>
+<p>Once the similarities/differences are calculated, the results can be used with a clustering routine (such as <code><a href="../../sna/help/equiv.clust.html">equiv.clust</a></code>) or an MDS (such as <code><a href="../../stats/html/cmdscale.html">cmdscale</a></code>) to identify the underlying role structure.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A matrix of similarity/difference scores.
+</p>
+
+
+<h3>Note</h3>
+
+<p>The maximal regular equivalence is often very uninteresting (i.e., degenerate) for unvalued, undirected graphs.  An exogenous constraint (e.g., via the <code>seed.partition</code>) may be required to uncover a more useful refinement of the unconstrained maximal equivalence.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Carter T. Butts <a href="mailto:buttsc@uci.edu">buttsc@uci.edu</a>
+</p>
+
+
+<h3>References</h3>
+
+<p>Borgatti, S.P. and Everett, M.G.  (1993).  &ldquo;Two Algorithms for Computing Regular Equivalence.&rdquo;  <em>Social Networks</em>, 15, 361-376.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../sna/help/sedist.html">sedist</a></code>, <code><a href="../../sna/help/equiv.clust.html">equiv.clust</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+#Create a random graph with _some_ edge structure
+g.p&lt;-sapply(runif(20,0,1),rep,20)  #Create a matrix of edge 
+                                   #probabilities
+g&lt;-rgraph(20,tprob=g.p)            #Draw from a Bernoulli graph 
+                                   #distribution
+
+#Get RE distances
+g.re&lt;-redist(g)
+
+#Plot a metric MDS of vertex positions in two dimensions
+plot(cmdscale(as.dist(g.re)))
+
+#What if there were already something known to be different about
+#the first five vertices?
+sp&lt;-rep(1:2,times=c(5,15))            #Create "seed" partition
+g.spre&lt;-redist(g,seed.partition=sp)   #Get new RE distances
+g.spre
+plot.sociomatrix(g.spre)              #Note the blocking! 
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sna</em> version 2.8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

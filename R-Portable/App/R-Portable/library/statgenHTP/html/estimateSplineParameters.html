@@ -1,0 +1,201 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Extract estimates from fitted splines.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for estimateSplineParameters {statgenHTP}"><tr><td>estimateSplineParameters {statgenHTP}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Extract estimates from fitted splines.</h2>
+
+<h3>Description</h3>
+
+<p>Function for extracting parameter estimates from fitted splines on a
+specified interval.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+estimateSplineParameters(
+  x,
+  estimate = c("predictions", "derivatives", "derivatives2"),
+  what = c("min", "max", "mean", "AUC", "p"),
+  AUCScale = c("min", "hour", "day"),
+  timeMin = NULL,
+  timeMax = NULL,
+  genotypes = NULL,
+  plotIds = NULL,
+  fitLevel = c("geno", "plot", "genoDev", "plotDev")
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>An object of class HTPSpline, the output of the
+<code><a href="../../statgenHTP/help/fitSpline.html">fitSpline</a></code> function, or class splineHDm, the output of the
+<code><a href="../../statgenHTP/help/fitSplineHDM.html">fitSplineHDM</a></code> function</p>
+</td></tr>
+<tr valign="top"><td><code>estimate</code></td>
+<td>
+<p>The P-Spline component for which the estimate should be
+extracted, the predictions, the first derivatives or the second derivatives
+(&quot;derivatives2&quot;)</p>
+</td></tr>
+<tr valign="top"><td><code>what</code></td>
+<td>
+<p>The types of estimate that should be extracted. Either minimum
+(&quot;min&quot;), maximum (&quot;max&quot;), mean, area under the curve (&quot;AUC&quot;) or a percentile.
+Percentiles should be given as p + percentile. E.g. for the 10th percentile
+specify what = &quot;p10&quot;. Multiple types of estimate can be extracted at once.</p>
+</td></tr>
+<tr valign="top"><td><code>AUCScale</code></td>
+<td>
+<p>The area under the curve is dependent on the scale used on
+the x-axis. By default the area is computed assuming a scale in minutes. This
+can be changed to either hours or days.</p>
+</td></tr>
+<tr valign="top"><td><code>timeMin</code></td>
+<td>
+<p>The lower bound of the time interval from which the
+estimates should be extracted. If <code>NULL</code> the smallest time value for
+which the splines were fitted is used. <code>timeMin</code> should be given as a
+numerical value that corresponds to the time scale used for fitting the
+splines. See the examples.</p>
+</td></tr>
+<tr valign="top"><td><code>timeMax</code></td>
+<td>
+<p>The upper bound of the time interval from which the
+estimates should be extracted. If <code>NULL</code> the largest time value for
+which the splines were fitted is used. <code>timeMin</code> should be given as a
+numerical value that corresponds to the time scale used for fitting the
+splines. See the examples.</p>
+</td></tr>
+<tr valign="top"><td><code>genotypes</code></td>
+<td>
+<p>A character vector indicating the genotypes for which
+estimates should be extracted. If <code>NULL</code>, estimates will be extracted
+for all genotypes for which splines where fitted.</p>
+</td></tr>
+<tr valign="top"><td><code>plotIds</code></td>
+<td>
+<p>A character vector indicating the plotIds for which
+estimates should be extracted. If <code>NULL</code>, estimates will be extracted
+for all plotIds for which splines where fitted.</p>
+</td></tr>
+<tr valign="top"><td><code>fitLevel</code></td>
+<td>
+<p>A character string indicating at which level of the data
+the parameter estimates should be made. Only used for splines fitted using
+<code><a href="../../statgenHTP/help/fitSplineHDM.html">fitSplineHDM</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>An object of class splineEst, a data.frame containing the
+estimated parameters.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other functions for spline parameter estimation: 
+<code><a href="../../statgenHTP/help/plot.splineEst.html">plot.splineEst</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+### Estimate parameters for fitted P-splines.
+
+## Run the function to fit P-splines on a subset of genotypes.
+subGeno &lt;- c("G160", "G151")
+fit.spline &lt;- fitSpline(inDat = spatCorrectedVator,
+                        trait = "EffpsII_corr",
+                        genotypes = subGeno,
+                        knots = 50)
+
+## Estimate the maximum value of the predictions at the beginning of the time course.
+## The spline was fitted at a timePoints scale, i.e. date-time so
+## timeMin and timeMax should be given at this scale as well.
+paramVator &lt;- estimateSplineParameters(x = fit.spline,
+                                       estimate = "predictions",
+                                       what = "max",
+                                       timeMin = 1527784620,
+                                       timeMax = 1528500000,
+                                       genotypes = subGeno)
+head(paramVator)
+
+## Create a boxplot of the estimates.
+plot(paramVator, plotType = "box")
+
+## Estimate the minimum and maximum value of the predictions.
+paramVator2 &lt;- estimateSplineParameters(x = fit.spline,
+                                        estimate = "predictions",
+                                        what = c("min", "max"),
+                                        genotypes = subGeno)
+head(paramVator2)
+
+
+### Estimate parameters for fitted HDM-splines.
+
+## The data from the Phenovator platform have been corrected for spatial
+## trends and outliers for single observations have been removed.
+
+## We need to specify the genotype-by-treatment interaction.
+## Treatment: water regime (WW, WD).
+spatCorrectedArch[["treat"]] &lt;- substr(spatCorrectedArch[["geno.decomp"]],
+                                      start = 1, stop = 2)
+spatCorrectedArch[["genoTreat"]] &lt;-
+  interaction(spatCorrectedArch[["genotype"]],
+             spatCorrectedArch[["treat"]], sep = "_")
+
+## Fit P-Splines Hierarchical Curve Data Model for selection of genotypes.
+fit.psHDM  &lt;- fitSplineHDM(inDat = spatCorrectedArch,
+                          trait = "LeafArea_corr",
+                          genotypes = c("GenoA14_WD", "GenoA51_WD",
+                                       "GenoB11_WW", "GenoB02_WD",
+                                       "GenoB02_WW"),
+                          time = "timeNumber",
+                          pop = "geno.decomp",
+                          genotype = "genoTreat",
+                          plotId = "plotId",
+                          difVar = list(geno = FALSE, plot = FALSE),
+                          smoothPop = list(nseg = 4, bdeg = 3, pord = 2),
+                          smoothGeno = list(nseg = 4, bdeg = 3, pord = 2),
+                          smoothPlot = list(nseg = 4, bdeg = 3, pord = 2),
+                          weights = "wt",
+                          trace = FALSE)
+
+## Estimate minimum, maximum, and mean for predictions at the genotype level.
+## The spline was fitted at the timeNumber scale, so timeMax
+## should be given at that scale as well.
+paramArch &lt;- estimateSplineParameters(x = fit.psHDM,
+                                     what = c("min", "max", "mean"),
+                                     fitLevel = "geno",
+                                     estimate = "predictions",
+                                     timeMax = 28)
+head(paramArch)
+
+## Create a boxplot of the estimates.
+plot(paramArch, plotType = "box")
+
+## Estimate area under the curve for predictions at the plot level.
+paramArch2 &lt;- estimateSplineParameters(x = fit.psHDM,
+                                      what = "AUC",
+                                      fitLevel = "plot",
+                                      estimate = "predictions")
+head(paramArch2)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>statgenHTP</em> version 1.0.9.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Expanded &quot;which&quot;-like functionality.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mwhich {bigmemory}"><tr><td>mwhich {bigmemory}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Expanded &ldquo;which&rdquo;-like functionality.</h2>
+
+<h3>Description</h3>
+
+<p>Implements <code><a href="../../base/html/which.html">which</a></code>-like functionality for a <code><a href="../../bigmemory/help/big.matrix.html">big.matrix</a></code>,
+with additional options for efficient comparisons (executed in <acronym><span class="acronym">C++</span></acronym>);
+also works for regular numeric matrices without the memory overhead.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+mwhich(x, cols, vals, comps, op = "AND")
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>a <code><a href="../../bigmemory/help/big.matrix.html">big.matrix</a></code> (or a numeric matrix; see below).</p>
+</td></tr>
+<tr valign="top"><td><code>cols</code></td>
+<td>
+<p>a vector of column indices or names.</p>
+</td></tr>
+<tr valign="top"><td><code>vals</code></td>
+<td>
+<p>a list (one component for each of <code>cols</code>) of vectors of
+length 1 or 2; length 1 is used to test equality (or inequality), while
+vectors of length 2 are used for checking values in the range (<code>-Inf</code>
+and <code>Inf</code> are allowed). If a scalar or vector of length 2 is provided
+instead of a list, it will be replicated <code>length(cols)</code> times.</p>
+</td></tr>
+<tr valign="top"><td><code>comps</code></td>
+<td>
+<p>a list of operators (one component for each of <code>cols</code>),
+including <code>'eq'</code>, <code>'neq'</code>, <code>'le'</code>, <code>'lt'</code>, <code>'ge'</code>
+and <code>'gt'</code>.  If a single operator, it will be replicated
+<code>length(cols)</code> times.</p>
+</td></tr>
+<tr valign="top"><td><code>op</code></td>
+<td>
+<p>the comparison operator for combining the results of the
+individual tests, either <code>'AND'</code> or <code>'OR'</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>To improve performance and avoid the creation of massive temporary vectors
+in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> when doing comparisons, <code>mwhich()</code> efficiently executes
+column-by-column comparisons of values to the specified values or ranges,
+and then returns the row indices satisfying the comparison specified by the
+<code>op</code> operator.  More advanced comparisons are then possible
+(and memory-efficient) in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> by doing set operations (<code><a href="../../base/html/sets.html">union</a></code>
+and <code><a href="../../base/html/sets.html">intersect</a></code>, for example) on the results of multiple
+<code>mwhich()</code> calls.
+</p>
+<p>Note that <code>NA</code> is a valid argument in conjunction with <code>'eq'</code> or
+<code>'neq'</code>, replacing traditional <code>is.na()</code> calls.
+And both <code>-Inf</code> and <code>Inf</code> can be used for one-sided inequalities.
+</p>
+<p>If <code>mwhich()</code> is used with a regular numeric <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> <code>matrix</code>, we
+access the data directly and thus incur no memory overhead.  Interested
+developers might want to look at our code for this case, which uses a handy
+pointer trick (accessor) in <acronym><span class="acronym">C++</span></acronym>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a vector of row indices satisfying the criteria.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>John W. Emerson <a href="mailto:bigmemoryauthors@gmail.com">bigmemoryauthors@gmail.com</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../bigmemory/help/big.matrix.html">big.matrix</a></code>, <code><a href="../../base/html/which.html">which</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+x &lt;- as.big.matrix(matrix(1:30, 10, 3))
+options(bigmemory.allow.dimnames=TRUE)
+colnames(x) &lt;- c("A", "B", "C")
+x[,]
+x[mwhich(x, 1:2, list(c(2,3), c(11,17)),
+         list(c('ge','le'), c('gt', 'lt')), 'OR'),]
+
+x[mwhich(x, c("A","B"), list(c(2,3), c(11,17)), 
+         list(c('ge','le'), c('gt', 'lt')), 'AND'),]
+
+# These should produce the same answer with a regular matrix:
+y &lt;- matrix(1:30, 10, 3)
+y[mwhich(y, 1:2, list(c(2,3), c(11,17)),
+         list(c('ge','le'), c('gt', 'lt')), 'OR'),]
+
+y[mwhich(y, -3, list(c(2,3), c(11,17)),
+         list(c('ge','le'), c('gt', 'lt')), 'AND'),]
+
+
+x[1,1] &lt;- NA
+mwhich(x, 1:2, NA, 'eq', 'OR')
+mwhich(x, 1:2, NA, 'neq', 'AND')
+
+# Column 1 equal to 4 and/or column 2 less than or equal to 16:
+mwhich(x, 1:2, list(4, 16), list('eq', 'le'), 'OR')
+mwhich(x, 1:2, list(4, 16), list('eq', 'le'), 'AND')
+
+# Column 2 less than or equal to 15:
+mwhich(x, 2, 15, 'le')
+
+# No NAs in either column, and column 2 strictly less than 15:
+mwhich(x, c(1:2,2), list(NA, NA, 15), list('neq', 'neq', 'lt'), 'AND')
+
+x &lt;- big.matrix(4, 2, init=1, type="double")
+x[1,1] &lt;- Inf
+mwhich(x, 1, Inf, 'eq')
+mwhich(x, 1, 1, 'gt')
+mwhich(x, 1, 1, 'le')
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>bigmemory</em> version 4.6.4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

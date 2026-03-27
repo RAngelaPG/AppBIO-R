@@ -1,0 +1,258 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Nonparametric EM-like Algorithm for Mixtures of Independent...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for npMSL {mixtools}"><tr><td>npMSL {mixtools}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Nonparametric EM-like Algorithm for Mixtures of Independent Repeated Measurements - Maximum Smoothed Likelihood version</h2>
+
+<h3>Description</h3>
+
+<p>Returns nonparametric Smoothed Likelihood algorithm output 
+(Levine et al, 2011) for mixtures
+of multivariate (repeated measures) data where the coordinates of a row (case)
+in the data matrix are assumed to be independent, conditional on the mixture
+component (subpopulation) from which they are drawn.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+npMSL(x, mu0, blockid = 1:ncol(x), 
+      bw = bw.nrd0(as.vector(as.matrix(x))), samebw = TRUE, 
+      bwmethod = "S", h = bw, eps = 1e-8, 
+      maxiter=500, bwiter = maxiter, nbfold = NULL,
+      ngrid=200, post=NULL, verb = TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>An <i>n x r</i> matrix of data.  Each of the <i>n</i> rows is a case,
+and each case has <i>r</i> repeated measurements.  These measurements are assumed
+to be conditionally independent, conditional on the mixture component (subpopulation) 
+from which the case is drawn.</p>
+</td></tr>
+<tr valign="top"><td><code>mu0</code></td>
+<td>
+<p>Either an <i>m x r</i> matrix specifying the initial
+centers for the <a href="../../stats/html/kmeans.html">kmeans</a> function, or an integer <i>m</i> specifying the 
+number of initial centers, which are then choosen randomly in
+<a href="../../stats/html/kmeans.html">kmeans</a></p>
+</td></tr>
+<tr valign="top"><td><code>blockid</code></td>
+<td>
+<p>A vector of length <i>r</i> identifying coordinates 
+(columns of <code>x</code>) that are
+assumed to be identically distributed (i.e., in the same block).  
+For instance,
+the default has all distinct elements, indicating that no two coordinates 
+are assumed identically distributed and thus a separate set of <i>m</i> 
+density estimates is produced for each column of <i>x</i>.  On the other hand,
+if <code>blockid=rep(1,ncol(x))</code>, then the coordinates in each row 
+are assumed conditionally i.i.d.</p>
+</td></tr>
+<tr valign="top"><td><code>bw</code></td>
+<td>
+<p>Bandwidth for density estimation, equal to the standard deviation 
+of the kernel density.  By default, a simplistic application of the 
+default <code><a href="../../stats/html/bandwidth.html">bw.nrd0</a></code> 
+bandwidth used by <code><a href="../../stats/html/density.html">density</a></code> to the entire dataset.</p>
+</td></tr>
+<tr valign="top"><td><code>samebw</code></td>
+<td>
+<p>Logical:  If <code>TRUE</code>, use the same bandwidth for
+each iteration and for each component and block.  If <code>FALSE</code>, 
+use a separate bandwidth for each component and block, and update
+this bandwidth at each iteration of the algorithm 
+until <code>bwiter</code> is reached (see below). Two adaptation methods are provided, 
+see <code>bwmethod</code> below.</p>
+</td></tr>
+<tr valign="top"><td><code>bwmethod</code></td>
+<td>
+<p>Define the adaptive bandwidth strategy when <code>samebw = FALSE</code>, in which case
+the bandwidth depends on each component, block, and iteration of the algorithm.
+If set to &quot;S&quot; (the default), adaptation is done using a suitably
+modified <code><a href="../../stats/html/bandwidth.html">bw.nrd0</a></code> method as described in 
+Benaglia et al (2011).
+If set to &quot;CV&quot;, an adaptive <i>k</i>-fold Cross Validation method is applied,
+as described in Chauveau et al (2014), where <code>nbfold</code> is the number of subsamples.
+This corresponds to a Leave-<i>[n/nbfold]</i>-Out CV.
+</p>
+</td></tr>
+<tr valign="top"><td><code>h</code></td>
+<td>
+<p>Alternative way to specify the bandwidth, to provide backward 
+compatibility.</p>
+</td></tr>
+<tr valign="top"><td><code>eps</code></td>
+<td>
+<p>Tolerance limit for declaring algorithm convergence.  Convergence
+is declared whenever the maximum change in any coordinate of the 
+<code>lambda</code> vector (of mixing proportion estimates) does not exceed 
+<code>eps</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>maxiter</code></td>
+<td>
+<p>The maximum number of iterations allowed, convergence
+may be declared before <code>maxiter</code> iterations (see <code>eps</code> above).</p>
+</td></tr>
+<tr valign="top"><td><code>bwiter</code></td>
+<td>
+<p>The maximum number of iterations allowed for adaptive bandwidth stage,
+when <code>samebw = FALSE</code>. If set to <code>0</code>, then the initial bandwidth matrix is used without adaptation.</p>
+</td></tr>
+<tr valign="top"><td><code>nbfold</code></td>
+<td>
+<p>A parameter passed to the internal function <code>wbs.kCV</code>, which controls the weighted bandwidth selection by k-fold cross-validation.</p>
+</td></tr>
+<tr valign="top"><td><code>ngrid</code></td>
+<td>
+<p>Number of points in the discretization of the intervals over which are approximated the (univariate) integrals for non linear smoothing of the log-densities, as required in the E step of the npMSL algorithm,
+see Levine et al (2011).</p>
+</td></tr>
+<tr valign="top"><td><code>post</code></td>
+<td>
+<p>If non-NULL, an <i>n x m</i> matrix specifying the initial 
+posterior probability vectors for each of the observations, i.e., the
+initial values to start the EM-like algorithm.</p>
+</td></tr>
+<tr valign="top"><td><code>verb</code></td>
+<td>
+<p>If TRUE, print updates for every iteration of the algorithm as
+it runs</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p><code>npMSL</code> returns a list of class <code>npEM</code> with the following items:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>The raw data (an <i>n x r</i> matrix).</p>
+</td></tr>
+<tr valign="top"><td><code>posteriors</code></td>
+<td>
+<p>An <i>n x m</i> matrix 
+of posterior probabilities for
+observation.</p>
+</td></tr>
+<tr valign="top"><td><code>bandwidth</code></td>
+<td>
+<p>If <code>samebw==TRUE</code>, 
+same as the <code>bw</code> input argument; otherwise, value of <code>bw</code> matrix
+at final iteration.  This
+information is needed by any method that produces density estimates from the
+output.</p>
+</td></tr>
+<tr valign="top"><td><code>blockid</code></td>
+<td>
+<p>Same as the <code>blockid</code> input argument, but recoded to have
+positive integer values.  Also needed by any method that produces density 
+estimates from the output.</p>
+</td></tr>
+<tr valign="top"><td><code>lambda</code></td>
+<td>
+<p>The sequence of mixing proportions over iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>lambdahat</code></td>
+<td>
+<p>The final mixing proportions.</p>
+</td></tr>
+<tr valign="top"><td><code>loglik</code></td>
+<td>
+<p>The sequence of log-likelihoods over iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>f</code></td>
+<td>
+<p>An array of size <i>ngrid x m x l</i>,
+returning last values of density for component <i>j</i>
+and block <i>k</i> over <code>grid</code> points.</p>
+</td></tr>
+<tr valign="top"><td><code>meanNaN</code></td>
+<td>
+<p>Average number of <code>NaN</code> that occured over iterations (for internal testing and control purpose).</p>
+</td></tr>
+<tr valign="top"><td><code>meanUdfl</code></td>
+<td>
+<p>Average number of &quot;underflow&quot; that occured over iterations (for internal testing and control purpose).</p>
+</td></tr>
+</table>
+
+
+<h3>References</h3>
+
+   	   
+<ul>
+<li><p> Benaglia, T., Chauveau, D., and Hunter, D. R. (2009), An EM-like algorithm
+for semi- and non-parametric estimation in multivariate mixtures, 
+Journal of Computational and Graphical Statistics, 18, 505-526.
+</p>
+</li>
+<li><p> Benaglia, T., Chauveau, D. and Hunter, D.R. (2011),
+Bandwidth Selection in an EM-like algorithm for nonparametric multivariate mixtures.
+Nonparametric Statistics and Mixture Models: A Festschrift in
+Honor of Thomas P. Hettmansperger. World Scientific Publishing Co., 
+pages 15-27.
+</p>
+</li>
+<li><p> Chauveau D., Hunter D. R. and Levine M. (2014),
+Semi-Parametric Estimation for Conditional Independence Multivariate Finite Mixture Models.
+Preprint (under revision).
+</p>
+</li>
+<li><p> Levine, M., Hunter, D. and Chauveau, D. (2011),
+Maximum Smoothed Likelihood for Multivariate Mixtures,
+Biometrika 98(2): 403-416.
+</p>
+</li></ul>
+
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../mixtools/help/npEM.html">npEM</a></code>, <code><a href="../../mixtools/help/plot.npEM.html">plot.npEM</a></code>, 
+<code><a href="../../mixtools/help/normmixrm.sim.html">normmixrm.sim</a></code>, <code><a href="../../mixtools/help/spEMsymloc.html">spEMsymloc</a></code>,
+<code><a href="../../mixtools/help/spEM.html">spEM</a></code>, <code><a href="../../mixtools/help/plotseq.npEM.html">plotseq.npEM</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Examine and plot water-level task data set.
+## Block structure pairing clock angles that are directly opposite one
+## another (1:00 with 7:00, 2:00 with 8:00, etc.)
+set.seed(111) # Ensure that results are exactly reproducible
+data(Waterdata)
+blockid &lt;- c(4,3,2,1,3,4,1,2) # see Benaglia et al (2009a)
+
+## Not run: 
+a &lt;- npEM(Waterdata[,3:10], mu0=3, blockid=blockid, bw=4)  # npEM solution
+b &lt;- npMSL(Waterdata[,3:10], mu0=3, blockid=blockid, bw=4) # smoothed version
+
+# Comparisons on the 4 default plots, one for each block
+par(mfrow=c(2,2))
+for (l in 1:4){
+plot(a, blocks=l, breaks=5*(0:37)-92.5,
+	xlim=c(-90,90), xaxt="n",ylim=c(0,.035), xlab="")
+plot(b, blocks=l, hist=FALSE, newplot=FALSE, addlegend=FALSE, lty=2,
+	dens.col=1)
+axis(1, at=30*(1:7)-120, cex.axis=1)
+legend("topleft",c("npMSL"),lty=2, lwd=2)}
+
+## End(Not run)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mixtools</em> version 2.0.0.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

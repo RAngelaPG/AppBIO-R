@@ -24,7 +24,7 @@ this reduces to the Kaplan-Meier estimate.
 ## S3 method for class 'formula'
 survfit(formula, data, weights, subset, na.action,  
         stype=1, ctype=1, id, cluster, robust, istate, timefix=TRUE,
-        etype, model=FALSE, error, entry=FALSE, time0=FALSE, ...)
+        etype, error,  ...)
 </pre>
 
 
@@ -92,20 +92,19 @@ lines of data.
 </td></tr>
 <tr valign="top"><td><code>cluster</code></td>
 <td>
-<p>used to group observations for the infinitesimal
+<p>used to group observations for the infinitesmal
 jackknife variance estimate, defaults to the value of id.</p>
 </td></tr>
 <tr valign="top"><td><code>robust</code></td>
 <td>
 <p>logical, should the function compute a robust variance.
-For multi-state survival curves or interval censored data
-this is true by default.
+For multi-state survival curves this is true by default.
 For single state data see details, below.</p>
 </td></tr>
 <tr valign="top"><td><code>istate</code></td>
 <td>
 <p>for multi-state models, identifies the initial state of
-each subject or observation.  This also forces <code>time0 =TRUE</code>.</p>
+each subject or observation</p>
 </td></tr>
 <tr valign="top"><td><code>timefix</code></td>
 <td>
@@ -116,30 +115,12 @@ eliminate potential roundoff issues.</p>
 <td>
 
 <p>a variable giving the type of event.  This has been superseded by
-multi-state Surv objects and is deprecated; see example below.
+multi-state Surv objects and is depricated; see example below.
 </p>
-</td></tr>
-<tr valign="top"><td><code>model</code></td>
-<td>
-<p>include a copy of the model frame in the output</p>
 </td></tr>
 <tr valign="top"><td><code>error</code></td>
 <td>
 <p>this argument is no longer used</p>
-</td></tr>
-<tr valign="top"><td><code>entry</code></td>
-<td>
-<p>if TRUE, the output will contain <code>n.enter</code> which is
-the number of observations entering the risk set at any time; extra
-rows of output are created, if needed, for each unique entry time.
-Only applicable if there is an <code>id</code> statement.
-</p>
-</td></tr>
-<tr valign="top"><td><code>time0</code></td>
-<td>
-<p>if TRUE, the output will include estimates at the
-starting point of the curve or &lsquo;time 0&rsquo;.  See discussion below.
-</p>
 </td></tr>
 <tr valign="top"><td><code>...</code></td>
 <td>
@@ -149,17 +130,8 @@ called by <code>survfit</code>.
 </p>
 
 <dl>
-<dt>se.fit</dt><dd>
-<p>a logical value indicating whether standard errors should be 
-computed.  Default is <code>TRUE</code>. For a multistate model, where
-the infinitesimal jackknife (robust) standar error is used, the
-compute time for the standard error is O(ndp) where n = number of
-observations, d = number of events and p = number of states,
-while that for all other portions of the output
-(<code>pstate</code>, <code>cumhaz</code> and counts) is O((n+d)p).
-For a moderate to large data set the compute time difference
-between nd and n+d can be huge; using <code>se.fit = FALSE</code> may
-be a wise choice.
+<dt>se.fit</dt><dd><p>logical value, default is TRUE.  If FALSE then
+standard error computations are omitted.
 </p>
 </dd>
 <dt>conf.type</dt><dd>
@@ -208,9 +180,21 @@ The resulting curve is the survival conditional on surviving to
 Default is 0.95. 
 </p>
 </dd>
+<dt>se.fit</dt><dd>
+<p>a logical value indicating whether standard errors should be 
+computed.  Default is <code>TRUE</code>.
+</p>
+</dd>
 <dt>influence</dt><dd><p>a logical value indicating whether to return the
 infinitesimal jackknife (influence) values for each subject.
-See details below.
+These contain the values of the derivative of each value
+with respect to the case weights of each subject i:
+<i>dp/dw[i]</i>,
+evaluated at the vector of weights.  The resulting object will
+contain <code>influence.surv</code> and <code>influence.chaz</code>
+components.  Alternatively, options of <code>influence=1</code> or
+<code>influence=2</code> will return values for only the
+survival or hazard curves, respectively.
 </p>
 </dd>
 <dt>p0</dt><dd><p>this applies only to multi-state curves. 
@@ -220,20 +204,8 @@ frequency of the starting states of all observations at risk
 at <code>start.time</code>, or if that is not specified, at
 the time of the first event.</p>
 </dd>
-<dt>entry</dt><dd><p>by default, the survfit routines only return
-information at the event/censoring times. If <code>entry=TRUE</code> then
-also return a <code>n.enter</code> component containing the number
-who joined the risk set at each time; if necessary add extra
-rows to the output for each unique entry time. 
-This is only applicable for (time1, time2) survival data, and
-if there is an <code>id</code> statement.  If a single subject had
-times of (0,10), (10, 20), (25,30) with an event at 30,
-then time 10 is not an entry or censoring time,
-but 20 counts as censored and 25 as an entry. 
-</p>
-</dd>
 <dt>type</dt><dd><p>an older argument that combined <code>stype</code> and
-<code>ctype</code>, now deprecated.  Legal values were &quot;kaplan-meier&quot;
+<code>ctype</code>, now depricated.  Legal values were &quot;kaplan-meier&quot;
 which is equivalent to <code>stype=1, ctype=1</code>, &quot;fleming-harrington&quot;
 which is equivalent to <code>stype=2, ctype=1</code>, and &quot;fh2&quot; which
 is equivalent to <code>stype=2, ctype=2.</code>
@@ -248,14 +220,11 @@ is equivalent to <code>stype=2, ctype=2.</code>
 <h3>Details</h3>
 
 <p>If there is a <code>data</code> argument, then variables in the <code>formula</code>,
-<code>weights</code>, <code>subset</code>, <code>id</code>, <code>cluster</code> and
+codeweights, <code>subset</code>, <code>id</code>, <code>cluster</code> and
 <code>istate</code> arguments will be searched for in that data set.
 </p>
 <p>The routine returns both an estimated probability in state and an
 estimated cumulative hazard estimate.
-For simple survival the probability in state = probability alive, i.e,
-the estimated survival. For multi-state it will be a matrix with one
-row per time and a column per state, rows sum to 1.
 The cumulative hazard estimate is the Nelson-Aalen (NA) estimate or the
 Fleming-Harrington (FH) estimate, the latter includes a correction for
 tied event times.  The estimated probability in state can estimated
@@ -269,62 +238,8 @@ For backward compatability the <code>type</code> argument can be used instead.
 </p>
 <p>When the data set includes left censored or interval censored data (or both),
 then the EM approach of Turnbull is used to compute the overall curve.
-Currently this algorithm is very slow, only applies to simple survival
-(not multi-state), and defaults to a robust variance.  Other R
-packages are available which implement the iterative convex minorant
-(ICM) algorithm for
-interval censored data, which is much faster than Turnbull's method.
-Based on Sun (2001) the robust variance may be preferred, as the naive estimate
-ignores the estimation of the weights.  The standard estimate can be
-obtained with <code>robust= FALSE</code>.
-</p>
-<p>Without interval or left censored data (the usual case) the
-underlying algorithm for the routine is the Aalen-Johansen
-estimate, of which the Kaplan-Meier (for single outcome data) and the
-cumulative incidence (CI) estimate (for competing risks) are each a special
-case. For multi-state, the estimate can be written as
-<i>p(t0)H(t1)H(t2)...</i> where <i>p(t0)</i>
-is the prevalance vector across the states at starting
-point <i>t0</i>, <i>t1, t2, ...</i> are the
-times at which events (transitions between states) occur, and H are
-square transtion matrices with a row for each state.
-</p>
-<p>Starting point: When diffent subjects (<code>id</code>) start at different
-time points, data using age as the time scale for instance,
-deciding the default &quot;time 0&quot; can be complex.  This value is the
-starting point for the restricted mean estimate (area under the
-curve), the initial prevalence p0, and the first
-row of output if <code>time0 = TRUE</code>.  The order of the decision is
-</p>
-
-<ol>
-<li><p> For a 2 column response (simple survival or competing risks)
-use the minimum of 0 and the smallest time value (times can be
-negative).
-</p>
-</li>
-<li><p> If all subjects start in the same state, start at the same time,
-or if <code>p0</code> is specified, use the minimum observed starting
-time.  If there is no <code>istate</code> argument all observations are
-assumed to start in a state &quot;(s0)&quot;.
-</p>
-</li>
-<li><p> Use the minimum observed event time, if the number at risk at
-that time is &gt;0 for every curve that will be created.
-</p>
-</li>
-<li><p> Use the minimum event time for each curve, separately.
-</p>
-</li></ol>
-
-<p>The last two above are a failsafe to prevent the routine from basing
-the initial prevalence of the states on none or only a handful of
-observations.   That does not mean such curves
-will be scientfically sensible: when using age scale the user may wish
-to specify an explicit starting time.
-If <code>time0 = TRUE</code> the first row of output for each curve will be
-at the starting time, 
-otherwise the first event time (for each curve separately).
+Currently this algorithm is very slow, only a survival curve is
+produced, and it does not support a robust variance.
 </p>
 <p>Robust variance:
 If a <code>robust</code> is TRUE, or for multi-state
@@ -340,25 +255,19 @@ often desire a robust variance.
 When there are non-integer case weights and (time1, time2) survival
 data the routine is at an impasse: a robust variance likely is called
 for, but requires either <code>id</code> or <code>cluster</code> information to be
-done correctly; it will default to robust=FALSE if they are not present.
+done correctly; it will default to robust=FALSE.
 </p>
 <p>With the IJ estimate, the leverage values themselves can be returned
-as an array using the <code>influence</code> argument.
-Be forwarned that this array can be huge. Post fit influence using the
-<code>resid</code> method is more flexible and would normally be preferred,
-in particular to get influence at only a select set of time points.
-The <code>influence</code> option is currently used mostly in the package's
-validity checks.
-</p>
-<p>Let <i>U(t)</i> be the matrix of IJ values at time t, which has
-one row per observation, one column per state. The robust variance
-compuation uses the collapsed weighted matrix
-<code>rowsum(wU, cluster)</code>,
-where w is the vector of weights and cluster is the grouping (most often
-the id). The result for each curve is an array with dimensions
-(number of clusters, number of states, number of times), or a matrix
-for single state data.  When there are multiple curves, the
-influence is a list with one element per curve.
+as arrays with dimensions: number of subjects, number of unique times,
+and for a multi-state model, the number of unique states.
+Be forwarned that these arrays can be huge.  If there is a
+<code>cluster</code> argument this first dimension will be the number of
+clusters and the variance will be a grouped IJ estimate; this can be
+an important tool for reducing the size.
+A numeric value for the <code>influence</code> argument allows finer
+control: 0= return neither (same as FALSE), 1= return the influence
+array for probability in state, 2= return the influence array for the
+cumulative hazard, 3= both (same as TRUE).
 </p>
 
 
@@ -366,9 +275,9 @@ influence is a list with one element per curve.
 
 <p>an object of class <code>"survfit"</code>.  
 See <code>survfit.object</code> for 
-details. Some of the methods defined for survfit objects are  
+details. Methods defined for survfit objects are  
 <code>print</code>, <code>plot</code>, 
-<code>lines</code>, <code>points</code> and <code>residual</code>. 
+<code>lines</code>, and <code>points</code>. 
 </p>
 
 
@@ -397,9 +306,6 @@ function using Cox's proportional hazards model with
 covariates.  <em>Biometrics</em>  
 <b>40</b>, 601-610.
 </p>
-<p>Sun, J. (2001). Variance estimation of a survival function
-for interval-censored data. <em>Stat Med</em> <b>20</b>, 1949-1957.
-</p>
 <p>Turnbull, B. W. (1974).  Nonparametric estimation of a survivorship
 function with doubly censored data. <em>J Am Stat Assoc</em>,
 <b>69</b>, 169-173. 
@@ -413,8 +319,7 @@ function with doubly censored data. <em>J Am Stat Assoc</em>,
 survfit object,
 <code><a href="../../survival/help/print.survfit.html">print.survfit</a></code>,  
 <code><a href="../../survival/help/plot.survfit.html">plot.survfit</a></code>,  
-<code><a href="../../survival/help/lines.survfit.html">lines.survfit</a></code>,
-<code><a href="../../survival/help/residuals.survfit.html">residuals.survfit</a></code>,
+<code><a href="../../survival/help/lines.survfit.html">lines.survfit</a></code>,   
 <code><a href="../../survival/help/coxph.html">coxph</a></code>,  
 <code><a href="../../survival/help/Surv.html">Surv</a></code>.  
 </p>
@@ -476,5 +381,5 @@ text(5480, .30,"KM:prog")
 ## End(Not run)
 </pre>
 
-<hr /><div style="text-align: center;">[Package <em>survival</em> version 3.7-0 <a href="00Index.html">Index</a>]</div>
+<hr /><div style="text-align: center;">[Package <em>survival</em> version 3.2-13 <a href="00Index.html">Index</a>]</div>
 </div></body></html>

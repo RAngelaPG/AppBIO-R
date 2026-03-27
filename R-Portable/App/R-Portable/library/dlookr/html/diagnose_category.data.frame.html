@@ -1,0 +1,204 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Diagnose data quality of categorical variables</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for diagnose_category {dlookr}"><tr><td>diagnose_category {dlookr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Diagnose data quality of categorical variables</h2>
+
+<h3>Description</h3>
+
+<p>The diagnose_category() produces information for
+diagnosing the quality of the variables of data.frame or tbl_df.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+diagnose_category(.data, ...)
+
+## S3 method for class 'data.frame'
+diagnose_category(
+  .data,
+  ...,
+  top = 10,
+  type = c("rank", "n")[2],
+  add_character = TRUE,
+  add_date = TRUE
+)
+
+## S3 method for class 'grouped_df'
+diagnose_category(
+  .data,
+  ...,
+  top = 10,
+  type = c("rank", "n")[2],
+  add_character = TRUE,
+  add_date = TRUE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>.data</code></td>
+<td>
+<p>a data.frame or a <code><a href="../../tibble/help/tbl_df.html">tbl_df</a></code> or a <code><a href="../../dplyr/help/grouped_df.html">grouped_df</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>one or more unquoted expressions separated by commas.
+You can treat variable names like they are positions.
+Positive values select variables; negative values to drop variables.
+If the first expression is negative, diagnose_category() will automatically
+start with all variables.
+These arguments are automatically quoted and evaluated in a context where
+column names represent column positions.
+They support unquoting and splicing.</p>
+</td></tr>
+<tr valign="top"><td><code>top</code></td>
+<td>
+<p>an integer. Specifies the upper top rows or rank to extract.
+Default is 10.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>a character string specifying how result are extracted.
+&quot;rank&quot; that extract top n ranks by decreasing frequency. 
+In this case, if there are ties in rank, more rows than the number specified 
+by the top argument are returned.
+Default is &quot;n&quot; extract only top n rows by decreasing frequency. 
+If there are too many rows to be returned because there are too many ties, 
+you can adjust the returned rows appropriately by using &quot;n&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>add_character</code></td>
+<td>
+<p>logical. Decide whether to include text variables in the
+diagnosis of categorical data. The default value is TRUE, which also includes character variables.</p>
+</td></tr>
+<tr valign="top"><td><code>add_date</code></td>
+<td>
+<p>ogical. Decide whether to include Date and POSIXct variables in the
+diagnosis of categorical data. The default value is TRUE, which also includes character variables.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The scope of the diagnosis is the occupancy status of the levels
+in categorical data. If a certain level of occupancy is close to 100
+then the removal of this variable in the forecast model will have to be
+considered. Also, if the occupancy of all levels is close to 0
+variable is likely to be an identifier.
+</p>
+
+
+<h3>Value</h3>
+
+<p>an object of tbl_df.
+</p>
+
+
+<h3>Categorical diagnostic information</h3>
+
+<p>The information derived from the categorical data diagnosis is as follows.
+</p>
+
+<ul>
+<li><p> variables : variable names
+</p>
+</li>
+<li><p> levels: level names
+</p>
+</li>
+<li><p> N : number of observation
+</p>
+</li>
+<li><p> freq : number of observation at the levels
+</p>
+</li>
+<li><p> ratio : percentage of observation at the levels
+</p>
+</li>
+<li><p> rank : rank of occupancy ratio of levels
+</p>
+</li></ul>
+
+<p>See vignette(&quot;diagonosis&quot;) for an introduction to these concepts.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../dlookr/help/diagnose_category.tbl_dbi.html">diagnose_category.tbl_dbi</a></code>, <code><a href="../../dlookr/help/diagnose.data.frame.html">diagnose.data.frame</a></code>, <code><a href="../../dlookr/help/diagnose_numeric.data.frame.html">diagnose_numeric.data.frame</a></code>, <code><a href="../../dlookr/help/diagnose_outlier.data.frame.html">diagnose_outlier.data.frame</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# Diagnosis of categorical variables
+diagnose_category(jobchange)
+
+# Select the variable to diagnose
+diagnose_category(jobchange, education_level, company_type)
+
+# Using pipes ---------------------------------
+library(dplyr)
+
+# Diagnosis of all categorical variables
+jobchange %&gt;%
+  diagnose_category()
+
+# Positive values select variables
+jobchange %&gt;%
+ diagnose_category(company_type, job_chnge)
+ 
+# Negative values to drop variables
+jobchange %&gt;%
+  diagnose_category(-company_type, -job_chnge)
+  
+# Top rank levels with top argument
+jobchange %&gt;%
+  diagnose_category(top = 2)
+  
+# Using pipes &amp; dplyr -------------------------
+# Extraction of level that is more than 60% of categorical data
+jobchange %&gt;%
+  diagnose_category()  %&gt;%
+  filter(ratio &gt;= 60)
+
+# All observations of enrollee_id have a rank of 1. 
+# Because it is a unique identifier. Therefore, if you select up to the top rank 3, 
+# all records are displayed. It will probably fill your screen.
+
+# extract rows that less than equal rank 3
+# default of type argument is "n"
+jobchange %&gt;% 
+  diagnose_category(enrollee_id, top = 3)
+
+# extract rows that less than equal rank 3
+jobchange %&gt;% 
+  diagnose_category(enrollee_id, top = 3, type = "rank")
+ 
+# extract only 3 rows
+jobchange %&gt;% 
+  diagnose_category(enrollee_id, top = 3, type = "n")
+
+# Using group_by ------------------------------
+# Calculate the diagnosis of 'company_type' variable by 'job_chnge' using group_by()
+jobchange %&gt;%
+  group_by(job_chnge) %&gt;% 
+  diagnose_category(company_type) 
+   
+  
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>dlookr</em> version 0.6.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

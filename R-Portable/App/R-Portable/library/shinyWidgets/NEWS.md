@@ -1,3 +1,32 @@
+shinyWidgets 0.9.1
+======================
+
+* New widget `quercusInput()`, hierarchical treeview component based on JavaScript library [quercus.js](https://github.com/stefaneichert/quercus.js).
+* Updated virtual-select to 1.1.0, see https://github.com/sa-si-dev/virtual-select/releases.
+* Updated air-datepicker to 3.6.0, see https://github.com/t1m0n/air-datepicker?tab=readme-ov-file#v360
+* Updated vanilla-calendar-pro to 3.1.0, see https://github.com/uvarov-frontend/vanilla-calendar-pro/releases
+
+
+shinyWidgets 0.9.0
+======================
+
+* New widget `calendarProInput()`, a date and time picker component based on JavaScript library [vanilla-calendar-pro](https://github.com/uvarov-frontend/vanilla-calendar-pro).
+* `virtualSelectInput()`: ability to set a JavaScript function as callback for `selectedLabelRenderer`.
+* New argument `inputType` in `searchInput()` and `textInputIcon()` to specify the input's type, for example `"password"`.
+* `knobInput()` and `switchInput()` are softly deprecated, since the JavaScript libraries used by those widgets are no longer actively maintained.
+* Updated virtual-select to 1.0.47 (fix focus issue), see https://github.com/sa-si-dev/virtual-select/releases.
+* Updated @simonwep/pickr to 1.9.1, see https://github.com/simonwep/pickr/releases.
+
+
+shinyWidgets 0.8.7
+======================
+
+* New widget : `slimSelectInput()`, an alternative select menu.
+* Updated virtual-select to 1.0.45, see https://github.com/sa-si-dev/virtual-select/releases.
+* `airDatepickerInput()` & `updateAirDateInput()`: added a `tz` argument to specify timezone.
+* `checkboxGroupButtons()` & `radioGroupButtons()`: fixed justified layout when using individual buttons.
+
+
 shinyWidgets 0.8.6
 ======================
 

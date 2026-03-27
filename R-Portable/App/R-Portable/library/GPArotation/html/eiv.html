@@ -1,0 +1,167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Errors-in-Variables Rotation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for eiv {GPArotation}"><tr><td>eiv {GPArotation}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Errors-in-Variables Rotation</h2>
+
+<h3>Description</h3>
+
+<p>Rotate to errors-in-variables representation.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+    eiv(L, identity=seq(NCOL(L)), ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>L</code></td>
+<td>
+<p>a factor loading matrix</p>
+</td></tr>
+<tr valign="top"><td><code>identity</code></td>
+<td>
+<p>indicates rows which should be identity matrix.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>additional arguments discarded.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This function rotates to an errors-in-variables representation. The
+optimization is not iterative and does not use the GPA algorithm.  
+The function can be used directly or the
+function name can be passed to factor analysis functions like <code>factanal</code>.
+</p>
+<p>The loadings matrix is rotated so the <i>k</i> rows indicated by <code>identity</code> 
+form an identity matrix, and the remaining <i>M-k</i> rows are free parameters.
+<i>Phi</i> is also free. The default makes the first <i>k</i> rows 
+the identity. If inverting the matrix
+of the rows indicated by <code>identity</code> fails, the rotation will fail and the
+user needs to supply a different choice of rows.
+</p>
+<p>Not all authors consider this representation to be a rotation. 
+Viewed as a rotation method, it is oblique, with an
+explicit solution: given an initial loadings matrix <i>L</i> partitioned as
+<i>L = rbind(L1, L2)</i>, then (for the default 
+<code>identity</code>) the new loadings matrix is 
+<i>rbind(I,  L2 %*% solve(L1))</i> 
+and <i>Phi = L1 %*% t(L1)</i>, where <i>I</i> is the <i>k</i> 
+by <i>k</i> identity matrix. It is
+assumed that <i>Phi = I</i> for the initial loadings matrix.
+</p>
+<p>One use of this parameterization is
+for obtaining good starting values (so it looks a little strange
+to rotate towards this solution afterwards). It has a few other purposes: 
+(1) It can be useful for comparison with
+published results in this parameterization; 
+(2) The
+S.E.s are more straightfoward to compute, because it is the solution 
+to an unconstrained
+optimization (though not necessarily computed as such); 
+(3) One
+may have an idea about which reference variables load on only one
+factor, but not impose restrictive constraints on the other loadings,
+so, in a nonrestrictive
+way, it has similarities to CFA; 
+(4) For some purposes, only the subspace spanned by the factors
+is important, not the specific parameterization within this subspace;
+(5) The back-predicted indicators (explained portion of the indicators) 
+do not depend
+on the rotation method. Combined with the greater ease to obtain
+correct standard errors of this method, this allows easier and more
+accurate prediction-standard errors.  
+</p>
+
+
+<h3>Value</h3>
+
+<p>A GPArotation object which is a list with elements
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>loadings</code></td>
+<td>
+<p>The new loadings matrix.</p>
+</td></tr> 
+<tr valign="top"><td><code>Th</code></td>
+<td>
+<p>The rotation.</p>
+</td></tr> 
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>A string indicating the rotation objective function (&quot;eiv&quot;).</p>
+</td></tr>
+<tr valign="top"><td><code>orthogonal</code></td>
+<td>
+<p>For consistency with other rotation results. Always FALSE.</p>
+</td></tr>
+<tr valign="top"><td><code>convergence</code></td>
+<td>
+<p>For consistency with other rotation results. Always TRUE.</p>
+</td></tr>
+<tr valign="top"><td><code>Phi</code></td>
+<td>
+<p>The covariance matrix of the rotated factors.</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Erik Meijer and Paul Gilbert.</p>
+
+
+<h3>References</h3>
+
+<p>Gösta Hägglund. (1982). &quot;Factor Analysis by
+Instrumental Variables Methods.&quot; <em>Psychometrika</em>, 47, 209&ndash;222.
+</p>
+<p>Sock-Cheng Lewin-Koh and Yasuo Amemiya. (2003). &quot;Heteroscedastic factor
+analysis.&quot; <em>Biometrika</em>, 90, 85&ndash;97.
+</p>
+<p>Tom Wansbeek and Erik Meijer (2000) <em>Measurement Error and 
+Latent Variables in Econometrics</em>, Amsterdam: North-Holland.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../GPArotation/help/echelon.html">echelon</a></code>, 
+<code><a href="../../GPArotation/help/rotations.html">rotations</a></code>, 
+<code><a href="../../GPArotation/help/GPForth.html">GPForth</a></code>, 
+<code><a href="../../GPArotation/help/GPFoblq.html">GPFoblq</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+  data("WansbeekMeijer", package="GPArotation")
+  fa.unrotated  &lt;- factanal(factors = 2, covmat=NetherlandsTV, rotation="none")
+
+  fa.eiv &lt;- eiv(fa.unrotated$loadings)
+ 
+  fa.eiv2 &lt;- factanal(factors = 2, covmat=NetherlandsTV, rotation="eiv")
+  
+  cbind(loadings(fa.unrotated), loadings(fa.eiv), loadings(fa.eiv2))
+
+  fa.eiv3 &lt;- eiv(fa.unrotated$loadings, identity=6:7)
+  cbind(loadings(fa.unrotated), loadings(fa.eiv), loadings(fa.eiv3))
+
+  </pre>
+
+<hr /><div style="text-align: center;">[Package <em>GPArotation</em> version 2025.3-1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

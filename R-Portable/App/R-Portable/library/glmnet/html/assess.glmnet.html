@@ -1,0 +1,156 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: assess performance of a 'glmnet' object using test data.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for assess.glmnet {glmnet}"><tr><td>assess.glmnet {glmnet}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>assess performance of a 'glmnet' object using test data.</h2>
+
+<h3>Description</h3>
+
+<p>Given a test set, produce summary performance measures for the glmnet
+model(s)
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+assess.glmnet(
+  object,
+  newx = NULL,
+  newy,
+  weights = NULL,
+  family = c("gaussian", "binomial", "poisson", "multinomial", "cox", "mgaussian"),
+  ...
+)
+
+confusion.glmnet(
+  object,
+  newx = NULL,
+  newy,
+  family = c("binomial", "multinomial"),
+  ...
+)
+
+roc.glmnet(object, newx = NULL, newy, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>Fitted <code>"glmnet"</code> or <code>"cv.glmnet"</code>, <code>"relaxed"</code>
+or <code>"cv.relaxed"</code> object, OR a matrix of predictions (for
+<code>roc.glmnet</code> or <code>assess.glmnet</code>). For <code>roc.glmnet</code> the model
+must be a 'binomial', and for <code>confusion.glmnet</code> must be either
+'binomial' or 'multinomial'</p>
+</td></tr>
+<tr valign="top"><td><code>newx</code></td>
+<td>
+<p>If predictions are to made, these are the 'x' values. Required
+for <code>confusion.glmnet</code></p>
+</td></tr>
+<tr valign="top"><td><code>newy</code></td>
+<td>
+<p>required argument for all functions; the new response values</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>For observation weights for the test observations</p>
+</td></tr>
+<tr valign="top"><td><code>family</code></td>
+<td>
+<p>The family of the model, in case predictions are passed in as
+'object'</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>additional arguments to <code>predict.glmnet</code> when &quot;object&quot; is a
+&quot;glmnet&quot; fit, and predictions must be made to produce the statistics.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>assess.glmnet</code> produces all the different performance measures
+provided by <code>cv.glmnet</code> for each of the families. A single vector, or a
+matrix of predictions can be provided, or fitted model objects or CV
+objects. In the case when the predictions are still to be made, the
+<code>...</code> arguments allow, for example, 'offsets' and other prediction
+parameters such as values for 'gamma' for 'relaxed' fits.  <code>roc.glmnet</code>
+produces for a single vector a two column matrix with columns TPR and FPR
+(true positive rate and false positive rate). This object can be plotted to
+produce an ROC curve. If more than one predictions are called for, then a
+list of such matrices is produced.  <code>confusion.glmnet</code> produces a
+confusion matrix tabulating the classification results. Again, a single
+table or a list, with a print method.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>assess.glmnet</code> produces a list of vectors of measures.
+<code>roc.glmnet</code> a list of 'roc' two-column matrices, and
+<code>confusion.glmnet</code> a list of tables. If a single prediction is
+provided, or predictions are made from a CV object, the latter two drop the
+list status and produce a single matrix or table.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Trevor Hastie and Rob Tibshirani<br /> Maintainer: Trevor Hastie
+<a href="mailto:hastie@stanford.edu">hastie@stanford.edu</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code>cv.glmnet</code>, <code>glmnet.measures</code> and <code>vignette("relax",package="glmnet")</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+data(QuickStartExample)
+x &lt;- QuickStartExample$x; y &lt;- QuickStartExample$y
+set.seed(11)
+train = sample(seq(length(y)),70,replace=FALSE)
+fit1 = glmnet(x[train,], y[train])
+assess.glmnet(fit1, newx = x[-train,], newy = y[-train])
+preds = predict(fit1, newx = x[-train, ], s = c(1, 0.25))
+assess.glmnet(preds, newy = y[-train], family = "gaussian")
+fit1c = cv.glmnet(x, y, keep = TRUE)
+fit1a = assess.glmnet(fit1c$fit.preval, newy=y,family="gaussian")
+plot(fit1c$lambda, log="x",fit1a$mae,xlab="Log Lambda",ylab="Mean Absolute Error")
+abline(v=fit1c$lambda.min, lty=2, col="red")
+data(BinomialExample)
+x &lt;- BinomialExample$x; y &lt;- BinomialExample$y
+fit2 = glmnet(x[train,], y[train], family = "binomial")
+assess.glmnet(fit2,newx = x[-train,], newy=y[-train], s=0.1)
+plot(roc.glmnet(fit2, newx = x[-train,], newy=y[-train])[[10]])
+fit2c = cv.glmnet(x, y, family = "binomial", keep=TRUE)
+idmin = match(fit2c$lambda.min, fit2c$lambda)
+plot(roc.glmnet(fit2c$fit.preval, newy = y)[[idmin]])
+data(MultinomialExample)
+x &lt;- MultinomialExample$x; y &lt;- MultinomialExample$y
+set.seed(103)
+train = sample(seq(length(y)),100,replace=FALSE)
+fit3 = glmnet(x[train,], y[train], family = "multinomial")
+confusion.glmnet(fit3, newx = x[-train, ], newy = y[-train], s = 0.01)
+fit3c = cv.glmnet(x, y, family = "multinomial", type.measure="class", keep=TRUE)
+idmin = match(fit3c$lambda.min, fit3c$lambda)
+confusion.glmnet(fit3c$fit.preval, newy = y, family="multinomial")[[idmin]]
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>glmnet</em> version 4.1-10 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

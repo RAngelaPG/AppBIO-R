@@ -1,0 +1,87 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Dow Jones Industrial Average</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for DJIA {strucchange}"><tr><td>DJIA {strucchange}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Dow Jones Industrial Average</h2>
+
+<h3>Description</h3>
+
+<p>Weekly closing values of the Dow Jones Industrial Average.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>data("DJIA")</pre>
+
+
+<h3>Format</h3>
+
+<p>A weekly univariate time series of class <code>"zoo"</code>
+from 1971-07-01 to 1974-08-02.
+</p>
+
+
+<h3>Source</h3>
+
+<p>Appendix A in Hsu (1979).
+</p>
+
+
+<h3>References</h3>
+
+<p>Hsu D. A. (1979), Detecting Shifts of Parameter in Gamma Sequences with 
+Applications to Stock Price and Air Traffic Flow Analysis,
+<em>Journal of the American Statistical Association</em>, <b>74</b>, 31&ndash;40.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+data("DJIA")
+## look at log-difference returns
+djia &lt;- diff(log(DJIA))
+plot(djia)
+
+## convenience functions
+## set up a normal regression model which
+## explicitely also models the variance
+normlm &lt;- function(formula, data = list()) {
+  rval &lt;- lm(formula, data = data)
+  class(rval) &lt;- c("normlm", "lm")
+  return(rval)
+}
+estfun.normlm &lt;- function(obj) {
+  res &lt;- residuals(obj)
+  ef &lt;- NextMethod(obj)
+  sigma2 &lt;- mean(res^2)
+  rval &lt;- cbind(ef, res^2 - sigma2)
+  colnames(rval) &lt;- c(colnames(ef), "(Variance)")
+  return(rval)
+}
+
+## normal model (with constant mean and variance) for log returns
+m1 &lt;- gefp(djia ~ 1, fit = normlm, vcov = meatHAC, sandwich = FALSE)
+plot(m1, aggregate = FALSE)
+## suggests a clear break in the variance (but not the mean)
+
+## dating
+bp &lt;- breakpoints(I(djia^2) ~ 1)
+plot(bp)
+## -&gt; clearly one break
+bp
+time(djia)[bp$breakpoints]
+
+## visualization
+plot(djia)
+abline(v = time(djia)[bp$breakpoints], lty = 2)
+lines(time(djia)[confint(bp)$confint[c(1,3)]], rep(min(djia), 2), col = 2, type = "b", pch = 3)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>strucchange</em> version 1.5-4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

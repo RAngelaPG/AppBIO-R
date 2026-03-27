@@ -1,0 +1,162 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Import an external docx in a 'Word' document</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for body_import_docx {officer}"><tr><td>body_import_docx {officer}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Import an external docx in a 'Word' document</h2>
+
+<h3>Description</h3>
+
+<p>Import body content and footnotes of a Word document into an rdocx object.
+</p>
+<p>The function is similar to <code><a href="../../officer/help/body_add_docx.html">body_add_docx()</a></code> but instead of adding
+the content as an external object, the document is read and all its
+content is appended to the target document.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+body_import_docx(
+  x,
+  src,
+  par_style_mapping = list(),
+  run_style_mapping = list(),
+  tbl_style_mapping = list(),
+  prepend_chunks_on_styles = list()
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>an rdocx object</p>
+</td></tr>
+<tr valign="top"><td><code>src</code></td>
+<td>
+<p>path to docx file to import</p>
+</td></tr>
+<tr valign="top"><td><code>par_style_mapping, run_style_mapping, tbl_style_mapping</code></td>
+<td>
+<p>Named lists describing how to remap styles from the source document (<code>src</code>)
+to styles available in the target document <code>x</code>. For each list entry, the name
+of the element is the target style (in <code>x</code>), and the value is a character
+vector of style names from the source document that should be replaced by
+this target style.
+</p>
+
+<ul>
+<li> <p><code>par_style_mapping</code>: applies to paragraph styles.
+</p>
+</li>
+<li> <p><code>run_style_mapping</code>: applies to character (run) styles.
+</p>
+</li>
+<li> <p><code>tbl_style_mapping</code>: applies to table styles.
+</p>
+</li></ul>
+
+<p>Examples:
+</p>
+<div class="sourceCode r"><pre>par_style_mapping = list(
+  "Normal"    = c("List Paragraph", "Body Text"),
+  "heading 1" = "Heading 1"
+)
+run_style_mapping = list(
+  "Emphasis"  = c("Emphasis", "Italic")
+)
+tbl_style_mapping = list(
+  "Normal Table" = c("Light Shading")
+)
+</pre></div>
+<p>Use <code><a href="../../officer/help/styles_info.html">styles_info()</a></code> to inspect available styles and verify their names.</p>
+</td></tr>
+<tr valign="top"><td><code>prepend_chunks_on_styles</code></td>
+<td>
+<p>A named list of run chunks to prepend
+to runs with specific styles. The names of the list are paragraph style names
+and the values run chunks to prepend. The first motivation for this argument
+is to allow prepending of runs in paragraphs with a defined style, for example
+to add a <code><a href="../../officer/help/run_autonum.html">run_autonum()</a></code> with all image captions.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The following operations are performed when importing a document:
+</p>
+
+<ul>
+<li><p> Numberings are copied from the source document to the target document.
+</p>
+</li>
+<li><p> Styles are not copied. If styles in the source document do not exist
+in the target document, the style specified in the <code>par_style_mapping</code>,
+<code>run_style_mapping</code> and <code>tbl_style_mapping</code> arguments will be used instead.
+If no mapping is provided, the default style will be used and a warning is emitted.
+</p>
+</li></ul>
+
+
+
+<h3>See Also</h3>
+
+<p>Other functions for adding content: 
+<code><a href="../../officer/help/body_add_blocks.html">body_add_blocks</a>()</code>,
+<code><a href="../../officer/help/body_add_break.html">body_add_break</a>()</code>,
+<code><a href="../../officer/help/body_add_caption.html">body_add_caption</a>()</code>,
+<code><a href="../../officer/help/body_add_docx.html">body_add_docx</a>()</code>,
+<code><a href="../../officer/help/body_add_fpar.html">body_add_fpar</a>()</code>,
+<code><a href="../../officer/help/body_add_gg.html">body_add_gg</a>()</code>,
+<code><a href="../../officer/help/body_add_img.html">body_add_img</a>()</code>,
+<code><a href="../../officer/help/body_add_par.html">body_add_par</a>()</code>,
+<code><a href="../../officer/help/body_add_plot.html">body_add_plot</a>()</code>,
+<code><a href="../../officer/help/body_add_table.html">body_add_table</a>()</code>,
+<code><a href="../../officer/help/body_add_toc.html">body_add_toc</a>()</code>,
+<code><a href="../../officer/help/body_append_start_context.html">body_append_start_context</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(officer)
+
+# example file from the package
+file_input &lt;- system.file(
+  package = "officer",
+  "doc_examples/example.docx"
+)
+
+# create a new rdocx document
+x &lt;- read_docx()
+
+# import content from file_input
+x &lt;- body_import_docx(
+  x = x,
+  src = file_input,
+  # style mapping for paragraphs and tables
+  par_style_mapping = list(
+    "Normal" = c("List Paragraph")
+  ),
+  tbl_style_mapping = list(
+    "Normal Table" = "Light Shading"
+  )
+)
+
+# Create temporary file
+tf &lt;- tempfile(fileext = ".docx")
+# write to file
+print(x, target = tf)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>officer</em> version 0.7.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

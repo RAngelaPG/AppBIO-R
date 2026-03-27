@@ -1,0 +1,270 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Initialisation of cluster usage</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for snowfall-init {snowfall}"><tr><td>snowfall-init {snowfall}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Initialisation of cluster usage</h2>
+
+<h3>Description</h3>
+
+<p>Initialisation and organisation code to use <span class="pkg">snowfall</span>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+sfInit( parallel=NULL, cpus=NULL, type=NULL, socketHosts=NULL, restore=NULL,
+        slaveOutfile=NULL, nostart=FALSE, useRscript=FALSE )
+sfStop( nostop=FALSE )
+
+sfParallel()
+sfIsRunning()
+sfCpus()
+sfNodes()
+sfGetCluster()
+sfType()
+sfSession()
+sfSocketHosts()
+sfSetMaxCPUs( number=32 )
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>parallel</code></td>
+<td>
+<p>Logical determinating parallel or sequential
+execution. If not set values from commandline are taken.</p>
+</td></tr>
+<tr valign="top"><td><code>cpus</code></td>
+<td>
+<p>Numerical amount of CPUs requested for the cluster. If
+not set, values from the commandline are taken.</p>
+</td></tr>
+<tr valign="top"><td><code>nostart</code></td>
+<td>
+<p>Logical determinating if the basic cluster setup should
+be skipped. Needed for nested use of <span class="pkg">snowfall</span> and usage in
+packages.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>Type of cluster. Can be 'SOCK', 'MPI', 'PVM' or 'NWS'. Default is 'SOCK'.</p>
+</td></tr>
+<tr valign="top"><td><code>socketHosts</code></td>
+<td>
+<p>Host list for socket clusters. Only needed for
+socketmode (SOCK) and
+if using more than one machines (if using only your local machine
+(localhost) no list is needed).</p>
+</td></tr>
+<tr valign="top"><td><code>restore</code></td>
+<td>
+<p>Globally set the restore behavior in the call
+<code>sfClusterApplySR</code> to the given value.</p>
+</td></tr>
+<tr valign="top"><td><code>slaveOutfile</code></td>
+<td>
+<p>Write R slave output to this file. Default: no
+output (Unix: <code>/dev/null</code>, Windows: <code>:nul</code>). If
+using sfCluster this argument has no function, as slave logs are
+defined using sfCluster.</p>
+</td></tr>
+<tr valign="top"><td><code>useRscript</code></td>
+<td>
+<p>Change startup behavior (snow&gt;0.3 needed): use shell scripts or R-script for startup (R-scripts beeing the new variant, but not working with sfCluster.</p>
+</td></tr>
+<tr valign="top"><td><code>nostop</code></td>
+<td>
+<p>Same as noStart for ending.</p>
+</td></tr>
+<tr valign="top"><td><code>number</code></td>
+<td>
+<p>Amount of maximum CPUs useable.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>sfInit</code> initialisise the usage of the <span class="pkg">snowfall</span> functions
+and - if running in parallel mode - setup the cluster and
+<span class="pkg">snow</span>. If using
+<code>sfCluster</code> management tool, call this without arguments. If
+<code>sfInit</code> is called with arguments, these overwrite
+<code>sfCluster</code> settings. If running parallel, <code>sfInit</code>
+set up the
+cluster by calling <code>makeCluster</code> from <span class="pkg">snow</span>. If using with
+<code>sfCluster</code>, the initialisation also contains management of
+lockfiles. If this function is called more than once and current
+cluster is yet running, <code>sfStop</code> is called automatically.
+</p>
+<p>Note that you should call <code>sfInit</code> before using any other function
+from <span class="pkg">snowfall</span>, with the only exception <code>sfSetMaxCPUs</code>.
+If you do not call <code>sfInit</code> first, on calling any <span class="pkg">snowfall</span>
+function <code>sfInit</code> is called without any parameters, which is
+equal to sequential mode in <span class="pkg">snowfall</span> only mode or the settings from
+sfCluster if used with sfCluster.
+</p>
+<p>This also means, you cannot check if <code>sfInit</code> was called from
+within your own program, as any call to a function will initialize
+again. Therefore the function <code>sfIsRunning</code> gives you a logical
+if a cluster is running. Please note: this will not call <code>sfInit</code>
+and it also returns true if a previous running cluster was stopped via
+<code>sfStop</code> in the meantime.
+</p>
+<p>If you use <span class="pkg">snowfall</span> in a package argument <code>nostart</code> is very
+handy if mainprogram uses <span class="pkg">snowfall</span> as well. If set, cluster
+setup will be skipped and both parts (package and main program) use
+the same cluster.
+</p>
+<p>If you call <code>sfInit</code> more than one time in a program without
+explicit calling <code>sfStop</code>, stopping of the cluster will be
+executed automatically. If your R-environment does not cover required
+libraries, <code>sfInit</code> automatically switches to sequential mode
+(with a warning). Required libraries for parallel usage are <span class="pkg">snow</span>
+and depending on argument <code>type</code> the libraries for the
+cluster mode (none for
+socket clusters, <span class="pkg">Rmpi</span> for MPI clusters, <span class="pkg">rpvm</span> for
+PVM clusters and <span class="pkg">nws</span> for NetWorkSpaces).
+</p>
+<p>If using Socket or NetWorkSpaces, <code>socketHosts</code> can be used to
+specify the hosts you want to have your workers running.
+Basically this is a list, where any entry can be a plain character
+string with IP or hostname (depending on your DNS settings). Also
+for real heterogenous clusters for any host pathes are setable. Please
+look to the acccording <span class="pkg">snow</span> documentation for details.
+If you are not giving an socketlist, a list with the required amount
+of CPUs on your local machine (localhost) is used. This would be the
+easiest way to use parallel computing on a single machine, like a
+laptop.
+</p>
+<p>Note there is limit on CPUs used in one program (which can be
+configured on package installation). The current limit are 32 CPUs. If
+you need a higher amount of CPUs, call <code>sfSetMaxCPUs</code>
+<em>before</em> the first call to <code>sfInit</code>. The limit is set to
+prevent inadvertently request by single users affecting the cluster as
+a whole.
+</p>
+<p>Use <code>slaveOutfile</code> to define a file where to write the log
+files. The file location must be available on all nodes. Beware of
+taking a location on a shared network drive! Under *nix systems, most
+likely the directories <code>/tmp</code> and <code>/var/tmp</code> are not shared
+between the different machines. The default is no output file.
+If you are using <code>sfCluster</code> this
+argument have no meaning as the slave logs are always created in a
+location of <code>sfClusters</code> choice (depending on it's configuration).
+</p>
+<p><code>sfStop</code> stop cluster. If running in parallel mode, the LAM/MPI
+cluster is shut down.
+</p>
+<p><code>sfParallel</code>, <code>sfCpus</code> and <code>sfSession</code> grant access to
+the internal state of the currently used cluster.
+All three can be configured via commandline and especially with
+<code>sfCluster</code> as well, but given
+arguments in <code>sfInit</code> always overwrite values on commandline.
+The commandline options are <span class="option">--parallel</span> (empty option. If missing,
+sequential mode is forced), <span class="option">--cpus=X</span> (for nodes, where X is a
+numerical value) and <span class="option">--session=X</span> (with X a string).
+</p>
+<p><code>sfParallel</code> returns a
+logical if program is running in parallel/cluster-mode or sequential
+on a single processor.
+</p>
+<p><code>sfCpus</code> returns the size of the cluster in CPUs
+(equals the CPUs which are useable). In sequential mode <code>sfCpus</code>
+returns one. <code>sfNodes</code> is a deprecated similar to <code>sfCpus</code>.
+</p>
+<p><code>sfSession</code> returns a string with the
+session-identification. It is mainly important if used with the
+<code>sfCluster</code> tool.
+</p>
+<p><code>sfGetCluster</code> gets the <span class="pkg">snow</span>-cluster handler. Use for
+direct calling of <span class="pkg">snow</span> functions.
+</p>
+<p><code>sfType</code> returns the type of the current cluster backend (if
+used any). The value can be SOCK, MPI, PVM or NWS for parallel
+modes or &quot;- sequential -&quot; for sequential execution.
+</p>
+<p><code>sfSocketHosts</code> gives the list with currently used hosts for
+socket clusters. Returns empty list if not used in socket mode (means:
+<code>sfType() != 'SOCK'</code>).
+</p>
+<p><code>sfSetMaxCPUs</code> enables to set a higher maximum CPU-count for this
+program. If you need higher limits, call <code>sfSetMaxCPUs</code> before
+<code>sfInit</code> with the new maximum amount.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>See snow documentation for details on commands:
+<code>link[snow]{snow-cluster}</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+  # Run program in plain sequential mode.
+  sfInit( parallel=FALSE )
+  stopifnot( sfParallel() == FALSE )
+  sfStop()
+
+  # Run in parallel mode overwriting probably given values on
+  # commandline.
+  # Executes via Socket-cluster with 4 worker processes on
+  # localhost.
+  # This is probably the best way to use parallel computing
+  # on a single machine, like a notebook, if you are not
+  # using sfCluster.
+  # Uses Socketcluster (Default) - which can also be stated
+  # using type="SOCK".
+  sfInit( parallel=TRUE, cpus=4 )
+  stopifnot( sfCpus() == 4 )
+  stopifnot( sfParallel() == TRUE )
+  sfStop()
+
+  # Run parallel mode (socket) with 4 workers on 3 specific machines.
+  sfInit( parallel=TRUE, cpus=4, type="SOCK",
+          socketHosts=c( "biom7", "biom7", "biom11", "biom12" ) )
+  stopifnot( sfCpus() == 4 )
+  stopifnot( sfParallel() == TRUE )
+  sfStop()
+
+  # Hook into MPI cluster.
+  # Note: you can use any kind MPI cluster Rmpi supports.
+  sfInit( parallel=TRUE, cpus=4, type="MPI" )
+  sfStop()
+
+  # Hook into PVM cluster.
+  sfInit( parallel=TRUE, cpus=4, type="PVM" )
+  sfStop()
+
+  # Run in sfCluster-mode: settings are taken from commandline:
+  # Runmode (sequential or parallel), amount of nodes and hosts which
+  # are used.
+  sfInit()
+
+  # Session-ID from sfCluster (or XXXXXXXX as default)
+  session &lt;- sfSession()
+
+  # Calling a snow function: cluster handler needed.
+  parLapply( sfGetCluster(), 1:10, exp )
+
+  # Same using snowfall wrapper, no handler needed.
+  sfLapply( 1:10, exp )
+
+  sfStop()
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>snowfall</em> version 1.84-6.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

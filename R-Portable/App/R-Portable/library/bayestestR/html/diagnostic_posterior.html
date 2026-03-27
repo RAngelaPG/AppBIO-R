@@ -1,0 +1,231 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Posteriors Sampling Diagnostic</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for diagnostic_posterior {bayestestR}"><tr><td>diagnostic_posterior {bayestestR}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Posteriors Sampling Diagnostic</h2>
+
+<h3>Description</h3>
+
+<p>Extract diagnostic metrics (Effective Sample Size (<code>ESS</code>), <code>Rhat</code> and Monte
+Carlo Standard Error <code>MCSE</code>).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+diagnostic_posterior(posterior, ...)
+
+## Default S3 method:
+diagnostic_posterior(posterior, diagnostic = c("ESS", "Rhat"), ...)
+
+## S3 method for class 'stanreg'
+diagnostic_posterior(
+  posterior,
+  diagnostic = "all",
+  effects = "fixed",
+  component = "location",
+  parameters = NULL,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>posterior</code></td>
+<td>
+<p>A <code>stanreg</code>, <code>stanfit</code>, <code>brmsfit</code>, or <code>blavaan</code> object.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Currently only used for models of class <code>brmsfit</code>, where a <code>variable</code>
+argument can be used, which is directly passed to the <code>as.data.frame()</code>
+method (i.e., <code>as.data.frame(x, variable = variable)</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>diagnostic</code></td>
+<td>
+<p>Diagnostic metrics to compute.  Character (vector) or list
+with one or more of these options: <code>"ESS"</code>, <code>"Rhat"</code>, <code>"MCSE"</code> or <code>"all"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>effects</code></td>
+<td>
+<p>Should variables for fixed effects (<code>"fixed"</code>), random effects
+(<code>"random"</code>) or both (<code>"all"</code>) be returned? Only applies to mixed models. May
+be abbreviated.
+</p>
+<p>For models of from packages <strong>brms</strong> or <strong>rstanarm</strong> there are additional
+options:
+</p>
+
+<ul>
+<li> <p><code>"fixed"</code> returns fixed effects.
+</p>
+</li>
+<li> <p><code>"random_variance"</code> return random effects parameters (variance and
+correlation components, e.g. those parameters that start with <code>sd_</code> or
+<code>cor_</code>).
+</p>
+</li>
+<li> <p><code>"grouplevel"</code> returns random effects group level estimates, i.e. those
+parameters that start with <code>r_</code>.
+</p>
+</li>
+<li> <p><code>"random"</code> returns both <code>"random_variance"</code> and <code>"grouplevel"</code>.
+</p>
+</li>
+<li> <p><code>"all"</code> returns fixed effects and random effects variances.
+</p>
+</li>
+<li> <p><code>"full"</code> returns all parameters.
+</p>
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>component</code></td>
+<td>
+<p>Which type of parameters to return, such as parameters for
+the conditional model, the zero-inflated part of the model, the dispersion
+term, the instrumental variables or marginal effects be returned? Applies to
+models with zero-inflated and/or dispersion formula, or to models with
+instrumental variables (so called fixed-effects regressions), or models with
+marginal effects (from <strong>mfx</strong>). See details in section <em>Model Components</em>
+.May be abbreviated. Note that the <em>conditional</em> component also refers to the
+<em>count</em> or <em>mean</em> component - names may differ, depending on the modeling
+package. There are three convenient shortcuts (not applicable to <em>all</em> model
+classes):
+</p>
+
+<ul>
+<li> <p><code>component = "all"</code> returns all possible parameters.
+</p>
+</li>
+<li><p> If <code>component = "location"</code>, location parameters such as <code>conditional</code>,
+<code>zero_inflated</code>, <code>smooth_terms</code>, or <code>instruments</code> are returned (everything
+that are fixed or random effects - depending on the <code>effects</code> argument -
+but no auxiliary parameters).
+</p>
+</li>
+<li><p> For <code>component = "distributional"</code> (or <code>"auxiliary"</code>), components like
+<code>sigma</code>, <code>dispersion</code>, <code>beta</code> or <code>precision</code> (and other auxiliary
+parameters) are returned.
+</p>
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>parameters</code></td>
+<td>
+<p>Regular expression pattern that describes the parameters that
+should be returned.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><strong>Effective Sample (ESS)</strong> should be as large as possible, although for
+most applications, an effective sample size greater than 1000 is sufficient
+for stable estimates (<em>Bürkner, 2017</em>). The ESS corresponds to the number of
+independent samples with the same estimation power as the N autocorrelated
+samples. It is is a measure of &quot;how much independent information there is
+in autocorrelated chains&quot; (<em>Kruschke 2015, p182-3</em>).
+</p>
+<p><strong>Rhat</strong> should be the closest to 1. It should not be larger than 1.1
+(<em>Gelman and Rubin, 1992</em>) or 1.01 (<em>Vehtari et al., 2019</em>). The split
+Rhat statistic quantifies the consistency of an ensemble of Markov chains.
+</p>
+<p><strong>Monte Carlo Standard Error (MCSE)</strong> is another measure of accuracy of the
+chains. It is defined as standard deviation of the chains divided by their
+effective sample size (the formula for <code>mcse()</code> is from Kruschke 2015, p.
+187). The MCSE &quot;provides a quantitative suggestion of how big the estimation
+noise is&quot;.
+</p>
+
+
+<h3>Model components</h3>
+
+<p>Possible values for the <code>component</code> argument depend on the model class.
+Following are valid options:
+</p>
+
+<ul>
+<li> <p><code>"all"</code>: returns all model components, applies to all models, but will only
+have an effect for models with more than just the conditional model
+component.
+</p>
+</li>
+<li> <p><code>"conditional"</code>: only returns the conditional component, i.e. &quot;fixed
+effects&quot; terms from the model. Will only have an effect for models with
+more than just the conditional model component.
+</p>
+</li>
+<li> <p><code>"smooth_terms"</code>: returns smooth terms, only applies to GAMs (or similar
+models that may contain smooth terms).
+</p>
+</li>
+<li> <p><code>"zero_inflated"</code> (or <code>"zi"</code>): returns the zero-inflation component.
+</p>
+</li>
+<li> <p><code>"location"</code>: returns location parameters such as <code>conditional</code>,
+<code>zero_inflated</code>, or <code>smooth_terms</code> (everything that are fixed or random
+effects - depending on the <code>effects</code> argument - but no auxiliary
+parameters).
+</p>
+</li>
+<li> <p><code>"distributional"</code> (or <code>"auxiliary"</code>): components like <code>sigma</code>,
+<code>dispersion</code>, <code>beta</code> or <code>precision</code> (and other auxiliary parameters) are
+returned.
+</p>
+</li></ul>
+
+<p>For models of class <code>brmsfit</code> (package <strong>brms</strong>), even more options are
+possible for the <code>component</code> argument, which are not all documented in detail
+here. See also <a href="https://easystats.github.io/insight/reference/find_parameters.BGGM.html"><code>?insight::find_parameters</code></a>.
+</p>
+
+
+<h3>References</h3>
+
+
+<ul>
+<li><p> Gelman, A., &amp; Rubin, D. B. (1992). Inference from iterative simulation
+using multiple sequences. Statistical science, 7(4), 457-472.
+</p>
+</li>
+<li><p> Vehtari, A., Gelman, A., Simpson, D., Carpenter, B., and Bürkner, P. C.
+(2019). Rank-normalization, folding, and localization: An improved Rhat
+for assessing convergence of MCMC. arXiv preprint arXiv:1903.08008.
+</p>
+</li>
+<li><p> Kruschke, J. (2014). Doing Bayesian data analysis: A tutorial with R,
+JAGS, and Stan. Academic Press.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+
+
+# rstanarm models
+# -----------------------------------------------
+model &lt;- suppressWarnings(
+  rstanarm::stan_glm(mpg ~ wt + gear, data = mtcars, chains = 2, iter = 200, refresh = 0)
+)
+diagnostic_posterior(model)
+
+# brms models
+# -----------------------------------------------
+model &lt;- brms::brm(mpg ~ wt + cyl, data = mtcars)
+diagnostic_posterior(model)
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>bayestestR</em> version 0.17.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

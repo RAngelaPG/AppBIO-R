@@ -1,0 +1,2094 @@
+\documentclass[nojss,article]{jss}
+
+%% need no \usepackage{Sweave.sty}
+%% \VignetteIndexEntry{Importing Vector Graphics}
+
+\author{Paul Murrell\\The University of Auckland}
+\title{Importing Vector Graphics:\\ The \pkg{grImport} Package for \proglang{R}}
+
+\Plainauthor{Paul Murrell} 
+\Plaintitle{Importing Vector Graphics: The grImport Package for R} 
+\Shorttitle{\pkg{grImport}: Importing Vector Graphics} 
+
+\Abstract{
+This introduction to the \pkg{grImport} package is a modified
+version of \cite{Murrell:2009}, which was published in the 
+\textit{Journal of Statistical Software}.
+
+  This article describes an approach to importing vector-based graphical
+images into statistical software as implemented in a
+package called \pkg{grImport} for the \proglang{R} statistical computing environment.
+This approach assumes that an original image 
+can be transformed into a \ps{} format (i.e., the 
+opriginal image is in a standard
+vector graphics format such as \ps{}, {PDF}, or {SVG}).
+The \pkg{grImport} package consists of three components:
+a function for converting \ps{} files to an \proglang{R}-specific XML format;
+a function for reading the XML format into special \code{Picture} objects
+in \proglang{R};
+and functions for manipulating and drawing \code{Picture} objects.
+Several examples and applications are presented, including
+annotating a statistical plot with an imported logo and using
+imported images as plotting symbols.
+}
+\Keywords{{PostScript}, \proglang{R}, statistical graphics, 
+  {XML}}
+\Plainkeywords{PostScript, R, statistical graphics, XML} 
+
+\Address{
+  Paul Murrell \\
+  Department of Statistics\\
+  The University of Auckland\\
+  Private Bag 92019\\
+  Auckland, New Zealand\\
+  Telephone: +64/9/3737599-85392\\
+  E-mail: \email{paul@stat.auckland.ac.nz}\\
+  URL: \url{http://www.stat.auckland.ac.nz/~paul/}
+} 
+
+\usepackage{boxedminipage}
+\newcommand{\rgml}{RGML}
+\newcommand{\ps}{PostScript}
+\newcommand{\xml}{XML}
+\newcommand{\dfn}[1]{\emph{#1}}
+\SweaveOpts{keep.source = true}
+
+<<echo=FALSE, results=hide>>=
+options(prompt="R> ")
+options(continue = "+  ")
+options(width = 60)
+options(useFancyQuotes = FALSE)
+strOptions(strict.width = TRUE)
+library(grid)
+library(lattice)
+
+@ 
+
+%% end of declarations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\section{Introduction}
+
+One of the important features of statistical software is the ability to
+create sophisticated statistical plots of data.  Software systems
+such as the \pkg{lattice} \citep{lattice}
+ package in \proglang{R} \citep{R} can produce complex images
+from a very compact expression.  For example, the
+following code is all that is needed to produce the image in
+Figure \ref{figure:chess}, which shows density estimates for 
+the number of moves in a set of chess games, broken down by the result
+of the games.
+
+<<echo=FALSE>>=
+chess <- read.table("chessmod.txt", sep = ":", quote = "",
+                    col.names = c("player1", "player2",
+                      "result", "moves", "year", "place",
+                      "openingDetailed"))
+chess$result <- factor(ifelse(chess$result == "1-1",
+                              "draw",
+                              ifelse((chess$result == "1-0" &
+                                      chess$player1 == "La Bourdonnais") |
+                                     (chess$result == "0-1" &
+                                      chess$player2 == "La Bourdonnais"),
+                                     "win",
+                                     "loss")),
+                       levels = c("win", "draw", "loss"))
+chess$opening <- reorder(factor(gsub("^... |, .+$", "", 
+                                     chess$openingDetailed)),
+                         chess$moves, FUN = median)
+chess$draw <- ifelse(chess$result == "draw", "draw", "result")
+
+chess.tab <- xtabs( ~ moves + result, chess)
+chess.tab.df <- as.data.frame(chess.tab)
+chess.tab.df$nmoves <- as.numeric(as.character(chess.tab.df$moves))
+
+chess.df <- subset(chess.tab.df, Freq > 0)
+# Fiddle to force y-scale to include 0
+chess.df <- rbind(chess.df, 
+                  data.frame(moves = NA, result = "win",
+                             Freq = 0, nmoves = 1000))
+
+<<chessplot, eval=FALSE>>=
+xyplot(Freq ~ nmoves | result, data = chess.df, type = "h", 
+       layout = c(1, 3), xlim = c(0, 100))   
+
+<<chess, echo=FALSE, fig=TRUE, height=4, include=FALSE>>=
+print(
+# One tiny hidden fiddle to control y-axis labels
+xyplot(Freq ~ nmoves | result, data = chess.df, type = "h", 
+       layout = c(1, 3), xlim = c(0, 100),
+       scales = list(y = list(at = seq(0, 6, 2))))   
+)
+
+@ 
+\begin{figure}
+\begin{center}
+\includegraphics[width = .8\textwidth]{import-chess}
+\end{center}
+\caption{\label{figure:chess}A statistical plot produced in 
+\proglang{R} using the \pkg{lattice} package.  The data are from chess games
+involving Louis Charles Mahe De La Bourdonnais between 1821 and 1838
+(original source: \url{http://www.chessgames.com/}).}
+\end{figure}
+
+On the other hand, statistical graphics software does \emph{not} typically
+provide support for producing more free-form or artistic graphical images.
+As a very simple example, it would be difficult to
+produce an image of a chess piece, like the pawn shown in Figure
+\ref{figure:pawn},
+using statistical software.
+
+<<chesspiece, echo=FALSE, fig=TRUE, height=1, width=1, include=FALSE>>=
+library("grImport")
+PostScriptTrace("chess_game_01.fromInkscape.eps")
+chessPicture <- readPicture("chess_game_01.fromInkscape.eps.xml")
+pawn <- chessPicture[205:206]
+# grid.newpage()
+grid.picture(pawn)
+
+@ 
+\begin{figure}
+\begin{center}
+\includegraphics[width = .5in]{import-chesspiece}
+\end{center}
+\caption{\label{figure:pawn}A free-form image of a chess pawn.  
+This is an example
+of the sort of artistic
+graphic that is difficult to produce using statistical 
+software.}
+\end{figure}
+
+In the case of \proglang{R}, there is a general polygon-drawing function, but
+determining the vertices for the boundary of this pawn image would 
+be non-trivial. These sorts of artistic images are produced much more easily
+using the tools that are provided by drawing software such
+as the \pkg{GIMP} \citep[][\url{http://www.gimp.org/}]{gimp}
+ or \pkg{Inkscape} \citep[][\url{http://www.inkscape.org/}]{inkscape},
+not to mention that producing an aesthetically pleasing result for
+this sort of image also requires a healthy dose of artistic skill.
+
+However, there are situations where it is useful to be able to
+include artistic images as part of a statistical plot.
+Figure
+\ref{figure:chesspluspiece} demonstrates this sort of 
+annotation by adding a pawn to each panel of the plot
+from Figure \ref{figure:chess}, to provide an additional visual cue
+as to whether the games in the panel were won (white pawn),
+drawn (grey pawn) or lost (black pawn).
+
+<<chesspluspieceplot, echo=FALSE, eval=FALSE>>=
+xyplot(Freq ~ nmoves | result, data = chess.df, type = "h", 
+       layout = c(1, 3), xlim = c(0, 100),
+       panel = function(...) { 
+           panel.xyplot(...)
+           grid.symbols(pawn, .05, .5, use.gc = FALSE,
+                        size = unit(.5, "npc"),
+                        gp = gpar(fill = switch(which.packet(),
+                                  "white", "grey", "black")))
+       })   
+
+<<chesspluspiece, echo=FALSE, fig=TRUE, height=4, include=FALSE>>=
+print(
+# Fiddle to force y-scale to include 0
+xyplot(Freq ~ nmoves | result, data = chess.df, type = "h", 
+       layout = c(1, 3), xlim = c(0, 100),
+       scales = list(y = list(at = seq(0, 6, 2))),
+       panel = function(...) { 
+           panel.xyplot(...)
+           grid.symbols(pawn, .05, .5, use.gc = FALSE,
+                        size = unit(.5, "npc"),
+                        gp = gpar(fill = switch(which.packet(),
+                                  "white", "grey", "black")))
+       })   
+)
+@ 
+
+\begin{figure}
+\begin{center}
+\includegraphics[width = .8\textwidth]{import-chesspluspiece}
+\end{center}
+\caption{\label{figure:chesspluspiece}The statistical
+plot from Figure \ref{figure:chess} with a pawn added to each
+panel. }
+\end{figure}
+
+This is one example of the problem that is addressed in this article.
+Stating the issue more generally, this article is concerned with
+the ability to import
+graphical images that have been generated using third party software
+into a statistical software system so that the images can be
+manipulated within the statistical software, including
+incorporating the images within statistical plots.  
+
+\subsection{Raster images versus vector images}
+
+There are two basic types of image formats:  \dfn{raster} images and 
+\dfn{vector} images.  
+A raster
+image consists of a matrix of \dfn{pixels} (picture elements)
+and the image is represented by recording a separate color value
+for each pixel.
+A vector image consists of a set of mathematical shapes, such as
+lines and polygons, and the image
+is represented by recording the locations and colors of the shapes.
+
+The images in Figure \ref{figure:rastervector}
+ demonstrate the difference between raster and
+vector images.  On the left is a raster image of a circle both at
+normal size and magnified to show
+that the image is made up of a set of square pixels.  At an appropriate
+size, this image looks fine, but it does not
+scale well.  On the right
+is a vector version of the same image.  At the smaller scale, this
+image appears very similar to the raster image, but the zoomed
+portion shows that the vector image is made up of a curve and this 
+can be rendered effectively at any size.
+
+\begin{figure}
+\begin{center}
+\hspace*{\fill}
+%\includegraphics[width=2in]{Rras}\hfill%
+%\includegraphics[width=2in]{Rvec}\hfill
+\includegraphics[width=2in]{circleRas}
+\hfill
+\includegraphics[width=2in]{circleVec}
+\hspace*{\fill}
+\end{center}
+\caption{\label{figure:rastervector}Two versions of a circle---a
+raster image (on the left)
+and a vector image (on the right)---at two different scales.  Vector
+images scale better than raster images.}
+\end{figure}
+
+Importing raster images is a different problem from importing
+vector images.  For the \proglang{R} system, several packages,
+including \pkg{pixmap} \citep{pixmap}, 
+\pkg{rimage} \citep{rimage}, and \pkg{EBImage} \citep{RNews:EBImage}, provide 
+functions for reading various raster image formats into \proglang{R}.
+
+This article is concerned with reading \emph{vector} image formats into \proglang{R}.
+
+\subsection{Vector image formats}
+\label{section:vectorformats}
+
+The problem addressed in this article is essentially a \dfn{conversion}
+problem.  The original image, in its original vector format, needs to be 
+converted into a format that \proglang{R} can understand (and draw).
+
+There are many different vector image formats, with some major examples
+being \ps{} \citep{postscript},
+{PDF} \citep{pdf}, and {SVG} \citep{svg}.
+These are more accurately described as \dfn{meta formats},
+because they allow an image to consist of both raster and vector
+components.  However, the important point for the current context 
+is that these are very popular
+ formats for storing an image as a description of a set of mathematical
+shapes.
+
+Rather than attempt to convert all possible vector image formats,
+the approach taken in this article is to provide tools to 
+convert a single
+format, \ps{}, and rely on other software
+to convert images in other formats to \ps{}.
+For example, the \pkg{convert} utility from the \pkg{ImageMagick} 
+graphics suite 
+\citep[][\url{http://www.imagemagick.org/}]{imagemagick}
+can be used to convert between a large variety of 
+graphics formats.  For the particular case of {PDF} to \ps{},
+the \pkg{ghostscript}
+\citep[][\url{http://pages.cs.wisc.edu/~ghost/}]{ghostscript}
+utility \pkg{pdf2ps} is quite effective, and 
+\pkg{Inkscape} has produced good results for converting from {SVG} to \ps{}.
+There are some limitations to this dependence on \ps{} images, 
+but a proper discussion of these
+will be deferred until Section \ref{section:limits}.
+The reasons \emph{for} choosing \ps{} as the single format to focus on
+are explained in the next section.
+
+\section[The grImport package]{The \pkg{grImport} package}
+\label{section:grimport}
+
+The solution that is described in this article
+for importing vector graphics into statistical software is
+implemented in an \proglang{R} package called \pkg{grImport}.
+
+The solution provided by the \pkg{grImport} package
+consists of three separate steps:  converting
+from an original \ps{} image to a specialized \rgml{} 
+format;  importing the \rgml{} format into \proglang{R} data structures;
+and drawing the \proglang{R} data structures.  Each of these steps is 
+described in a separate section below.
+
+\subsection[PostScript to XML]{\ps{} to \xml{}}
+\label{section:pstoxml}
+
+The starting point for any import using this system 
+is a \ps{} file and the first step in the import process is
+a conversion of this \ps{} file to a new file in a
+special XML \citep{xml} format called \rgml{} (R Graphics Markup Language).
+
+The \rgml{} format is specific to the \pkg{grImport} package.
+It is a very simple graphics format that describes an image
+in terms that the \proglang{R} graphics system can understand.  It will
+be described in more detail in later sections.
+
+As a simple example to follow through in detail, Table
+\ref{table:petalps} shows a file, \code{petal.ps}, that
+consists of \ps{} code for drawing a simple
+``petal'' shape, which is shown to the right of the code in Table
+\ref{table:petalps}.
+
+<<petaltrace, echo=FALSE>>=
+PostScriptTrace("petal.ps")
+
+<<petal, echo = FALSE, fig=TRUE, width=1, height=1, include=FALSE>>=
+petal <- readPicture("petal.ps.xml")
+grid.newpage()
+grid.picture(petal)
+
+@ 
+
+\begin{table}
+\begin{boxedminipage}{.9\textwidth}
+<<echo=FALSE>>=
+petalps <- readLines("petal.ps")
+cat(petalps,
+    sep = "\n")
+@ 
+\end{boxedminipage}%
+\begin{minipage}{.1\textwidth}
+\begin{center}
+\includegraphics[width = .5in]{import-petal}
+\end{center}
+\end{minipage}
+\caption{\label{table:petalps}The file \code{petal.ps},
+which contains \ps{} code to draw a simple
+``petal'' shape (shown to the right of the code).}
+\end{table}
+
+This simple example demonstrates some basic
+\ps{} commands.  A shape, called a \dfn{path}, 
+is defined by specifying lines and curves
+between a set of points and this shape is then filled with a color.
+
+Another common \ps{} operation
+involves drawing just the boundary outline of the shape.  This could
+be achieved in the example in Table \ref{table:petalps} 
+by replacing the command
+\code{fill} (the last line of Table \ref{table:petalps})
+with the command \code{stroke} 
+(\ps{} calls drawing the outline \dfn{stroking} a path).
+
+
+\begin{table}
+\begin{boxedminipage}{\textwidth}
+{\footnotesize
+<<echo=FALSE>>=
+cat(gsub("\t", "    ", 
+         gsub("(source)=", "\n         \\1=",
+              readLines("petal.ps.xml"))),
+    sep = "\n")
+@ 
+} % \small
+\end{boxedminipage}
+\caption{\label{table:petalpsxml}The file \code{petal.ps.xml},
+which contains \rgml{} code created
+by calling \code{PostScriptTrace()} on the 
+\ps{} code in Table \ref{table:petalps}.}
+\end{table}
+
+The user interface provided by \pkg{grImport} for the conversion from \ps{}
+to \rgml{} format is very simple, consisting
+of a single function, \code{PostScriptTrace()}.  In the most basic
+usage, the only required argument is the name of the \ps{} file
+to convert, as in the code below.
+The resulting \rgml{} file,
+\code{petal.ps.xml} is shown in Table \ref{table:petalpsxml}.
+
+<<eval=FALSE>>=
+<<petaltrace>>
+@ 
+The \rgml{} format in this example is roughly a one-to-one
+translation of the \ps{} code.  The shape is recorded as 
+a \code{<path>} element that has a \code{type} attribute
+with the value \code{fill} indicating that the shape should be
+filled.  The \code{<context>} element for this shape specifies 
+the colour to be used to fill the shape and then a series of 
+\code{<move>} and \code{<line>} elements describe the outline
+of the shape itself.  A \code{<summary>} element provides information
+on how many paths there are in the image, plus bounding box 
+information.
+
+One detail to notice is that the \code{curveto} in the \ps{} file
+has become a series of \code{<line>} elements in the \rgml{}
+file.  We will discuss this issue further in Section \ref{section:details}.
+The main point to focus on for now is that the image has become a set of 
+$(x, y)$ locations that describe the outline of the shape in the
+image, as illustrated in Figure \ref{figure:petaloutline}.
+
+<<petaloutline, echo=FALSE, fig=TRUE, width=1, height=1, include=FALSE>>=
+pointify <- function(object, ...) {
+    # Thin out the dots for a better diagram
+    n <- length(object@x)
+    subset <- c(1, seq(2, n, 3), n)
+    gTree(children = gList(linesGrob(object@x[subset], object@y[subset], 
+                                   default = "native",
+                                   gp = gpar(col = "grey"), ...),
+                         pointsGrob(object@x[subset], object@y[subset], 
+                                    size = unit(2, "mm"), pch = 16, ...)))
+}
+grid.picture(petal, FUN = pointify)
+
+@ 
+\begin{figure}
+\begin{center}
+\includegraphics[width = .5in]{import-petaloutline}
+\end{center}
+\caption{\label{figure:petaloutline}The \code{PostScriptTrace()}
+function breaks a path into a series of locations on the boundary
+of the path.  This image shows how the curved petal shape 
+from Table \ref{table:petalps} can be converted into a set of
+points describing the outline of the petal shape.}
+\end{figure}
+
+One reason for choosing \ps{} as the original format to focus on
+is that it is a sophisticated graphics language. 
+ \ps{} has commands to
+draw a wide variety of shapes and \ps{} provides advanced facilities
+to control the placement of shapes and to control such things as
+the colors and line styles for filling and stroking the shapes.
+This means that \ps{}
+is capable of describing very complex images;  by focusing
+on \ps{} we should be able to import virtually any vector image no matter
+how complicated it is. 
+
+This is not to say that \ps{} is the \emph{most} 
+sophisticated graphics language---{PDF} and {SVG} are 
+also sophisticated graphics languages with various strengths and
+weaknesses compared to \ps{}. The point is that, amongst
+graphics formats, \ps{} is one
+of the sophisticated ones.
+
+\ps{} is also a complete programming language.
+As a simple demonstration of this, Table
+\ref{table:flowerps} shows a file, \code{flower.ps}, that
+contains \ps{} code for drawing a simple
+``flower'' shape, which is shown to the right of the code
+in Table \ref{table:flowerps}.
+
+<<flowertrace, echo=FALSE>>=
+PostScriptTrace("flower.ps")
+
+<<flower, echo=FALSE, fig=TRUE, width=1, height=1, include=FALSE>>=
+PSflower <- readPicture("flower.ps.xml")
+grid.newpage()
+grid.picture(PSflower)
+
+@ 
+
+\begin{table}
+\begin{boxedminipage}{.7\textwidth}
+<<echo=FALSE>>=
+cat(readLines("flower.ps"),
+    sep = "\n")
+@ 
+\end{boxedminipage}%
+\begin{minipage}{.3\textwidth}
+\begin{center}
+\includegraphics[width = .5in]{import-flower}
+\end{center}
+\end{minipage}
+\caption{\label{table:flowerps}The file \code{flower.ps},
+which contains \ps{} code to draw a simple
+``flower'' shape (shown to the right of the code).}
+\end{table}
+
+The important feature of this \ps{} code is that it defines a ``macro''
+that describes how to draw a petal,
+then it runs this macro five times (at five different angles)
+to produce the overall flower.  
+
+This complexity presents an imposing challenge for us.  How can we
+convert \ps{} code when the code can be extremely complicated?
+The approach taken by the \pkg{grImport} package
+is to use the power of \ps{} against itself.
+
+The first part of the solution is based on the fact that
+it is possible to write \ps{} code that runs other \ps{} code.
+The basis for the conversion from an original \ps{} file to an 
+\rgml{} file
+is a set of additional \ps{} code that processes the original \ps{} file.
+
+The other part of the solution is based on the fact that 
+it is possible to \emph{redefine} 
+some of the core
+\ps{} commands.  For example, 
+the \pkg{grImport} \ps{} code redefines
+the meaning of the \ps{}
+commands \code{stroke} and
+\code{fill} so that, instead of drawing shapes,
+these commands print out information about the shapes that would have 
+been drawn.  
+
+Table \ref{table:translateps} shows a very simplified version
+of how the \pkg{grImport} \ps{} conversion code works.
+This code first defines a macro, \code{printtwo} that
+prints out two values.  It also defines a macro, \code{donothing},
+which does nothing.  The next macro, \code{fill}, is the important one.
+This is \emph{redefining} the standard \ps{} \code{fill} command.
+This macro, instead of filling a shape, breaks any curves in the current
+path into
+short line segments (\code{flattenpath}), then it calls the 
+\code{pathforall} command.  This command converts the current path
+into four possible operations:  a move, a line, a curve, or a \dfn{closing}
+of the path (joining the last location in the path back to the first
+location in the path).  The four values in front of \code{pathforall} specify 
+what to do for each of these operations.  Overall, the code
+says that, if there is a move or a line in the path, then we should
+print out two values (the position moved to or the position ``lined'' to).
+For curves and closes, we do nothing.  The final line of code
+in Table \ref{table:translateps} says to run the \ps{} code in
+the file \code{petal.ps}.
+
+The \ps{} code in the \pkg{grImport} package is a lot more 
+complicated than the code in Table \ref{table:translateps}, 
+but this demonstrates the main idea.
+
+\begin{table}
+\begin{boxedminipage}{\textwidth}
+<<echo=FALSE>>=
+cat(readLines("convert.ps"),
+    sep = "\n")
+@ 
+\end{boxedminipage}
+\caption{\label{table:translateps}The file \code{convert.ps},
+which contains \ps{} code to process the \ps{} file \code{petal.ps}.}
+\end{table}
+
+At this point, we have new \ps{} code that can process the original 
+\ps{} code and print out information about the shapes in the original
+image.  However, we still need software to \emph{run} the new \ps{} code.
+The \pkg{grImport} package 
+uses \pkg{ghostscript} for this purpose.
+For example, the code below shows how to run the simplified conversion
+code in Table \ref{table:translateps}, with the resulting output
+shown below that.  Several of the values printed out should be recognisable 
+from the \ps{} code in the file \code{petal.ps} (see
+Table \ref{table:petalps}).
+
+\begin{verbatim}
+$ gs -dBATCH -dQUIET -dNOPAUSE convert.ps
+0.0 0.0
+10.0 -5.0
+10.41 -4.78
+11.41 -4.14
+12.64 -3.15
+13.75 -1.87
+14.39 -0.36
+14.22 1.33
+12.87 3.13
+10.0 5.0
+10.0 5.0
+\end{verbatim}
+
+%$ unconfuse syntax highlighter
+
+This dependence means that \pkg{ghostscript} must be installed 
+for the \pkg{grImport} package to work, but it is readily available for
+all major platforms.  On Windows, the \code{R_GSCMD} environment 
+variable may also need to be set appropriately.
+
+The beauty of this solution is that, no matter how complicated the
+\ps{} code gets, it ultimately calls \code{stroke} or 
+\code{fill} to do the actual drawing.  For example, the code
+in Table \ref{table:flowerps} performs a loop to draw five petals,
+but we do not have to write code that understands \ps{} loops;  all
+we have to do is to ensure that \emph{whenever} the \ps{} code
+ultimately tries to fill one of the petals, we intervene and 
+simply print out the information about the petal instead.
+
+Table \ref{table:flowerpsxml} shows the \rgml{} file
+that results from running \code{PostScriptTrace()} on
+the \ps{} code in the file \code{flower.ps}.  Many of the
+\code{<line>} elements have been left out in order to show
+the overall structure of the file.
+
+<<eval=FALSE>>=
+<<flowertrace>>
+@ 
+\begin{table}
+\begin{boxedminipage}{\textwidth}
+{\footnotesize
+<<echo=FALSE>>=
+flowerLines <- gsub("\t", "    ", 
+                    gsub("(source)=", "\n         \\1=",
+                         readLines("flower.ps.xml")))
+flowerLines <- flowerLines[nchar(flowerLines) > 0]
+moves <- grep("<move", flowerLines)
+endpaths <- grep("</path", flowerLines)
+startLine <- 1
+for (i in 1:5) {
+    cat(flowerLines[startLine:(moves[i])],
+        "    ...",
+        sep = "\n")
+    startLine <- endpaths[i] - 1
+}
+cat(flowerLines[startLine:length(flowerLines)],
+    sep = "\n")
+@ 
+} % \small
+\end{boxedminipage}
+\caption{\label{table:flowerpsxml}The file \code{flower.ps.xml},
+which contains \rgml{} code created
+by calling \code{PostScriptTrace()} on the 
+\ps{} code in Table \ref{table:flowerps}.
+Most of the
+\code{<line>} elements have been removed and replaced with \code{...}
+so that 
+the overall structure of the complete file can be displayed.}
+\end{table}
+
+The overall effect is that the \ps{} \emph{program} in the file
+\code{flower.ps} has become a much longer, but much simpler 
+\rgml{} file consisting simply of descriptions of the five shapes
+that would have been drawn if the \ps{} file had been viewed
+normally.
+The \ps{} code that is used to perform the
+conversion from 
+the original \ps{} file to an \rgml{} file can be found within 
+the file \code{PostScript2RGML.R} of the \pkg{grImport} 
+package.
+
+At this point, there might appear to be little cause for celebration.
+All that we have managed to achieve is to convert the \ps{} file into an
+\rgml{} file.  It is important to highlight how much closer
+that has taken us to working with the image in \proglang{R}.
+
+The main point is that the \rgml{} format is \emph{simple}.  
+An \rgml{} file \emph{only} contains shape descriptions,
+so all \proglang{R} has to do is read the information about each
+shape and draw it.  It is also important that the shape descriptions
+are simple enough for \proglang{R} to be able to draw (the \proglang{R} graphics
+system does not have some of the sophisticated features of the \ps{} format).
+With the \pkg{XML} package \citep{pkgXML}, 
+reading an \xml{} file into \proglang{R} is relatively straightforward and \proglang{R} has
+facilities for drawing each of the
+shapes in the \rgml{} file.  
+
+A secondary point is that the \rgml{} format is \xml{} code.
+This is useful because \xml{} can be produced and consumed 
+by many different software
+systems.  For example, it would be quite straightforward
+to write {XSL} \citep{xsl} code that would convert an
+\rgml{} file to {SVG} with the help of the 
+\pkg{xsltproc} utility from the \pkg{libxslt} library \citep{libxslt}
+or using any other {XSL} processor.
+
+Another important class of software that can work with \xml{} documents
+is text editor software.  One of the nice features of \xml{} code
+is that it can be viewed and modified with very elementary tools.  In this
+context, basic image editing can be performed with a text editor.
+
+The \pkg{XML} package makes it possible to process the raw 
+XML in a bewildering variety of ways.
+As a simple example, the following \proglang{R} code uses an {XPath}
+expression to select the \code{<rgb>} elements in the \rgml{} file
+\code{flower.ps.xml} then modifies them 
+so that the flower is filled with a blue color
+instead of being black.  The modified flower image is shown 
+in Figure \ref{figure:blueflower}.
+
+<<results=hide>>=
+flowerRGML <- xmlParse("flower.ps.xml") 
+xpathApply(flowerRGML, "//path//rgb", 'xmlAttrs<-', 
+           value = c(r = .3, g = .6, b = .8))
+saveXML(flowerRGML, "blueflower.ps.xml")
+@ 
+<<blueflower, echo=FALSE, fig=TRUE, width=1, height=1, include=FALSE>>=
+blueflower <- readPicture("blueflower.ps.xml")
+grid.picture(blueflower)
+
+@ 
+\begin{figure}
+\begin{center}
+\includegraphics[width = .5in]{import-blueflower}
+\end{center}
+\caption{\label{figure:blueflower}A modified version
+of the original flower shape from Table \ref{table:flowerps},
+with the fill color changed to blue.}
+\end{figure}
+
+A final point is that once the image has been converted into the
+\rgml{} format, there is no further need for \pkg{ghostscript}.
+The image can be freely shared between users, with the only requirement
+being the availability of \proglang{R} (and the \pkg{XML} package).
+
+In summary, the \pkg{grImport} package provides a function called
+\code{PostScriptTrace()}, which uses \proglang{ghostscript}
+to process an original \ps{} file and convert it into an
+\rgml{} file.
+
+\subsection[XML to R]{\xml{} to \proglang{R}}
+
+The next step in importing a \ps{} image into \proglang{R} involves reading
+the \rgml{} format into \proglang{R}.
+As mentioned previously, reading \xml{} files is straightforward
+with the \pkg{XML} package.  However, the \proglang{R} objects that are generated
+by the functions in the \pkg{XML} package are very general-purpose, so
+the \pkg{grImport} package provides a function that produces an
+\proglang{R} object that is specifically designed for representing a
+graphical image.
+
+The function used to read \rgml{} files is called \code{readPicture()}.
+This function has only one argument, which is the name of the \rgml{} file.
+The following code uses this function to read the petal
+image from the file \code{petal.ps.xml}.
+
+<<>>=
+petal <- readPicture("petal.ps.xml")
+@ 
+The resulting object, \code{petal}, is a \code{Picture}
+object, with two slots:
+one slot contains all of the paths from the image 
+and the other slot contains the summary information about
+the image.  In this case, there is only one path and it 
+is a \code{PictureFill} object (i.e., a shape that should be
+filled with a color).
+
+<<>>=
+str(petal)
+@ 
+The \code{Picture}
+object has a clear one-to-one correspondence with the information
+in the \xml{} file and, again, we might question what we have gained
+by generating this object.  Why not just draw the information from the
+\rgml{} file directly?
+
+The main reason for having the special S4 class of 
+\code{Picture} objects in \proglang{R} is
+that we can work with the image using all of the 
+powerful data processing tools that are available in \proglang{R}.
+One specific example that is explicitly supported
+by the \pkg{grImport} package is the ability to subset
+paths from an image.
+
+As a simple example of subsetting, consider the \code{Picture} object
+that is generated by reading in the \rgml{} file that was
+generated from the \ps{} file \code{flower.ps} 
+(see Table \ref{table:flowerpsxml}).  Only the summary
+information for this \code{Picture} object is shown.
+
+<<>>=
+PSflower <- readPicture("flower.ps.xml")
+
+<<>>=
+str(PSflower@summary)
+@ 
+This \code{Picture} object has five paths, corresponding to the five
+petals.  A subsetting method for \code{Picture} objects is defined
+by the \pkg{grImport} package
+so that we can extract just some of the petals from the image as shown 
+in the code below.
+
+<<>>=
+petals <- PSflower[2:3]
+@ 
+The result is a new \code{Picture} object consisting of just the
+second and third paths from the original \code{Picture} object.  As the code
+below shows, the summary information has been updated as well.
+
+<<>>=
+str(petals@summary)
+@ 
+Visually, the new picture is just the second and third petals from
+the original image, as shown in Figure \ref{figure:petals}.
+
+<<petals, echo=FALSE, fig=TRUE, width=1, height=1, include=FALSE>>=
+grid.picture(petals)
+
+@ 
+\begin{figure}
+\begin{center}
+\includegraphics[width = .5in]{import-petals}
+\end{center}
+\caption{\label{figure:petals}Two of the petals from
+the original flower shape in Table \ref{table:flowerps}.}
+\end{figure}
+
+In more complex images, it is often less obvious which path corresponds
+to a particular shape within an image, so some trial and error
+may be necessary.  Section \ref{section:details} discusses this
+issue in more detail.
+
+Another advantage of having an S4 class for representing the image
+information is that this provides yet another way to store and share
+the image, via \proglang{R}'s \code{save()} and \code{load()} functions, 
+and one that no longer
+relies on the availability of the \pkg{XML} package.
+
+In summary, the \pkg{grImport} package  provides a function
+\code{readPicture()} that reads an \rgml{} file and creates
+a \code{Picture} object. \code{Picture} objects are used to draw
+the image, but they can also be manipulated to modify the image.  
+For example, a \code{Picture} object can be subsetted
+to extract individual paths from the overall image.
+
+\subsection[R to grid]{\proglang{R} to \pkg{grid}}
+\label{section:rtogrid}
+
+Having read an \rgml{} file into \proglang{R} as a \code{Picture}
+object, the final step is to draw the \code{Picture} object.
+Conceptually, this step is very straightforward.  A path is just
+a set of $(x, y)$ pairs and \proglang{R} graphics functions such as 
+\code{lines()} and \code{polygon()} in the \pkg{graphics} package,
+and \code{grid.lines()} and \code{grid.polygon()} in the \pkg{grid}
+package, can be used to stroke or fill these paths 
+\citep{R:Murrell:2005}.
+
+The main inconvenience in this step lies in dealing with
+\dfn{coordinate systems}.  As the code below demonstrates for
+the \code{petal} \code{Picture}, the $(x, y)$ locations for an image
+can be on an arbitrary scale.
+
+<<>>=
+petal@summary@xscale
+petal@summary@yscale
+@ 
+In order to position and size the image in useful ways, the
+$(x, y)$ locations for the paths need to be scaled.
+Viewports in the \pkg{grid} package provide a convenient way to establish
+appropriate coordinate systems for drawing, so the \pkg{grImport}
+package provides several functions based on \pkg{grid} for drawing
+\code{Picture} objects.
+
+The first of these, the \code{grid.symbols()} function, can be used to draw
+several copies of 
+a \code{Picture} object at a set of $(x, y)$ locations and at a specified
+size.  The following code makes use of this function to draw the 
+\code{PSflower}
+image as data symbols on a \pkg{lattice} scatterplot
+(see Figure \ref{figure:flowerplot}).  The important arguments are
+the \code{Picture} object to draw, the $(x, y)$ locations (and the
+coordinate system that those locations refer to), and the
+size of the individual images (in this case, each flower image is
+5{\scriptsize mm} high).
+
+<<>>=
+library("cluster")
+
+<<flowerplotcode, eval=FALSE>>=
+xyplot(V8 ~ V7, data = flower, 
+       xlab = "Height", ylab = "Distance Apart",
+       panel = function(x, y, ...) { 
+           grid.symbols(PSflower, x, y, units = "native", 
+                        size = unit(5, "mm")) 
+       })
+@ 
+<<flowerplot, echo=FALSE, results=hide>>=
+trellis.device("pdf", file = "import-flowerplot.pdf",
+               width = 6, height = 4, color = FALSE)
+print({ .Last.value <- 
+<<flowerplotcode>>
+}); rm(.Last.value)
+dev.off()
+
+@ 
+\begin{figure}
+\begin{center}
+\includegraphics[width = .8\textwidth]{import-flowerplot}
+\end{center}
+\caption{\label{figure:flowerplot}A statistical plot produced in 
+\proglang{R} using the \pkg{lattice} package, with an imported ``flower'' image
+used as the plotting symbol.  The data are the heights of 18
+popular flower varieties and 
+the distance that should be left between plants when sowing seeds.
+These data are in a data frame called \code{flower} in the 
+\pkg{cluster} package.}
+\end{figure}
+
+This example also demonstrates one of the major reasons for going to
+all of the effort to \emph{import} an image into \proglang{R} in order to combine it
+with an \proglang{R} plot.  
+An alternative approach to adding an image to a plot is to only 
+create the plot using \proglang{R} and then combine that plot with other
+images using tools such as \pkg{ImageMagick}'s \pkg{compose}
+utility.  However, the problem with that approach is that it is 
+impractical, if not impossible, to position the images relative to 
+the coordinate systems within the plot.  
+By importing an image
+to \proglang{R}, the image can be drawn within the same set of coordinate
+systems that are used to produce the plot, so the positioning 
+of images
+is straightforward and accurate.
+
+In addition to the \code{grid.symbols()} function, 
+the \pkg{grImport} package also provides a 
+\code{grid.picture()} function.  This is used to add a single copy of an
+image to a page.
+The \code{grid.picture()} function also provides a little more 
+flexibility in how the image is drawn, compared to the
+\code{grid.symbols()} function; an example of this
+flexibility will be described in Section \ref{section:picturetogrob}.
+
+As a simple demonstration of the \code{grid.picture()} function,
+the following code converts, reads, and draws the ``tiger'' example
+\ps{} file
+that is distributed with \pkg{ghostscript} (minus its 
+grey background rectangle).  The tiger image in Figure \ref{figure:tiger}
+is produced by \proglang{R}.
+
+% CHANGEME IF CHANGE CODE:  eval=FALSE cos slow
+<<tiger, eval=FALSE>>=
+PostScriptTrace("tiger.ps")
+tiger <- readPicture("tiger.ps.xml")
+grid.picture(tiger[-1])
+
+<<echo=FALSE, results=hide>>=
+png("import-tiger.png", width=900, height=900)
+<<tiger>>
+dev.off()
+
+@ 
+\label{page:tiger}%
+\begin{figure}
+\begin{center}
+\includegraphics[width=3in]{import-tiger.png}
+\end{center}
+\caption{\label{figure:tiger}A tiger image from the
+\pkg{ghostscript} distribution that has been imported
+and drawn using \proglang{R}.}
+\end{figure}
+
+In summary, the \pkg{grImport} package provides two functions for drawing 
+\code{Picture} objects:
+\code{grid.picture()} and \code{grid.symbols()}.  
+The \code{grid.picture()} function
+draws a single copy of the \code{Picture} at a particular location
+and size and the \code{grid.symbols()} function draws several copies
+of the \code{Picture} at a set of $(x, y)$ locations.
+
+The overall steps involved in importing an original image into 
+\proglang{R} are as follows:  generate a \ps{} version of the original image;
+use \code{PostScriptTrace()} to convert the image to an \rgml{} format;
+use \code{readPicture()} to read the \rgml{} file into a \code{Picture}
+object;  and use \code{grid.picture()} or \code{grid.symbols()}
+to draw the \code{Picture} object.
+
+\section{Further details}
+\label{section:details}
+
+The previous section provided an overview of the structure of the
+\pkg{grImport} solution to importing vector graphics into statistical 
+software.  In order to make that overview as straightforward as possible,
+some important details were ignored;  this section fills in some
+additional details about how the \pkg{grImport} package works.
+
+\subsection[Flattening PostScript paths]{Flattening \ps{} paths}
+
+The \ps{} language provides four basic operations for constructing
+a path:  \dfn{move} to a location,
+draw a (straight) \dfn{line} to a location, draw a \dfn{curve} to a location, 
+and show \dfn{text} at a location.  The discussion in Section
+\ref{section:grimport} only properly addressed moving and drawing lines.  
+The simple petal image and flower image examples did actually include
+paths with curves, but that was not properly dealt with.  We will
+now look more closely at how curves in \ps{} files are handled
+by \pkg{grImport}.  Section \ref{section:pstext} will
+deal with text.
+
+Looking again at the \ps{} code in Table \ref{table:petalps}, the
+path that describes the petal image consists of a move to the location
+$(0, 0)$, followed
+by a line to the location $(-5, 10)$, followed by a curve.  The \ps{} 
+code describing the curve is reproduced below.
+
+<<echo=FALSE>>=
+cat(gsub("%.+$", "", petalps[grep("curveto", petalps)]))
+
+@ 
+This curve creates the nice round ``end'' for the petal shape.
+
+In \ps{}, these curves are cubic B\'{e}zier curves;  a smooth curve
+is drawn from the previous location, in this case $(-5, 10)$, to
+the last location mentioned in the \code{curveto} command,
+$(5, 10)$, with the other two locations,
+$(-10, 20)$ and $(10, 20)$, specifying \dfn{control points}
+that control the shape of the curve.  Specifically, the start of
+the curve is tangent
+to a line joining the first two locations and the end of the curve is 
+tangent to a line joining the last two locations, as shown 
+in Figure \ref{figure:bezier}.
+
+<<bezier, echo=FALSE, fig=TRUE, width=3, height=1, include=FALSE>>=
+# grid.newpage()
+# Main diagram in 2x1 inch viewport (extra space is for labels)
+pushViewport(viewport(width = unit(2, "inches")))
+pushViewport(viewport(width = .9, height = .9,
+                      xscale = c(-10, 10), yscale = c(10, 20)))
+x <- c(-5, -10, 10, 5)
+y <- c(10, 20, 20, 10)
+grid.circle(x, y, default = "native", r = unit(1, "mm"), 
+            gp = gpar(col = NA, fill = "grey"))
+grid.segments(x[1], y[1], x[2], y[2],
+              default = "native",
+              gp = gpar(col = "grey"))
+grid.segments(x[3], y[3], x[4], y[4],
+              default = "native",
+              gp = gpar(col = "grey"))
+grid.text("(-5, 10)    ", x[1], y[1], default = "native", 
+          just = c("right", "bottom"), gp = gpar(cex = .5))
+grid.text("(-10, 20)   ", x[2], y[2], default = "native", 
+          just = c("right", "top"), gp = gpar(cex = .5))
+grid.text("   (10, 20)", x[3], y[3], default = "native", 
+          just = c("left", "top"), gp = gpar(cex = .5))
+grid.text("    (5, 10)", x[4], y[4], default = "native", 
+          just = c("left", "bottom"), gp = gpar(cex = .5))
+Ms <- 1/6*rbind(c(1, 4, 1, 0),
+                c(-3, 0, 3, 0),
+                c(3, -6, 3, 0),
+                c(-1, 3, -3, 1))
+Msinv <- solve(Ms)
+# Bezier control matrix
+Mb <- rbind(c(1, 0, 0, 0),
+            c(-3, 3, 0, 0),
+            c(3, -6, 3, 0),
+            c(-1, 3, -3, 1))
+# Get B-spline control points from Bezier control points by
+# Msinv %*% Mb %*% bezier control points
+xs <- Msinv %*% Mb %*% x
+ys <- Msinv %*% Mb %*% y
+grid.xspline(xs, ys,
+             default = "native",
+             shape = 1, repEnds = FALSE,
+             gp = gpar(col = "black", lwd = 2))
+popViewport(2)
+
+@ 
+\begin{figure}
+\begin{center}
+\includegraphics[width=3in]{import-bezier}
+\end{center}
+\caption{\label{figure:bezier}An illustration of how a bezier
+curve is drawn relative to four control points.}
+\end{figure}
+
+Unfortunately, the \proglang{R} graphics system cannot natively draw B\'{e}zier curves,
+and it does not have the notion of a general path consisting of both 
+straight lines and curves;  it can only draw a series of straight lines.
+Consequently, the conversion performed by 
+\code{PostScriptTrace()} breaks, or \dfn{flattens}, any curves into many 
+short straight lines, as shown in Figure \ref{figure:flatbezier}.
+
+<<flatbezier, echo=FALSE, fig=TRUE, width=3, height=1, include=FALSE>>=
+PostScriptTrace("petal.ps", "petalrough.xml", setflat = 3)
+petalrough <- readPicture("petalrough.xml")
+# grid.newpage()
+xf <- petalrough@paths[[1]]@x
+xf <- xf[-1]
+xf <- rev(xf)[-1]
+yf <- petalrough@paths[[1]]@y
+yf <- yf[-1]
+yf <- rev(yf)[-1]
+pushViewport(viewport(width = unit(2, "inches")))
+pushViewport(dataViewport(x, y))
+x <- c(-50, -100, 100, 50)
+y <- c(100, 200, 200, 100)
+grid.circle(x, y, default = "native", r = unit(1, "mm"), 
+            gp = gpar(col = NA, fill = "grey"))
+grid.segments(x[1], y[1], x[2], y[2],
+              default = "native",
+              gp = gpar(col = "grey"))
+grid.segments(x[3], y[3], x[4], y[4],
+              default = "native",
+              gp = gpar(col = "grey"))
+grid.text("(-5, 10)    ", x[1], y[1], default = "native", 
+          just = c("right", "bottom"), gp = gpar(cex = .5))
+grid.text("(-10, 20)   ", x[2], y[2], default = "native", 
+          just = c("right", "top"), gp = gpar(cex = .5))
+grid.text("   (10, 20)", x[3], y[3], default = "native", 
+          just = c("left", "top"), gp = gpar(cex = .5))
+grid.text("    (5, 10)", x[4], y[4], default = "native", 
+          just = c("left", "bottom"), gp = gpar(cex = .5))
+grid.lines(xf, yf, 
+           default = "native")
+grid.circle(xf, yf, r = unit(.5, "mm"), 
+            default = "native",
+            gp = gpar(fill = "black"))
+popViewport(2)
+
+@ 
+\begin{figure}
+\begin{center}
+\includegraphics[width=3in]{import-flatbezier}
+\end{center}
+\caption{\label{figure:flatbezier}An illustration of how the
+import process ``flattens'' a bezier curve into a series of 
+straight lines.}
+\end{figure}
+
+In this way, the paths in an \rgml{} file only consist of movements
+and lines, as can be seen by looking at the \rgml{} code in 
+Table \ref{table:petalpsxml}.
+
+This flattening of curves is not ideal because, although
+ the resulting straight lines appear to the eye as a smooth curve,
+under certain conditions, for example at large magnification or
+when lines are very thick, the
+corners where the straight lines meet can become noticeable.
+Because of this, \code{PostScriptTrace()} has an argument
+called \code{setflat}, which controls how many straight lines
+the curve is broken into.  Larger values (up to a maximum of 100)
+result in fewer
+straight lines and smaller values (down to a minimum of 0.2)
+result in more straight lines.  The downside of a small value of 
+\code{setflat} is that the \rgml{} file will be much larger because
+there will be many more \code{<line>} elements produced.
+
+\subsection{Text}
+\label{section:pstext}
+
+The previous section explained how \ps{} curves are handled by
+\pkg{grImport}, but
+the ability to display \dfn{text} in a \ps{} file has been completely ignored
+up to this point.  That omission is rectified in this section.
+
+One reason for ignoring text in \ps{} files is because the main focus
+of this article is on importing images that are made up of shapes
+rather than text
+
+Another good reason for ignoring text in \ps{} files is the fact that
+importing text is
+\emph{hard}.  In particular it is very difficult to 
+replicate the exact \emph{font} that is used in the original \ps{} file
+because that information can be extremely complex.
+
+Despite these objections, 
+ the \pkg{grImport} package provides two simple approaches to 
+importing text from a \ps{} image.  Neither of these approaches
+is ideal, but they may be better than nothing for certain images.
+
+As a simple example to demonstrate these approaches, we will work with
+the  file shown in 
+Figure \ref{figure:hellops}, which displays
+the word ``hello'' in a Times Roman font.
+
+\begin{figure}
+\begin{boxedminipage}{.5\textwidth}
+<<echo=FALSE>>=
+hellops <- readLines("hello.ps")
+cat(hellops,
+    sep = "\n")
+@ 
+\end{boxedminipage}
+\begin{minipage}{.5\textwidth}
+\begin{center}
+\includegraphics{hello}
+\end{center}
+\end{minipage}
+\caption{\label{figure:hellops}The file \code{hello.ps},
+which contains \ps{} code to draw the word ``hello''
+in a Times Roman font.  The resulting image is shown to the
+right of the \ps{} code.}
+\end{figure}
+
+The first approach to importing this text into \proglang{R}
+is to convert each character in the text into (flattened) paths.
+The advantage of this approach is that the resulting text will
+look quite a lot like the original text because it will be based on
+the actual outlines of the characters in the original text
+(see the text on the left of Figure \ref{figure:textversions}).
+
+ 
+<<hellotrace>>=
+PostScriptTrace("hello.ps", "hello.xml")
+@ 
+<<hello, fig=TRUE, width=1, height=1, include=FALSE>>=
+hello <- readPicture("hello.xml")
+grid.picture(hello)
+@ 
+\begin{figure}
+\hspace*{\fill}
+\includegraphics[width = .5in]{import-hello}
+\hfill
+\includegraphics[width = .5in]{import-hellotext}
+\hspace*{\fill}
+\caption{\label{figure:textversions}An illustration of the different
+ways that text can be imported:  as filled shapes (left);
+or as character glyphs from a font (right).}
+\end{figure}
+
+There are several drawbacks to this approach.  The first is that 
+translating each individual letter of text into its own path can result 
+in a very large \rgml{} file.  The second problem 
+is that drawing text by filling paths is \emph{not} the same as
+drawing text using fonts because the latter uses sophisticated 
+techniques, such as font \emph{hinting} to make things look nice,
+especially at small font sizes.  There may also be problems with this
+approach if
+the font does not permit copying or modifying the font outlines.
+
+
+The other approach to importing text from a \ps{} file is to 
+completely ignore the font that is being used and just import the actual
+character values from the file. 
+The \code{charpath} argument to the
+\code{PostScriptTrace()} function is used to trigger this option.
+When drawing the resulting text, \pkg{grImport} attempts to get
+the size of the text roughly the same as the original, but 
+differences in fonts will mean that the location and size
+of text will not be identical.
+The following code imports just the text from the file 
+\code{hello.ps} and the resulting image 
+is approximately the right size, but uses a completely different font
+(see the text on the right of Figure \ref{figure:textversions}).
+
+<<hellotexttrace>>=
+PostScriptTrace("hello.ps", 
+                "hellotext.xml",
+                charpath = FALSE)
+@ 
+<<hellotext, fig=TRUE, width=1, height=1, include=FALSE>>=
+hellotext <- readPicture("hellotext.xml")
+grid.picture(hellotext)
+@ 
+The vignette ``Importing Text'' provides more details about importing
+text, including some other options for fine-tuning the size and placement
+of imported text.
+
+One problem that can completely stymie attempts to import text from a
+\ps{} file is that some font  outlines are ``protected'' by the font
+creator, which means that the font outline cannot be converted to 
+flattened paths, so they
+will resist \pkg{grImport}'s attempts to extract them.
+
+\subsection{Bitmaps}
+
+As mentioned back in Section \ref{section:vectorformats}, 
+\ps{} is really a \emph{meta format} rather than just a vector
+graphics format, which means that a \ps{} file can contain raster elements as
+well as shapes and text.
+Currently, \pkg{grImport} will completely ignore any raster elements
+in a \ps{} file.
+
+\subsection{Graphical parameters}
+
+The description of an image in a \ps{} file consists of 
+a description of shapes, or paths, plus a description
+of whether to stroke or fill each path, \emph{plus}
+a description of what colors and line styles to use when 
+filling or stroking each path. 
+This section addresses the last part:  how does \pkg{grImport}
+handle importing \dfn{graphical parameters} such as colors and line styles?
+
+Whenever a path is converted from \ps{} to \rgml{},
+in addition to recording the set of 
+locations that describe the path, \code{PostScriptTrace()}
+records the color, as an RGB triplet, and the line width that
+are used to stroke or fill the path.
+A minor detail is that the line width is scaled up by a factor
+of 4/3 because a line width of 1 corresponds to 1/72 inches in \ps{}, 
+but a line width of 1 corresponds to roughly 1/96 inches
+on \proglang{R} graphics devices.
+
+By default, the colors and line widths that are recorded in the \rgml{}
+file are used when drawing the
+image in \proglang{R}.  This was vividly demonstrated on page \pageref{page:tiger}
+with the tiger image.  However, both the \code{grid.picture()} and 
+\code{grid.symbols()} functions provide a \code{use.gc} argument
+that allows the default graphical parameters to be overridden.
+As a simple example, the following code draws just the outline
+of the flower 
+image by  turning off the default graphical parameter settings and
+specifying a transparent fill and a black border instead (see
+Figure \ref{figure:hollowflower}).
+
+<<floweroutline, fig=TRUE, width=1, height=1, include=FALSE>>=
+grid.picture(PSflower, 
+             use.gc = FALSE, 
+             gp = gpar(fill = NA, col = "black"))
+@ 
+\begin{figure}
+\begin{center}
+\includegraphics[width = .5in]{import-floweroutline}
+\end{center}
+\caption{\label{figure:hollowflower}A modification of the
+flower shape from Table \ref{table:flowerps}, with each petal
+drawn just in outline rather than being filled.}
+\end{figure}
+
+The following code demonstrates a similar usage of 
+\code{grid.symbols()}, except in this case the black
+fill has been retained and a white border has been \emph{added}.
+This makes 
+it is easier to see where flower images overlap within the plot.
+Figure \ref{figure:flowerplot2} shows the resulting plot.
+
+<<flowerplotcode2, eval=FALSE>>=
+xyplot(V8 ~ V7, data = flower, 
+       xlab = "Height", ylab = "Distance Apart",
+       panel=function(x, y, ...) { 
+           grid.symbols(PSflower, x, y, units = "native", 
+                        size = unit(5, "mm"),
+                        use.gc = FALSE, 
+                        gp = gpar(col = "white", fill = "black", lwd = .5)) 
+       })
+@ 
+<<flowerplot2, echo=FALSE, results=hide>>=
+trellis.device("pdf", file = "import-flowerplot2.pdf",
+               width = 6, height = 4, color = FALSE)
+print({ .Last.value <- 
+<<flowerplotcode2>>
+}); rm(.Last.value)
+dev.off()
+
+@ 
+\begin{figure}
+\begin{center}
+\includegraphics[width = .8\textwidth]{import-flowerplot2}
+\end{center}
+\caption{\label{figure:flowerplot2}A statistical plot produced in 
+\proglang{R} using the \pkg{lattice} package, with an imported ``flower'' image
+used as the plotting symbol.  This is very similar to 
+Figure \ref{figure:flowerplot}, but with a white border added to 
+each petal within each flower symbol.}
+\end{figure}
+
+\subsection[The RGML format]{The \rgml{} format}
+
+This section provides a more complete description of the structure
+of \rgml{} files, which may be helpful for working directly with
+\rgml{} files, for example, using \proglang{R} functions other than those provided
+by the 
+\pkg{grImport} package  or when using other software altogether.
+
+The root element for an \rgml{} file is a \code{<picture>} element.
+This element will have a \code{version} attribute that distinguishes between
+different versions of the RGML format, plus several
+other attributes that describe the provenance of the file.
+
+The content of the \code{<picture>} element will typically 
+consist mostly of 
+\code{<path>} elements.  Each
+\code{<path>} element is made up of \code{<move>} elements and
+\code{<line>} elements that describe a shape 
+and the \code{type} attribute of the
+\code{<path>} element is typically either \code{"fill"} 
+or \code{"stroke"} to indicate whether that shape should be
+filled or stroked.  Each \code{<move>} and \code{<line>} element
+has two attributes, \code{x} and \code{y}, which provide the
+location of a vertex on the boundary of the shape that is
+being described.
+
+Each \code{<path>} element also contains a \code{<context>} element,
+which in turn contains an \code{<rgb>} element and a \code{<style>} element,
+with information about the color, line width, and line type that should
+be used to fill or stroke the path.
+
+The final element in an \rgml{} file is a \code{<summary>}  element
+with attributes recording the total number of paths and bounding
+box information for the image.
+
+The basic structure of an \rgml{} file consisting of just a single
+\code{<path>} element is shown below (this is
+the petal image from 
+Section \ref{section:pstoxml}).
+
+<<echo=FALSE>>=
+petalrgml <- readLines("petal.ps.xml")
+petalrgml <- petalrgml[nchar(petalrgml) > 0]
+petalrgml <- gsub("\t", "    ", 
+                  gsub("(source)=", "\n         \\1=",
+                       petalrgml))
+cat(petalrgml[1:(grep("<move", petalrgml) + 1)], 
+    "    ...",
+    petalrgml[(grep("</path", petalrgml) - 1):length(petalrgml)],
+    sep = "\n")
+
+@ 
+
+As well as \code{<path>} elements, a
+ \code{<picture>} element may also contain \code{<text>}
+elements, which represent complete pieces of text.  
+If the text has \emph{not} been traced as paths,
+the \code{<text>} element will only
+ contain a \code{<context>} element;  the text itself,
+plus its location and size are recorded as
+attributes of the \code{<text>} element.  
+
+If the text has been traced as paths, the \code{<text>} element will
+contain further \code{<path>} elements with \code{type = "char"}, in which
+case, the \code{<move>} elements and
+\code{<line>} elements describe the outline of a
+ single letter from a piece of text.  This is represented as a different
+sort of \code{<path>} element because the default drawing algorithm
+for text can be different from normal paths.
+
+The basic structure of an \rgml{} file consisting of just a single
+\code{<text>} element is shown below (this is
+the hello image from 
+Section  \ref{section:pstext}).
+
+<<echo=FALSE>>=
+hellotextrgml <- readLines("hellotext.xml")
+hellotextrgml <- hellotextrgml[nchar(hellotextrgml) > 0]
+hellotextrgml <- gsub("\t", "    ", 
+                      gsub("source=", "\n         source=",
+                           hellotextrgml))
+cat(hellotextrgml, sep = "\n")
+
+@ 
+
+The \pkg{grImport} package provides a DTD file, \code{rgml.dtd},
+and an equivalent XML Schema, \code{rgml.xsd}, 
+ that formalize the \rgml{}
+document structure.
+
+\subsection[The Picture class]{The \code{Picture} class}
+
+This section provides a more complete description of the
+\code{Picture} class, and the other associated classes, that are
+used to represent imported images in \proglang{R}.  This information
+is useful for dealing directly with \code{Picture} objects.
+
+As mentioned previously, the components of
+a \code{Picture} data structure
+have a one-to-one correspondence with the elements of an \rgml{} file,
+so most elements and attributes from the previous section are
+represented as slots in an \proglang{R} object within this section.
+For example, where an \rgml{} file has one or more \code{<path>} elements, 
+the \code{Picture} class has a \code{paths} slot containing a list
+of paths.  
+
+A \code{Picture} object has two slots:  the \code{paths} slot
+contains a list of shapes that describe the image and the 
+\code{summary} slot contains the summary information for the image.
+
+<<>>=
+slotNames(petal)
+@ 
+The components of the list in the \code{paths} slot
+are all S4 objects, each with a class 
+corresponding to one type of \code{<path>} or \code{<text>} element
+in an \rgml{} file:
+
+\begin{center}
+\begin{tabular}{l l}
+\rgml{} element & S4 class \\
+\code{<path type = "stroke">} & \code{PictureStroke} \\
+\code{<path type = "fill">} & \code{PictureFill} \\
+\code{<path type = "char">} & \code{PictureChar} \\
+\code{<text>} & \code{PictureText} \\
+\end{tabular}
+\end{center}
+
+\code{PictureStroke},
+\code{PictureFill}, and \code{PictureChar} objects
+all have four slots:  the \code{x} and \code{y} slots
+contain numeric vectors that specify the
+locations of the vertices of the path, an \code{rgb} slot contains the
+color for the path, and an \code{lwd} slot contains the line width.
+
+The following code and output shows the first (and only) path
+in the imported petal image.  This path is a \code{PictureFill} object.
+
+<<>>=
+str(petal@paths[[1]])
+@ 
+A \code{PictureText} object has three additional slots:  the \code{string}
+slot contains the text to draw, and the \code{w} and \code{h} slots 
+contain the width and height of the text, respectively.
+
+The following code and output shows the first (and only) path
+in the imported text image.  This path is a \code{PictureText} object.
+
+<<>>=
+str(hellotext@paths[[1]])
+@ 
+The \code{summary} slot of a \code{Picture} object is a 
+\code{PictureSummary} object with slots for the number of 
+shapes in the image, plus bounding box information.
+The following code and output shows the summary information from 
+the imported petal image.  
+
+<<>>=
+str(petal@summary)
+@ 
+
+\subsection[Picture objects to grid grobs]{\code{Picture} objects to \pkg{grid} grobs}
+\label{section:picturetogrob}
+
+The \code{grid.picture()} function uses the \pkg{grid} package
+to draw a \code{Picture} object.  
+
+This involves two steps:
+first the \code{Picture} object is converted into several
+\pkg{grid} \dfn{grobs} (graphical objects) and then those
+grobs are drawn within a \pkg{grid} viewport that
+takes care of all of the necessary coordinate system transformations.
+
+The \code{grid.picture()}
+function converts a \code{Picture} object to grobs by calling 
+the function 
+\code{grobify()} on each component of the \code{paths} slot
+in the \code{Picture} object.  The \code{grobify()} function is an S4 generic
+function with methods for \code{PictureFill}, \code{PictureStroke},
+\code{PictureChar}, and \code{PictureText} objects.  For example,
+the \code{grobify()} method for \code{PictureFill} objects creates
+a path grob, whereas the method for \code{PictureText} objects
+creates a text grob.
+
+The \code{grid.picture()} function provides an argument called \code{FUN}
+that allows the \code{grobify()} function to be replaced with
+a custom function.  This makes it possible to fully control
+the conversion of the \code{Picture} paths into \pkg{grid} grobs.
+
+Table \ref{table:blueify} shows an example of this sort of
+customization.  An S4 generic function called \code{blueify()}
+is defined, with methods for \code{PictureFill} and \code{PictureStroke}
+objects.  The \code{PictureFill} method produces a path grob
+and the \code{PictureStroke} method produces a polyline grob,
+just like the standard \code{grobify()} function would do.
+The difference is that the \code{blueify()} methods set the fill and
+border colors for these grobs by converting the original RGB color
+from the the original image to a corresponding shade of blue 
+(using the \code{blueShade()} function that is defined in 
+Table \ref{table:blueshade}).
+
+\begin{table}
+\begin{boxedminipage}{\textwidth}
+<<echo=FALSE>>=
+cat(readLines("blueshade.R"), sep = "\n")
+
+@ 
+\end{boxedminipage}
+
+<<echo=FALSE, results=hide>>=
+source("blueshade.R")
+@ 
+
+\caption{\label{table:blueshade}\proglang{R} code that defines a function
+to convert an RGB color into a corresponding shade of blue.}
+\end{table}
+
+\begin{table}
+\begin{boxedminipage}{\textwidth}
+<<echo=FALSE>>=
+cat(readLines("blueify.R"), sep = "\n")
+
+@ 
+\end{boxedminipage}
+
+<<echo=FALSE, results=hide>>=
+source("blueify.R")
+@ 
+\caption{\label{table:blueify}\proglang{R} code that defines a
+custom transformation from \code{Picture} paths to
+\pkg{grid} grobs.  The function \code{blueify()} is an S4 generic
+function with methods for \code{PictureFill} and \code{PictureStroke}
+objects.  This function generates grobs that have a fill color or
+border color based on the original colors from the image, but
+converted into a corresponding shade of blue, using the
+\code{blueShade()} function from Table \ref{table:blueshade}}
+\end{table}
+
+With this \code{blueify()} generic function defined, we can draw
+the \code{tiger} image that we saw on page \pageref{page:tiger},
+but this time using different shades of blue.  The following
+code does this drawing and the resulting image is shown 
+in Figure \ref{figure:bluetiger}.
+
+% CHANGEME IF CHANGE CODE:  eval=FALSE cos slow
+<<bluetiger, eval=FALSE>>=
+grid.picture(tiger[-1], 
+             FUN = blueify)
+
+<<echo=FALSE, results=hide>>=
+png("import-bluetiger.png", width=900, height=900)
+<<bluetiger>>
+dev.off()
+
+@ 
+\begin{figure}
+\begin{center}
+\includegraphics[width=3in]{import-bluetiger.png}
+\end{center}
+\caption{\label{figure:bluetiger}A modification of the
+tiger image from Figure \ref{figure:tiger} with all colors
+drawn as shades of blue.}
+\end{figure}
+
+\subsection{Complex paths}
+\label{section:complexpaths}
+
+One of the more sophisticated features of \ps{} is that it 
+allows paths to be quite complex.  For example, a path may 
+intersect itself and a path may be disjoint, being composed
+of more than one shape, with the shapes able to overlap
+and create holes within one another.  From
+version 2.12.0, \proglang{R} can faithfully
+reproduce these sorts of complex paths.
+
+In order to demonstrate this, the next example introduces a new
+image, which is a logo for the GNU project 
+(designed by Aur\'{e}lio A. Heckert).
+The original file is in an {SVG} format and this was converted to
+a \ps{} format using \pkg{Inkscape}.
+The \ps{} file, \code{GNU.ps},
+ can be imported using the tools described previously,
+as shown by the following code (see Figure \ref{figure:gnulogo}).  
+
+<<gnulogo, fig=TRUE, include=FALSE>>=
+PostScriptTrace("GNU.ps", "GNU.xml")
+GNU <- readPicture("GNU.xml")
+grid.picture(GNU)
+@
+\begin{figure}
+\begin{center}
+\hspace*{\fill}
+\includegraphics[width=1in]{GNU}
+\hfill
+\includegraphics[width=1in]{import-gnulogo}
+\hspace*{\fill}
+\end{center}
+\caption{\label{figure:gnulogo}The GNU logo in its original form (left) and 
+after importing and drawing with \proglang{R}
+(right).}
+\end{figure}
+
+It can still be useful, or just interesting, to explore the 
+components of complex paths like this.
+
+The \code{picturePaths()} function draws each separate path
+within an imported image.  The following code uses this function
+to show that there are only two paths in the GNU logo, and the second
+one is the complex one (see Figure \ref{figure:gnupaths}).
+
+<<gnulogopaths, fig=TRUE, height=3, include=FALSE>>=
+picturePaths(GNU, nr = 1, nc = 2, label = FALSE)
+@
+\begin{figure}
+\begin{center}
+\includegraphics[width=2in]{import-gnulogopaths}
+\end{center}
+\caption{\label{figure:gnupaths}The paths that make up the
+GNU logo:  a white background and a (complex) black foreground.}
+\end{figure}
+
+Another useful tool is the 
+\code{explodePaths()} function.  This function takes any path
+that consists of more than one disjoint shape and breaks it
+into several distinct paths, each consisting of just a single shape.
+The following code demonstrates this function being used to
+explode the paths in the GNU logo and the subsequent broken 
+paths are shown again using \code{picturePaths()}, this time
+with \code{freeScales=TRUE}, which means that each individual path
+is drawn on its own scale (see Figure \ref{figure:gnuexploded}).
+
+<<brokengnupaths, fig=TRUE, width=5, height=3, include=FALSE>>=
+brokenGNU <- explodePaths(GNU)
+picturePaths(brokenGNU, nr = 3, nc = 5, 
+             label = FALSE, freeScales = TRUE)
+@
+\begin{figure}
+\begin{center}
+\includegraphics[width=5in]{import-brokengnupaths}
+\end{center}
+\caption{\label{figure:gnuexploded}The paths in the GNU logo
+(see Figure \ref{figure:gnupaths})
+after ``exploding'' the complex path into several smaller and simpler paths.}
+\end{figure}
+
+The output shows that the complex second path in the original image
+was composed of 13 disjoint shapes.  
+
+\section{Applications and examples}
+\label{section:applications}
+
+This section describes and demonstrates 
+some possible uses of the \pkg{grImport}
+package.
+
+A straightforward use of the \code{grid.symbols()} function is to
+import an external image as a custom plotting symbol for a
+scatterplot, as was previously demonstrated in
+Figure \ref{figure:flowerplot} (Section \ref{section:rtogrid}).
+
+A straightforward use of the \code{grid.picture()} function is
+to add a company logo to a plot.  
+This has been done ``for real'' within a large
+pharmaceutical research and development company, but unfortunately
+legal constraints prevent the publishing of that example.  Instead,
+the code below demonstrates the basic idea by adding the GNU logo
+ from 
+Section \ref{section:complexpaths} as a ``watermark'' background
+to a lattice barchart.
+
+% Source:  http://finzi.psych.upenn.edu/R/Rhelp02a/archive/139273.html
+% John Maindonald from Web of Science search for R LANG* STAT*
+% and Ihaka and Gentleman 1996
+
+<<logobody, eval=FALSE>>=
+barchart(~ cit, main = "Number of Citations per Year", xlab = "",
+         panel = function(...) {
+             grid.picture(GNU)
+             grid.rect(gp = gpar(fill = rgb(1, 1, 1, .9)))
+             panel.barchart(...)
+         })
+@ 
+% For some strange reason I seem to have to FORCE colour in the PDF output
+<<logo, echo=FALSE, results=hide>>=
+cit <- c("1998"=4, "1999"=15, "2000"=17, "2001"=39, 
+         "2002"=119, "2003"=276, "2004"=523, 
+         "2005"=945, "2006"=1475, "2007"=2015) 
+trellis.device("pdf", file = "import-logo.pdf", height = 4, color = TRUE)
+print({ .Last.value <- 
+<<logobody>>
+}); rm(.Last.value)
+dev.off()
+
+@ 
+
+This code washes out the logo by simply drawing a semitransparent
+rectangle over the top.
+The resulting plot is shown in Figure \ref{figure:logo}.  
+
+\begin{figure}
+\begin{center}
+\includegraphics[width = .8\textwidth]{import-logo}
+\end{center}
+\caption{\label{figure:logo}A barplot of 
+the exponential growth in the
+number of citations of \proglang{R}, with a GNU logo watermark.}
+\end{figure}
+
+\subsection{Scraping data from images}
+
+A less obvious application of the \pkg{grImport} package, and one
+that demonstrates working directly with the \code{Picture}
+objects in \proglang{R}, was suggested by Daniel Jackson of the MRC
+Biostatistics Unit in Cambridge (private communication).
+The context for this application is the practice of meta-analysis,
+specifically in the area of survival data.
+
+A problem that researchers face in this area is how to obtain
+data from published articles when the original data are not 
+provided.  An article may include summary tables and plots,
+but raw data values may not be available.  
+In practice, researchers sometimes resort to measuring plots, such 
+as survival curves, with a pencil
+and ruler in order to retrieve at least some raw data points.
+If an article of interest is published in an electronic format,
+it may be possible to use the \pkg{grImport} package to 
+radically improve both the accuracy and efficiency of such a task.
+
+In order to demonstrate this idea, the following example
+will  process a survival curve
+that was published in the newsletter of the \proglang{R} project for
+statistical computing \citep{Rnews:Lumley:2004a}.
+
+A survival plot appears on page 27 of this R News issue.  Figure
+\ref{figure:survival} shows the original context of the plot.
+
+\begin{figure}
+\begin{center}
+\fbox{\includegraphics[width = .9\textwidth]{Rnewspage27}}
+\end{center}
+\caption{\label{figure:survival}A page from the newsletter
+of the R project for statistical computing that includes
+a survival curve at top left.}
+\end{figure}
+
+A number of tools can be used to extract just a single page from
+a multiple-page {PDF} document and convert that page to \ps{} format.
+In this case, the resulting file is called \code{page27.ps}
+and this is converted to \rgml{} format by the following code.
+
+<<>>=
+PostScriptTrace("page27.ps")
+@ 
+We do not need the entire page, but using the \code{picturePaths()}
+function and a little trial and error, it is possible to determine which
+paths constitute the survival plot in the top-left corner of the page.
+The following code reads the \rgml{} file into a \code{Picture} 
+object and extracts just the paths that make up the crucial part
+of the plot:  paths 3 to 16 draw the axes, path 18 is the green curve,
+and path 27 is the blue curve.  
+
+<<>>=
+page27 <- readPicture("page27.ps.xml")
+survivalPlot <- page27[c(3:16, 18, 27)]
+@ 
+
+The following code draws the extracted paths and  the result is
+ shown in Figure \ref{figure:survplot}.
+
+<<survivalplot, fig=TRUE, include=FALSE>>=
+pushViewport(viewport(gp = gpar(lex = .2)))
+grid.picture(survivalPlot)
+popViewport()
+@
+\begin{figure}
+\begin{center}
+\includegraphics[width=2in]{import-survivalplot}
+\end{center}
+\caption{\label{figure:survplot}The survival plot from the R News article,
+which is
+drawn by importing the original page and subsetting the relevant 
+paths from that page.}
+\end{figure}
+
+The original image shows that the outer tick marks are at locations
+0 and 100 on the y-axis and 0 and 2.5 on the x-axis.  These locations can
+be matched to the locations of the paths that make up those tick marks
+in the \code{Picture} object in order to establish a scale for the
+paths that make up the green and blue curves.  
+For example, the \code{picturePaths()} function can be used to determine
+that the lowest tick mark on the y-axis is drawn by the ninth
+path in \code{survivalPlot} and zero on the vertical scale is at the 
+y-location of this path.
+
+<<>>=
+zeroY <- survivalPlot@paths[[9]]@y[1]
+zeroY
+@ 
+Similarly, the uppermost tick mark is path 14, so a unit step on the 
+vertical scale is $\frac{1}{100}$th of the difference between the
+y-location of this path and that of path 9.
+
+<<>>=
+unitY <- (survivalPlot@paths[[14]]@y[1] - zeroY)/100
+unitY
+@ 
+The survival percentages from the green curve (path 15 of 
+\code{survivalPlot}) can now be
+determined using this scale information.
+Each y-value repeats twice because the green curve is drawn as a step
+function.
+
+<<>>=
+greenY <- (survivalPlot@paths[[15]]@y - zeroY)/unitY
+head(round(unname(greenY), 1), n = 20)
+@ 
+Happily, these numbers match quite well with the values that 
+were used to produce the original plot.
+
+<<>>=
+library("survival")
+sfit <- survfit(Surv(time, status) ~ trt, data = veteran)
+originalGreenY <- sfit$surv[1:sfit$strata[1]]
+head(round(originalGreenY*100, 1), n = 9)
+@ 
+The x-values for the green curve and the data from the
+blue curve could be extracted in an analogous fashion.
+
+This idea of importing images just to extract the locations 
+from the boundaries of shapes in the image might also be usefully
+applied to map data that is only available in pictorial form.
+
+\subsection{Importing WebLogo images} 
+
+The next example demonstrates a more sophisticated use of 
+\code{grid.picture()} based on work by Toby Dylan Hocking
+(\url{http://www.ocf.berkeley.edu/~tdhock}).   
+The images to be imported are \dfn{sequence logos} 
+\citep{sequencelogo} as generated by the
+\pkg{WebLogo} software 
+\citep[][\url{http://weblogo.berkeley.edu/}]{weblogo}.
+
+The idea of sequence logos is to display patterns in 
+aligned genetic sequences.
+An example of a sequence logo that was created to
+visualize the importance
+of different amino acids in a phage display experiment \citep{phagedisplay}
+is shown in Figure \ref{figure:seqlogo}.
+
+\begin{figure}
+\begin{center}
+\includegraphics[width = .8\textwidth]{seqlogo}
+\end{center}
+\caption{\label{figure:seqlogo}An example of a 
+sequence logo produced by the  \pkg{WebLogo} software.}
+\end{figure}
+
+The logo displays the relative freqeuncy of amino acids at
+each binding position in the experiment;  
+large letters represent amino acids that
+are ``strong signals'' for each position.  
+For example, D and E are strong signals for position 1
+and G and S are strong signals for position 3.
+
+A question of interest is whether D at position 1
+correlates strongly with
+G at position 3, or with S at position 3.
+To answer this, a more detailed plot was produced that combined 
+the overall sequence logo with a dendrogram of the experimental
+binding results, \emph{plus} further sequence logos based on 
+important subsets of the overall result.
+This plot is shown in Figure \ref{figure:fiddled} and it suggests
+that D at position 1 does correspond to G at position 2, while
+E at position 1 corresponds to S at position 2.
+
+\begin{figure}
+\begin{center}
+\includegraphics[width = .9\textwidth]{fiddledplot}
+\end{center}
+\caption{\label{figure:fiddled}A dendrogram drawn using \proglang{R}'s
+\code{plot.dendrogram()} function, with four imported \pkg{WebLogo}
+sequence logos drawn alongside:  an overall sequence logo on the 
+left and three subsequence logos on the right, 
+next to the relevant leaves of the 
+dendrogram.}
+\end{figure}
+
+The more detailed plot was generated by combining sequence logos 
+that were produced by \pkg{WebLogo} with a dendrogram that
+was produced by \proglang{R}.  \pkg{WebLogo} can produce sequence
+logos in \ps{} format, so these were imported to \proglang{R}
+using \pkg{grImport} and subsetted to remove the axes that
+\pkg{WebLogo} produces.  The \proglang{R} graphics system was then used
+to produce a dendrogram, with space left on either side
+for the logos;  the logos were positioned relative to
+the appropriate portions of the dendrogram using 
+\pkg{grid} viewports and the \pkg{gridBase} package 
+\citep{Rnews:Murrell:2003}.
+
+\section{Limitations}
+\label{section:limits}
+
+The \pkg{grImport} package is based on \ps{} as the original 
+image format and \xml{} as an intermediate image format.
+These technologies were chosen for a number of reasons, as outlined
+in previous sections, but they are not without their disadvantages.
+This section discusses some of the limitations of the \pkg{grImport}
+approach to importing vector graphics.
+
+One of the reasons for choosing \ps{} as the original image format
+is that \ps{} is a sophisticated graphics language.  However, 
+there are some things that \ps{} cannot represent, one major example
+being semitransparent colors.  This means that if an original image
+is in a format that allows
+semitransparent colors, such as {PDF} or {SVG}, 
+the transformation to \ps{} may lose 
+important features of the original image.  
+
+It is possible to
+convert a 
+{PDF} image that contains semitransparency to a \ps{} format
+using \pkg{ghostscript}, but the result is 
+a \emph{raster} image in the \ps{} format, so for the 
+purposes of importing the image using \pkg{grImport}, the image is destroyed.
+
+So one problem with \ps{} is that it is lacks some useful
+graphical features that are available in other vector formats.  
+A different problem with using \ps{} is that it \emph{possesses} some
+useful graphical features that \proglang{R} graphics lacks.
+An example of this problem was discussed in Section \ref{section:complexpaths};
+a \ps{} path can be more complex than \proglang{R} is capable of drawing.
+Previous sections have also mentioned that a \ps{} file can contain 
+raster elements, which \pkg{grImport} just ignores, and 
+B\'{e}zier curves, which \pkg{grImport} flattens into a series of 
+straight lines.
+
+Another \ps{} feature that is not supported by either 
+\proglang{R} graphics in general or \pkg{grImport} specifically is
+the ability to clip to an arbitrary path.
+\ps{} allows clipping to the current path, which can be a very
+complex shape.  As a simple example, the image in
+Figure \ref{figure:clip}
+ shows 
+a pattern of radiating lines on the left;  the image on the right 
+in Figure \ref{figure:clip} shows this
+pattern being clipped to the outline of a piece of
+text.
+
+\begin{figure}
+\hspace*{\fill}
+\includegraphics[width=2in]{patternclip}
+\hfill
+\includegraphics[width=2in]{helloclip}
+\hspace*{\fill}
+\caption{\label{figure:clip}An example of complex clipping: 
+the pattern on the left is clipped to the shape of the text
+``hello'' on the right.}
+\end{figure}
+
+\proglang{R} graphics only allows clipping to a rectangle and
+\pkg{grImport} currently completely ignores any clipping 
+in a \ps{} image, so
+an original image that makes uses of clipping can be imported
+but will not be
+reproduced correctly in \proglang{R}.
+
+
+Moving on to the choice of \xml{} as an intermediate format,
+the main problem is that \xml{} is a verbose language that can result
+in large files.  However, this problem
+has so far proven to be
+ an inconvenience rather than an insurmountable obstacle.
+
+\section{Availability}
+
+The \pkg{grImport} package is available from the 
+Comprehensive \proglang{R} Archive Network \citep{CRAN}.
+This article describes version 0.4-2 of the package.
+
+\section{Conclusion}
+
+The \pkg{grImport} package implements a three-stage approach
+to importing vector-based graphical images into the 
+\proglang{R} software environment for statistical computing and graphics.
+
+It is assumed that the original image can be converted to a \ps{} 
+format, then functions in the \pkg{grImport} package are provided
+to convert the \ps{} file to an intermediate \rgml{} format, to
+read the \rgml{} file into S4 objects in \proglang{R}, and to 
+manipulate and draw those objects.
+
+There are limitations to the system, due to the limitations of the
+\ps{} language 
+and due to the limitations of the \proglang{R} graphics system, although
+some of these issues can be worked around.
+Furthermore, despite these limitations, the \pkg{grImport} package
+has been employed in a variety of ways in several real-world applications.
+
+One of the important ideas to take away is that
+the \pkg{grImport} package is not just about drawing pictures.
+The package starts with a vector image and transforms the image into data.
+One of the things that can be done with data in \proglang{R} is to draw it,
+but there are many other potential applications for the image data.
+
+\section*{Acknowledgements}
+
+Richard Walton made contributions to the \pkg{grImport} package 
+during a Faculty of Science summer scholarship
+at the University of Auckland (2005/2006).
+
+Thanks to the authors of the freely-available images 
+that are used in this article.
+The chess pawn is from a public domain chess board image in {SVG} 
+format
+by Jos\'{e} Hevia, which was originally sourced from 
+the Open Clip Art Library
+\url{http://openclipart.org/clipart//recreation/games/chess/chess\_game\_01.svg},
+but is now available from 
+\url{http://www.public-domain-photos.com/free-cliparts/other/chess/chess\_game\_01-3657.htm}.
+The GNU logo is by Aur\'{e}lio A. Heckert 
+and is available from 
+\url{http://commons.wikimedia.org/wiki/Image:Heckert\_GNU\_white.svg}
+under a Free Art Licence.
+The tiger image is distributed as part of the \pkg{ghostscript}
+software system.
+
+Thanks also for ideas and data to 
+Toby Dylan Hocking and Daniel Jackson.
+The \proglang{R} citation data used in Figure \ref{figure:logo}
+were taken from 
+an email to the R-help mailing list by John Maindonald.
+
+Comments and suggestions from the anonymous reviewers
+were extremely useful in focusing and improving the final manuscript.
+
+\bibliography{import}
+
+\end{document}

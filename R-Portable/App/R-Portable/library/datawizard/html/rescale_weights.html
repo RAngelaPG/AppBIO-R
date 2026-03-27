@@ -1,0 +1,228 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Rescale design weights for multilevel analysis</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for rescale_weights {datawizard}"><tr><td>rescale_weights {datawizard}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Rescale design weights for multilevel analysis</h2>
+
+<h3>Description</h3>
+
+<p>Most functions to fit multilevel and mixed effects models only
+allow the user to specify frequency weights, but not design (i.e., sampling
+or probability) weights, which should be used when analyzing complex samples
+(e.g., probability samples). <code>rescale_weights()</code> implements two algorithms,
+one proposed by <cite>Asparouhov (2006)</cite> and <cite>Carle (2009)</cite>, to rescale
+design weights in survey data to account for the grouping structure of
+multilevel models, and one based on the design effect proposed by
+<cite>Kish (1965)</cite>, to rescale weights by the design effect to account for
+additional sampling error introduced by weighting.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+rescale_weights(
+  data,
+  probability_weights = NULL,
+  by = NULL,
+  nest = FALSE,
+  method = "carle"
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A data frame.</p>
+</td></tr>
+<tr valign="top"><td><code>probability_weights</code></td>
+<td>
+<p>Variable indicating the probability (design or
+sampling) weights of the survey data (level-1-weight), provided as character
+string or formula.</p>
+</td></tr>
+<tr valign="top"><td><code>by</code></td>
+<td>
+<p>Variable names (as character vector, or as formula), indicating
+the grouping structure (strata) of the survey data (level-2-cluster
+variable). It is also possible to create weights for multiple group
+variables; in such cases, each created weighting variable will be suffixed
+by the name of the group variable. This argument is required for
+<code>method = "carle"</code>, but optional for <code>method = "kish"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>nest</code></td>
+<td>
+<p>Logical, if <code>TRUE</code> and <code>by</code> indicates at least two group
+variables, then groups are &quot;nested&quot;, i.e. groups are now a combination from
+each group level of the variables in <code>by</code>. This argument is not used when
+<code>method = "kish"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>String, indicating which rescale-method is used for rescaling
+weights. Can be either <code>"carle"</code> (default) or <code>"kish"</code>. See 'Details'. If
+<code>method = "carle"</code>, the <code>by</code> argument is required.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+
+<ul>
+<li> <p><code>method = "carle"</code>
+</p>
+<p>Rescaling is based on two methods: For <code>rescaled_weights_a</code>, the sample
+weights <code>probability_weights</code> are adjusted by a factor that represents the
+proportion of group size divided by the sum of sampling weights within each
+group. The adjustment factor for <code>rescaled_weights_b</code> is the sum of sample
+weights within each group divided by the sum of squared sample weights
+within each group (see Carle (2009), Appendix B). In other words,
+<code>rescaled_weights_a</code> &quot;scales the weights so that the new weights sum to the
+cluster sample size&quot; while <code>rescaled_weights_b</code> &quot;scales the weights so that
+the new weights sum to the effective cluster size&quot;.
+</p>
+<p>Regarding the choice between scaling methods A and B, Carle suggests that
+&quot;analysts who wish to discuss point estimates should report results based
+on weighting method A. For analysts more interested in residual
+between-group variance, method B may generally provide the least biased
+estimates&quot;. In general, it is recommended to fit a non-weighted model and
+weighted models with both scaling methods and when comparing the models,
+see whether the &quot;inferential decisions converge&quot;, to gain confidence in the
+results.
+</p>
+<p>Though the bias of scaled weights decreases with increasing group size,
+method A is preferred when insufficient or low group size is a concern.
+</p>
+<p>The group ID and probably PSU may be used as random effects (e.g. nested
+design, or group and PSU as varying intercepts), depending on the survey
+design that should be mimicked.
+</p>
+</li>
+<li> <p><code>method = "kish"</code>
+</p>
+<p>Rescaling is based on scaling the sample weights so the mean value is 1,
+which means the sum of all weights equals the sample size. Next, the design
+effect (<em>Kish 1965</em>) is calculated, which is the mean of the squared
+weights divided by the squared mean of the weights. The scaled sample
+weights are then divided by the design effect. This method is most
+appropriate when weights are based on additional variables beyond the
+grouping variables in the model (e.g., other demographic characteristics),
+but may also be useful in other contexts.
+</p>
+<p>Some tests on real-world survey-data suggest that, in comparison to the
+Carle-method, the Kish-method comes closer to estimates from a regular
+survey-design using the <strong>survey</strong> package. Note that these tests are not
+representative and it is recommended to check your results against a
+standard survey-design.
+</p>
+</li></ul>
+
+
+
+<h3>Value</h3>
+
+<p><code>data</code>, including the new weighting variable(s). For <code>method = "carle"</code>, new
+columns <code>rescaled_weights_a</code> and <code>rescaled_weights_b</code> are returned, and for
+<code>method = "kish"</code>, the returned data contains a column <code>rescaled_weights</code>.
+These represent the rescaled design weights to use in multilevel models (use
+these variables for the <code>weights</code> argument).
+</p>
+
+
+<h3>References</h3>
+
+
+<ul>
+<li><p> Asparouhov T. (2006). General Multi-Level Modeling with Sampling
+Weights. Communications in Statistics - Theory and Methods 35: 439-460
+</p>
+</li>
+<li><p> Carle A.C. (2009). Fitting multilevel models in complex survey data
+with design weights: Recommendations. BMC Medical Research Methodology
+9(49): 1-13
+</p>
+</li>
+<li><p> Kish, L. (1965) Survey Sampling. London: Wiley.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+
+data(nhanes_sample)
+head(rescale_weights(nhanes_sample, "WTINT2YR", "SDMVSTRA"))
+
+# also works with multiple group-variables
+head(rescale_weights(nhanes_sample, "WTINT2YR", c("SDMVSTRA", "SDMVPSU")))
+
+# or nested structures.
+x &lt;- rescale_weights(
+  data = nhanes_sample,
+  probability_weights = "WTINT2YR",
+  by = c("SDMVSTRA", "SDMVPSU"),
+  nest = TRUE
+)
+head(x)
+
+
+# compare different methods, using multilevel-Poisson regression
+
+d &lt;- rescale_weights(nhanes_sample, "WTINT2YR", "SDMVSTRA")
+result1 &lt;- lme4::glmer(
+  total ~ factor(RIAGENDR) + log(age) + factor(RIDRETH1) + (1 | SDMVPSU),
+  family = poisson(),
+  data = d,
+  weights = rescaled_weights_a
+)
+result2 &lt;- lme4::glmer(
+  total ~ factor(RIAGENDR) + log(age) + factor(RIDRETH1) + (1 | SDMVPSU),
+  family = poisson(),
+  data = d,
+  weights = rescaled_weights_b
+)
+
+d &lt;- rescale_weights(
+  nhanes_sample,
+  "WTINT2YR",
+  method = "kish"
+)
+result3 &lt;- lme4::glmer(
+  total ~ factor(RIAGENDR) + log(age) + factor(RIDRETH1) + (1 | SDMVPSU),
+  family = poisson(),
+  data = d,
+  weights = rescaled_weights
+)
+d &lt;- rescale_weights(
+  nhanes_sample,
+  "WTINT2YR",
+  "SDMVSTRA",
+  method = "kish"
+)
+result4 &lt;- lme4::glmer(
+  total ~ factor(RIAGENDR) + log(age) + factor(RIDRETH1) + (1 | SDMVPSU),
+  family = poisson(),
+  data = d,
+  weights = rescaled_weights
+)
+parameters::compare_parameters(
+  list(result1, result2, result3, result4),
+  exponentiate = TRUE,
+  column_names = c("Carle (A)", "Carle (B)", "Kish", "Kish (grouped)")
+)
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>datawizard</em> version 1.3.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

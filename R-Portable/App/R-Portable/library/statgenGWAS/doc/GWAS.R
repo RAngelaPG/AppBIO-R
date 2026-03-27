@@ -78,11 +78,11 @@ gDataDropsImputed <- codeMarkers(gData = gDataDropsMiss,
                                  verbose = TRUE)
 
 ## ----imputeMissingsBeagle, eval=FALSE-------------------------------------------------------------
-#  ## Impute missing values using beagle software.
-#  gDataDropsImputedBeagle <- codeMarkers(gData = gDataDropsMiss,
-#                                         impute = TRUE,
-#                                         imputeType = "beagle",
-#                                         verbose = TRUE)
+# ## Impute missing values using beagle software.
+# gDataDropsImputedBeagle <- codeMarkers(gData = gDataDropsMiss,
+#                                        impute = TRUE,
+#                                        imputeType = "beagle",
+#                                        verbose = TRUE)
 
 ## ----stg------------------------------------------------------------------------------------------
 ## Run single trait GWAS for traits 'grain.yield' and 'anthesis' for trial Mur13W.

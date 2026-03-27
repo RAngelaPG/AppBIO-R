@@ -1,0 +1,108 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Join data tables</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for left_join.dtplyr_step {dtplyr}"><tr><td>left_join.dtplyr_step {dtplyr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Join data tables</h2>
+
+<h3>Description</h3>
+
+<p>These are methods for the dplyr generics <code><a href="../../dplyr/help/mutate-joins.html">dplyr::left_join()</a></code>, <code><a href="../../dplyr/help/mutate-joins.html">dplyr::right_join()</a></code>,
+<code><a href="../../dplyr/help/mutate-joins.html">dplyr::inner_join()</a></code>, <code><a href="../../dplyr/help/mutate-joins.html">dplyr::full_join()</a></code>, <code><a href="../../dplyr/help/filter-joins.html">dplyr::anti_join()</a></code>, and <code><a href="../../dplyr/help/filter-joins.html">dplyr::semi_join()</a></code>. Left, right,
+inner, and anti join are translated to the <code style="white-space: pre;">[.data.table</code> equivalent,
+full joins to <code><a href="../../data.table/help/merge.html">data.table::merge.data.table()</a></code>.
+Left, right, and full joins are in some cases followed by calls to
+<code><a href="../../data.table/help/setcolorder.html">data.table::setcolorder()</a></code> and <code><a href="../../data.table/help/setattr.html">data.table::setnames()</a></code> to ensure that column
+order and names match dplyr conventions.
+Semi-joins don't have a direct data.table equivalent.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'dtplyr_step'
+left_join(x, y, ..., by = NULL, copy = FALSE, suffix = c(".x", ".y"))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x, y</code></td>
+<td>
+<p>A pair of <code><a href="../../dtplyr/help/lazy_dt.html">lazy_dt()</a></code>s.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Other parameters passed onto methods.</p>
+</td></tr>
+<tr valign="top"><td><code>by</code></td>
+<td>
+<p>A join specification created with <code><a href="../../dplyr/help/join_by.html">join_by()</a></code>, or a character
+vector of variables to join by.
+</p>
+<p>If <code>NULL</code>, the default, <code style="white-space: pre;">*_join()</code> will perform a natural join, using all
+variables in common across <code>x</code> and <code>y</code>. A message lists the variables so
+that you can check they're correct; suppress the message by supplying <code>by</code>
+explicitly.
+</p>
+<p>To join on different variables between <code>x</code> and <code>y</code>, use a <code><a href="../../dplyr/help/join_by.html">join_by()</a></code>
+specification. For example, <code>join_by(a == b)</code> will match <code>x$a</code> to <code>y$b</code>.
+</p>
+<p>To join by multiple variables, use a <code><a href="../../dplyr/help/join_by.html">join_by()</a></code> specification with
+multiple expressions. For example, <code>join_by(a == b, c == d)</code> will match
+<code>x$a</code> to <code>y$b</code> and <code>x$c</code> to <code>y$d</code>. If the column names are the same between
+<code>x</code> and <code>y</code>, you can shorten this by listing only the variable names, like
+<code>join_by(a, c)</code>.
+</p>
+<p><code><a href="../../dplyr/help/join_by.html">join_by()</a></code> can also be used to perform inequality, rolling, and overlap
+joins. See the documentation at <a href="../../dplyr/help/join_by.html">?join_by</a> for details on
+these types of joins.
+</p>
+<p>For simple equality joins, you can alternatively specify a character vector
+of variable names to join by. For example, <code>by = c("a", "b")</code> joins <code>x$a</code>
+to <code>y$a</code> and <code>x$b</code> to <code>y$b</code>. If variable names differ between <code>x</code> and <code>y</code>,
+use a named character vector like <code>by = c("x_a" = "y_a", "x_b" = "y_b")</code>.
+</p>
+<p>To perform a cross-join, generating all combinations of <code>x</code> and <code>y</code>, see
+<code><a href="../../dplyr/help/cross_join.html">cross_join()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>copy</code></td>
+<td>
+<p>If <code>x</code> and <code>y</code> are not from the same data source,
+and <code>copy</code> is <code>TRUE</code>, then <code>y</code> will be copied into the
+same src as <code>x</code>.  This allows you to join tables across srcs, but
+it is a potentially expensive operation so you must opt into it.</p>
+</td></tr>
+<tr valign="top"><td><code>suffix</code></td>
+<td>
+<p>If there are non-joined duplicate variables in <code>x</code> and
+<code>y</code>, these suffixes will be added to the output to disambiguate them.
+Should be a character vector of length 2.</p>
+</td></tr>
+</table>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(dplyr, warn.conflicts = FALSE)
+
+band_dt &lt;- lazy_dt(dplyr::band_members)
+instrument_dt &lt;- lazy_dt(dplyr::band_instruments)
+
+band_dt %&gt;% left_join(instrument_dt)
+band_dt %&gt;% right_join(instrument_dt)
+band_dt %&gt;% inner_join(instrument_dt)
+band_dt %&gt;% full_join(instrument_dt)
+
+band_dt %&gt;% semi_join(instrument_dt)
+band_dt %&gt;% anti_join(instrument_dt)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>dtplyr</em> version 1.3.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

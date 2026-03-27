@@ -1,0 +1,377 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Find large correlation matrices by stitching together smaller...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for bigCor {psych}"><tr><td>bigCor {psych}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Find large correlation matrices by stitching together smaller ones found more rapidly</h2>
+
+<h3>Description</h3>
+
+<p>When analyzing many subjects (ie. 100,000 or more) with many variables (i.e. 1000 or more) core R can take a long time and sometime exceed  memory limits (i.e. with 600K subjects and 6K variables).  bigCor runs (in parallel if multicores are available) by breaking the variables into subsets (of size=size), finding all subset correlations, and then stitches the resulting matrices into one large matrix.   Noticeable improvements in speed compared to cor.  
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+bigCor(x, size = NULL, use = "pairwise",cor="pearson",correct=.5)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A data set of numeric variables</p>
+</td></tr>
+<tr valign="top"><td><code>size</code></td>
+<td>
+<p>What should the size of the subsets be? Defaults to NCOL (x)/20  
+</p>
+</td></tr>
+<tr valign="top"><td><code>use</code></td>
+<td>
+<p>The standard correlation option.  &quot;pairwise&quot; allows for missing data
+</p>
+</td></tr>
+<tr valign="top"><td><code>cor</code></td>
+<td>
+<p>Defaults to Pearson correlations, alteratives are polychoric and spearman  </p>
+</td></tr>
+<tr valign="top"><td><code>correct</code></td>
+<td>
+<p>Correction for continuity for polychoric correlations. (see <code><a href="../../psych/help/polychoric.html">polychoric</a></code>)</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The data are divided into subsets of size=size.  Correlations are then found for each subset and pairs of subsets. 
+</p>
+<p>Time is roughly linear with the number of cases and increases by the square of the number of variables.  The benefit of more cores is noticeable. It seems as if with 4 cores, we should use sizes to split it into 8 or 12 sets.  Otherwise we don't actually use all cores efficiently. 
+</p>
+<p>There is some overhead in using multicores.  So for smaller problems (e.g. the 4,000 cases of the  145 items of the psychTools::spi data set, the timings are roughly .14 seconds for bigCor (default size) and .10 for normal cor. For small problems, this actually  gets worse as we use more cores.    The cross over point seems to be at roughly 5K subjects.  (updated these timings to recognize the M1 Max chip.  An increase of 4x in speed!  They had been .44 and .36.)
+</p>
+<p>The basic loop loops over the subsets. When the size is a integer subset of the number of variables and is a multiple of the number of cores, the multiple cores will be used more.  Notice the benefit of 660/80 versus 660/100.  But this breaks down if we try 660/165.  Further notice the benefit when using a smaller subset (55) which led to the 4 cores being used more.  
+</p>
+<p>The following timings are included to help users tinker with parameters:
+</p>
+<p>Timings (in seconds) for various problems with 645K subjects on an 8 core Mac Book Pro with a 2.4 GHZ Intell core i9.
+</p>
+<p>options(mc.cores=4) (Because we have 8 we can work at the same time as we test this.)
+</p>
+<p>First test it with 644,495 subjects and 1/10 of the number of possible variables.  Then test it for somewhat fewer variables.  
+</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: left;">
+Variables  </td><td style="text-align: left;"> size         </td><td style="text-align: left;"> 2 cores     </td><td style="text-align: left;"> 4 cores    </td><td style="text-align: left;"> compared to normal cor function </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+
+
+660  </td><td style="text-align: left;"> 100  </td><td style="text-align: left;">  430   </td><td style="text-align: left;"> 434 </td><td style="text-align: left;">  430 </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+
+660  </td><td style="text-align: left;"> 80   </td><td style="text-align: left;">  600 </td><td style="text-align: left;">   348  </td><td style="text-align: left;">  notice the improvement with 8ths  </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+
+660  </td><td style="text-align: left;"> 165  </td><td style="text-align: left;"> </td><td style="text-align: left;">    666  </td><td style="text-align: left;"> (Stitching seems to have been very slow) </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+
+660  </td><td style="text-align: left;"> 55   </td><td style="text-align: left;"> </td><td style="text-align: left;">    303  </td><td style="text-align: left;">  Even better if we break it into 12ths! </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+
+ 500  </td><td style="text-align: left;"> 100  </td><td style="text-align: left;">  </td><td style="text-align: left;"> 332   </td><td style="text-align: left;"> 322 secs  </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+
+480 </td><td style="text-align: left;"> 120    </td><td style="text-align: left;"> 408 </td><td style="text-align: left;">  365   </td><td style="text-align: left;"> 315    Better to change the size </td>
+</tr>
+<tr>
+ <td style="text-align: left;"> 
+
+480 </td><td style="text-align: left;"> 60    </td><td style="text-align: left;">  358 </td><td style="text-align: left;">   206  </td><td style="text-align: left;"> This leads to 8 splits </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+
+</td>
+</tr>
+<tr>
+ <td style="text-align: left;"> 
+</td>
+</tr>
+
+</table>
+
+<p>We also test it with fewer subjects.  Time is roughly linear with number of subjects.
+</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: left;">
+Variables  </td><td style="text-align: left;"> size      </td><td style="text-align: left;"> 2 cores     </td><td style="text-align: left;"> 4 cores    </td><td style="text-align: left;"> compared to normal cor function 
+Further comparisons with fewer subjects (100K) </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+</td>
+</tr>
+<tr>
+ <td style="text-align: left;"> 
+480  </td><td style="text-align: left;">  60  </td><td style="text-align: left;"> 57 </td><td style="text-align: left;">    31 </td><td style="text-align: left;"> 47 with normal cor.  Note the effect of n subjects!  </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+200 </td><td style="text-align: left;"> 50  </td><td style="text-align: left;">  19.9   </td><td style="text-align: left;">  13.6 </td><td style="text-align: left;"> 27.13 </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+100  </td><td style="text-align: left;"> 25    </td><td style="text-align: left;"> 4.6  </td><td style="text-align: left;"> 3.5   </td><td style="text-align: left;"> 5.85  </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+ </td>
+</tr>
+<tr>
+ <td style="text-align: left;"> 
+</td>
+</tr>
+
+</table>
+ 
+<p>One last comparison, 10,000 subjects, showing the effect of getting the proper size value. You can tune on these smaller sets of subjects before trying large problems.
+</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: left;">
+Variables  </td><td style="text-align: left;"> size       </td><td style="text-align: left;"> 2 cores     </td><td style="text-align: left;"> 4 cores    </td><td style="text-align: left;"> compared to normal cor function 
+</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+480  </td><td style="text-align: left;"> 120 </td><td style="text-align: left;"> 5.2    </td><td style="text-align: left;">   5.1  </td><td style="text-align: left;">  4.51 </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+480  </td><td style="text-align: left;"> 60 </td><td style="text-align: left;"> 2.9    </td><td style="text-align: left;">   2.88  </td><td style="text-align: left;">  4.51 </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+480  </td><td style="text-align: left;">   30  </td><td style="text-align: left;"> 2.65  </td><td style="text-align: left;">  2.691  </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+480  </td><td style="text-align: left;"> 20   </td><td style="text-align: left;"> 2.73 </td><td style="text-align: left;">    2.77 </td><td style="text-align: left;">  </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+480   </td><td style="text-align: left;">   10   </td><td style="text-align: left;"> 2.82  </td><td style="text-align: left;">    2.97 </td><td style="text-align: left;"> too many splits? </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+
+200  </td><td style="text-align: left;">  50   </td><td style="text-align: left;"> 2.18  </td><td style="text-align: left;"> 1.39 </td><td style="text-align: left;"> 2.47 for normal cor (1.44 with 8 cores 2.99 with 1 core) </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+200  </td><td style="text-align: left;">  25   </td><td style="text-align: left;"> 1.2  </td><td style="text-align: left;"> 1.17 </td><td style="text-align: left;"> 2.47 for normal cor </td>
+</tr>
+<tr>
+ <td style="text-align: left;"> (1.16 with 8 cores,  1.17 with 1 core) </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+100  </td><td style="text-align: left;"> 25    </td><td style="text-align: left;"> .64  </td><td style="text-align: left;"> .52   </td><td style="text-align: left;"> .56 </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+</td>
+</tr>
+
+</table>
+ 
+<p>Timings updated in 2/23 using a MacBook Pro with M1 max chip
+10,000 subjects 953 variables  suggests that a very small size (e.g. 20) is probably optimal  
+</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: left;">
+Variables  </td><td style="text-align: left;"> size     </td><td style="text-align: left;"> 2 cores     </td><td style="text-align: left;"> 4 cores  </td><td style="text-align: left;"> 8 cores   </td><td style="text-align: left;"> compared to normal cor function 
+</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+953 </td><td style="text-align: left;"> 20 </td><td style="text-align: left;"> 7.92    </td><td style="text-align: left;"> 4.55  </td><td style="text-align: left;"> 2.88 </td><td style="text-align: left;"> 11.04 </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+953 </td><td style="text-align: left;"> 30 </td><td style="text-align: left;"> 7.98    </td><td style="text-align: left;"> 4.88   </td><td style="text-align: left;"> 3.15 </td><td style="text-align: left;"> 11.04 </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+953 </td><td style="text-align: left;"> 40 </td><td style="text-align: left;"> 8.22 </td><td style="text-align: left;"> 5.14 </td><td style="text-align: left;"> 3.63 </td><td style="text-align: left;"> 11.16  </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+953 </td><td style="text-align: left;"> 60 </td><td style="text-align: left;"> 8.51 </td><td style="text-align: left;"> 5.59 </td><td style="text-align: left;"> 3.93 </td><td style="text-align: left;"> 11.16  </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+953 </td><td style="text-align: left;"> 80  </td><td style="text-align: left;"> 8.31 </td><td style="text-align: left;"> 5.59 </td><td style="text-align: left;"> 4.14 </td><td style="text-align: left;"> 11.16  </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+953 </td><td style="text-align: left;"> 120  </td><td style="text-align: left;"> 8.33 </td><td style="text-align: left;"> 6.22  </td><td style="text-align: left;"> 4.75 </td><td style="text-align: left;"> 11.16  </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+</td>
+</tr>
+
+</table>
+
+<p>Timings updated in 11/25 using a MacBook Pro with M4 max chip.  1,000 or 10,000 subjects, 6625 variables
+</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: left;">
+
+</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+n var </td><td style="text-align: left;"> n.obs </td><td style="text-align: left;"> size </td><td style="text-align: left;"> 2 cores </td><td style="text-align: left;"> 4 cores	</td><td style="text-align: left;"> 8 cores </td><td style="text-align: left;"> 12 cores</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+6625 </td><td style="text-align: left;">  1000</td><td style="text-align: left;"> default </td><td style="text-align: left;"> 9.0   </td><td style="text-align: left;"> 5.3 </td><td style="text-align: left;"> 3.6  </td><td style="text-align: left;"> 2.8 </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+6625 </td><td style="text-align: left;"> 1000 </td><td style="text-align: left;"> 20 </td><td style="text-align: left;">   11  </td><td style="text-align: left;">   6.4 </td><td style="text-align: left;">  4.1  </td><td style="text-align: left;"> 3.2 </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+6625  </td><td style="text-align: left;"> 1000 </td><td style="text-align: left;"> 40 </td><td style="text-align: left;"> 8.3  </td><td style="text-align: left;"> 5.0 </td><td style="text-align: left;"> 3.3  </td><td style="text-align: left;"> 2.6  </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+6625 </td><td style="text-align: left;"> 1000 </td><td style="text-align: left;"> 80 </td><td style="text-align: left;">  7.6 </td><td style="text-align: left;"> 4.5 </td><td style="text-align: left;"> 3.2  </td><td style="text-align: left;"> 2.5 </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+6625 </td><td style="text-align: left;"> 1000 </td><td style="text-align: left;"> 120  </td><td style="text-align: left;"> 6.6 </td><td style="text-align: left;"> 4.6 </td><td style="text-align: left;"> 3.1 </td><td style="text-align: left;"> 2.7  </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+6625 </td><td style="text-align: left;"> 1000 </td><td style="text-align: left;"> 160  </td><td style="text-align: left;"> 7.2  </td><td style="text-align: left;"> 4.5  </td><td style="text-align: left;"> 3.4 </td><td style="text-align: left;">  2.8  </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+</td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+6625 </td><td style="text-align: left;">  10000 </td><td style="text-align: left;"> default </td><td style="text-align: left;"> 63.9   </td><td style="text-align: left;"> 34.4 </td><td style="text-align: left;"> 24.8  </td><td style="text-align: left;"> 20.7 </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+6625 </td><td style="text-align: left;"> 10000 </td><td style="text-align: left;"> 20 </td><td style="text-align: left;">   70.2  </td><td style="text-align: left;">   37.8  </td><td style="text-align: left;">  25.2  </td><td style="text-align: left;"> 21.6  </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+6625  </td><td style="text-align: left;"> 10000 </td><td style="text-align: left;"> 40 </td><td style="text-align: left;">  62.5  </td><td style="text-align: left;"> 33.5 </td><td style="text-align: left;"> 25.5 </td><td style="text-align: left;"> 19.2   </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+6625 </td><td style="text-align: left;"> 10000 </td><td style="text-align: left;"> 80 </td><td style="text-align: left;">  54.1 </td><td style="text-align: left;"> 31.6 </td><td style="text-align: left;"> 24.9  </td><td style="text-align: left;"> 19.4  </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+6625 </td><td style="text-align: left;"> 10000 </td><td style="text-align: left;"> 120  </td><td style="text-align: left;"> 57.3 </td><td style="text-align: left;"> 31.3 </td><td style="text-align: left;"> 24.2 </td><td style="text-align: left;">  22.5 </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+6625 </td><td style="text-align: left;"> 10000 </td><td style="text-align: left;"> 160  </td><td style="text-align: left;"> 56.5  </td><td style="text-align: left;"> 33.9  </td><td style="text-align: left;"> 24.7 </td><td style="text-align: left;"> 22.1  </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+
+
+</td>
+</tr>
+
+</table>
+
+<p>Moral,  get a fast chip and use as many cores as you can.
+</p>
+<p>Does not seem to work with data.tables
+</p>
+
+
+<h3>Value</h3>
+
+<p>The correlation matrix
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>William Revelle </p>
+
+
+<h3>References</h3>
+
+<p>Examples of large data sets with massively missing data are taken from the SAPA project. e.g.,
+</p>
+<p>William Revelle, Elizabeth M. Dworak, and David M. Condon (2021) Exploring the persome: The power of the item in understanding personality structure. Personality and Individual Differences, 169, doi: <a href="https://doi.org/10.1016/j.paid.2020.109905">10.1016/j.paid.2020.109905</a>
+</p>
+<p>David Condon (2018)The SAPA Personality Inventory: an empirically-derived, hierarchically-organized self-report personality assessment model.  PsyArXiv /sc4p9/ doi: <a href="https://doi.org/10.31234/osf.io/sc4p9">10.31234/osf.io/sc4p9</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../psych/help/pairwiseCountBig.html">pairwiseCountBig</a></code> which will do the same, but find the count of observations per cell.</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+R &lt;- bigCor(bfi,10)
+#compare the results with 
+r.bfi &lt;- cor(bfi,use="pairwise")
+all.equal(R,r.bfi)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>psych</em> version 2.6.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

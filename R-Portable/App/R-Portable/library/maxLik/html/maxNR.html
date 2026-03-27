@@ -1,0 +1,543 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Newton- and Quasi-Newton Maximization</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for maxNR {maxLik}"><tr><td>maxNR {maxLik}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Newton- and Quasi-Newton Maximization</h2>
+
+<h3>Description</h3>
+
+<p>Unconstrained and equality-constrained
+maximization based on the quadratic approximation
+(Newton) method.
+The Newton-Raphson, BFGS (Broyden 1970, Fletcher 1970, Goldfarb 1970,
+Shanno 1970), and BHHH (Berndt, Hall, Hall, Hausman 1974) methods
+are available.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+maxNR(fn, grad = NULL, hess = NULL, start,
+      constraints = NULL, finalHessian = TRUE, bhhhHessian=FALSE,
+      fixed = NULL, activePar = NULL, control=NULL, ... )
+maxBFGSR(fn, grad = NULL, hess = NULL, start,
+      constraints = NULL, finalHessian = TRUE,
+      fixed = NULL, activePar = NULL, control=NULL, ... )
+maxBHHH(fn, grad = NULL, hess = NULL, start, 
+      finalHessian = "BHHH", ... )
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>fn</code></td>
+<td>
+<p>the function to be maximized.
+It must have the parameter vector as the first argument and
+it must return either a single number, or a numeric vector (this is
+is summed internally).
+If the BHHH method is used and argument <code>gradient</code> is not given,
+<code>fn</code> must return a numeric vector of observation-specific
+log-likelihood values.
+If the parameters are out of range, <code>fn</code> should
+return <code>NA</code>.  See details for constant parameters.
+</p>
+<p><code>fn</code> may also return attributes &quot;gradient&quot; and/or &quot;hessian&quot;.
+If these attributes are set, the algorithm uses the corresponding
+values as
+gradient and Hessian.
+</p>
+</td></tr>
+<tr valign="top"><td><code>grad</code></td>
+<td>
+<p>gradient of the objective function.
+It must have the parameter vector as the first argument and
+it must return either a gradient vector of the objective function,
+or a matrix, where <em>columns</em> correspond to individual parameters.
+The column sums are treated as gradient components.
+If <code>NULL</code>, finite-difference gradients are computed.
+If BHHH method is used, <code>grad</code> must return a matrix,
+where rows corresponds to the gradient vectors for individual
+observations and the columns to the individual parameters.
+If <code>fn</code> returns an object with attribute <code>gradient</code>,
+this argument is ignored.
+</p>
+</td></tr>
+<tr valign="top"><td><code>hess</code></td>
+<td>
+<p>Hessian matrix of the function.
+It must have the parameter vector as the first argument and
+it must return the Hessian matrix of the objective function.
+If missing, finite-difference Hessian, based on <code>gradient</code>,
+is computed.
+Hessian is used by the Newton-Raphson method only, and eventually by
+the other methods if <code>finalHessian</code> is requested.</p>
+</td></tr>
+<tr valign="top"><td><code>start</code></td>
+<td>
+<p>initial parameter values.  If start values
+are named, those names are also carried over to the results.</p>
+</td></tr>
+<tr valign="top"><td><code>constraints</code></td>
+<td>
+<p>either <code>NULL</code> for unconstrained optimization
+or a list with two components.  The components may be either
+<code>eqA</code> and <code>eqB</code> for equality-constrained optimization
+<i>A %*% theta + B = 0</i>; or <code>ineqA</code> and
+<code>ineqB</code> for inequality constraints <i>A
+      %*% theta + B &gt; 0</i>.  More
+than one
+row in <code>ineqA</code> and <code>ineqB</code> corresponds to more than
+one linear constraint, in that case all these must be zero
+(equality) or positive (inequality constraints).
+The equality-constrained problem is forwarded
+to <code><a href="../../maxLik/help/sumt.html">sumt</a></code>, the inequality-constrained case to
+<code><a href="../../maxLik/help/constrOptim2.html">constrOptim2</a></code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>finalHessian</code></td>
+<td>
+<p>how (and if) to calculate the final Hessian.  Either
+<code>FALSE</code> (do not calculate), <code>TRUE</code> (use analytic/finite-difference
+Hessian) or <code>"bhhh"</code>/<code>"BHHH"</code> for the information equality
+approach.  The latter approach is only suitable for maximizing
+log-likelihood functions.  It requires the gradient/log-likelihood to
+be supplied by individual observations.
+Note that computing the (actual, not BHHH) final Hessian
+does not carry any extra penalty for the NR method,
+but does for the other methods.</p>
+</td></tr>
+<tr valign="top"><td><code>bhhhHessian</code></td>
+<td>
+<p>logical. Indicating whether to use the information
+equality approximation (Bernd, Hall, Hall, and Hausman, 1974) for
+the Hessian.  This effectively transforms <code>maxNR</code> into
+<code>maxBHHH</code> and is mainly designed for internal use.</p>
+</td></tr>
+<tr valign="top"><td><code>fixed</code></td>
+<td>
+<p>parameters to be treated as constants at their
+<code>start</code> values.  If present, it is treated as an index vector of
+<code>start</code> parameters.</p>
+</td></tr>
+<tr valign="top"><td><code>activePar</code></td>
+<td>
+<p>this argument is retained for backward compatibility only;
+please use argument <code>fixed</code> instead.</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+<p>list of control parameters.  The control parameters
+used by these optimizers are
+</p>
+
+<dl>
+<dt>tol</dt><dd><p><i>1e-8</i>,
+stopping condition.  Stop if the absolute difference
+between successive iterations is less than <code>tol</code>.  Return
+<code>code=2</code>.
+</p>
+<p>If set to a negative value, the criterion is never fulfilled,
+and hence disabled.
+</p>
+</dd>
+<dt>reltol</dt><dd><p>sqrt(.Machine$double.eps), stopping
+condition.  Relative convergence
+tolerance: the algorithm stops if the relative improvement
+between iterations is less than &lsquo;reltol&rsquo;.  Return code
+8.  Negative value disables condition.
+</p>
+</dd>
+<dt>gradtol</dt><dd><p>stopping condition.  Stop if norm of the gradient is
+less than <code>gradtol</code>.  Return code 1.  Negative value
+disables condition.</p>
+</dd>
+<dt>steptol</dt><dd><p>1e-10, stopping/error condition.
+If <code>qac == "stephalving"</code> and the quadratic
+approximation leads to a worse, instead of a better value, or to
+<code>NA</code>, the step length
+is halved and a new attempt is made.  If necessary, this procedure is repeated
+until step &lt; <code>steptol</code>, thereafter code 3 is returned.</p>
+</dd>
+<dt>lambdatol</dt><dd><p><i>1e-6</i>, 
+controls whether Hessian is treated as negative
+definite.  If the
+largest of the eigenvalues of the Hessian is larger than
+<code>-lambdatol</code> (Hessian is not negative definite),
+a suitable diagonal matrix is subtracted from the
+Hessian (quadratic hill-climbing) in order to enforce negative
+definiteness.
+</p>
+</dd>
+<dt>qrtol</dt><dd><p><i>1e-10</i>,
+QR-decomposition tolerance for the Hessian inversion.
+</p>
+</dd>
+<dt>qac</dt><dd><p>&quot;stephalving&quot;, Quadratic Approximation Correction.  When the new
+guess is worse than the initial one, the algorithm attemts to correct it:
+&quot;stephalving&quot; decreases the
+step but keeps the direction,
+&quot;marquardt&quot; uses
+<cite>Marquardt (1963)</cite> method by decreasing the step length while also
+moving closer to the pure gradient direction.  It may be faster and
+more robust choice in areas where quadratic approximation
+behaves poorly.  <code>maxNR</code> and <code>maxBHHH</code> only.
+</p>
+</dd>
+<dt>marquardt_lambda0</dt><dd><p><i>1e-2</i>,
+positive numeric, initial correction term for <cite>Marquardt (1963)</cite>
+correction.
+</p>
+</dd>
+<dt>marquardt_lambdaStep</dt><dd><p>2, how much the <cite>Marquardt
+(1963)</cite>
+correction term is
+decreased/increased at each
+successful/unsuccesful step.
+<code>maxNR</code> and <code>maxBHHH</code> only.
+</p>
+</dd>
+<dt>marquardt_maxLambda</dt><dd><p><i>1e12</i>,
+maximum allowed <cite>Marquardt (1963)</cite> correction term.  If exceeded, the
+algorithm exits with return code 3.
+<code>maxNR</code> and <code>maxBHHH</code> only.
+</p>
+</dd>
+<dt>iterlim</dt><dd><p>stopping condition.  Stop if more than <code>iterlim</code>
+iterations, return <code>code=4</code>.</p>
+</dd>
+<dt>printLevel</dt><dd><p>this argument determines the level of
+printing which is done during the optimization process. The default
+value 0 means that no printing occurs, 1 prints the
+initial and final details, 2 prints all the
+main tracing information for every iteration.  Higher
+values will result in even more output.
+</p>
+</dd>
+</dl>
+
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>further arguments to <code>fn</code>, <code>grad</code> and
+<code>hess</code>.
+Further arguments to <code>maxBHHH</code> are also passed to
+<code>maxNR</code>.
+To maintain compatibility with the earlier versions, ... also passes a
+number of control options (<code>tol</code>, <code>reltol</code>,
+<code>gradtol</code>, <code>steptol</code>,
+<code>lambdatol</code>,  <code>qrtol</code>, <code>iterlim</code>) to the optimizers.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The idea of the Newton method is to approximate the function at a given
+location by a multidimensional quadratic function, and use the estimated
+maximum as the start value for the next iteration.  Such an
+approximation requires knowledge of both gradient and Hessian, the
+latter of which can be quite costly to compute.  Several methods for
+approximating Hessian exist, including BFGS and BHHH.
+</p>
+<p>The BHHH (information equality) approximation is only valid for
+log-likelihood functions.
+It requires the score (gradient) values by individual observations and hence
+those must be returned 
+by individual observations by <code>grad</code> or <code>fn</code>.
+The Hessian is approximated as the negative of the sum of the outer products
+of the gradients of individual observations, or, in the matrix form,
+</p>
+<p style="text-align: center;"><i>
+    \code{H = -t(gradient) %*% gradient = - crossprod( gradient )}.
+    </i></p>
+
+<p>The functions <code>maxNR</code>, <code>maxBFGSR</code>, and <code>maxBHHH</code>
+can work with constant parameters, useful if a parameter value
+converges to the boundary of support, or for testing.  
+One way is to put
+<code>fixed</code> to non-NULL, specifying which parameters should be treated as
+constants.  The
+parameters can also be fixed in runtime (only for <code>maxNR</code> and <code>maxBHHH</code>) by
+signaling it with the 
+<code>fn</code> return value.  See Henningsen &amp; Toomet (2011) for details.
+</p>
+
+
+<h3>Value</h3>
+
+<p>object of class &quot;maxim&quot;.  Data can be extracted through the following
+methods: 
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code><code><a href="../../maxLik/help/maxValue.html">maxValue</a></code></code></td>
+<td>
+<p><code>fn</code> value at maximum (the last calculated value
+if not converged.)</p>
+</td></tr>
+<tr valign="top"><td><code><code><a href="../../maxLik/help/coef.maxim.html">coef</a></code></code></td>
+<td>
+<p>estimated parameter value.</p>
+</td></tr>
+<tr valign="top"><td><code>gradient</code></td>
+<td>
+<p>vector, last calculated gradient value.  Should be
+close to 0 in case of normal convergence.</p>
+</td></tr>
+<tr valign="top"><td><code>estfun</code></td>
+<td>
+<p>matrix of gradients at parameter value <code>estimate</code>
+evaluated at each observation (only if <code>grad</code> returns a matrix
+or <code>grad</code> is not specified and <code>fn</code> returns a vector).</p>
+</td></tr>
+<tr valign="top"><td><code>hessian</code></td>
+<td>
+<p>Hessian at the maximum (the last calculated value if
+not converged).</p>
+</td></tr>
+<tr valign="top"><td><code>returnCode</code></td>
+<td>
+<p>return code:
+</p>
+
+<dl>
+<dt>1</dt><dd><p> gradient close to zero (normal convergence).</p>
+</dd>
+<dt>2</dt><dd><p> successive function values within tolerance limit (normal
+convergence).</p>
+</dd>
+<dt>3</dt><dd><p> last step could not find higher value (probably not
+converged).  This is related to line search step getting too
+small, usually because hitting the boundary of the parameter
+space.  It may also be related to attempts to move to a wrong
+direction because of numerical errors.  In some cases it can be
+helped by changing <code>steptol</code>.</p>
+</dd>
+<dt>4</dt><dd><p> iteration limit exceeded.</p>
+</dd>
+<dt>5</dt><dd><p>infinite value.</p>
+</dd>
+<dt>6</dt><dd><p>infinite gradient.</p>
+</dd>
+<dt>7</dt><dd><p>infinite Hessian.</p>
+</dd>
+<dt>8</dt><dd><p>successive function values within relative tolerance
+limit (normal convergence).</p>
+</dd>
+<dt>9</dt><dd><p>(BFGS) Hessian approximation cannot be improved because of
+gradient did not change.  May be related to numerical
+approximation problems or wrong analytic gradient.</p>
+</dd>
+<dt>100</dt><dd><p> Initial value out of range.</p>
+</dd>
+</dl>
+
+</td></tr>
+<tr valign="top"><td><code>returnMessage</code></td>
+<td>
+<p> a short message, describing the return code.</p>
+</td></tr>
+<tr valign="top"><td><code>activePar</code></td>
+<td>
+<p>logical vector, which parameters are optimized over.
+Contains only <code>TRUE</code>-s if no parameters are fixed.</p>
+</td></tr>
+<tr valign="top"><td><code>nIter</code></td>
+<td>
+<p>number of iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>maximType</code></td>
+<td>
+<p>character string, type of maximization.</p>
+</td></tr>
+<tr valign="top"><td><code>maxControl</code></td>
+<td>
+<p>the optimization control parameters in the form of a
+<code><a href="../../maxLik/help/MaxControl-class.html">MaxControl</a></code> object.</p>
+</td></tr>
+</table>
+<p>The following components can only be extracted directly (with <code>\$</code>):
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>last.step</code></td>
+<td>
+<p>a list describing the last unsuccessful step if
+<code>code=3</code> with following components:
+</p>
+
+<dl>
+<dt>theta0</dt><dd><p> previous parameter value</p>
+</dd>
+<dt>f0</dt><dd> <p><code>fn</code> value at <code>theta0</code></p>
+</dd>
+<dt>climb</dt><dd><p> the movement vector to the maximum of the quadratic approximation</p>
+</dd>
+</dl>
+
+</td></tr>
+<tr valign="top"><td><code>constraints</code></td>
+<td>
+<p>A list, describing the constrained optimization
+(<code>NULL</code> if unconstrained).  Includes the following components:
+</p>
+
+<dl>
+<dt>type</dt><dd><p> type of constrained optimization</p>
+</dd>
+<dt>outer.iterations</dt><dd><p> number of iterations in the constraints step</p>
+</dd>
+<dt>barrier.value</dt><dd><p> value of the barrier function</p>
+</dd>
+</dl>
+
+</td></tr>
+</table>
+
+
+<h3>Warning</h3>
+
+<p>No attempt is made to ensure that user-provided analytic
+gradient/Hessian is correct.  The users are
+encouraged to use <code><a href="../../maxLik/help/compareDerivatives.html">compareDerivatives</a></code> function,
+designed for this purpose.  If analytic gradient/Hessian are wrong,
+the algorithm may not converge, or may converge to a wrong point.
+</p>
+<p>As the BHHH method
+uses the likelihood-specific information equality,
+it is only suitable for maximizing log-likelihood functions!
+</p>
+<p>Quasi-Newton methods, including those mentioned above, do not work
+well in non-concave regions.  This is especially the case with the
+implementation in <code>maxBFGSR</code>.  The user is advised to
+experiment with various tolerance options to achieve convergence.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Ott Toomet, Arne Henningsen,
+function <code>maxBFGSR</code> was originally developed by Yves Croissant
+(and placed in 'mlogit' package)</p>
+
+
+<h3>References</h3>
+
+<p>Berndt, E., Hall, B., Hall, R. and Hausman, J. (1974):
+Estimation and Inference in Nonlinear Structural Models,
+<em>Annals of Social Measurement</em> <b>3</b>, 653&ndash;665.
+</p>
+<p>Broyden, C.G. (1970):
+The Convergence of a Class of Double-rank Minimization Algorithms,
+<em>Journal of the Institute of Mathematics and Its Applications</em> <b>6</b>,
+76&ndash;90.
+</p>
+<p>Fletcher, R. (1970):
+A New Approach to Variable Metric Algorithms,
+<em>Computer Journal</em> <b>13</b>, 317&ndash;322.
+</p>
+<p>Goldfarb, D. (1970):
+A Family of Variable Metric Updates Derived by Variational Means,
+<em>Mathematics of Computation</em> <b>24</b>, 23&ndash;26.
+</p>
+<p>Henningsen, A. and Toomet, O. (2011): maxLik: A package for maximum likelihood
+estimation in R <em>Computational Statistics</em> <b>26</b>, 443&ndash;458
+</p>
+<p>Marquardt, D.W., (1963) An Algorithm for Least-Squares Estimation of
+Nonlinear Parameters, <em>Journal of the Society for Industrial &amp;
+Applied Mathematics</em> <b>11</b>, 2, 431&ndash;441
+</p>
+<p>Shanno, D.F. (1970):
+Conditioning of Quasi-Newton Methods for Function Minimization,
+<em>Mathematics of Computation</em> <b>24</b>, 647&ndash;656.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../maxLik/help/maxLik.html">maxLik</a></code> for a general framework for maximum likelihood
+estimation (MLE);
+<code><a href="../../maxLik/help/maxBHHH.html">maxBHHH</a></code> for maximizations using the Berndt, Hall, Hall,
+Hausman (1974) algorithm (which is a wrapper function to <code>maxNR</code>);
+<code><a href="../../maxLik/help/maxBFGS.html">maxBFGS</a></code> for maximization using the BFGS, Nelder-Mead (NM),
+and Simulated Annealing (SANN) method (based on <code><a href="../../stats/html/optim.html">optim</a></code>),
+also supporting inequality constraints;
+<code><a href="../../stats/html/nlm.html">nlm</a></code> for Newton-Raphson optimization; and
+<code><a href="../../stats/html/optim.html">optim</a></code> for different gradient-based optimization
+methods.</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Fit exponential distribution by ML
+t &lt;- rexp(100, 2)  # create data with parameter 2
+loglik &lt;- function(theta) sum(log(theta) - theta*t)
+## Note the log-likelihood and gradient are summed over observations
+gradlik &lt;- function(theta) sum(1/theta - t)
+hesslik &lt;- function(theta) -100/theta^2
+## Estimate with finite-difference gradient and Hessian
+a &lt;- maxNR(loglik, start=1, control=list(printLevel=2))
+summary(a)
+## You would probably prefer 1/mean(t) instead ;-)
+
+## The same example with analytic gradient and Hessian
+a &lt;- maxNR(loglik, gradlik, hesslik, start=1)
+summary(a)
+
+## BFGS estimation with finite-difference gradient
+a &lt;- maxBFGSR( loglik, start=1 )
+summary(a)
+
+## For the BHHH method we need likelihood values and gradients
+## of individual observations, not the sum of those
+loglikInd &lt;- function(theta) log(theta) - theta*t
+gradlikInd &lt;- function(theta) 1/theta - t
+## Estimate with analytic gradient
+a &lt;- maxBHHH(loglikInd, gradlikInd, start=1)
+summary(a)
+
+## Example with a vector argument:  Estimate the mean and
+## variance of a random normal sample by maximum likelihood
+## Note: you might want to use maxLik instead
+loglik &lt;- function(param) {
+                           # param is a 2-vector of c(mean, sd)
+  mu &lt;- param[1]
+  sigma &lt;- param[2]
+  ll &lt;- -0.5*N*log(2*pi) - N*log(sigma) - sum(0.5*(x - mu)^2/sigma^2)
+  ll
+}
+x &lt;- rnorm(100, 1, 2) # use mean=1, sd=2
+N &lt;- length(x)
+res &lt;- maxNR(loglik, start=c(0,1)) # use 'wrong' start values
+summary(res)
+
+## The previous example with named parameters and a fixed value
+resFix &lt;- maxNR(loglik, start=c(mu=0, sigma=1), fixed="sigma")
+summary(resFix)  # 'sigma' is exactly 1.000 now.
+
+### Constrained optimization
+###
+## We maximize exp(-x^2 - y^2) where x+y = 1
+hatf &lt;- function(theta) {
+  x &lt;- theta[1]
+  y &lt;- theta[2]
+  exp(-(x^2 + y^2))
+  ## Note: you may prefer exp(- theta %*% theta) instead
+}
+## use constraints: x + y = 1
+A &lt;- matrix(c(1, 1), 1, 2)
+B &lt;- -1
+res &lt;- maxNR(hatf, start=c(0,0), constraints=list(eqA=A, eqB=B),
+             control=list(printLevel=1))
+print(summary(res))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>maxLik</em> version 1.5-2.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,235 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Create a shift table</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for shift_table {flextable}"><tr><td>shift_table {flextable}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Create a shift table</h2>
+
+<h3>Description</h3>
+
+<p>Create a shift table ready to be used with <code>tabulator()</code>.
+</p>
+<p>The function is transforming a dataset representing some
+'Laboratory Tests Results' structured as <em>CDISC clinical trial
+data sets</em> format to a dataset representing the shift table.
+</p>
+<p>Shift tables are tables used in clinical trial analysis.
+They show the progression of change from the baseline, with the progression
+often being along time; the number of subjects is displayed in different
+range (e.g. low, normal, or high) at baseline and at selected time points
+or intervals.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+shift_table(
+  x,
+  cn_visit = "VISIT",
+  cn_visit_num = "VISITNUM",
+  cn_grade = "LBNRIND",
+  cn_usubjid = "USUBJID",
+  cn_lab_cat = NA_character_,
+  cn_is_baseline = "LBBLFL",
+  baseline_identifier = "Y",
+  cn_treatment = NA_character_,
+  grade_levels = c("LOW", "NORMAL", "HIGH"),
+  grade_labels = c("Low", "Normal", "High")
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>Laboratory Tests Results data frame.</p>
+</td></tr>
+<tr valign="top"><td><code>cn_visit</code></td>
+<td>
+<p>column name containing visit names, default to &quot;VISIT&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>cn_visit_num</code></td>
+<td>
+<p>column name containing visit numbers, default to &quot;VISITNUM&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>cn_grade</code></td>
+<td>
+<p>column name containing reference range indicators, default to &quot;LBNRIND&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>cn_usubjid</code></td>
+<td>
+<p>column name containing unique subject inditifiers, default to &quot;USUBJID&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>cn_lab_cat</code></td>
+<td>
+<p>column name containing lab tests or examination names, default to &quot;LBTEST&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>cn_is_baseline</code></td>
+<td>
+<p>column name containing baseline flags, default to &quot;LBBLFL&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>baseline_identifier</code></td>
+<td>
+<p>baseline flag value to use for baseline
+identification. Its default is &quot;Y&quot;.</p>
+</td></tr>
+<tr valign="top"><td><code>cn_treatment</code></td>
+<td>
+<p>column name containing treatment names, default to <code>NA</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>grade_levels</code></td>
+<td>
+<p>levels to use for reference range indicators</p>
+</td></tr>
+<tr valign="top"><td><code>grade_labels</code></td>
+<td>
+<p>labels to use for reference range indicators</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>the shift table as a data.frame. Additionnal elements are provided
+in attributes:
+</p>
+
+<ul>
+<li><p> &quot;VISIT_N&quot;: count of unique subject id per visits, labs and eventually
+treatments. This element is supposed to be used as value for argument
+<code>hidden_data</code> of function <code>tabulator()</code>.
+</p>
+</li>
+<li><p> &quot;FUN_VISIT&quot;: a utility function to easily turn <em>visit</em> column as a factor
+column. It should be applied after the shift table creation.
+</p>
+</li>
+<li><p> &quot;FUN_GRADE&quot;: a utility function to easily turn <em>grade</em> column as a factor
+column. It adds &quot;MISSING/Missing&quot; and &quot;SUM/Sum&quot; at the end of the set of values specified
+in arguments <code>grade_levels</code> and <code>grade_labels</code>. It should be applied after the shift
+table creation.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+
+library(data.table)
+library(flextable)
+
+# data simulation ----
+USUBJID &lt;- sprintf("01-ABC-%04.0f", 1:200)
+VISITS &lt;- c("SCREENING 1", "WEEK 2", "MONTH 3")
+LBTEST &lt;- c("Albumin", "Sodium")
+
+VISITNUM &lt;- seq_along(VISITS)
+LBBLFL &lt;- rep(NA_character_, length(VISITNUM))
+LBBLFL[1] &lt;- "Y"
+
+VISIT &lt;- data.frame(
+  VISIT = VISITS, VISITNUM = VISITNUM,
+  LBBLFL = LBBLFL, stringsAsFactors = FALSE
+)
+labdata &lt;- expand.grid(
+  USUBJID = USUBJID, LBTEST = LBTEST,
+  VISITNUM = VISITNUM,
+  stringsAsFactors = FALSE
+)
+setDT(labdata)
+
+labdata &lt;- merge(labdata, VISIT, by = "VISITNUM")
+
+subject_elts &lt;- unique(labdata[, .SD, .SDcols = "USUBJID"])
+subject_elts &lt;- unique(subject_elts)
+subject_elts[, c("TREAT") := list(
+  sample(x = c("Treatment", "Placebo"), size = .N, replace = TRUE)
+)]
+subject_elts[, c("TREAT") := list(
+  factor(.SD$TREAT, levels = c("Treatment", "Placebo"))
+)]
+setDF(subject_elts)
+labdata &lt;- merge(labdata, subject_elts,
+  by = "USUBJID", all.x = TRUE, all.y = FALSE
+)
+labdata[, c("LBNRIND") := list(
+  sample(
+    x = c("LOW", "NORMAL", "HIGH"), size = .N,
+    replace = TRUE, prob = c(.03, .9, .07)
+  )
+)]
+
+setDF(labdata)
+
+
+
+
+# shift table calculation ----
+
+SHIFT_TABLE &lt;- shift_table(
+  x = labdata, cn_visit = "VISIT",
+  cn_grade = "LBNRIND",
+  cn_usubjid = "USUBJID",
+  cn_lab_cat = "LBTEST",
+  cn_treatment = "TREAT",
+  cn_is_baseline = "LBBLFL",
+  baseline_identifier = "Y",
+  grade_levels = c("LOW", "NORMAL", "HIGH")
+)
+
+# get attrs for post treatment ----
+SHIFT_TABLE_VISIT &lt;- attr(SHIFT_TABLE, "VISIT_N")
+visit_as_factor &lt;- attr(SHIFT_TABLE, "FUN_VISIT")
+range_as_factor &lt;- attr(SHIFT_TABLE, "FUN_GRADE")
+
+# post treatments ----
+SHIFT_TABLE$VISIT &lt;- visit_as_factor(SHIFT_TABLE$VISIT)
+SHIFT_TABLE$BASELINE &lt;- range_as_factor(SHIFT_TABLE$BASELINE)
+SHIFT_TABLE$LBNRIND &lt;- range_as_factor(SHIFT_TABLE$LBNRIND)
+
+SHIFT_TABLE_VISIT$VISIT &lt;- visit_as_factor(SHIFT_TABLE_VISIT$VISIT)
+
+# tabulator ----
+
+my_format &lt;- function(z) {
+  formatC(z * 100,
+    digits = 1, format = "f",
+    flag = "0", width = 4
+  )
+}
+
+tab &lt;- tabulator(
+  x = SHIFT_TABLE,
+  hidden_data = SHIFT_TABLE_VISIT,
+  row_compose = list(
+    VISIT = as_paragraph(VISIT, "\n(N=", N_VISIT, ")")
+  ),
+  rows = c("LBTEST", "VISIT", "BASELINE"),
+  columns = c("TREAT", "LBNRIND"),
+  `n` = as_paragraph(N),
+  `%` = as_paragraph(as_chunk(PCT, formatter = my_format))
+)
+
+# as_flextable ----
+
+ft_1 &lt;- as_flextable(
+  x = tab, separate_with = "VISIT",
+  label_rows = c(
+    LBTEST = "Lab Test", VISIT = "Visit",
+    BASELINE = "Reference Range Indicator"
+  )
+)
+
+ft_1
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>flextable</em> version 0.9.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

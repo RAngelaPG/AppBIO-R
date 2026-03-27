@@ -1,0 +1,178 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Fit Cumulative Link Models</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for clm.fit {ordinal}"><tr><td>clm.fit {ordinal}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Fit Cumulative Link Models
+
+</h2>
+
+<h3>Description</h3>
+
+<p>A direct fitter of cumulative link models.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+
+clm.fit(y, ...)
+
+## Default S3 method:
+clm.fit(y, ...)
+
+## S3 method for class 'factor'
+clm.fit(y, X, S, N, weights = rep(1, nrow(X)),
+     offset = rep(0, nrow(X)), S.offset = rep(0, nrow(X)),
+     control = list(), start, doFit=TRUE,
+     link = c("logit", "probit", "cloglog", "loglog", "cauchit", 
+              "Aranda-Ordaz", "log-gamma"),
+     threshold = c("flexible", "symmetric", "symmetric2", "equidistant"),
+     ...)
+
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>for the default method a list of model components. For the
+factor method the response variable; a factor, preferably and ordered
+factor.
+</p>
+</td></tr>
+<tr valign="top"><td><code>X, S, N</code></td>
+<td>
+<p>optional design matrices for the regression parameters,
+scale parameters and nominal parameters respectively.
+</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>optional case weights.
+</p>
+</td></tr>
+<tr valign="top"><td><code>offset</code></td>
+<td>
+<p>an optional offset.
+</p>
+</td></tr>
+<tr valign="top"><td><code>S.offset</code></td>
+<td>
+<p>an optional offset for the scale part of the model.
+</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+<p>a list of control parameters, optionally a call to
+<code><a href="../../ordinal/help/clm.control.html">clm.control</a></code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>start</code></td>
+<td>
+<p>an optional list of starting values of the form
+<code>c(alpha, beta, zeta)</code> for the thresholds and nominal effects
+(<code>alpha</code>), regression parameters (<code>beta</code>) and scale
+parameters (<code>zeta</code>).
+</p>
+</td></tr>
+<tr valign="top"><td><code>doFit</code></td>
+<td>
+<p>logical for whether the model should be fit or the model
+environment should be returned.
+</p>
+</td></tr>
+<tr valign="top"><td><code>link</code></td>
+<td>
+<p>the link function.
+</p>
+</td></tr>
+<tr valign="top"><td><code>threshold</code></td>
+<td>
+<p>the threshold structure, see further at
+<code><a href="../../ordinal/help/clm.html">clm</a></code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>currently not used.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This function does almost the same thing that <code><a href="../../ordinal/help/clm.html">clm</a></code> does:
+it fits a cumulative link model. The main differences are that
+<code>clm.fit</code> does not setup design matrices from formulae and only
+does minimal post processing after parameter estimation.
+</p>
+<p>Compared to <code><a href="../../ordinal/help/clm.html">clm</a></code>, <code>clm.fit</code> does little to warn the
+user of any problems with data or model. However, <code>clm.fit</code> will
+attempt to identify column rank defecient designs. Any unidentified
+parameters are indicated in the <code>aliased</code> component of the fit.
+</p>
+<p><code>clm.fit.factor</code> is not able to check if all thresholds are
+increasing when nominal effects are specified since it needs access to
+the terms object for the nominal model. If the terms object for the
+nominal model (<code>nom.terms</code>) is included in <code>y</code>, the default
+method is able to chech if all thresholds are increasing.
+</p>
+
+
+
+
+<h3>Value</h3>
+
+<p>A list with the following components:
+<code>aliased, alpha, coefficients, cond.H, convergence, df.residual,
+    edf, fitted.values, gradient, Hessian, logLik, maxGradient, message,
+    n, niter, nobs, tJac, vcov</code>
+and optionally
+<code>beta, zeta</code>
+These components are documented in <code><a href="../../ordinal/help/clm.html">clm</a></code>.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Rune Haubo B Christensen
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../ordinal/help/clm.html">clm</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## A simple example:
+fm1 &lt;- clm(rating ~ contact + temp, data=wine)
+summary(fm1)
+## get the model frame containing y and X:
+mf1 &lt;- update(fm1, method="design")
+names(mf1)
+res &lt;- clm.fit(mf1$y, mf1$X) ## invoking the factor method
+stopifnot(all.equal(coef(res), coef(fm1)))
+names(res)
+
+## Fitting with the default method:
+mf1$control$method &lt;- "Newton"
+res2 &lt;- clm.fit(mf1)
+stopifnot(all.equal(coef(res2), coef(fm1)))
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ordinal</em> version 2025.12-29 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

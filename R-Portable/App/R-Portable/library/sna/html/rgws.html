@@ -1,0 +1,121 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Draw From the Watts-Strogatz Rewiring Model</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for rgws {sna}"><tr><td>rgws {sna}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Draw From the Watts-Strogatz Rewiring Model </h2>
+
+<h3>Description</h3>
+
+<p><code>rgws</code> generates draws from the Watts-Strogatz rewired lattice model.  Given a set of input graphs, <code>rewire.ws</code> performs a (dyadic) rewiring of those graphs.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+rgws(n, nv, d, z, p, return.as.edgelist = FALSE)
+rewire.ud(g, p, return.as.edgelist = FALSE)
+rewire.ws(g, p, return.as.edgelist = FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>n</code></td>
+<td>
+<p> the number of draws to take. </p>
+</td></tr>
+<tr valign="top"><td><code>nv</code></td>
+<td>
+<p> the number of vertices per lattice dimension. </p>
+</td></tr>
+<tr valign="top"><td><code>d</code></td>
+<td>
+<p> the dimensionality of the underlying lattice. </p>
+</td></tr>
+<tr valign="top"><td><code>z</code></td>
+<td>
+<p> the nearest-neighbor threshold for local ties. </p>
+</td></tr>
+<tr valign="top"><td><code>p</code></td>
+<td>
+<p> the dyadic rewiring probability. </p>
+</td></tr>
+<tr valign="top"><td><code>g</code></td>
+<td>
+<p> a graph or graph stack. </p>
+</td></tr>
+<tr valign="top"><td><code>return.as.edgelist</code></td>
+<td>
+<p> logical; should the resulting graphs be returned in edgelist form?</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>A Watts-Strogatz graph process generates a random graph via the following procedure.  First, a <code>d</code>-dimensional uniform lattice is generated, here with <code>nv</code> vertices per dimension (i.e., <code>nv^d</code> vertices total).  Next, all <code>z</code> neighbors are connected, based on geodesics of the underlying lattice.  Finally, each non-null dyad in the resulting augmented lattice is &quot;rewired&quot; with probability <code>p</code>, where the rewiring operation exchanges the initial dyad state with the state of a uniformly selected null dyad sharing exactly one endpoint with the original dyad.  (In the standard case, this is equivalent to choosing an endpoint of the dyad at random, and then transferring the dyadic edges to/from that endpoint to another randomly chosen vertex.  Hence the &quot;rewiring&quot; metaphor.)  For <code>p==0</code>, the W-S process generates (deterministic) uniform lattices, approximating a uniform G(N,M) process as <code>p</code> approaches 1.  Thus, <code>p</code> can be used to tune overall entropy of the process.  A well-known property of the W-S process is that (for large <code>nv^d</code> and small <code>p</code>) it generates draws with short expected mean geodesic distances (approaching those found in uniform graphs) while maintaining high levels of local &quot;clustering&quot; (i.e., transitivity).  It has thus been proposed as one potential mechanism for obtaining &quot;small world&quot; structures.
+</p>
+<p><code>rgws</code> produces independent draws from the above process, returning them as an adjacency matrix (if <code>n==1</code>) or array (otherwise).  <code>rewire.ws</code>, on the other hand, applies the rewiring phase of the W-S process to one or more input graphs.  This can be used to explore local perturbations of the original graphs, conditioning on the dyad census.  <code>rewire.ud</code> is similar to <code>rewire.ws</code>, save in that all dyads are eligible for rewiring (not just non-null dyads), and exchanges with non-null dyads are permitted.  This process may be easier to work with than standard W-S rewiring in some cases.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A graph or graph stack containing draws from the appropriate W-S process.
+</p>
+
+
+<h3>Warning </h3>
+
+<p>Remember that the total number of vertices in the graph is <code>nv^d</code>.  This can get out of hand <em>very</em> quickly.</p>
+
+
+<h3>Note</h3>
+
+ <p><code>rgws</code> generates non-toroidal lattices; some published work in this area utilizes underlying toroids, so users should check for this prior to comparing simulations against published results. </p>
+
+
+<h3>Author(s)</h3>
+
+<p> Carter T. Butts <a href="mailto:buttsc@uci.edu">buttsc@uci.edu</a> </p>
+
+
+<h3>References</h3>
+
+ 
+<p>Watts, D. and Strogatz, S. (1998).  &ldquo;Collective Dynamics of Small-world Networks.&rdquo;  <em>Nature,</em> 393:440-442.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../sna/help/rgnm.html">rgnm</a></code>, <code><a href="../../sna/help/rgraph.html">rgraph</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+#Generate Watts-Strogatz graphs, w/increasing levels of rewiring
+gplot(rgws(1,100,1,2,0))     #No rewiring
+gplot(rgws(1,100,1,2,0.01))  #1% rewiring
+gplot(rgws(1,100,1,2,0.05))  #5% rewiring
+gplot(rgws(1,100,1,2,0.1))   #10% rewiring
+gplot(rgws(1,100,1,2,1))     #100% rewiring 
+
+#Start with a simple graph, then rewire it
+g&lt;-matrix(0,50,50)
+g[1,]&lt;-1; g[,1]&lt;-1    #Create a star
+gplot(g)
+gplot(rewire.ws(g,0.05))  #5% rewiring
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sna</em> version 2.8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

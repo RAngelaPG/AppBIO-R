@@ -1,0 +1,167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Construct a User-Specified Contrast Matrix</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for make.contrasts {gmodels}"><tr><td>make.contrasts {gmodels}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Construct a User-Specified Contrast Matrix</h2>
+
+<h3>Description</h3>
+
+<p>This function converts human-readable contrasts into the form that R
+requires for computation.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+make.contrasts(contr, how.many = ncol(contr))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>contr</code></td>
+<td>
+<p>vector or matrix specifying contrasts (one per row).</p>
+</td></tr>
+<tr valign="top"><td><code>how.many</code></td>
+<td>
+<p>dimensions of the desired contrast matrix.  This must equal
+the number of levels of the target factor variable.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Specifying a contrast row of the form <code>c(1,0,0,-1)</code> creates a contrast
+that will compare the mean of the first group with the mean of the fourth
+group.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>make.contrasts</code> returns a matrix with dimensions
+(<code>how.many</code>, <code>how.many</code>) containing the specified contrasts
+augmented (if necessary) with orthogonal &quot;filler&quot; contrasts.
+</p>
+<p>This matrix can then be used as the argument to <code><a href="../../stats/html/contrasts.html">contrasts()</a></code> or
+to the <code>contrasts</code> argument of model functions (eg, <code><a href="../../stats/html/lm.html">lm()</a></code>).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Gregory R. Warnes <a href="mailto:greg@warnes.net">greg@warnes.net</a>
+</p>
+
+
+<h3>See Also</h3>
+
+
+<ul>
+<li> <p><code><a href="../../stats/help/lm.html">stats::lm()</a></code>, <code><a href="../../stats/help/contrasts.html">stats::contrasts()</a></code>, <code><a href="../../stats/help/contrast.html">stats::contr.treatment()</a></code>,
+<code><a href="../../stats/help/contrast.html">stats::contr.poly()</a></code>,
+</p>
+</li>
+<li><p> Computation and testing of General Linear Hypothesis: <code><a href="../../gmodels/help/glh.test.html">glh.test()</a></code>,
+</p>
+</li>
+<li><p> Computation and testing of estimable functions of model coefficients:
+<code><a href="../../gmodels/help/estimable.html">estimable()</a></code>,
+</p>
+</li>
+<li><p> Estimate and Test Contrasts for a previously fit linear model:
+<code><a href="../../gmodels/help/fit.contrast.html">fit.contrast()</a></code>
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+
+set.seed(4684)
+y &lt;- rnorm(100)
+x.true &lt;- rnorm(100, mean=y, sd=0.25)
+x &lt;-  factor(cut(x.true,c(-4,-1.5,0,1.5,4)))
+reg &lt;- lm(y ~ x)
+summary(reg)
+
+# Mirror default treatment contrasts
+test &lt;- make.contrasts(rbind( c(-1,1,0,0), c(-1,0,1,0), c(-1,0,0,1) ))
+lm( y ~ x, contrasts=list(x = test ))
+
+# Specify some more complicated contrasts
+#   - mean of 1st group vs mean of 4th group
+#   - mean of 1st and 2nd groups vs mean of 3rd and 4th groups
+#   - mean of 1st group vs mean of 2nd, 3rd and 4th groups
+cmat &lt;- rbind( "1 vs 4"    =c(-1, 0, 0, 1),
+               "1+2 vs 3+4"=c(-1/2,-1/2, 1/2, 1/2),
+               "1 vs 2+3+4"=c(-3/3, 1/3, 1/3, 1/3))
+
+summary(lm( y ~ x, contrasts=list(x=make.contrasts(cmat) )))
+# or
+contrasts(x) &lt;- make.contrasts(cmat)
+summary(lm( y ~ x ) )
+
+# or use contrasts.lm
+reg &lt;- lm(y ~ x)
+fit.contrast( reg, "x", cmat )
+
+# compare with values computed directly using group means
+gm &lt;- sapply(split(y,x),mean)
+gm %*% t(cmat)
+
+
+#
+# Example for Analysis of Variance
+#
+
+set.seed(03215)
+Genotype &lt;- sample(c("WT","KO"), 1000, replace=TRUE)
+Time &lt;- factor(sample(1:3, 1000, replace=TRUE))
+data &lt;- data.frame(y, Genotype, Time)
+y &lt;- rnorm(1000)
+
+data &lt;- data.frame(y, Genotype, as.factor(Time))
+
+# Compute Contrasts &amp; obtain 95% confidence intervals
+
+model &lt;- aov( y ~ Genotype + Time + Genotype:Time, data=data )
+
+fit.contrast( model, "Genotype", rbind("KO vs WT"=c(-1,1) ), conf=0.95 )
+
+fit.contrast( model, "Time",
+            rbind("1 vs 2"=c(-1,1,0),
+                  "2 vs 3"=c(0,-1,1)
+                  ),
+            conf=0.95 )
+
+
+cm.G &lt;- rbind("KO vs WT"=c(-1,1) )
+cm.T &lt;- rbind("1 vs 2"=c(-1,1,0),
+              "2 vs 3"=c(0,-1,1) )
+
+# Compute contrasts and show SSQ decompositions
+
+model &lt;- model &lt;- aov( y ~ Genotype + Time + Genotype:Time, data=data,
+                      contrasts=list(Genotype=make.contrasts(cm.G),
+                                     Time=make.contrasts(cm.T) )
+                      )
+
+summary(model, split=list( Genotype=list( "KO vs WT"=1 ),
+                           Time = list( "1 vs 2" = 1,
+                                        "2 vs 3" = 2 ) ) )
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>gmodels</em> version 2.19.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

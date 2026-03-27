@@ -1,0 +1,152 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Monte Carlo simulation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for sim.default {lava}"><tr><td>sim.default {lava}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Monte Carlo simulation</h2>
+
+<h3>Description</h3>
+
+<p>Applies a function repeatedly for a specified number of replications or over
+a list/data.frame with plot and summary methods for summarizing the Monte
+Carlo experiment. Can be parallelized via the future package (use the
+future::plan function).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## Default S3 method:
+sim(
+  x = NULL,
+  R = 100,
+  f = NULL,
+  colnames = NULL,
+  seed = NULL,
+  args = list(),
+  iter = FALSE,
+  mc.cores,
+  progressr.message = NULL,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>function or 'sim' object</p>
+</td></tr>
+<tr valign="top"><td><code>R</code></td>
+<td>
+<p>Number of replications or data.frame with parameters</p>
+</td></tr>
+<tr valign="top"><td><code>f</code></td>
+<td>
+<p>Optional function (i.e., if x is a matrix)</p>
+</td></tr>
+<tr valign="top"><td><code>colnames</code></td>
+<td>
+<p>Optional column names</p>
+</td></tr>
+<tr valign="top"><td><code>seed</code></td>
+<td>
+<p>(optional) Seed (needed with cl=TRUE)</p>
+</td></tr>
+<tr valign="top"><td><code>args</code></td>
+<td>
+<p>(optional) list of named arguments passed to (mc)mapply</p>
+</td></tr>
+<tr valign="top"><td><code>iter</code></td>
+<td>
+<p>If TRUE the iteration number is passed as first argument to
+(mc)mapply</p>
+</td></tr>
+<tr valign="top"><td><code>mc.cores</code></td>
+<td>
+<p>Optional number of cores. Will use parallel::mcmapply
+instead of future</p>
+</td></tr>
+<tr valign="top"><td><code>progressr.message</code></td>
+<td>
+<p>Optional message for the progressr progress-bar</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Additional arguments to future.apply::future_mapply</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>To parallelize the calculation use the future::plan function (e.g.,
+future::plan(multisession()) to distribute the calculations over the R
+replications on all available cores). The output is controlled via the
+progressr package (e.g., progressr::handlers(global=TRUE) to enable
+progress information).
+</p>
+
+
+<h3>See Also</h3>
+
+<p>summary.sim plot.sim print.sim sim.lvm
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+m &lt;- lvm(y~x+e)
+distribution(m,~y) &lt;- 0
+distribution(m,~x) &lt;- uniform.lvm(a=-1.1,b=1.1)
+transform(m,e~x) &lt;- function(x) (1*x^4)*rnorm(length(x),sd=1)
+
+onerun &lt;- function(iter=NULL,...,n=2e3,b0=1,idx=2) {
+    d &lt;- sim(m,n,p=c("y~x"=b0))
+    l &lt;- lm(y~x,d)
+    res &lt;- c(coef(summary(l))[idx,1:2],
+             confint(l)[idx,],
+             estimate(l,only.coef=TRUE)[idx,2:4])
+    names(res) &lt;- c("Estimate","Model.se","Model.lo","Model.hi",
+                    "Sandwich.se","Sandwich.lo","Sandwich.hi")
+    res
+}
+val &lt;- sim(onerun,R=10,b0=1)
+val
+
+val &lt;- sim(val,R=40,b0=1) ## append results
+summary(val,estimate=c(1,1),confint=c(3,4,6,7),true=c(1,1))
+
+summary(val,estimate=c(1,1),se=c(2,5),names=c("Model","Sandwich"))
+summary(val,estimate=c(1,1),se=c(2,5),true=c(1,1),
+        names=c("Model","Sandwich"),confint=TRUE)
+
+if (interactive()) {
+    plot(val,estimate=1,c(2,5),true=1,
+         names=c("Model","Sandwich"),polygon=FALSE)
+    plot(val,estimate=c(1,1),se=c(2,5),main=NULL,
+         true=c(1,1),names=c("Model","Sandwich"),
+         line.lwd=1,col=c("gray20","gray60"),
+         rug=FALSE)
+    plot(val,estimate=c(1,1),se=c(2,5),true=c(1,1),
+         names=c("Model","Sandwich"))
+}
+
+f &lt;- function(a=1, b=1) {
+  rep(a*b, 5)
+}
+R &lt;- Expand(a=1:3, b=1:3)
+sim(f, R)
+sim(function(a,b) f(a,b), 3, args=c(a=5,b=5))
+sim(function(iter=1,a=5,b=5) iter*f(a,b), iter=TRUE, R=5)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>lava</em> version 1.8.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

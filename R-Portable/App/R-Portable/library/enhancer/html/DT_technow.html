@@ -1,0 +1,221 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Genotypic and Phenotypic data from single cross hybrids...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for DT_technow {enhancer}"><tr><td>DT_technow {enhancer}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Genotypic and Phenotypic data from single cross hybrids (Technow et al.,2014)
+</h2>
+
+<h3>Description</h3>
+
+<p>This dataset contains phenotpic data for 2 traits measured in 1254 single cross hybrids coming from the cross of Flint x Dent heterotic groups. In addition contains the genotipic data (35,478 markers) for each of the 123 Dent lines and 86 Flint lines. The purpose of this data is to demosntrate the prediction of unrealized crosses (9324 unrealized crosses, 1254 evaluated, total 10578 single crosses). We have added the additive relationship matrix (A) but can be easily obtained using the A.matr function on the marker data. Please if using this data for your own research cite Technow et al. (2014) publication (see References).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>data("DT_technow")</pre>
+
+
+<h3>Format</h3>
+
+<p>The format is:
+chr &quot;DT_technow&quot;
+</p>
+
+
+<h3>Source</h3>
+
+<p>This data was extracted from Technow et al. (2014).
+</p>
+
+
+<h3>References</h3>
+
+<p>If using this data for your own research please cite:
+</p>
+<p>Technow et al. 2014. Genome properties and prospects of genomic predictions of hybrid performance in a Breeding program of maize. Genetics 197:1343-1355.
+</p>
+<p>Covarrubias-Pazaran G (2016) Genome assisted prediction of quantitative traits using the R package sommer. PLoS ONE 11(6): doi:10.1371/journal.pone.0156744 
+</p>
+<p>Giovanny Covarrubias-Pazaran (2024).  lme4breeding: enabling genetic evaluation in the age of genomic data. To be submitted to Bioinformatics.
+</p>
+<p>Douglas Bates, Martin Maechler, Ben Bolker, Steve Walker (2015). Fitting Linear Mixed-Effects Models Using lme4. Journal of Statistical Software, 67(1), 1-48.
+</p>
+<p>Giovanny Covarrubias-Pazaran (2024).  evola: a simple evolutionary algorithm for complex problems. To be submitted to Bioinformatics.
+</p>
+<p>Gaynor, R. Chris, Gregor Gorjanc, and John M. Hickey. 2021. AlphaSimR: an R package for breeding program simulations. G3 Gene|Genomes|Genetics 11(2):jkaa017. https://doi.org/10.1093/g3journal/jkaa017.
+</p>
+<p>Chen GK, Marjoram P, Wall JD (2009). Fast and Flexible Simulation of DNA Sequence Data. Genome Research, 19, 136-142. http://genome.cshlp.org/content/19/1/136.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+data(DT_technow)
+DT &lt;- DT_technow
+
+Md &lt;- apply(Md_technow,2,as.numeric)
+rownames(Md) &lt;- rownames(Md_technow)
+Mf &lt;- apply(Mf_technow,2,as.numeric)
+rownames(Mf) &lt;- rownames(Mf_technow)
+
+Md &lt;- (Md*2) - 1
+Mf &lt;- (Mf*2) - 1
+
+Ad &lt;- A.matr(Md)
+Af &lt;- A.matr(Mf)
+Ad &lt;- Ad + diag(1e-4, ncol(Ad), ncol(Ad))
+Af &lt;- Af + diag(1e-4, ncol(Af), ncol(Af))
+
+
+
+################# sommer ####################
+if(requireNamespace("sommer")){
+library(sommer)
+ans2 &lt;- mmes(GY~1,
+             random=~vsm(ism(dent),Gu=Ad) + vsm(ism(flint),Gu=Af),
+             rcov=~units,
+             data=DT)
+summary(ans2)$varcomp
+
+Adi &lt;- solve(Ad + diag(1e-4,ncol(Ad),ncol(Ad)))
+Adi &lt;- as(as(as( Adi,  "dMatrix"), "generalMatrix"), "CsparseMatrix")
+attr(Adi, 'inverse')=TRUE
+Afi &lt;- solve(Af + diag(1e-4,ncol(Af),ncol(Af)))
+Afi &lt;- as(as(as( Afi,  "dMatrix"), "generalMatrix"), "CsparseMatrix")
+attr(Afi, 'inverse')=TRUE
+####====================####
+#### multivariate model ####
+####     2 traits       ####
+####====================####
+head(DT)
+
+traits &lt;- c("GY","GM")
+DT[,traits] &lt;- apply(DT[,traits],2,scale)
+DTL &lt;- reshape(DT[,c("hybrid","dent","flint", traits)],
+               idvar = c("hybrid","dent","flint"),
+               varying = traits,
+               v.names = "value", direction = "long",
+               timevar = "trait", times = traits )
+DTL &lt;- DTL[with(DTL, order(trait,hybrid)), ]
+head(DTL)
+
+M &lt;- rbind(Md,Mf)
+A &lt;- A.mat(M)
+Ai &lt;- solve(A + diag(1e-4,ncol(A),ncol(A)))
+Ai &lt;- as(as(as( Ai,  "dMatrix"), "generalMatrix"), "CsparseMatrix")
+attr(Ai, 'inverse')=TRUE
+
+ans3 &lt;- mmes(value~trait, henderson=TRUE,
+             random=~vsm(usm(trait),ism(overlay(dent,flint)),Gu=Ai),
+             rcov=~ vsm(dsm(trait), ism(units)),
+             data=DTL)
+summary(ans3)
+cov2cor(ans3$theta[[1]])
+
+}
+
+################# lme4breeding ####################
+
+if(requireNamespace("lme4breeding")){
+library(lme4breeding)
+## simple model
+ans2 &lt;- lmeb(GY ~ (1|dent) + (1|flint),
+                 data=DT)
+vc &lt;- VarCorr(ans2); print(vc,comp=c("Variance"))
+BLUP &lt;- ranef(ans2, condVar=TRUE)
+condVAR &lt;- lapply(BLUP, function(x){attr(x, which="postVar")}) # take sqrt() for SEs
+
+### with relationship matrices
+ans2 &lt;- lmeb(GY ~ (1|dent) + (1|flint),
+             relmat = list(dent=Ad,
+                           flint=Af),
+             data=DT)
+vc &lt;- VarCorr(ans2); print(vc,comp=c("Variance"))
+
+### overlayed model
+M &lt;- rbind(Md,Mf)
+A &lt;- A.matr(M)
+A &lt;- A + diag(1e-4,ncol(A), ncol(A))
+Z &lt;- with(DT, overlay(dent,flint) )
+Z = Z[which(!is.na(DT$GY)),]
+#### model using overlay without relationship matrix
+ans2 &lt;- lmeb(GY ~ (1|fema),
+                 addmat = list(fema=Z),
+                 relmat = list(fema=A),
+                 data=DT)
+vc &lt;- VarCorr(ans2); print(vc,comp=c("Variance"))
+sigma(ans2)^2 # error variance
+BLUP &lt;- ranef(ans2, condVar=TRUE)
+condVAR &lt;- lapply(BLUP, function(x){attr(x, which="postVar")}) # take sqrt() for SEs
+
+### rotated model for hybrids
+H &lt;- kronecker(Ad,Af, make.dimnames = TRUE)
+H &lt;- H[which(colnames(H)%in% DT$hy),which(colnames(H)%in% DT$hy)]
+
+ans3 &lt;- lmeb(GY ~ (1|hy),
+             relmat = list(hy=H), 
+             rotation=TRUE,
+             data=DT)
+vc &lt;- VarCorr(ans3); print(vc,comp=c("Variance"))
+BLUP &lt;- ranef(ans3, condVar=TRUE)
+condVAR &lt;- lapply(BLUP, function(x){attr(x, which="postVar")}) # take sqrt() for SEs
+
+}
+################# evola ####################
+
+if(requireNamespace("evola")){
+library(evola)
+DT &lt;- DT_technow
+  DT$occ &lt;- 1; DT$occ[1]=0
+  combos &lt;- build.HMM(Md,Mf, return.combos.only = TRUE)
+  combos &lt;- combos$data.used[which(combos$data.used$hybrid %in%DT$hy),]
+  M &lt;- build.HMM(Md,Mf, custom.hyb = combos)
+  A &lt;- A.matr(M$HMM.add)
+  A &lt;- A[DT$hy,DT$hy]
+  # run the genetic algorithm
+  # we assig a weight to x'Dx of (20*pi)/180=0.34
+  res&lt;-evolafit(formula = c(GY, occ)~hy,
+                dt= DT, 
+                # constraints: if sum is greater than this ignore
+                constraintsUB = c(Inf,100), 
+                # constraints: if sum is smaller than this ignore
+                constraintsLB= c(-Inf,-Inf),
+                # weight the traits for the selection
+                b = c(1,0), 
+                # population parameters
+                nCrosses = 100, nProgeny = 10, 
+                recombGens=1, nChr=1, mutRateAllele=0,
+                # coancestry parameters
+                D=A, lambda= (20*pi)/180 , nQtlStart = 90, 
+                # selection parameters
+                propSelBetween = 0.5, propSelWithin =0.5, 
+                nGenerations = 20) 
+  
+  Q &lt;- pullQtlGeno(res$pop, simParam = res$simParam, trait=1); Q &lt;- Q/2
+  best = bestSol(res$pop)[,"fitness"]
+  qa = (Q %*% DT$GY)[best,]; qa 
+  qAq = Q[best,] %*% A %*% Q[best,]; qAq 
+  sum(Q[best,]) # total # of inds selected
+  
+  evolmonitor(res)
+  plot(DT$GY, col=as.factor(Q[best,]), 
+       pch=(Q[best,]*19)+1)
+       
+  pareto(res)
+  
+}
+################## end ###################
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>enhancer</em> version 1.1.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

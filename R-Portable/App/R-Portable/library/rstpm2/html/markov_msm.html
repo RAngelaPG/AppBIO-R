@@ -1,0 +1,733 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Predictions for continuous time, nonhomogeneous Markov...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for markov_msm {rstpm2}"><tr><td>markov_msm {rstpm2}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Predictions for continuous time, nonhomogeneous Markov multi-state
+models using parametric and penalised survival models.
+</h2>
+
+<h3>Description</h3>
+
+<p>A numerically efficient algorithm to calculate predictions from a
+continuous time, nonhomogeneous Markov multi-state model. The main
+inputs are the models for the transition intensities, the initial values,
+the transition matrix and the covariate patterns. The predictions
+include state occupancy probabilities (possibly with discounting and
+utilities), length of stay and costs. Standard errors are calculated
+using the delta method. Includes, differences, ratios and standardisation.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+markov_msm(x, trans, t = c(0,1), newdata = NULL, init=NULL,
+              tmvar = NULL, 
+              sing.inf = 1e+10, method="adams", rtol=1e-10, atol=1e-10, slow=FALSE,
+              min.tm=1e-8,
+              utility=function(t) rep(1, nrow(trans)),
+              utility.sd=rep(0,nrow(trans)),
+              use.costs=FALSE,
+              transition.costs=function(t) rep(0, sum(!is.na(trans))), # per transition
+              transition.costs.sd=rep(0,sum(!is.na(trans))),
+              state.costs=function(t) rep(0,nrow(trans)), # per unit time
+              state.costs.sd=rep(0,nrow(trans)),
+              discount.rate = 0,
+              block.size=500,
+              spline.interpolation=FALSE,
+              debug=FALSE,
+              ...)
+## S3 method for class 'markov_msm'
+vcov(object, ...)
+## S3 method for class 'markov_msm'
+as.data.frame(x, row.names=NULL, optional=FALSE,
+                                   ci=TRUE,
+                                   P.conf.type="logit", L.conf.type="log",
+				   C.conf.type="log",
+                                   P.range=c(0,1), L.range=c(0,Inf),
+				   C.range=c(0,Inf),
+                                   state.weights=NULL, obs.weights=NULL,
+                                   ...)
+## S3 method for class 'markov_msm_diff'
+as.data.frame(x, row.names=NULL, optional=FALSE,
+                                   P.conf.type="plain", L.conf.type="plain",
+				   C.conf.type="plain",
+                                   P.range=c(-Inf,Inf), L.range=c(-Inf,Inf),
+				   C.range=c(-Inf,Inf),
+                                   ...)
+## S3 method for class 'markov_msm_ratio'
+as.data.frame(x, row.names=NULL, optional=FALSE, ...)
+standardise(x, ...)
+## S3 method for class 'markov_msm'
+standardise(x,
+                                 weights = rep(1,nrow(x$newdata)),
+                                 normalise = TRUE, ...)
+## S3 method for class 'markov_msm'
+plot(x, y, stacked=TRUE, which=c('P','L'),
+                          xlab="Time", ylab=NULL, col=2:6, border=col,
+                          ggplot2=FALSE, lattice=FALSE, alpha=0.2,
+                          strata=NULL,
+                          ...)
+## S3 method for class 'markov_msm'
+subset(x, subset, ...)
+## S3 method for class 'markov_msm'
+diff(x, y, ...)
+ratio_markov_msm(x, y, ...)
+## S3 method for class 'markov_msm'
+rbind(..., deparse.level=1)
+## S3 method for class 'markov_msm'
+transform(`_data`, ...)
+collapse_markov_msm(object, which=NULL, sep="; ")
+zeroModel(object)
+hrModel(object,hr=1,ci=NULL,seloghr=NULL)
+aftModel(object,af=1,ci=NULL,selogaf=NULL)
+addModel(...)
+hazFun(f, tmvar="t", ...)
+splineFun(time,rate,method="natural",scale=1,...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<p>For <code>markov_msm</code>:
+</p>
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+
+<p>list of functions or parametric or penalised survival models. Currently
+the models include
+combinations of <code><a href="../../rstpm2/help/stpm2.html">stpm2</a></code>, <code><a href="../../rstpm2/help/pstpm2.html">pstpm2</a></code>, <code><a href="../../stats/help/glm.html">glm</a></code>,
+<code><a href="../../mgcv/help/gam.html">gam</a></code>,
+<code><a href="../../survPen/help/survPen.html">survPen</a></code> or an object of class <code>"zeroModel"</code> from
+<code><a href="../../rstpm2/help/zeroModel.html">zeroModel</a></code> based on one of the other classes. The order in
+the list matches the indexing in the <code>trans</code> argument. The
+functions can optionally use a <code>t</code> argument for time and/or a
+<code>newdata</code> argument. Uncertainty in the models are incorporated into
+the gradients, while uncertainty in the functions are currently not modelled.
+</p>
+</td></tr>
+<tr valign="top"><td><code>trans</code></td>
+<td>
+<p>Transition matrix describing the states and transitions
+in the multi-state model. If S is the number of states in the
+multi-state model, <code>trans</code> should be an S x S matrix,
+with (i,j)-element a positive integer if a transition from i to j
+is possible in the multi-state model, <code>NA</code> otherwise. In particular,
+all diagonal elements should be <code>NA</code>. The
+integers indicating the possible transitions in the multi-state
+model should be sequentially numbered, 1,...,K, with K the number
+of transitions. See <code><a href="../../mstate/help/msprep.html">msprep</a></code></p>
+</td></tr>
+<tr valign="top"><td><code>t</code></td>
+<td>
+
+<p>numerical vector for the times to evaluation the predictions. Includes
+the start time
+</p>
+</td></tr>
+<tr valign="top"><td><code>newdata</code></td>
+<td>
+
+<p><code><a href="../../base/html/data.frame.html">data.frame</a></code> of the covariates to use in the predictions
+</p>
+</td></tr>
+<tr valign="top"><td><code>init</code></td>
+<td>
+
+<p>vector of the initial values with the same length as the number of states. Defaults to the first state having an
+initial value of 1 (i.e. <code>"[&lt;-"(rep(0,nrow(trans)),1,1)</code>).
+</p>
+</td></tr>
+<tr valign="top"><td><code>tmvar</code></td>
+<td>
+
+<p>specifies the name of the time variable. This should be set for
+regression models that do not specify this (e.g. <code><a href="../../stats/html/glm.html">glm</a></code>) or
+where the time variable is ambiguous
+</p>
+</td></tr>
+<tr valign="top"><td><code>sing.inf</code></td>
+<td>
+<p>If there is a singularity in the observed hazard,
+for example a Weibull distribution with <code>shape &lt; 1</code> has infinite
+hazard at <code>t=0</code>, then as a workaround, the hazard is assumed to
+be a large finite number, <code>sing.inf</code>, at this time.   The
+results should not be sensitive to the exact value assumed, but
+users should make sure by adjusting this parameter in these cases.
+</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+
+<p>For <code>markov_msm</code>, the method used by the ordinary differential equation solver. Defaults to
+Adams method (<code>"adams"</code>) for non-stiff differential equations.
+</p>
+<p>For <code>splineFun</code>, the method jused for spline interpolation; see <code>splinefun</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>rtol </code></td>
+<td>
+<p>relative error tolerance, either a
+scalar or an array as long as the number of states. Passed to <code><a href="../../deSolve/help/lsode.html">lsode</a></code>
+</p>
+</td></tr>
+<tr valign="top"><td><code>atol </code></td>
+<td>
+<p>absolute error tolerance, either a scalar or an array as
+long as the number of states. Passed to <code><a href="../../deSolve/help/lsode.html">lsode</a></code>
+</p>
+</td></tr>
+<tr valign="top"><td><code>slow</code></td>
+<td>
+
+<p>logical to show whether to use the slow <code>R</code>-only
+implementation. Useful for debugging. Currently needed for costs.
+</p>
+</td></tr>
+<tr valign="top"><td><code>min.tm</code></td>
+<td>
+
+<p>Minimum time used for evaluations. Avoids log(0) for some models.
+</p>
+</td></tr>
+<tr valign="top"><td><code>utility</code></td>
+<td>
+
+<p>a function of the form <code>function(t)</code> that returns a utility for
+each state at time <code>t</code> for the length of stay values
+</p>
+</td></tr>
+<tr valign="top"><td><code>utility.sd</code></td>
+<td>
+
+<p>a function of the form <code>function(t)</code> that returns the standard
+deviation for the utility for
+each state at time <code>t</code> for the length of stay values
+</p>
+</td></tr>
+<tr valign="top"><td><code>use.costs</code></td>
+<td>
+
+<p>logical for whether to use costs. Default: FALSE
+</p>
+</td></tr>
+<tr valign="top"><td><code>transition.costs</code></td>
+<td>
+
+<p>a function of the form <code>function(t)</code> that returns the cost for each transition
+</p>
+</td></tr>
+<tr valign="top"><td><code>transition.costs.sd</code></td>
+<td>
+
+<p>a function of the form <code>function(t)</code> that returns the standard deviation
+for the cost for each transition
+</p>
+</td></tr>
+<tr valign="top"><td><code>state.costs</code></td>
+<td>
+
+<p>a function of the form <code>function(t)</code> that returns the cost per unit
+time for each state
+</p>
+</td></tr>
+<tr valign="top"><td><code>state.costs.sd</code></td>
+<td>
+
+<p>a function of the form <code>function(t)</code> that returns the standard deviation
+for the cost per unit time for each state
+</p>
+</td></tr>
+<tr valign="top"><td><code>discount.rate</code></td>
+<td>
+
+<p>numerical value for the proportional reduction (per unit time) in the length of stay
+and costs
+</p>
+</td></tr>
+<tr valign="top"><td><code>block.size</code></td>
+<td>
+
+<p>divide <code>newdata</code> into blocks. Uses less memory but is slower. Reduce this number if the function call runs out of memory. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>spline.interpolation</code></td>
+<td>
+
+<p>logical for whether to use spline interpolation for the transition
+hazards rather than the model predictions directly (default=TRUE).
+</p>
+</td></tr>
+<tr valign="top"><td><code>debug</code></td>
+<td>
+
+<p>logical flag for whether to keep the full output from the ordinary differential equation in the <code>res</code> component (default=<code>FALSE</code>). 
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>other arguments. For <code>markov_msm</code>, these are passed to the <code><a href="../../deSolve/help/ode.html">ode</a></code> solver from the
+<code>deSolve</code> package. For <code>plot.markov_msm</code>, these arguments are passed to <code><a href="../../graphics/html/plot.default.html">plot.default</a></code>
+</p>
+</td></tr>
+</table>
+<p>For <code>as.data.frame.markov_msm</code>:
+</p>
+<table summary="R argblock">
+<tr valign="top"><td><code>row.names</code></td>
+<td>
+<p>add in row names to the output data-frame</p>
+</td></tr>
+<tr valign="top"><td><code>optional</code></td>
+<td>
+<p>(not currently used)</p>
+</td></tr>
+<tr valign="top"><td><code>ci</code></td>
+<td>
+<p>logical for whether to include confidence intervals. Default:
+TRUE</p>
+</td></tr>
+<tr valign="top"><td><code>P.conf.type</code></td>
+<td>
+<p>type of transformation for the confidence interval
+calculation for the state occupancy probabilities. Default: log-log transformation. This is changed for
+<code><a href="../../rstpm2/help/diff.html">diff</a></code> and <code><a href="../../rstpm2/help/ratio_markov_msm.html">ratio_markov_msm</a></code> objects</p>
+</td></tr>
+<tr valign="top"><td><code>L.conf.type</code></td>
+<td>
+<p>type of transformation for the confidence interval
+calculation for the length of stay calculation. Default: log transformation. This is changed for
+<code><a href="../../rstpm2/help/diff.html">diff</a></code> and <code><a href="../../rstpm2/help/ratio_markov_msm.html">ratio_markov_msm</a></code> objects</p>
+</td></tr>
+<tr valign="top"><td><code>C.conf.type</code></td>
+<td>
+<p>type of transformation for the confidence interval
+calculation for the length of stay calculation. Default: log transformation. This is changed for
+<code><a href="../../rstpm2/help/diff.html">diff</a></code> and <code><a href="../../rstpm2/help/ratio_markov_msm.html">ratio_markov_msm</a></code> objects</p>
+</td></tr>
+<tr valign="top"><td><code>P.range</code></td>
+<td>
+<p>valid values for the state occupancy probabilities. Default: (0,1). This is changed for
+<code><a href="../../rstpm2/help/diff.html">diff</a></code> and <code><a href="../../rstpm2/help/ratio_markov_msm.html">ratio_markov_msm</a></code> objects</p>
+</td></tr>
+<tr valign="top"><td><code>L.range</code></td>
+<td>
+<p>valid values for the state occupancy probabilities. Default: (0,Inf). This is changed for
+<code><a href="../../rstpm2/help/diff.html">diff</a></code> and <code><a href="../../rstpm2/help/ratio_markov_msm.html">ratio_markov_msm</a></code> objects</p>
+</td></tr>
+<tr valign="top"><td><code>C.range</code></td>
+<td>
+<p>valid values for the state occupancy probabilities. Default: (0,Inf). This is changed for
+<code><a href="../../rstpm2/help/diff.html">diff</a></code> and <code><a href="../../rstpm2/help/ratio_markov_msm.html">ratio_markov_msm</a></code> objects</p>
+</td></tr>
+<tr valign="top"><td><code>state.weights</code></td>
+<td>
+<p>Not currently documented</p>
+</td></tr>
+<tr valign="top"><td><code>obs.weights</code></td>
+<td>
+<p>Not currently documented</p>
+</td></tr>
+</table>
+<p>For <code>standardise.markov_msm</code>:
+</p>
+<table summary="R argblock">
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>numerical vector to use in standardising the state
+occupancy probabilities, length of stay and costs. Default: 1 for each observation. </p>
+</td></tr>
+<tr valign="top"><td><code>normalise</code></td>
+<td>
+<p>logical for whether to normalise the weights to
+1. Default: TRUE</p>
+</td></tr>
+</table>
+<p>For <code>plot.markov_msm</code>:
+</p>
+<table summary="R argblock">
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>(currently ignored)</p>
+</td></tr>
+<tr valign="top"><td><code>stacked</code></td>
+<td>
+<p>logical for whether to stack the plots. Default: TRUE</p>
+</td></tr>
+<tr valign="top"><td><code>xlab</code></td>
+<td>
+<p>x-axis label</p>
+</td></tr>
+<tr valign="top"><td><code>ylab</code></td>
+<td>
+<p>x-axis label</p>
+</td></tr>
+<tr valign="top"><td><code>col</code></td>
+<td>
+<p>colours (ignored if <code>ggplot2=TRUE</code>)</p>
+</td></tr>
+<tr valign="top"><td><code>border</code></td>
+<td>
+<p>border colours for the <code><a href="../../graphics/html/polygon.html">polygon</a></code> (ignored if <code>ggplot=TRUE</code>)</p>
+</td></tr>
+<tr valign="top"><td><code>ggplot2</code></td>
+<td>
+<p>use <code>ggplot2</code></p>
+</td></tr>
+<tr valign="top"><td><code>alpha</code></td>
+<td>
+<p>alpha value for confidence bands (ggplot)</p>
+</td></tr>
+<tr valign="top"><td><code>lattice</code></td>
+<td>
+<p>use <code>lattice</code></p>
+</td></tr>
+<tr valign="top"><td><code>strata</code></td>
+<td>
+<p>formula for the stratification factors for the plot</p>
+</td></tr>
+</table>
+<p>For <code>subset.markov_msm</code>:
+</p>
+<table summary="R argblock">
+<tr valign="top"><td><code>subset</code></td>
+<td>
+<p>expression that is evaluated on the <code>newdata</code>
+component of the object to filter (or restrict) for the covariates used
+for predictions</p>
+</td></tr>
+</table>
+<p>For <code>transform.markov_msm</code>:
+</p>
+<table summary="R argblock">
+<tr valign="top"><td><code>_data</code></td>
+<td>
+<p>an object of class <code>"markov_msm"</code></p>
+</td></tr>
+</table>
+<p>For <code>rbind.markov_msm</code>:
+</p>
+<table summary="R argblock">
+<tr valign="top"><td><code>deparse.level</code></td>
+<td>
+<p>not currently used</p>
+</td></tr>
+</table>
+<p>For <code>collapse.states</code>:
+</p>
+<table summary="R argblock">
+<tr valign="top"><td><code>which</code></td>
+<td>
+<p>either an index of the states to collapse or a character vector of the state names to collapse</p>
+</td></tr>
+<tr valign="top"><td><code>sep</code></td>
+<td>
+<p>separator to use for the collapsed state names</p>
+</td></tr>
+</table>
+<p>For <code>zeroModel</code> to predict zero rates:
+</p>
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>survival regression object to be wrapped</p>
+</td></tr>
+</table>
+<p>For <code>hrModel</code> to predict rates times a hazard ratio:
+</p>
+<table summary="R argblock">
+<tr valign="top"><td><code>hr</code></td>
+<td>
+<p>hazard ratio</p>
+</td></tr>
+<tr valign="top"><td><code>seloghr</code></td>
+<td>
+<p>alternative specification for the se of the log(hazard ratio); see also <code>ci</code> argument</p>
+</td></tr>
+</table>
+<p>For <code>aftModel</code> to predict accelerated rates:
+</p>
+<table summary="R argblock">
+<tr valign="top"><td><code>af</code></td>
+<td>
+<p>acceleration factor</p>
+</td></tr>
+<tr valign="top"><td><code>selogaf</code></td>
+<td>
+<p>alternative specification for the se of the log(acceleration factor); see also <code>ci</code> argument</p>
+</td></tr>
+</table>
+<p><code>addModel</code> predict rates based on adding rates from different models
+</p>
+<p><code>hazFun</code> provides a rate function without uncertainty:
+</p>
+<table summary="R argblock">
+<tr valign="top"><td><code>f</code></td>
+<td>
+<p>rate function, possibly with <code>tmvar</code> and/or <code>newdata</code> as arguments</p>
+</td></tr>
+</table>
+<p><code>splineFun</code> predicts rates using spline interpolation:
+</p>
+<table summary="R argblock">
+<tr valign="top"><td><code>time</code></td>
+<td>
+<p>exact times</p>
+</td></tr>
+<tr valign="top"><td><code>rate</code></td>
+<td>
+<p>rates as per <code>time</code></p>
+</td></tr>
+<tr valign="top"><td><code>scale</code></td>
+<td>
+<p>rate multiplier (e.g. <code>scale=365.25</code> for converting from daily rates to yearly rates)</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The predictions are calculated using an ordinary differential equation
+solver. The algorithm uses a single run of the solver to calculate the
+state occupancy probabilities, length of stay, costs and their partial
+derivatives with respect to the model parameters. The predictions can also be combined to
+calculate differences, ratios and standardised.
+</p>
+<p>The current implementation supports a list of models for each
+transition. 
+</p>
+<p>The current implementation also only allows for a vector of initial
+values rather than a matrix. The predictions will need to be re-run for
+different vectors of initial values.
+</p>
+<p>For <code>as.data.frame.markov_msm_ratio</code>, the data are provided in
+log form, hence the default transformations and bounds are as per
+<code>as.data.frame.markov_msm_diff</code>, with untransformed data on the
+real line.
+</p>
+<p>TODO: allow for one model to predict for the different transitions.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>markov_msm</code> returns an object of <code><a href="../../base/html/class.html">class</a></code> <code>"markov_msm"</code>.
+</p>
+<p>The function <code>summary</code> is used to
+obtain and print a summary and analysis of variance table of the
+results.  The generic accessor functions <code>coef</code> and <code>vcov</code> extract
+various useful features of the value returned by <code>markov_msm</code>.
+</p>
+<p>An object of class <code>"markov_msm"</code> is a list containing at least the
+following components:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>time</code></td>
+<td>
+<p>a numeric vector with the times for the predictions</p>
+</td></tr>
+<tr valign="top"><td><code>P</code></td>
+<td>
+<p>an <code><a href="../../base/html/array.html">array</a></code> for the predicted state occupancy
+probabilities. The array has three dimensions: time, state, and observations.</p>
+</td></tr>
+<tr valign="top"><td><code>L</code></td>
+<td>
+<p>an <code><a href="../../base/html/array.html">array</a></code> for the predicted sojourn times (or
+length of stay). The array has three dimensions: time, state, and observations.</p>
+</td></tr>
+<tr valign="top"><td><code>Pu</code></td>
+<td>
+<p>an <code><a href="../../base/html/array.html">array</a></code> for the partial derivatives of the
+predicted state occupancy probabilities with respect to the model coefficients. The array has
+four dimensions: time, state, coefficients, and observations.</p>
+</td></tr>
+<tr valign="top"><td><code>Lu</code></td>
+<td>
+<p>an <code><a href="../../base/html/array.html">array</a></code> for the partial derivatives of the predicted sojourn times (or
+length of stay) with respect to the model coefficients. The array has
+four dimensions: time, state, coefficients, and observations.</p>
+</td></tr>
+<tr valign="top"><td><code>newdata</code></td>
+<td>
+<p>a <code><a href="../../base/html/data.frame.html">data.frame</a></code> with the covariates used for
+the predictions</p>
+</td></tr>
+<tr valign="top"><td><code>vcov</code></td>
+<td>
+<p>the variance-covariance matrix for the models of the
+transition intensities</p>
+</td></tr>
+<tr valign="top"><td><code>trans</code></td>
+<td>
+<p>copy of the <code>trans</code> input argument</p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>the call to the function</p>
+</td></tr>
+</table>
+<p>For debugging:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>res</code></td>
+<td>
+<p>data returned from the ordinary differential equation
+solver. This may include more information on the predictions</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Mark Clements
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../flexsurv/help/pmatrix.fs.html">pmatrix.fs</a></code>, <code><a href="../../mstate/help/probtrans.html">probtrans</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+if (requireNamespace("deSolve")) {
+    library(readstata13)
+    library(mstate)
+    library(ggplot2)
+    library(survival)
+    ## Two states: Initial -&gt; Final
+    ## Note: this shows how to use markov_msm to estimate survival and risk probabilities based on
+    ## smooth hazard models.
+    two_states &lt;- function(model, ...) {
+        transmat = matrix(c(NA,1,NA,NA),2,2,byrow=TRUE)
+        rownames(transmat) &lt;- colnames(transmat) &lt;- c("Initial","Final")
+        rstpm2::markov_msm(list(model), ..., trans = transmat)
+    }
+    ## Note: the first argument is the hazard model. The other arguments are arguments to the
+    ## markov_msm function, except for the transition matrix, which is defined by the new function.
+    death = gsm(Surv(time,status)~factor(rx), data=survival::colon, subset=(etype==2), df=3)
+    cr = two_states(death, newdata=data.frame(rx="Obs"), t = seq(0,2500, length=301))
+    plot(cr,ggplot=TRUE)
+
+    ## Competing risks
+    ## Note: this shows how to adapt the markov_msm model for competing risks.
+    competing_risks &lt;- function(listOfModels, ...) {
+        nRisks = length(listOfModels)
+        transmat = matrix(NA,nRisks+1,nRisks+1)
+        transmat[1,1+(1:nRisks)] = 1:nRisks
+        rownames(transmat) &lt;- colnames(transmat) &lt;- c("Initial",names(listOfModels))
+        rstpm2::markov_msm(listOfModels, ..., trans = transmat)
+    }
+    ## Note: The first argument for competing_risks is a list of models. Names from that list are
+    ## used for labelling the states. The other arguments are as per the markov_msm function,
+    ## except for the transition matrix, which is defined by the competing_risks function.
+    recurrence = gsm(Surv(time,status)~factor(rx), data=survival::colon, subset=(etype==1), df=3)
+    death = gsm(Surv(time,status)~factor(rx), data=survival::colon, subset=(etype==2), df=3)
+    cr = competing_risks(list(Recurrence=recurrence,Death=death),
+                         newdata=data.frame(rx=levels(survival::colon$rx)),
+                         t = seq(0,2500, length=301))
+    ## Plot the probabilities for each state for three different treatment arms
+    plot(cr, ggplot=TRUE) + facet_grid(~ rx)
+    ## And: differences in probabilities
+    cr_diff = diff(subset(cr,rx=="Lev+5FU"),subset(cr,rx=="Obs"))
+    plot(cr_diff, ggplot=TRUE, stacked=FALSE)
+    
+    ## Extended example: Crowther and Lambert (2017)
+    ## library(rstpm2); library(readstata13); library(ggplot2)
+    mex.1 &lt;- read.dta13("http://fmwww.bc.edu/repec/bocode/m/multistate_example.dta")
+    transmat &lt;- rbind("Post-surgery"=c(NA,1,2), 
+                      "Relapsed"=c(NA,NA,3),
+                      "Died"=c(NA,NA,NA))
+    colnames(transmat) &lt;- rownames(transmat)
+    mex.2 &lt;- transform(mex.1,osi=(osi=="deceased")+0)
+    levels(mex.2$size)[2] &lt;- "&gt;20-50 mm" # fix typo
+    mex &lt;- mstate::msprep(time=c(NA,"rf","os"),status=c(NA,"rfi","osi"),
+                          data=mex.2,trans=transmat,id="pid",
+                          keep=c("age","size","nodes","pr_1","hormon"))
+    mex &lt;- transform(mex,
+                     size2=(unclass(size)==2)+0, # avoids issues with TRUE/FALSE
+                     size3=(unclass(size)==3)+0,
+                     hormon=(hormon=="yes")+0,
+                     Tstart=Tstart/12,
+                     Tstop=Tstop/12)
+    ##
+    c.ar &lt;- stpm2(Surv(Tstart,Tstop,status) ~ age + size2 + size3 + nodes + pr_1 + hormon,
+                  data = mex, subset=trans==1, df=3, tvc=list(size2=1,size3=1,pr_1=1))
+    c.ad &lt;- stpm2(Surv(Tstart, Tstop, status) ~ age + size + nodes + pr_1 + hormon,
+                  data = mex, subset=trans==2, df=1)
+    c.rd &lt;- stpm2( Surv(Tstart,Tstop,status) ~ age + size + nodes + pr_1 + hormon,
+                  data=mex, subset=trans==3, df=3, tvc=list(pr_1=1))
+    ##
+    nd &lt;- expand.grid(nodes=seq(0,20,10), size=levels(mex$size))
+    nd &lt;- transform(nd, age=54, pr_1=3, hormon=0,
+                    size2=(unclass(size)==2)+0,
+                    size3=(unclass(size)==3)+0)
+    ## Predictions
+    system.time(pred1 &lt;- rstpm2::markov_msm(list(c.ar,c.ad,c.rd), t = seq(0,15,length=301),
+                                            newdata=nd, trans = transmat)) # ~2 seconds
+    pred1 &lt;- transform(pred1, Nodes=paste("Nodes =",nodes), Size=paste("Size",size))
+    ## Figure 3
+    plot(pred1, ggplot=TRUE) + facet_grid(Nodes ~ Size) + xlab("Years since surgery")
+    plot(pred1, ggplot=TRUE, flipped=TRUE) +
+        facet_grid(Nodes ~ Size) + xlab("Years since surgery")
+    plot(pred1, strata=~nodes+size, xlab="Years since surgery", lattice=TRUE)
+    ## Figure 4
+    plot(subset(pred1, nodes==0 &amp; size=="&lt;=20 mm"), stacked=FALSE, ggplot=TRUE) +
+        facet_grid(. ~ state) +
+        xlab("Years since surgery")
+    ## Figure 5
+    a &lt;- diff(subset(pred1,nodes==0 &amp; size=="&lt;=20 mm"),
+              subset(pred1,nodes==0 &amp; size=="&gt;20-50 mm"))
+    a &lt;- transform(a, label = "Prob(Size&lt;=20 mm)-Prob(20mm&lt;Size&lt;50mm)")
+    b &lt;- ratio_markov_msm(subset(pred1,nodes==0 &amp; size=="&lt;=20 mm"),
+                          subset(pred1,nodes==0 &amp; size=="&gt;20-50 mm"))
+    b &lt;- transform(b,label="Prob(Size&lt;=20 mm)-Prob(20mm&lt;Size&lt;50mm)")
+    ##
+    c &lt;- diff(subset(pred1,nodes==0 &amp; size=="&lt;=20 mm"),
+              subset(pred1,nodes==0 &amp; size=="&gt;50 mm"))
+    c &lt;- transform(c, label = "Prob(Size&lt;=20 mm)-Prob(Size&gt;=50mm)")
+    d &lt;- ratio_markov_msm(subset(pred1,nodes==0 &amp; size=="&lt;=20 mm"),
+                          subset(pred1,nodes==0 &amp; size=="&gt;50 mm"))
+    d &lt;- transform(d,label= "Prob(Size&lt;=20 mm)-Prob(Size&gt;=50mm)")
+    ##
+    e &lt;- diff(subset(pred1,nodes==0 &amp; size=="&gt;20-50 mm"),
+              subset(pred1,nodes==0 &amp; size=="&gt;50 mm"))
+    e &lt;- transform(e,label="Prob(20mm&lt;Size&lt;50 mm)-Prob(Size&gt;=50mm)")
+    f &lt;- ratio_markov_msm(subset(pred1,nodes==0 &amp; size=="&gt;20-50 mm"),
+                          subset(pred1,nodes==0 &amp; size=="&gt;50 mm"))
+    f &lt;- transform(f, label = "Prob(20mm&lt;Size&lt;50 mm)-Prob(Size&gt;=50mm)")
+    ## combine
+    diffs &lt;- rbind(a,c,e)
+    ratios &lt;- rbind(b,d,f)
+    ## Figure 5
+    plot(diffs, stacked=FALSE, ggplot2=TRUE) + xlab("Years since surgery") +
+        ylim(c(-0.4, 0.4)) + facet_grid(label ~ state)
+    ##
+    plot(ratios, stacked=FALSE, ggplot2=TRUE) + xlab("Years since surgery") +
+        ylim(c(0, 3)) + facet_grid(label ~ state)
+    ## Figure 6
+    plot(subset(pred1, nodes==0 &amp; size=="&lt;=20 mm"), stacked=FALSE, which="L", ggplot2=TRUE) +
+        facet_grid(. ~ state) + xlab("Years since surgery")
+    ## Figure 7
+    plot(diffs, stacked=FALSE, which="L", ggplot2=TRUE) + xlab("Years since surgery") +
+        ylim(c(-4, 4)) + facet_grid(label ~ state)
+    plot(ratios, stacked=FALSE, which="L", ggplot2=TRUE) + xlab("Years since surgery") +
+        ylim(c(0.1, 10)) + coord_trans(y="log10") + facet_grid(label ~ state)
+}
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rstpm2</em> version 1.7.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

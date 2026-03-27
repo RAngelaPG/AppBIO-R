@@ -1,0 +1,152 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Calculate the Component Size Distribution of a Graph</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for component.dist {sna}"><tr><td>component.dist {sna}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2> Calculate the Component Size Distribution of a Graph </h2>
+
+<h3>Description</h3>
+
+<p><code>component.dist</code> returns a list containing a vector of length <code>n</code> such that the <code>i</code>th element contains the number of components of graph <i>G</i> having size <code>i</code>, and a vector of length <code>n</code> giving component membership (where <code>n</code> is the graph order).  Component strength is determined by the <code>connected</code> parameter; see below for details.
+</p>
+<p><code>component.largest</code> identifies the component(s) of maximum order within graph <code>G</code>.  It returns either a <code>logical</code> vector indicating membership in a maximum component or the adjacency matrix of the subgraph of <i>G</i> induced by the maximum component(s), as determined by <code>result</code>.  Component strength is determined as per <code>component.dist</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+component.dist(dat, connected=c("strong","weak","unilateral",
+     "recursive"))
+
+component.largest(dat, connected=c("strong","weak","unilateral",
+     "recursive"), result = c("membership", "graph"), return.as.edgelist =
+     FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>dat</code></td>
+<td>
+<p> one or more input graphs. </p>
+</td></tr>
+<tr valign="top"><td><code>connected</code></td>
+<td>
+<p> a string selecting strong, weak, unilateral or recursively connected components; by default, <code>"strong"</code> components are used.</p>
+</td></tr>
+<tr valign="top"><td><code>result</code></td>
+<td>
+<p> a string indicating whether a vector of membership indicators or the induced subgraph of the component should be returned. </p>
+</td></tr>
+<tr valign="top"><td><code>return.as.edgelist</code></td>
+<td>
+<p> logical; if <code>result=="graph"</code>, should the resulting structure be returned in edgelist form?</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Components are maximal sets of mutually connected vertices; depending on the definition of &ldquo;connected&rdquo; one employs, one can arrive at several types of components.  Those supported here are as follows (in increasing order of restrictiveness):
+</p>
+
+<ol>
+<li> <p><code>weak</code>:  <i>v_1</i> is connected to <i>v_2</i> iff there exists a semi-path from <i>v_1</i> to <i>v_2</i> (i.e., a path in the weakly symmetrized graph)
+</p>
+</li>
+<li> <p><code>unilateral</code>:  <i>v_1</i> is connected to <i>v_2</i> iff there exists a directed path from <i>v_1</i> to <i>v_2</i> <em>or</em> a directed path from <i>v_2</i> to <i>v_1</i>
+</p>
+</li>
+<li> <p><code>strong</code>:  <i>v_1</i> is connected to <i>v_2</i> iff there exists a directed path from <i>v_1</i> to <i>v_2</i> <em>and</em> a directed path from <i>v_2</i> to <i>v_1</i>
+</p>
+</li>
+<li> <p><code>recursive</code>:  <i>v_1</i> is connected to <i>v_2</i> iff there exists a vertex sequence <i>v_a,...,v_z</i> such that <i>v_1,v_a,...,v_z,v_2</i> and <i>v_2,v_z,...,v_a,v_1</i> are directed paths
+</p>
+</li></ol>
+
+<p>Note that the above definitions are distinct for directed graphs only; if <code>dat</code> is symmetric, then the <code>connected</code> parameter has no effect.  
+</p>
+
+
+<h3>Value</h3>
+
+<p>For <code>component.dist</code>, a list containing:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>membership </code></td>
+<td>
+<p>A vector of component memberships, by vertex</p>
+</td></tr>
+<tr valign="top"><td><code>csize</code></td>
+<td>
+<p>A vector of component sizes, by component</p>
+</td></tr>
+<tr valign="top"><td><code>cdist</code></td>
+<td>
+<p>A vector of length |V(G)| with the (unnormalized) empirical distribution function of component sizes</p>
+</td></tr>
+</table>
+<p>If multiple input graphs are given, the return value is a list of lists.
+</p>
+<p>For <code>component.largest</code>, either a <code>logical</code> vector of component membership indicators or the adjacency matrix/edgelist of the subgraph induced by the largest component(s) is returned.  If multiple graphs were given as input, a list of results is returned.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Unilaterally connected component partitions may not be well-defined, since it is possible for a given vertex to be unilaterally connected to two vertices that are not unilaterally connected with one another.  Consider, for instance, the graph <i>a-&gt;b&lt;-c&lt;-d</i>.  In this case, the maximal unilateral components are <i>ab</i> and <i>bcd</i>, with vertex <i>b</i> properly belonging to both components.  For such graphs, a unique partition of vertices by component does not exist, and we &ldquo;solve&rdquo; the problem by allocating each &ldquo;problem vertex&rdquo; to one of its components on an essentially arbitrary basis.  (<code>component.dist</code> generates a warning when this occurs.)  It is recommended that the <code>unilateral</code> option be avoided where possible.
+</p>
+<p>Do not make the mistake of assuming that the subgraphs returned by <code>component.largest</code> are necessarily connected.  This is <em>usually</em> the case, but depends upon the uniqueness of the largest component.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p> Carter T. Butts <a href="mailto:buttsc@uci.edu">buttsc@uci.edu</a> </p>
+
+
+<h3>References</h3>
+
+<p> West, D.B.  (1996).  <em>Introduction to Graph Theory.</em>  Upper Saddle River, N.J.: Prentice Hall.</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../sna/help/components.html">components</a></code>, <code><a href="../../sna/help/symmetrize.html">symmetrize</a></code>, <code><a href="../../sna/help/reachability.html">reachability</a></code> <code><a href="../../sna/help/geodist.html">geodist</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+g&lt;-rgraph(20,tprob=0.06)   #Generate a sparse random graph
+
+#Find weak components
+cd&lt;-component.dist(g,connected="weak")
+cd$membership              #Who's in what component?
+cd$csize                   #What are the component sizes?
+                           #Plot the size distribution
+plot(1:length(cd$cdist),cd$cdist/sum(cd$cdist),ylim=c(0,1),type="h")  
+lgc&lt;-component.largest(g,connected="weak")  #Get largest component
+gplot(g,vertex.col=2+lgc)  #Plot g, with component membership
+                           #Plot largest component itself 
+gplot(component.largest(g,connected="weak",result="graph"))
+
+#Find strong components
+cd&lt;-component.dist(g,connected="strong")
+cd$membership              #Who's in what component?
+cd$csize                   #What are the component sizes?
+                           #Plot the size distribution
+plot(1:length(cd$cdist),cd$cdist/sum(cd$cdist),ylim=c(0,1),type="h")
+lgc&lt;-component.largest(g,connected="strong")  #Get largest component
+gplot(g,vertex.col=2+lgc)  #Plot g, with component membership
+                           #Plot largest component itself 
+gplot(component.largest(g,connected="strong",result="graph"))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>sna</em> version 2.8 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

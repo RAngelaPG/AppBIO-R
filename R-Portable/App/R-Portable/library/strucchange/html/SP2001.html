@@ -1,0 +1,120 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: S&amp;P 500 Stock Prices</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for SP2001 {strucchange}"><tr><td>SP2001 {strucchange}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>S&amp;P 500 Stock Prices</h2>
+
+<h3>Description</h3>
+
+<p>A multivariate series of all S&amp;P 500 stock prices in the
+second half of the year 2001, i.e., before and after the
+terrorist attacks of 2001-09-11. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>data("SP2001")</pre>
+
+
+<h3>Format</h3>
+
+<p>A multivariate daily <code>"zoo"</code> series with <code>"Date"</code> index 
+from 2001-07-31 to 2001-12-31 (103 observations) of all 500 S&amp;P
+stock prices. 
+</p>
+
+
+<h3>Source</h3>
+
+<p>Yahoo! Finance: <a href="https://finance.yahoo.com/">https://finance.yahoo.com/</a>.</p>
+
+
+<h3>References</h3>
+
+<p>Zeileis A., Leisch F., Kleiber C., Hornik K. (2005), Monitoring
+Structural Change in Dynamic Econometric Models,
+<em>Journal of Applied Econometrics</em>, <b>20</b>, 99&ndash;121.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../tseries/help/get.hist.quote.html">get.hist.quote</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## load and transform data
+## (DAL: Delta Air Lines, LU: Lucent Technologies)
+data("SP2001")
+stock.prices &lt;- SP2001[, c("DAL", "LU")]
+stock.returns &lt;- diff(log(stock.prices))
+
+## price and return series
+plot(stock.prices, ylab = c("Delta Air Lines", "Lucent Technologies"), main = "")
+plot(stock.returns, ylab = c("Delta Air Lines", "Lucent Technologies"), main = "")
+
+## monitoring of DAL series
+myborder &lt;- function(k) 1.939*k/28
+x &lt;- as.vector(stock.returns[, "DAL"][1:28])
+dal.cusum &lt;- mefp(x ~ 1, type = "OLS-CUSUM", border = myborder)
+dal.mosum &lt;- mefp(x ~ 1, type = "OLS-MOSUM", h = 0.5, period = 4)
+x &lt;- as.vector(stock.returns[, "DAL"])
+dal.cusum &lt;- monitor(dal.cusum)
+dal.mosum &lt;- monitor(dal.mosum)
+
+## monitoring of LU series
+x &lt;- as.vector(stock.returns[, "LU"][1:28])
+lu.cusum &lt;- mefp(x ~ 1, type = "OLS-CUSUM", border = myborder)
+lu.mosum &lt;- mefp(x ~ 1, type = "OLS-MOSUM", h = 0.5, period = 4)
+x &lt;- as.vector(stock.returns[, "LU"])
+lu.cusum &lt;- monitor(lu.cusum)
+lu.mosum &lt;- monitor(lu.mosum)
+
+## pretty plotting
+## (needs some work because lm() does not keep "zoo" attributes)
+cus.bound &lt;- zoo(c(rep(NA, 27), myborder(28:102)), index(stock.returns))
+mos.bound &lt;- as.vector(boundary(dal.mosum))
+mos.bound &lt;- zoo(c(rep(NA, 27), mos.bound[1], mos.bound), index(stock.returns))
+
+## Lucent Technologies: CUSUM test
+plot(zoo(c(lu.cusum$efpprocess, lu.cusum$process), index(stock.prices)),
+  ylim = c(-1, 1) * coredata(cus.bound)[102], xlab = "Time", ylab = "empirical fluctuation process")
+abline(0, 0)
+abline(v = as.Date("2001-09-10"), lty = 2)
+lines(cus.bound, col = 2)
+lines(-cus.bound, col = 2)
+
+## Lucent Technologies: MOSUM test
+plot(zoo(c(lu.mosum$efpprocess, lu.mosum$process), index(stock.prices)[-(1:14)]),
+  ylim = c(-1, 1) * coredata(mos.bound)[102], xlab = "Time", ylab = "empirical fluctuation process")
+abline(0, 0)
+abline(v = as.Date("2001-09-10"), lty = 2)
+lines(mos.bound, col = 2)
+lines(-mos.bound, col = 2)
+
+## Delta Air Lines: CUSUM test
+plot(zoo(c(dal.cusum$efpprocess, dal.cusum$process), index(stock.prices)),
+  ylim = c(-1, 1) * coredata(cus.bound)[102], xlab = "Time", ylab = "empirical fluctuation process")
+abline(0, 0)
+abline(v = as.Date("2001-09-10"), lty = 2)
+lines(cus.bound, col = 2)
+lines(-cus.bound, col = 2)
+
+## Delta Air Lines: MOSUM test
+plot(zoo(c(dal.mosum$efpprocess, dal.mosum$process), index(stock.prices)[-(1:14)]),
+  ylim = range(dal.mosum$process), xlab = "Time", ylab = "empirical fluctuation process")
+abline(0, 0)
+abline(v = as.Date("2001-09-10"), lty = 2)
+lines(mos.bound, col = 2)
+lines(-mos.bound, col = 2)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>strucchange</em> version 1.5-4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

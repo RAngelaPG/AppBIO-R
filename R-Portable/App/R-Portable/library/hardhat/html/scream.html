@@ -1,0 +1,208 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Scream</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for scream {hardhat}"><tr><td>scream {hardhat}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Scream</h2>
+
+<h3>Description</h3>
+
+<p><code>scream()</code> ensures that the structure of <code>data</code> is the same as
+prototype, <code>ptype</code>. Under the hood, <code><a href="../../vctrs/help/vec_cast.html">vctrs::vec_cast()</a></code> is used, which
+casts each column of <code>data</code> to the same type as the corresponding
+column in <code>ptype</code>.
+</p>
+<p>This casting enforces a number of important structural checks,
+including but not limited to:
+</p>
+
+<ul>
+<li> <p><em>Data Classes</em> - Checks that the class of each column in <code>data</code> is the
+same as the corresponding column in <code>ptype</code>.
+</p>
+</li>
+<li> <p><em>Novel Levels</em> - Checks that the factor columns in <code>data</code> don't have any
+<em>new</em> levels when compared with the <code>ptype</code> columns. If there are new
+levels, a warning is issued and they are coerced to <code>NA</code>. This check is
+optional, and can be turned off with <code>allow_novel_levels = TRUE</code>.
+</p>
+</li>
+<li> <p><em>Level Recovery</em> - Checks that the factor columns in <code>data</code> aren't
+missing any factor levels when compared with the <code>ptype</code> columns. If
+there are missing levels, then they are restored.
+</p>
+</li></ul>
+
+
+
+<h3>Usage</h3>
+
+<pre>
+scream(data, ptype, allow_novel_levels = FALSE, ..., call = current_env())
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A data frame containing the new data to check the structure
+of.</p>
+</td></tr>
+<tr valign="top"><td><code>ptype</code></td>
+<td>
+<p>A data frame prototype to cast <code>data</code> to. This is commonly
+a 0-row slice of the training set.</p>
+</td></tr>
+<tr valign="top"><td><code>allow_novel_levels</code></td>
+<td>
+<p>Should novel factor levels in <code>data</code> be allowed?
+The safest approach is the default, which throws a warning when novel levels
+are found, and coerces them to <code>NA</code> values. Setting this argument to <code>TRUE</code>
+will ignore all novel levels. This argument does not apply to ordered
+factors. Novel levels are not allowed in ordered factors because the
+level ordering is a critical part of the type.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>These dots are for future extensions and must be empty.</p>
+</td></tr>
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>The call used for errors and warnings.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>scream()</code> is called by <code><a href="../../hardhat/help/forge.html">forge()</a></code> after <code><a href="../../hardhat/help/shrink.html">shrink()</a></code> but before the
+actual processing is done. Generally, you don't need to call <code>scream()</code>
+directly, as <code>forge()</code> will do it for you.
+</p>
+<p>If <code>scream()</code> is used as a standalone function, it is good practice to call
+<code><a href="../../hardhat/help/shrink.html">shrink()</a></code> right before it as there are no checks in <code>scream()</code> that ensure
+that all of the required column names actually exist in <code>data</code>. Those
+checks exist in <code>shrink()</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A tibble containing the required columns after any required structural
+modifications have been made.
+</p>
+
+
+<h3>Factor Levels</h3>
+
+<p><code>scream()</code> tries to be helpful by recovering missing factor levels and
+warning about novel levels. The following graphic outlines how <code>scream()</code>
+handles factor levels when coercing <em>from</em> a column in <code>data</code> <em>to</em> a
+column in <code>ptype</code>.
+</p>
+<p><img src="../help/figures/factor-handling.png" alt="factor-handling.png" />
+</p>
+<p>Note that ordered factor handing is much stricter than factor handling.
+Ordered factors in <code>data</code> must have <em>exactly</em> the same levels as ordered
+factors in <code>ptype</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# ---------------------------------------------------------------------------
+# Setup
+
+train &lt;- iris[1:100, ]
+test &lt;- iris[101:150, ]
+
+# mold() is run at model fit time
+# and a formula preprocessing blueprint is recorded
+x &lt;- mold(log(Sepal.Width) ~ Species, train)
+
+# Inside the result of mold() are the prototype tibbles
+# for the predictors and the outcomes
+ptype_pred &lt;- x$blueprint$ptypes$predictors
+ptype_out &lt;- x$blueprint$ptypes$outcomes
+
+# ---------------------------------------------------------------------------
+# shrink() / scream()
+
+# Pass the test data, along with a prototype, to
+# shrink() to extract the prototype columns
+test_shrunk &lt;- shrink(test, ptype_pred)
+
+# Now pass that to scream() to perform validation checks
+# If no warnings / errors are thrown, the checks were
+# successful!
+scream(test_shrunk, ptype_pred)
+
+# ---------------------------------------------------------------------------
+# Outcomes
+
+# To also extract the outcomes, use the outcome prototype
+test_outcome &lt;- shrink(test, ptype_out)
+scream(test_outcome, ptype_out)
+
+# ---------------------------------------------------------------------------
+# Casting
+
+# scream() uses vctrs::vec_cast() to intelligently convert
+# new data to the prototype automatically. This means
+# it can automatically perform certain conversions, like
+# coercing character columns to factors.
+test2 &lt;- test
+test2$Species &lt;- as.character(test2$Species)
+
+test2_shrunk &lt;- shrink(test2, ptype_pred)
+scream(test2_shrunk, ptype_pred)
+
+# It can also recover missing factor levels.
+# For example, it is plausible that the test data only had the
+# "virginica" level
+test3 &lt;- test
+test3$Species &lt;- factor(test3$Species, levels = "virginica")
+
+test3_shrunk &lt;- shrink(test3, ptype_pred)
+test3_fixed &lt;- scream(test3_shrunk, ptype_pred)
+
+# scream() recovered the missing levels
+levels(test3_fixed$Species)
+
+# ---------------------------------------------------------------------------
+# Novel levels
+
+# When novel levels with any data are present in `data`, the default
+# is to coerce them to `NA` values with a warning.
+test4 &lt;- test
+test4$Species &lt;- as.character(test4$Species)
+test4$Species[1] &lt;- "new_level"
+
+test4$Species &lt;- factor(
+  test4$Species,
+  levels = c(levels(test$Species), "new_level")
+)
+
+test4 &lt;- shrink(test4, ptype_pred)
+
+# Warning is thrown
+test4_removed &lt;- scream(test4, ptype_pred)
+
+# Novel level is removed
+levels(test4_removed$Species)
+
+# No warning is thrown
+test4_kept &lt;- scream(test4, ptype_pred, allow_novel_levels = TRUE)
+
+# Novel level is kept
+levels(test4_kept$Species)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>hardhat</em> version 1.4.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

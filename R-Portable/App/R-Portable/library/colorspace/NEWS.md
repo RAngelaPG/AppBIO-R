@@ -1,3 +1,53 @@
+# colorspace 2.1-2
+
+* Small improvements in `hclwizard()` shiny app, e.g., "R default schemes" are
+  now called "R legacy schemes" because base R color infrastructure was meanwhile
+  improved with `hcl.colors()` (prompted by the `colorspace` package) and
+  `palette.colors()`. See
+  [Zeileis & Murrell (2023, The R Journal)](https://doi.org/10.32614/RJ-2023-071).
+
+* In functions `lighten()`/`darken()`, `adjust_transparency()`, `desaturate()`,
+  and in the color vision deficiency simulation functions, try to preserve the
+  `"colors"` class (from `prismatic`) along with other attributes.
+
+* In `max_chroma()` missing values in the input arguments are supported now,
+  leading to missing values in the output. (Reported by Martin R. Smith.)
+
+* Update references and links in the documentation of `contrast_ratio()` due to
+  the release of the Web Content Accessibility Guidelines (WCAG) version 2.2.
+
+
+# colorspace 2.1-1
+
+* In the `hclwizard()` shiny app the Python export now leverages the Python
+  _colorspace_ package available from PyPI at <https://pypi.org/project/colorspace/>.
+  For more details see the Python package documentation at
+  <https://retostauffer.github.io/python-colorspace/>.
+
+* Improvement in `desaturate()`: In addition to previous input color specifications
+  (hex strings, named colors, RGB matrices), formal S4 color objects are now
+  also supported. In this case, the desaturated colors are also returned as color
+  objects of the same class as the input. With this improvement, `desaturate()`
+  behaves exactly analogous to the color vision deficiency emulation functions
+  which had been improved in the same way in version 2.1-0 (see below).
+
+* Try harder to preserve the names in named color vectors when transformed with
+  `lighten()`, `darken()`, `adjust_transparency()`, `simulate_cvd()`, etc.
+  (suggested by Matias Andina).
+
+* Make the fixed color vision deficiency simulation in linear RGB coordinates
+  (introduced in version 2.1-0) the default in the `cvd_emulator()` shiny app
+  as well.
+
+* Minor bug fixes in `hclplot()`, the automatically generated figure titles
+  only use the H/L coordinates of the colors visualized. Minor fix on how
+  `right` (index of colors on the right hand side of a diverging palette)
+  is calculated.
+
+* Support `n = 1` color in `diverging_hcl()` and `divergingx_hcl()` which then
+  both return the neutral color in the center of the respective palette.
+
+
 # colorspace 2.1-0
 
 * Bug fix for color vision deficiency simulations in `simulate_cvd()` based

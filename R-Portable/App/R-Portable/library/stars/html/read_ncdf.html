@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Read NetCDF into stars object</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for read_ncdf {stars}"><tr><td>read_ncdf {stars}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Read NetCDF into stars object</h2>
+
+<h3>Description</h3>
+
+<p>Read data from a file (or source) using the NetCDF library directly.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+read_ncdf(
+  .x,
+  ...,
+  var = NULL,
+  ncsub = NULL,
+  curvilinear = character(0),
+  eps = sqrt(.Machine$double.eps),
+  ignore_bounds = FALSE,
+  make_time = TRUE,
+  make_units = TRUE,
+  proxy = NULL,
+  downsample = 0
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>.x</code></td>
+<td>
+<p>NetCDF file or source as a character vector or an nc_proxy object.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>ignored</p>
+</td></tr>
+<tr valign="top"><td><code>var</code></td>
+<td>
+<p>variable name or names (they must be on matching grids)</p>
+</td></tr>
+<tr valign="top"><td><code>ncsub</code></td>
+<td>
+<p>matrix of start, count columns (see Details)</p>
+</td></tr>
+<tr valign="top"><td><code>curvilinear</code></td>
+<td>
+<p>length two character named vector with names of variables holding
+longitude and latitude values for all raster cells. 'stars' attempts to figure out appropriate
+curvilinear coordinates if they are not supplied.</p>
+</td></tr>
+<tr valign="top"><td><code>eps</code></td>
+<td>
+<p>numeric; dimension value increases are considered identical when they differ less than <code>eps</code></p>
+</td></tr>
+<tr valign="top"><td><code>ignore_bounds</code></td>
+<td>
+<p>logical; should bounds values for dimensions, if present, be ignored?</p>
+</td></tr>
+<tr valign="top"><td><code>make_time</code></td>
+<td>
+<p>if <code>TRUE</code> (the default), an attempt is made to provide
+a CFTime class for any &quot;time&quot; dimension.</p>
+</td></tr>
+<tr valign="top"><td><code>make_units</code></td>
+<td>
+<p>if <code>TRUE</code> (the default), an attempt is made to set the units property of each variable</p>
+</td></tr>
+<tr valign="top"><td><code>proxy</code></td>
+<td>
+<p>logical; if <code>TRUE</code>, an object of class <code>stars_proxy</code> is read which contains array
+metadata only; if <code>FALSE</code> the full array data is read in memory. If not set, defaults to <code>TRUE</code>
+when the number of cells to be read is larger than <code>options(stars.n_proxy)</code>, or to 1e8 if that option was not set.</p>
+</td></tr>
+<tr valign="top"><td><code>downsample</code></td>
+<td>
+<p>integer; number of cells to omit between samples along each dimension. 
+e.g. <code>c(1,1,2)</code> would return every other cell in x and y and every third cell
+in the third dimension (z or t). If 0, no downsampling is applied. Note that this transformation
+is applied AFTER NetCDF data are read using st_downsample. As such, if proxy=TRUE, this 
+option is ignored.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The following logic is applied to coordinates. If any coordinate axes have
+regularly spaced coordinate variables they are reduced to the
+offset/delta form with 'affine = c(0, 0)', otherwise the values of the coordinates
+are stored and used to define a rectilinear grid.
+</p>
+<p>If the data has two or more dimensions and the first two are regular
+they are nominated as the 'raster' for plotting.
+</p>
+<p>If the <code>curvilinear</code> argument is used it specifies the 2D arrays
+containing coordinate values for the first two dimensions of the data read. It is currently
+assumed that the coordinates are 2D and that they relate to the first two dimensions in
+that order.
+</p>
+<p>Any time dimension in the source is captured in a 'CFTime' object, unless the
+<code>make_time</code> argument is false. In that case, the numeric offsets 
+representing time are returned instead.
+</p>
+<p>If <code>var</code> is not set the first set of variables on a shared grid is used.
+</p>
+<p><code>start</code> and <code>count</code> columns of ncsub must correspond to the variable dimension (nrows)
+and be valid index using <code><a href="../../RNetCDF/help/var.get.nc.html">var.get.nc</a></code> convention (start is 1-based). If the count value
+is <code>NA</code> then all steps are included. Axis order must match that of the variable/s being read.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+f &lt;- system.file("nc/reduced.nc", package = "stars")
+if (require(ncmeta, quietly = TRUE)) {
+ read_ncdf(f)
+ read_ncdf(f, var = c("anom"))
+ read_ncdf(f, ncsub = cbind(start = c(1, 1, 1, 1), count = c(10, 12, 1, 1)))
+}
+
+if (require(ncmeta, quietly = TRUE)) {
+ #' precipitation data in a curvilinear NetCDF
+ prec_file = system.file("nc/test_stageiv_xyt.nc", package = "stars")
+ prec = read_ncdf(prec_file, curvilinear = c("lon", "lat"), ignore_bounds = TRUE)
+}
+
+##plot(prec) ## gives error about unique breaks
+## remove NAs, zeros, and give a large number
+## of breaks (used for validating in detail)
+qu_0_omit = function(x, ..., n = 22) {
+  x = units::drop_units(na.omit(x))
+  c(0, quantile(x[x &gt; 0], seq(0, 1, length.out = n)))
+}
+if (require(dplyr, quietly = TRUE)) {
+  prec_slice = slice(prec, index = 17, along = "time")
+  plot(prec_slice, border = NA, breaks = qu_0_omit(prec_slice[[1]]), reset = FALSE)
+  nc = sf::read_sf(system.file("gpkg/nc.gpkg", package = "sf"), "nc.gpkg")
+  plot(st_geometry(nc), add = TRUE, reset = FALSE, col = NA)
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>stars</em> version 0.7-1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

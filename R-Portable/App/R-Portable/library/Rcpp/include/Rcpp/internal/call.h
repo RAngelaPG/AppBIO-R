@@ -4,18 +4,15 @@
 #include <Rcpp/traits/index_sequence.h>
 #include <functional>
 
-#if defined(HAS_VARIADIC_TEMPLATES) || defined(RCPP_USING_CXX11)
-
 namespace Rcpp {
 namespace internal {
 // Utility struct so that we can pass a pack of types between functions
 template <typename... T> struct type_pack {};
 
-
 /**
  * This specialisation is for functions that return a value, whereas the below
  * is for void-returning functions.
- * 
+ *
  * The "* = nullptr" default argument allows both templates to be well-defined
  * regardless of which one is used.
  */
@@ -40,7 +37,7 @@ SEXP call_impl(const F& fun, SEXP* args, type_pack<RESULT_TYPE, Us...>,
  * Helper for calling a function with an array of SEXP arguments,
  * where each argument is converted to the appropriate type before being passed
  * to the function. A compile-time sequence is used to index the SEXP array.
- * 
+ *
  * The function only needs the intended types of the result and arguments,
  *  which allows the template to be used for function pointers, lambdas, and
  * `std::function` objects.
@@ -52,7 +49,5 @@ SEXP call(const F& fun, SEXP* args) {
                                 traits::make_index_sequence<sizeof...(Us)>{});
 }
 } // namespace Rcpp
-
-#endif
 
 #endif

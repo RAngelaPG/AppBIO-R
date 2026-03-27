@@ -1,0 +1,161 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Distance Matrix Computation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for nearestdist {spam}"><tr><td>nearestdist {spam}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Distance Matrix Computation</h2>
+
+<h3>Description</h3>
+
+<p>This function computes and returns specific elements of distance
+matrix computed by
+using the specified distance measure.</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+nearest.dist( x, y=NULL, method = "euclidean",
+             delta = 1, upper = if (is.null(y)) FALSE else NULL,
+             p = 2, miles = TRUE, R = NULL, fortran = FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>Matrix of first set of locations where each row gives the
+coordinates of a particular point. See also &lsquo;Details&rsquo;.</p>
+</td></tr>
+<tr valign="top"><td><code>y</code></td>
+<td>
+<p>Matrix of second set of locations where each row gives the
+coordinates of a particular point. If this is missing <code>x</code> is
+used. See also &lsquo;Details&rsquo;.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>the distance measure to be used. This must be one of
+<code>"euclidean"</code>, <code>"maximum"</code>, <code>"minkowski"</code> or
+<code>"greatcircle"</code>. Any unambiguous substring can be
+given.</p>
+</td></tr>
+<tr valign="top"><td><code>delta</code></td>
+<td>
+<p>only distances smaller than <code>delta</code> are recorded,
+see Details.</p>
+</td></tr>
+<tr valign="top"><td><code>upper</code></td>
+<td>
+<p>Should the entire matrix (<code>NULL</code>) or only the upper-triagonal (<code>TRUE</code>)
+or lower-triagonal (<code>FALSE</code>) values be calculated.</p>
+</td></tr>
+<tr valign="top"><td><code>p</code></td>
+<td>
+<p>The power of the Minkowski distance.</p>
+</td></tr>
+<tr valign="top"><td><code>miles</code></td>
+<td>
+<p>For great circle distance: If true distances are in statute miles if false distances in
+kilometers.</p>
+</td></tr>
+<tr valign="top"><td><code>R</code></td>
+<td>
+<p>For great circle distance: Radius to use for sphere to find spherical distances. If <code>NULL</code>
+the radius is either in miles or kilometers depending on the
+values of the miles argument. If <code>R=1</code> then distances are of
+course in radians.</p>
+</td></tr>
+<tr valign="top"><td><code>fortran</code></td>
+<td>
+<p>Should the C++ (<code>FALSE</code>) or the Fortran code (<code>TRUE</code>) be used. If 64-bit matrices are needed, the argument is set to (<code>TRUE</code>).</p>
+</td></tr>
+</table>
+
+
+
+
+<h3>Details</h3>
+
+<p>For great circle distance, the matrices <code>x</code> and <code>y</code>
+contain the degrees longitudes in the first and the degrees latitudes
+in the second column. <code>delta</code> is in
+degrees. Hence to restrict to distances smaller than <code>delta.km</code>,
+one has to specify <code>delta=delta.km*360/(6378.388*2*pi)</code>.
+</p>
+<p>The distances are calculated based on spherical law of cosines.
+Care is needed for &lsquo;zero&rsquo; distances due to the final acosin:
+<code>acos(1-1e-16)</code>, especially with an actual radius.
+</p>
+
+
+
+
+
+<p>Default value of Earth's radius is 3963.34miles (6378.388km).<br />
+</p>
+<p>There are many other packages providing distance functions. Especially
+for great circle distances there are considerable differences between
+the implementations. For high precision results, <code>sp::spDists</code> is
+a good candidate and distances of large amount of locations can be
+processed in parallel with the <code>parallelDist</code> package.<br />
+</p>
+<p>The formerly depreciated arguments <code>eps</code> and <code>diag</code> are now
+eliminated.
+</p>
+<p><code>x</code> and <code>y</code> can be any object with an existing
+<code>as.matrix</code> method.<br />
+</p>
+
+
+
+<p>The Fortran code is based on a idea of Doug Nychka.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>spam</code> object containing the distances spanned between
+zero and <code>delta</code>. The sparse matrix may contain many zeros
+(e.g., collocated data). However, to calculate covariances, these zeros
+are essential.</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Annina Cincera (C++ code), Reinhard Furrer</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../spam/help/spam_rdist.html">spam_rdist</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Note that upper=T and using t(X)+X is quicker than upper=NULL;
+#     upper=T marginally slower than upper=F.
+
+# To compare nearest.dist with dist, use as.dist(...)
+nx &lt;- 4
+x &lt;- expand.grid(as.double(1:nx),as.double(1:nx))
+sum( ( as.dist(nearest.dist( x, delta=nx*2))-
+          dist(x)                            )^2)
+
+# Create nearest neighbor structures:
+par(mfcol=c(1,2))
+x &lt;- expand.grid(1:nx,1:(2*nx))
+display( nearest.dist( x, delta=1))
+x &lt;- expand.grid(1:(2*nx),1:nx)
+display( nearest.dist( x, delta=1))
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>spam</em> version 2.11-3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

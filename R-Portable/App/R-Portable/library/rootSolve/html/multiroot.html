@@ -1,0 +1,311 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Solves for n roots of n (nonlinear) equations.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for multiroot {rootSolve}"><tr><td>multiroot {rootSolve}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Solves for n roots of n (nonlinear) equations.
+</h2>
+
+<h3>Description</h3>
+
+<p>Given a vector of n variables, and a set of n (nonlinear) equations in
+these variables,
+</p>
+<p>estimates the root of the equations, i.e. the variable values where all
+function values = 0.
+</p>
+<p>Assumes a full Jacobian matrix, uses the Newton-Raphson method.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+multiroot(f, start, maxiter = 100, 
+          rtol = 1e-6, atol = 1e-8, ctol = 1e-8, 
+          useFortran = TRUE, positive = FALSE,
+          jacfunc = NULL, jactype = "fullint",
+          verbose = FALSE, bandup = 1, banddown = 1, 
+          parms = NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>f </code></td>
+<td>
+<p>function for which the root is sought; it must return a vector
+with as many values as the length of <code>start</code>.
+It is called either as <code>f(x, ...)</code> if <code>parms = NULL</code> or as
+<code>f(x, parms, ...)</code> if <code>parms</code> is not <code>NULL</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>start </code></td>
+<td>
+<p>vector containing initial guesses for the unknown x;
+if <code>start</code> has a name attribute, the names will be used to label
+the output vector.
+</p>
+</td></tr>
+<tr valign="top"><td><code>maxiter </code></td>
+<td>
+<p>maximal number of iterations allowed.
+</p>
+</td></tr>
+<tr valign="top"><td><code>rtol </code></td>
+<td>
+<p>relative error tolerance, either a scalar or a vector, one
+value for each element in the unknown x.
+</p>
+</td></tr>
+<tr valign="top"><td><code>atol </code></td>
+<td>
+<p>absolute error tolerance, either a scalar or a vector, one
+value for each element in x.
+</p>
+</td></tr>
+<tr valign="top"><td><code>ctol </code></td>
+<td>
+<p>a scalar. If between two iterations, the maximal change in
+the variable values is less than this amount, then it is assumed that
+the root is found.
+</p>
+</td></tr>
+<tr valign="top"><td><code>useFortran </code></td>
+<td>
+<p>logical, if <code>FALSE</code>, then an <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> -implementation
+of the Newton-Raphson method is used - see details.
+</p>
+</td></tr>
+<tr valign="top"><td><code>positive</code></td>
+<td>
+<p>if <code>TRUE</code>, the unknowns y are forced to be
+non-negative numbers.
+</p>
+</td></tr>
+<tr valign="top"><td><code>jacfunc </code></td>
+<td>
+<p>if not <code>NULL</code>, a user-supplied <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> function that
+estimates the Jacobian of the system of differential equations
+dydot(i)/dy(j). In some circumstances, supplying <code>jacfunc</code>
+can speed up the computations.  The <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> calling sequence for
+<code>jacfunc</code> is identical to that of <code>f</code>.
+</p>
+<p>If the Jacobian is a full matrix, <code>jacfunc</code> should return a matrix
+dydot/dy, where the ith row contains the derivative of <i>dy_i/dt</i>
+with respect to <i>y_j</i>, or a vector containing the matrix elements
+by columns.
+</p>
+<p>If the Jacobian is banded, <code>jacfunc</code> should return a matrix containing
+only the nonzero bands of the jacobian, (dydot/dy), rotated row-wise.
+</p>
+</td></tr>
+<tr valign="top"><td><code>jactype </code></td>
+<td>
+<p>the structure of the Jacobian, one of &quot;fullint&quot;, &quot;fullusr&quot;,
+&quot;bandusr&quot;, &quot;bandint&quot;, or &quot;sparse&quot; - either full or banded and
+estimated internally or by the user, or arbitrary sparse.
+If the latter, then the solver will call, <code><a href="../../rootSolve/help/stodes.html">stodes</a></code>,
+else <code><a href="../../rootSolve/help/stode.html">stode</a></code>
+</p>
+<p>If the Jacobian is arbitrarily &quot;sparse&quot;, then it will be calculated by
+the solver (i.e. it is not possible to also specify <code>jacfunc</code>).
+</p>
+</td></tr>
+<tr valign="top"><td><code>verbose </code></td>
+<td>
+<p>if <code>TRUE</code>: full output to the screen, e.g. will output
+the steady-state settings.
+</p>
+</td></tr>
+<tr valign="top"><td><code>bandup </code></td>
+<td>
+<p>number of non-zero bands above the diagonal, in case the
+Jacobian is banded.
+</p>
+</td></tr>
+<tr valign="top"><td><code>banddown </code></td>
+<td>
+<p>number of non-zero bands below the diagonal, in case the
+jacobian is banded.
+</p>
+</td></tr>
+<tr valign="top"><td><code>parms </code></td>
+<td>
+<p>vector or list of parameters used in <code>f</code> or
+<code>jacfunc</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>... </code></td>
+<td>
+<p>additional arguments passed to function <code>f</code>.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>start</code> gives the initial guess for each variable; different initial
+guesses may return different roots.
+</p>
+<p>The input parameters <code>rtol</code>, and <code>atol</code> determine the <b>error
+control</b> performed by the solver.  
+</p>
+<p>The solver will control the vector
+<b>e</b> of estimated local errors in <b>f</b>, according to an
+inequality of the form max-norm of ( <b>e</b>/<b>ewt</b> )
+<i>&lt;=</i> 1, where <b>ewt</b> is a vector of positive error
+weights.  The values of <code>rtol</code> and <code>atol</code> should all be
+non-negative.
+</p>
+<p>The form of <b>ewt</b> is:
+</p>
+<p style="text-align: center;"><i>\bold{rtol} * abs(\bold{x}) + \bold{atol}</i></p>
+
+<p>where multiplication of two vectors is element-by-element.
+</p>
+<p>In addition, the solver will stop if between two iterations, the maximal
+change in the values of <b>x</b> is less than <code>ctol</code>.
+</p>
+<p>There is no checking whether the requested precision exceeds the capabilities
+of the machine.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a list containing:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>root </code></td>
+<td>
+<p>the location (x-values) of the root.
+</p>
+</td></tr>
+<tr valign="top"><td><code>f.root </code></td>
+<td>
+<p>the value of the function evaluated at the <code>root</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>iter </code></td>
+<td>
+<p>the number of iterations used.
+</p>
+</td></tr>
+<tr valign="top"><td><code>estim.precis </code></td>
+<td>
+<p>the estimated precision for <code>root</code>. 
+It is defined as the mean of the absolute function values
+(mean(abs(<code>f.root</code>))).
+</p>
+</td></tr>
+</table>
+
+
+<h3>Note</h3>
+
+<p>The Fortran implementation of the Newton-Raphson method function (the
+default) is generally faster than the <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> implementation.
+The <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> implementation has been included for didactic purposes.
+</p>
+<p><code>multiroot</code> makes use of function <code>stode</code>.
+Technically, it is just a wrapper around function <code>stode</code>.
+If the sparsity structure of the Jacobian is known, it may be more efficiently
+to call <code>stode, stodes, steady, steady.1D, steady.2D, steady.3D</code>.
+</p>
+<p>It is NOT guaranteed that the method will converge to the root.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Karline Soetaert &lt;karline.soetaert@nioz.nl&gt;
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../rootSolve/help/stode.html">stode</a></code>, which uses a different function call.
+</p>
+<p><code><a href="../../rootSolve/help/uniroot.all.html">uniroot.all</a></code>, to solve for all roots of one (nonlinear) equation
+</p>
+<p><code><a href="../../rootSolve/help/steady.html">steady</a></code>, <code><a href="../../rootSolve/help/steady.band.html">steady.band</a></code>,  <code><a href="../../rootSolve/help/steady.1D.html">steady.1D</a></code>,
+<code><a href="../../rootSolve/help/steady.2D.html">steady.2D</a></code>, <code><a href="../../rootSolve/help/steady.3D.html">steady.3D</a></code>, steady-state solvers,
+which find the roots of ODEs or PDEs. The function call differs from
+<code>multiroot</code>.
+</p>
+<p><code><a href="../../rootSolve/help/jacobian.full.html">jacobian.full</a></code>, <code><a href="../../rootSolve/help/jacobian.band.html">jacobian.band</a></code>, estimates the
+Jacobian matrix assuming a full or banded structure.
+</p>
+<p><code><a href="../../rootSolve/help/gradient.html">gradient</a></code>, <code><a href="../../rootSolve/help/hessian.html">hessian</a></code>, estimates the gradient
+matrix or the Hessian.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## =======================================================================
+## example 1  
+## 2 simultaneous equations
+## =======================================================================
+
+model &lt;- function(x) c(F1 = x[1]^2+ x[2]^2 -1, 
+                       F2 = x[1]^2- x[2]^2 +0.5)
+
+(ss &lt;- multiroot(f = model, start = c(1, 1)))
+
+## =======================================================================
+## example 2
+## 3 equations, two solutions
+## =======================================================================
+
+model &lt;- function(x) c(F1 = x[1] + x[2] + x[3]^2 - 12,
+                       F2 = x[1]^2 - x[2] + x[3] - 2,
+                       F3 = 2 * x[1] - x[2]^2 + x[3] - 1 )
+
+# first solution
+(ss &lt;- multiroot(model, c(1, 1, 1), useFortran = FALSE))
+(ss &lt;- multiroot(f = model, start = c(1, 1, 1)))
+
+# second solution; use different start values
+(ss &lt;- multiroot(model, c(0, 0, 0)))
+model(ss$root)
+
+## =======================================================================
+## example 2b: same, but with parameters
+## 3 equations, two solutions
+## =======================================================================
+
+model2 &lt;- function(x, parms) 
+      c(F1 = x[1] + x[2] + x[3]^2 - parms[1],
+        F2 = x[1]^2 - x[2] + x[3] - parms[2],
+        F3 = 2 * x[1] - x[2]^2 + x[3] - parms[3])
+
+# first solution
+parms &lt;- c(12, 2, 1)
+multiroot(model2, c(1, 1, 1), parms = parms)
+multiroot(model2, c(0, 0, 0), parms = parms*2)
+
+## =======================================================================
+## example 3: find a matrix
+## =======================================================================
+
+f2&lt;-function(x)   {
+ X &lt;- matrix(nrow = 5, x)
+ X %*% X %*% X -matrix(nrow = 5, data = 1:25, byrow = TRUE)
+}
+x &lt;- multiroot(f2, start = 1:25 )$root
+X &lt;- matrix(nrow = 5, x)
+
+X%*%X%*%X
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rootSolve</em> version 1.8.2.4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

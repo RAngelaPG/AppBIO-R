@@ -1,0 +1,143 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: How to set cell properties variably by cell contents</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for mapping-functions {huxtable}"><tr><td>mapping-functions {huxtable}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>How to set cell properties variably by cell contents</h2>
+
+<h3>Description</h3>
+
+<p>This help page explains how to set properties differently for cells,
+depending on their contents.
+</p>
+<p>For example, in a table of p-values, you could bold cells where p &lt; 0.05:
+</p>
+<div class="sourceCode"><pre>  map_bold(pval_hux, by_ranges(0.05, c(TRUE, FALSE)))
+</pre></div>
+<p>Or you can use red text for a particular value:
+</p>
+<div class="sourceCode"><pre>  hxtbl %&gt;% map_text_color(by_values("Warning" = "red"))
+</pre></div>
+<p>There is a <code>map_...</code> function for each huxtable cell property. The syntax is:
+</p>
+<div class="sourceCode"><pre>  map_property(ht, row, col, fn)
+</pre></div>
+<p>where <code>property</code> is the property name.
+</p>
+<p><code>row</code> and <code>col</code> specify ranges of rows and columns. See <a href="../../huxtable/help/rowspecs.html">rowspecs</a> for
+details. To set properties for the whole table, omit <code>row</code> and <code>col</code>:
+</p>
+<div class="sourceCode"><pre>  map_property(ht, fn)
+</pre></div>
+<p>The <code>fn</code> argument is a <em>mapping function</em> which maps cell contents to
+property values.
+</p>
+
+<ul>
+<li><p> To set property values in &quot;stripes&quot; by rows or by columns, use <code><a href="../../huxtable/help/by_rows.html">by_rows()</a></code>
+and <code><a href="../../huxtable/help/by_cols.html">by_cols()</a></code>.
+</p>
+</li>
+<li><p> To set property values for cells with specific contents, use <code><a href="../../huxtable/help/by_values.html">by_values()</a></code>.
+</p>
+</li>
+<li><p> To set property values for cells within a numeric range, use <code><a href="../../huxtable/help/by_ranges.html">by_ranges()</a></code>.
+</p>
+</li>
+<li><p> To set property values for cells by quantiles, use <code><a href="../../huxtable/help/by_quantiles.html">by_quantiles()</a></code> or
+<code><a href="../../huxtable/help/by_equal_groups.html">by_equal_groups()</a></code>.
+</p>
+</li>
+<li><p> To set property values for cells that match a string or regular expression,
+use <code><a href="../../huxtable/help/by_regex.html">by_regex()</a></code>.
+</p>
+</li>
+<li><p> To map numeric values to a colorspace, use <code><a href="../../huxtable/help/by_colorspace.html">by_colorspace()</a></code>.
+</p>
+</li>
+<li><p> For a more general solution, use <code><a href="../../huxtable/help/by_function.html">by_function()</a></code> or <code><a href="../../huxtable/help/by_cases.html">by_cases()</a></code>.
+</p>
+</li></ul>
+
+
+
+<h3>Caveat</h3>
+
+<p>Most functions convert the huxtable to a matrix using <code><a href="../../base/html/matrix.html">as.matrix()</a></code>. This can
+have unexpected results if you mix character and numeric data. See the
+example.
+</p>
+
+
+<h3>Technical details</h3>
+
+<p><code>fn</code> takes four arguments: the entire original huxtable
+<code>ht</code>, a numeric vector of <code>rows</code>, a numeric vector of <code>cols</code>, and the
+<code>current</code> property values for <code>ht[rows, cols]</code>, as a matrix. It should return
+the new property values for <code>ht[rows, cols]</code>, as a matrix.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+ht &lt;- hux(Condition = c("OK", "Warning", "Error"))
+ht &lt;- map_text_color(ht, by_values(
+  OK      = "green",
+  Warning = "orange",
+  Error   = "red"
+))
+ht
+
+# Leaving NA values alone:
+map_text_color(ht, by_values(
+  "OK" = "blue", NA, ignore_na = TRUE
+))
+
+# Resetting values:
+map_text_color(ht, by_values(
+  "OK" = "blue", NA, ignore_na = FALSE
+))
+
+ht &lt;- as_hux(matrix(rnorm(15), 5, 3))
+map_background_color(ht, by_ranges(
+  c(-1, 1),
+  c("blue", "yellow", "red")
+))
+map_background_color(
+  ht,
+  by_equal_groups(2, c("red", "green"))
+)
+
+ht &lt;- hux(
+  Coef = c(3.5, 2.4, 1.3),
+  Pval = c(0.04, 0.01, 0.07),
+  add_colnames = TRUE
+)
+map_bold(
+  ht, everywhere, "Pval",
+  by_ranges(0.05, c(TRUE, FALSE))
+)
+
+# Problems with as.matrix:
+
+ht &lt;- hux(c(-1, 1, 2), letters[1:3])
+as.matrix(ht) # look at the spaces...
+as.matrix(ht) &gt; 0 # uh oh
+map_text_color(
+  ht,
+  by_cases(. &lt; 0 ~ "red", TRUE ~ "blue")
+)
+
+# To avoid this, only look at the truly numeric columns:
+map_text_color(ht,
+  row = 1:3, col = 1,
+  by_cases(. &lt; 0 ~ "red", TRUE ~ "blue")
+)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>huxtable</em> version 5.8.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

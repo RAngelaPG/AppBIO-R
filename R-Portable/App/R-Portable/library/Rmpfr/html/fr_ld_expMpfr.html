@@ -1,0 +1,114 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Base-2 Representation and Multiplication of Mpfr Numbers</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for frexpMpfr {Rmpfr}"><tr><td>frexpMpfr {Rmpfr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Base-2 Representation and Multiplication of Mpfr Numbers</h2>
+
+<h3>Description</h3>
+
+<p>MPFR - versions of the C99 (and POSIX) standard C (and C++) mathlib
+functions <code>frexp()</code> and <code>ldexp()</code>.
+</p>
+<p><code>frexpMpfr(x)</code> computes base-2 exponent <code>e</code> and &ldquo;mantissa&rdquo;,
+or <em>fraction</em> <code>r</code>, such that <i>x = r * 2^e</i>, where <i>r \in
+    [0.5, 1)</i> (unless when <code>x</code> is in <code>c(0, -Inf, Inf, NaN)</code>
+where <code>r == x</code> and <code>e</code> is 0),
+and <i>e</i> is integer valued.
+</p>
+<p><code>ldexpMpfr(f, E)</code> is the <em>inverse</em> of <code>frexpMpfr()</code>: Given
+fraction or mantissa <code>f</code> and integer exponent <code>E</code>, it returns
+<i>x = f * 2^E</i>.
+Viewed differently, it's the fastest way to multiply or divide MPFR
+numbers with <i>2^E</i>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+frexpMpfr(x,    rnd.mode = c("N", "D", "U", "Z", "A"))
+ldexpMpfr(f, E, rnd.mode = c("N", "D", "U", "Z", "A"))
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>numeric (coerced to <code>double</code>) vector.</p>
+</td></tr>
+<tr valign="top"><td><code>f</code></td>
+<td>
+<p>numeric fraction (vector), in <i>[0.5, 1)</i>.</p>
+</td></tr>
+<tr valign="top"><td><code>E</code></td>
+<td>
+<p>integer valued, exponent of <code>2</code>, i.e., typically in
+<code>(-1024-50):1024</code>, otherwise the result will underflow to 0 or
+overflow to <code>+/- Inf</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>rnd.mode</code></td>
+<td>
+<p>a 1-letter string specifying how <em>rounding</em>
+should happen at C-level conversion to MPFR, see <code><a href="../../Rmpfr/help/mpfr.html">mpfr</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p><code>frexpMpfr</code> returns a <code><a href="../../base/html/list.html">list</a></code> with named components <code>r</code>
+(of class <code>mpfr</code>) and <code>e</code> (integer valued, of type
+<code>integer</code> is small enough, <code>"double"</code> otherwise).
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Martin Maechler</p>
+
+
+<h3>References</h3>
+
+<p>On unix-alikes, typically <code>man frexp</code> and <code>man ldexp</code>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Somewhat related, <code><a href="../../Rmpfr/help/.mpfr2exp.html">.mpfr2exp</a>()</code>.
+<code><a href="../../DPQ/help/frexp.html">frexp</a>()</code> and <code>ldexp()</code> in package <a href="https://CRAN.R-project.org/package=DPQ"><span class="pkg">DPQ</span></a>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+set.seed(47)
+x &lt;- c(0, 2^(-3:3), (-1:1)/0,
+       sort(rlnorm(2^12, 10, 20) * sample(c(-1,1), 512, replace=TRUE)))
+head(xM &lt;- mpfr(x, 128), 11)
+str(rFM &lt;- frexpMpfr(xM))
+d.fr &lt;- with(rFM, data.frame(x=x, r=asNumeric(r), e=e))
+head(d.fr , 16)
+tail(d.fr)
+ar &lt;- abs(rFM$r)
+stopifnot(0.5 &lt;= ar[is.finite(x) &amp; x != 0], ar[is.finite(x)] &lt; 1,
+          is.integer(rFM$e))
+ldx &lt;- with(rFM, ldexpMpfr(r, e))
+(iN &lt;- which(is.na(x))) # 10
+stopifnot(exprs = {
+  all.equal(xM, ldx, tol = 2^-124) # allow 4 bits loss, but apart from the NA, even:
+  identical(xM[-iN], ldx[-iN])
+  is.na(xM [iN])
+  is.na(ldx[iN])
+})
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>Rmpfr</em> version 1.1-2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

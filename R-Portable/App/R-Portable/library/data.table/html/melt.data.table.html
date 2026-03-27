@@ -40,7 +40,7 @@ melt(data, id.vars, measure.vars,
 <tr valign="top"><td><code>id.vars</code></td>
 <td>
 <p>vector of id variables. Can be integer (corresponding id
-column numbers) or character (id column names) vector. If missing, all
+column numbers) or character (id column names) vector, perhaps created using <code>patterns()</code>. If missing, all
 non-measure columns will be assigned to it. If integer, must be positive; see Details. </p>
 </td></tr>
 <tr valign="top"><td><code>measure.vars</code></td>
@@ -49,16 +49,16 @@ non-measure columns will be assigned to it. If integer, must be positive; see De
 </p>
 
 <ul>
-<li><p> When missing, <code>measure.vars</code> will become all columns outside <code>id.vars</code>. 
+<li><p> When missing, <code>measure.vars</code> will become all columns outside <code>id.vars</code>.
 </p>
 </li>
-<li><p> Vector can be <code>integer</code> (implying column numbers) or <code>character</code> (column names). 
+<li><p> Vector can be <code>integer</code> (implying column numbers) or <code>character</code> (column names).
 </p>
 </li>
-<li> <p><code>list</code> is a generalization of the vector version &ndash; each element of the list (which should be <code>integer</code> or <code>character</code> as above) will become a <code>melt</code>ed column. 
+<li> <p><code>list</code> is a generalization of the vector version &ndash; each element of the list (which should be <code>integer</code> or <code>character</code> as above) will become a <code>melt</code>ed column.
 </p>
 </li>
-<li><p> Pattern-based column matching can be achieved with the regular expression-based <code><a href="../../data.table/help/patterns.html">patterns</a></code> syntax; multiple patterns will produce multiple columns. 
+<li><p> Pattern-based column matching can be achieved with the regular expression-based <code><a href="../../data.table/help/patterns.html">patterns</a></code> (regex without capture groups; matching column names are used in the <code>variable.name</code> output column), or <code><a href="../../data.table/help/measure.html">measure</a></code> (regex with capture groups; each capture group becomes an output column).
 </p>
 </li></ul>
 
@@ -66,7 +66,7 @@ non-measure columns will be assigned to it. If integer, must be positive; see De
 </td></tr>
 <tr valign="top"><td><code>variable.name</code></td>
 <td>
-<p>name (default <code>'variable'</code>) of output column containing information about which input column(s) were melted. If <code>measure.vars</code> is an integer/character vector, then each entry of this column contains the name of a melted column from <code>data</code>. If <code>measure.vars</code> is a list of integer/character vectors, then each entry of this column contains an integer indicating an index/position in each of those vectors. If <code>measure.vars</code> has attribute <code>variable_table</code> then it must be a data table with nrow = length of <code>measure.vars</code> vector(s), each row describing the corresponding measured variables(s), (typically created via <code>measure</code>) and its columns will be output instead of the <code>variable.name</code> column.</p>
+<p>name (default <code>'variable'</code>) of output column containing information about which input column(s) were melted. If <code>measure.vars</code> is an integer/character vector, then each entry of this column contains the name of a melted column from <code>data</code>. If <code>measure.vars</code> is a list of integer/character vectors, then each entry of this column contains an integer indicating an index/position in each of those vectors. If <code>measure.vars</code> has attribute <code>variable_table</code> then it must be a data table with nrow = length of <code>measure.vars</code> vector(s), each row describing the corresponding measured variables(s), (typically created via <code><a href="../../data.table/help/measure.html">measure</a></code>) and its columns will be output instead of the <code>variable.name</code> column.</p>
 </td></tr>
 <tr valign="top"><td><code>value.name</code></td>
 <td>
@@ -123,8 +123,8 @@ into multiple columns in a single function call efficiently.
 If a vector in the list contains missing values, or is shorter than the
 max length of the list elements, then the output will include runs of
 missing values at the specified position, or at the end.
-The function
-<code><a href="../../data.table/help/patterns.html">patterns</a></code> can be used to provide regular expression patterns. When
+The functions
+<code><a href="../../data.table/help/patterns.html">patterns</a></code> and <code><a href="../../data.table/help/measure.html">measure</a></code> can be used to provide regular expression patterns. When
 used along with <code>melt</code>, if <code>cols</code> argument is not provided, the
 patterns will be matched against <code>names(data)</code>, for convenience.
 </p>
@@ -198,6 +198,7 @@ melt(DT, id.vars=1, measure.vars=c("c_1", "c_2"), na.rm=TRUE) # remove NA
 # melt "f_1,f_2" and "d_1,d_2" simultaneously, retain 'factor' attribute
 # convenient way using internal function patterns()
 melt(DT, id.vars=1:2, measure.vars=patterns("^f_", "^d_"), value.factor=TRUE)
+melt(DT, id.vars=patterns("[in]"), measure.vars=patterns("^f_", "^d_"), value.factor=TRUE)
 # same as above, but provide list of columns directly by column names or indices
 melt(DT, id.vars=1:2, measure.vars=list(3:4, c("d_1", "d_2")), value.factor=TRUE)
 # same as above, but provide names directly:
@@ -221,7 +222,12 @@ melt(DT.missing.cols, measure.vars=measure(value.name, number=as.integer, sep="_
 
 # specifying columns to melt via regex.
 melt(DT.missing.cols, measure.vars=measure(value.name, number=as.integer, pattern="(.)_(.)"))
+melt(DT.missing.cols, measure.vars=measure(value.name, number=as.integer, pattern="([dc])_(.)"))
+
+# cols arg of measure can be used if you do not want to use regex
+melt(DT.missing.cols, measure.vars=measure(
+  value.name, number=as.integer, sep="_", cols=c("d_1","d_2","c_1")))
 </pre>
 
-<hr /><div style="text-align: center;">[Package <em>data.table</em> version 1.15.4 <a href="00Index.html">Index</a>]</div>
+<hr /><div style="text-align: center;">[Package <em>data.table</em> version 1.18.2.1 <a href="00Index.html">Index</a>]</div>
 </div></body></html>

@@ -1,0 +1,323 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Clip mesh or RGL object to general region</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for clipMesh3d {rgl}"><tr><td>clipMesh3d {rgl}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Clip mesh or RGL object to general region
+</h2>
+
+<h3>Description</h3>
+
+<p>Modifies a mesh3d object so that values of 
+a function are bounded.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+clipMesh3d(mesh, fn, bound = 0, greater = TRUE, 
+           minVertices = 0, plot = FALSE, keepValues = FALSE,
+           keepTags = FALSE)
+clipObj3d(ids = tagged3d(tags), fn, bound = 0, greater = TRUE,
+           minVertices = 0,
+           replace = TRUE, tags)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>mesh</code></td>
+<td>
+
+<p>A <code><a href="../../rgl/help/mesh3d.html">mesh3d</a></code> object.
+</p>
+</td></tr>
+<tr valign="top"><td><code>fn</code></td>
+<td>
+
+<p>A function used to determine clipping, or a vector of values from such
+a function, with one value per vertex.
+</p>
+</td></tr>
+<tr valign="top"><td><code>bound</code></td>
+<td>
+
+<p>The value(s) of <code>fn</code> on the clipping boundary.
+</p>
+</td></tr>
+<tr valign="top"><td><code>greater</code></td>
+<td>
+
+<p>Logical; whether to keep <code>fn &gt;= bound</code> or not.
+</p>
+</td></tr>
+<tr valign="top"><td><code>minVertices</code></td>
+<td>
+
+<p>See Details below.
+</p>
+</td></tr>
+<tr valign="top"><td><code>plot</code></td>
+<td>
+<p>Logical; whether or not to plot the mesh.</p>
+</td></tr>
+<tr valign="top"><td><code>keepValues</code></td>
+<td>
+<p>Logical; whether to save the function values at 
+each vertex when <code>plot = FALSE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>keepTags</code></td>
+<td>
+<p>Whether to keep the <code>"tags"</code> component
+of the result; see details below.</p>
+</td></tr>
+<tr valign="top"><td><code>ids</code></td>
+<td>
+
+<p>The RGL id value(s) of objects to clip.
+</p>
+</td></tr>
+<tr valign="top"><td><code>tags</code></td>
+<td>
+
+<p>Object tags; an alternate way to specify <code>ids</code>.  Ignored if <code>ids</code> is
+given.
+</p>
+</td></tr>
+<tr valign="top"><td><code>replace</code></td>
+<td>
+
+<p>Should the <code>ids</code> objects be deleted after the clipped
+ones are drawn?
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>These functions transform a mesh3d object or other
+RGL objects by removing parts where <code>fn</code> violates
+the bound.
+</p>
+<p>For <code>clipMesh3d</code> the <code>fn</code> argument can be any
+of the following:
+</p>
+
+<ul>
+<li><p>a character vector naming a function (with special
+names <code>"x"</code>, <code>"y"</code>, and <code>"z"</code> corresponding
+to functions returning those coordinates)
+</p>
+</li>
+<li><p>a function
+</p>
+</li>
+<li><p>a numeric vector with one value per vertex
+</p>
+</li>
+<li><p><code>NULL</code>, indicating that the numeric values
+are saved in <code>mesh$values</code>
+</p>
+</li></ul>
+
+<p>For <code>clipObj3d</code> any of the above except <code>NULL</code>
+may be used.
+</p>
+<p>If <code>fn</code>
+is a numeric vector, with one value per vertex, those values will be
+used in the test.
+If it is a function with formal arguments <code>x</code>,
+<code>y</code> and <code>z</code>, it will receive the coordinates of 
+vertices in those arguments, otherwise it will receive 
+the coordinates in a single n x 3 matrix.   The function
+should be vectorized and return one value per vertex, 
+to check against the bound.
+</p>
+<p>These operations are performed on the mesh:
+</p>
+<p>First, all quads are converted to triangles.
+</p>
+<p>Next, each vertex is checked against the condition.
+</p>
+<p>Modifications to triangles depend
+on how many of the vertices satisfy the condition 
+(<code>fn &gt;= bound</code> or <code>fn &lt;= bound</code>, depending on <code>greater</code>)
+for inclusion.
+</p>
+
+<ul>
+<li><p> If no vertices in a triangle satisfy the condition, the triangle is omitted.
+</p>
+</li>
+<li><p> If one vertex satisfies the condition, the other two vertices
+in that triangle are shrunk towards it by assuming <code>fn</code>
+is locally linear.
+</p>
+</li>
+<li><p> If two vertices satisfy the condition, the third vertex
+is shrunk along each edge towards each other vertex, forming a
+quadrilateral made of two new triangles.
+</p>
+</li>
+<li><p> If all vertices satisfy the condition, they are included
+with no modifications.
+</p>
+</li></ul>
+
+<p>Modifications to line segments are similar:  the segment
+will be shortened if it crosses the boundary, or omitted
+if it is entirely out of bounds.  Points, spheres, text
+and sprites will just be kept or rejected.
+</p>
+<p>The <code>minVertices</code> argument is used to improve the 
+approximation to the boundary when <code>fn</code> is a non-linear
+function.  In that case, the interpolation described above
+can be inaccurate.  If <code>minVertices</code> is set to a
+positive
+number (e.g. <code>10000</code>), then each object is modified
+by subdivision to have at least that number of vertices, 
+so that pieces are smaller and the linear interpolation
+is more accurate.  In the <code>clipObj3d</code> function, 
+<code>minVertices</code> can be a vector, with entries corresponding
+to each of the entries in <code>ids</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>If <code>plot = FALSE</code>,
+<code>clipMesh3d</code> returns new mesh3d object in which all vertices (approximately) satisfy the
+clipping condition.  Note that the order of vertices will likely
+differ from the original order, and new vertices will be added near
+the boundary (and if <code>minVertices &gt; 0</code>, in the 
+interior).  If in addition <code>keepValues = TRUE</code>,
+a component named <code>"values"</code> will be added to the 
+mesh containing the values for each vertex.
+If <code>keepTags = TRUE</code>, the <code>tags</code> component
+described below will be added to the output mesh.
+</p>
+<p>If <code>plot = TRUE</code>, the result will be 
+plotted with <code><a href="../../rgl/help/shade3d.html">shade3d</a></code> and its result returned.
+</p>
+<p><code>clipObj3d</code> is called for the side effect of modifying
+the scene.  It returns a list of new RGL id values
+corresponding to the <code>ids</code> passed as arguments.
+</p>
+
+
+<h3>The <code>keepTags</code> argument</h3>
+
+<p>If <code>keepTags = TRUE</code>, a <code>"tags"</code> element will be 
+added to the result.  It will be a vector with one entry per
+point, segment, triangle and quad in the output mesh.  (These tags are not related
+to the tags used to identify <span class="pkg">rgl</span> objects.)
+The mesh tags may be used to show the correspondence between
+the parts of 
+the input mesh and output mesh.
+By default, the tags are constructed as a numerical sequence
+over points,
+segments, triangles and
+quads in the input mesh, in that order, starting from one.  This is the same order 
+used for colours when 
+shading with 
+<code>meshColor == "faces"</code>.  
+</p>
+<p>For example, start with a mesh with one point, two segments, three
+triangles and four
+quads, but no <code>tags</code> member.  
+It would implicitly tag the parts from one to ten as
+</p>
+<p><code style="white-space: pre;">
+  c(1,    # the point
+    2:3,  # the two segments
+    4:6,  # the three triangles
+    7:10) # the four quads
+</code>
+</p>
+<p>If clipping deleted the segments
+and the first triangle, the output would contain the seven
+element result
+</p>
+<p><code style="white-space: pre;">
+  mesh$tags &lt;- c(1,    # the point remains
+                       # no segments now
+                 5:6,  # the two remaining triangles
+                       # were previously items 5 and 6
+                 7:10) # the four quads
+</code>
+</p>
+<p>The <code>tags</code> output may contain repetitions. For example,
+when a triangle is partially clipped and replaced by several
+smaller triangles, entries for all of them will contain the value
+corresponding to the original triangle.
+</p>
+<p>The <code>mesh$tags</code> component may be supplied as part of the input
+mesh as any type of vector; 
+the output will propagate values to the new mesh.  The input length
+must match the total number of points, segments, triangles and 
+quads in the input mesh or an error will be raised.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Duncan Murdoch
+</p>
+
+
+<h3>References</h3>
+
+<p>See <a href="https://stackoverflow.com/q/56242470/2554330">https://stackoverflow.com/q/56242470/2554330</a> and
+<a href="https://laustep.github.io/stlahblog/posts/MeshClipping.html">https://laustep.github.io/stlahblog/posts/MeshClipping.html</a> for a
+motivating example.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>See <code><a href="../../rgl/help/contourLines3d.html">contourLines3d</a></code> and
+<code><a href="../../rgl/help/filledContour3d.html">filledContour3d</a></code> for ways to display function 
+values without clipping.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# Show the problem that minVertices solves:
+
+cube &lt;- cube3d(col = rainbow(6), meshColor = "faces")
+
+# This function only has one argument, so it will 
+# be passed x, y and z in columns of a matrix
+vecnorm &lt;- function(vals) apply(vals, 1, function(row) sqrt(sum(row^2)))
+
+open3d()
+mfrow3d(2, 2, sharedMouse = TRUE)
+id1 &lt;- shade3d(cube)
+# All vertices have norm sqrt(3), so this clips nothing:
+clipObj3d(id1, fn = vecnorm, bound = sqrt(2))
+next3d()
+id2 &lt;- wire3d(cube, lit = FALSE)
+clipObj3d(id2, fn = vecnorm, bound = sqrt(2))
+
+# This subdivides the cube, and does proper clipping:
+next3d()
+id3 &lt;- shade3d(cube)
+clipObj3d(id3, fn = vecnorm, bound = sqrt(2), minVertices = 200)
+next3d()
+id4 &lt;- wire3d(cube, lit = FALSE)
+clipObj3d(id4, fn = vecnorm, bound = sqrt(2), minVertices = 200)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rgl</em> version 1.3.36 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

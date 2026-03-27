@@ -1,4 +1,4 @@
-/*! bslib 0.7.0 | (c) 2012-2024 RStudio, PBC. | License: MIT + file LICENSE */
+/*! bslib 0.10.0 | (c) 2012-2026 RStudio, PBC. | License: MIT + file LICENSE */
 "use strict";
 (() => {
   var __defProp = Object.defineProperty;
@@ -1018,7 +1018,7 @@
     _updateTitle(title) {
       if (!title)
         return;
-      Shiny.renderDependencies(title.deps);
+      window.Shiny.renderDependencies(title.deps);
       setContentCarefully({
         instance: this.bsTooltip,
         trigger: this.triggerElement,
@@ -1308,7 +1308,7 @@
         deps.push(...content.deps);
       if (header)
         deps.push(...header.deps);
-      Shiny.renderDependencies(deps);
+      window.Shiny.renderDependencies(deps);
       const { tip } = this.bsPopover;
       const currentHeader = this.visible ? (_a = tip == null ? void 0 : tip.querySelector(".popover-header")) == null ? void 0 : _a.children[0] : this.header;
       const currentContent = this.visible ? (_b = tip == null ? void 0 : tip.querySelector(".popover-body")) == null ? void 0 : _b.children[0] : this.content;
@@ -1395,7 +1395,14 @@
       super.connectedCallback();
       this.attribute = this.getAttribute("attribute") || this.attribute;
       if (typeof this.mode === "undefined") {
-        this.mode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        const fromDom = document.documentElement.getAttribute(this.attribute);
+        if (fromDom === "dark") {
+          this.mode = "dark";
+        } else if (fromDom === "light") {
+          this.mode == "light";
+        } else {
+          this.mode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
       }
       this.reflectPreference();
       window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ({ matches: isDark }) => {
@@ -1680,7 +1687,7 @@
     if (!window.Shiny) {
       return;
     }
-    class NewCustomBinding extends Shiny["InputBinding"] {
+    class NewCustomBinding extends window.Shiny["InputBinding"] {
       constructor() {
         super();
       }
@@ -1709,7 +1716,10 @@
         el.receiveMessage(el, data);
       }
     }
-    Shiny.inputBindings.register(new NewCustomBinding(), `${tagName}-Binding`);
+    window.Shiny.inputBindings.register(
+      new NewCustomBinding(),
+      `${tagName}-Binding`
+    );
   }
 
   // srcts/src/components/_shinyAddCustomMessageHandlers.ts
@@ -1718,7 +1728,7 @@
       return;
     }
     for (const [name, handler] of Object.entries(handlers)) {
-      Shiny.addCustomMessageHandler(name, handler);
+      window.Shiny.addCustomMessageHandler(name, handler);
     }
   }
 
@@ -2059,7 +2069,13 @@
     BslibSwitch,
     BslibSwitchInline
   ].forEach((cls) => {
-    customElements.define(cls.tagName, cls);
+    if (!customElements.get(cls.tagName)) {
+      customElements.define(cls.tagName, cls);
+    } else {
+      console.error(
+        `[bslib] Custom element ${cls.tagName} was already defined, using previous definition.`
+      );
+    }
     if (window.Shiny) {
       if (cls.isShinyInput)
         makeInputBinding(cls.tagName);

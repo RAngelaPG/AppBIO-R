@@ -1,0 +1,540 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Iterative steady-state solver for ordinary differential...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for stode {rootSolve}"><tr><td>stode {rootSolve}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Iterative steady-state solver for ordinary differential equations (ODE)
+and a full or banded Jacobian.
+</h2>
+
+<h3>Description</h3>
+
+<p>Estimates the steady-state condition for a system of 
+ordinary differential equations (ODE) written in the form:
+</p>
+<p style="text-align: center;"><i>dy/dt = f(t,y)</i></p>
+   
+<p>i.e. finds the values of <code>y</code> for which f(t,y) = 0.
+</p>
+<p>Uses a newton-raphson method, implemented in Fortran 77.
+</p>
+<p>The system of ODE's is written as an <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> function or defined in
+compiled code that has been dynamically loaded.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+stode(y, time = 0, func, parms = NULL, 
+      rtol = 1e-6, atol = 1e-8, ctol = 1e-8, 
+      jacfunc = NULL, jactype = "fullint", verbose = FALSE, 
+      bandup = 1, banddown = 1, positive = FALSE, 
+      maxiter = 100, ynames = TRUE, 
+      dllname = NULL, initfunc = dllname, initpar = parms, 
+      rpar = NULL, ipar = NULL, nout = 0, outnames = NULL, 
+      forcings = NULL, initforc = NULL, fcontrol = NULL, 
+      times = time, ...)</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>y </code></td>
+<td>
+<p>the initial guess of (state) values for the ode system, a vector.
+If <code>y</code> has a name attribute, the names will be used to label the
+output matrix.
+</p>
+</td></tr>
+<tr valign="top"><td><code>time, times </code></td>
+<td>
+<p>time for which steady-state is wanted; the default is
+<code>times</code>=0.    
+(note- since version 1.7, 'times' has been added as an alias to 'time').
+</p>
+</td></tr>
+<tr valign="top"><td><code>func </code></td>
+<td>
+<p>either a user-supplied function that computes the values of the
+derivatives in the ode system (the <em>model definition</em>) at time
+<code>time</code>, or a character string giving the name of a compiled function
+in a dynamically loaded shared library.
+</p>
+<p>If <code>func</code>  is a user-supplied function, it must be called as:
+<code>yprime = func(t, y, parms, ...)</code>.  <code>t</code> is the time point
+at which the steady-state is wanted, <code>y</code> is the current estimate of
+the variables in the ode system. If the initial values <code>y</code> has a names
+attribute, the names will be available inside <code>func</code>.  <code>parms</code> is
+a vector of parameters (which may have a names attribute).
+</p>
+<p>The return value of <code>func</code> should be a list, whose first element is a
+vector containing the derivatives of <code>y</code> with respect to
+<code>time</code>, and whose next elements (possibly with a
+<code><a href="../../base/html/names.html">names</a></code> attribute) are global values that are required as
+output.
+</p>
+<p>The derivatives
+should be specified in the same order as the state variables <code>y</code>.
+</p>
+<p>If <code>func</code> is a string, then <code>dllname</code> must give the name
+of the shared library (without extension) which must be loaded
+before <code>stode()</code> is called. see Details for more information.
+</p>
+</td></tr>
+<tr valign="top"><td><code>parms </code></td>
+<td>
+<p>other parameters passed to <code>func</code> and <code>jacfunc</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>rtol </code></td>
+<td>
+<p>relative error tolerance, either a scalar or a vector, one
+value for each <code>y</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>atol </code></td>
+<td>
+<p>absolute error tolerance, either a scalar or a vector, one
+value for each <code>y</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>ctol </code></td>
+<td>
+<p>if between two iterations, the maximal change in <code>y</code> is
+less than this amount, steady-state is assumed to be reached.
+</p>
+</td></tr>
+<tr valign="top"><td><code>jacfunc </code></td>
+<td>
+<p>if not <code>NULL</code>, either a user-supplied <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> function that
+estimates the Jacobian of the system of differential equations
+dydot(i)/dy(j), or a character string giving the name of a compiled
+function in a dynamically loaded shared library as provided in
+<code>dllname</code>. In some circumstances, supplying <code>jacfunc</code>
+can speed up the computations.  The <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> calling sequence for
+<code>jacfunc</code> is identical to that of <code>func</code>.      
+</p>
+<p>If the Jacobian is a full matrix, <code>jacfunc</code> should return a matrix
+dydot/dy, where the ith row contains the derivative of <i>dy_i/dt</i>
+with respect to <i>y_j</i>, or a vector containing the matrix elements
+by columns (the way <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> and Fortran store matrices).
+</p>
+<p>If the Jacobian is banded, <code>jacfunc</code> should return a matrix containing
+only the nonzero bands of the jacobian, (dydot/dy), rotated row-wise.
+</p>
+</td></tr>
+<tr valign="top"><td><code>jactype </code></td>
+<td>
+<p>the structure of the Jacobian, one of &quot;fullint&quot;, &quot;fullusr&quot;,
+&quot;bandusr&quot;, or &quot;bandint&quot; - either full or banded and estimated internally
+or by the user.
+</p>
+</td></tr>
+<tr valign="top"><td><code>verbose </code></td>
+<td>
+<p>if <code>TRUE</code>: full output to the screen, e.g. will output
+the steady-state settings.
+</p>
+</td></tr>
+<tr valign="top"><td><code>bandup </code></td>
+<td>
+<p>number of non-zero bands above the diagonal, in case the
+Jacobian is banded.
+</p>
+</td></tr>
+<tr valign="top"><td><code>banddown </code></td>
+<td>
+<p>number of non-zero bands below the diagonal, in case the
+jacobian is banded.
+</p>
+</td></tr>
+<tr valign="top"><td><code>positive </code></td>
+<td>
+<p>either a logical or a vector with indices of the state
+variables that have to be non-negative; if <code>TRUE</code>, all state
+variables <code>y</code> are forced to be non-negative numbers.
+</p>
+</td></tr>
+<tr valign="top"><td><code>maxiter </code></td>
+<td>
+<p>maximal number of iterations during one call to the solver.\
+</p>
+</td></tr>
+<tr valign="top"><td><code>ynames </code></td>
+<td>
+<p>if FALSE: names of state variables are not passed to function
+<code>func</code> ; this may speed up the simulation especially for multi-D
+models.
+</p>
+</td></tr>
+<tr valign="top"><td><code>dllname </code></td>
+<td>
+<p>a string giving the name of the shared library (without
+extension) that contains all the compiled function or subroutine
+definitions referred to in <code>func</code> and <code>jacfunc</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>initfunc </code></td>
+<td>
+<p>if not NULL, the name of the initialisation function
+(which initialises values of parameters), as provided in &lsquo;<span class="file">dllname</span>&rsquo;.
+See details.
+</p>
+</td></tr>
+<tr valign="top"><td><code>initpar </code></td>
+<td>
+<p>only when &lsquo;<span class="file">dllname</span>&rsquo; is specified and an initialisation
+function <code>initfunc</code> is in the dll: the parameters passed to the
+initialiser, to initialise the common blocks (FORTRAN) or global variables
+(C, C++).
+</p>
+</td></tr>
+<tr valign="top"><td><code>rpar </code></td>
+<td>
+<p>only when &lsquo;<span class="file">dllname</span>&rsquo; is specified: a vector with double
+precision values passed to the dll-functions whose names are specified
+by <code>func</code> and <code>jacfunc</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>ipar </code></td>
+<td>
+<p>only when &lsquo;<span class="file">dllname</span>&rsquo; is specified: a vector with integer
+values passed to the dll-functions whose names are specified by <code>func</code>
+and <code>jacfunc</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>nout </code></td>
+<td>
+<p>only used if &lsquo;<span class="file">dllname</span>&rsquo; is specified and the model is
+defined in compiled code: the number of output variables calculated in
+the compiled function <code>func</code>, present in the shared library. Note:
+it is not automatically checked whether this is indeed the number of
+output variables calculated in the dll - you have to perform this check
+in the code - see package vignette.
+</p>
+</td></tr>
+<tr valign="top"><td><code>outnames </code></td>
+<td>
+<p>only used if &lsquo;<span class="file">dllname</span>&rsquo; is specified and
+<code>nout</code> &gt; 0: the names of output variables calculated in the
+compiled function <code>func</code>, present in the shared library.
+</p>
+</td></tr>
+<tr valign="top"><td><code>forcings </code></td>
+<td>
+<p>only used if &lsquo;<span class="file">dllname</span>&rsquo; is specified: a vector with the 
+forcing function values, or a list with the forcing function data sets, 
+each present as a two-columned matrix, with (time,value); interpolation 
+outside the interval [min(<code>times</code>), max(<code>times</code>)] is done by 
+taking the value at the closest data extreme.
+</p>
+<p>This feature is here for compatibility with models defined in compiled code
+from package deSolve; see deSolve's package vignette <code>"compiledCode"</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>initforc </code></td>
+<td>
+<p>if not <code>NULL</code>, the name of the forcing function
+initialisation function, as provided in
+&lsquo;<span class="file">dllname</span>&rsquo;. It MUST be present if <code>forcings</code> has been given a
+value.
+See deSolve's package vignette <code>"compiledCode"</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>fcontrol </code></td>
+<td>
+<p>A list of control parameters for the forcing functions.
+See deSolve's package vignette <code>"compiledCode"</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>... </code></td>
+<td>
+<p>additional arguments passed to <code>func</code> and <code>jacfunc</code>
+allowing this to be a generic function.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The work is done by a Fortran 77 routine that implements the Newton-Raphson
+method. It uses code from LINPACK.
+</p>
+<p>The form of the <b>Jacobian</b> can be specified by <code>jactype</code> which can
+take the following values:
+</p>
+
+<ul>
+<li><p> jactype = &quot;fullint&quot; : a full jacobian, calculated internally by
+the solver, the default.
+</p>
+</li>
+<li><p> jactype = &quot;fullusr&quot; : a full jacobian, specified by user function
+<code>jacfunc</code>.
+</p>
+</li>
+<li><p> jactype = &quot;bandusr&quot; : a banded jacobian, specified by user function
+<code>jacfunc</code>; the size of the bands specified by <code>bandup</code> and
+<code>banddown</code>.
+</p>
+</li>
+<li><p> jactype = &quot;bandint&quot; : a banded jacobian, calculated by the solver;
+the size of the bands specified by <code>bandup</code> and <code>banddown</code>.
+</p>
+</li></ul>
+
+<p>if <code>jactype</code>= &quot;fullusr&quot; or &quot;bandusr&quot; then the user must supply a
+subroutine <code>jacfunc</code>.
+</p>
+<p>The input parameters <code>rtol</code>, <code>atol</code> and <code>ctol</code> determine
+the <b>error control</b> performed by the solver.
+</p>
+<p>The solver will control the vector
+<b>e</b> of estimated local errors in <b>y</b>, according to an
+inequality of the form max-norm of ( <b>e</b>/<b>ewt</b> )
+<i>&lt;=</i> 1, where <b>ewt</b> is a vector of positive error
+weights.  The values of <code>rtol</code> and <code>atol</code> should all be
+non-negative.
+The form of <b>ewt</b> is:
+</p>
+<p style="text-align: center;"><i>\bold{rtol} * abs(\bold{y}) + \bold{atol}</i></p>
+
+<p>where multiplication of two vectors is element-by-element.
+</p>
+<p>In addition, the solver will stop if between two iterations, the maximal
+change in the values of <b>y</b> is less than <code>ctol</code>.
+</p>
+<p><b>Models</b> may be defined in compiled C or Fortran code, as well as in <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>.
+</p>
+<p>If <code>func</code> or <code>jacfunc</code> are a string, then they are assumed to be
+compiled code.
+</p>
+<p>In this case, <code>dllname</code> must give the name of the shared library
+(without extension) which must be loaded before <code>stode()</code> is called.
+</p>
+<p>See vignette(&quot;rooSolve&quot;) for how a model has to be specified in compiled code.
+Also, vignette(&quot;compiledCode&quot;) from package <span class="pkg">deSolve</span> contains examples
+of how to do this.
+</p>
+<p>If <code>func</code> is a user-supplied <b>R-function</b>, it must be called as:
+yprime = func(t, y, parms,...).
+t is the <code>time</code> at which the steady-state should be estimated,
+<code>y</code> is the current estimate of the variables in the ode system.
+The return value of <code>func</code> should be a list, whose first element is
+a vector containing the derivatives of <code>y</code> with respect to <code>time</code>,
+and whose next elements contains output variables whose values at
+steady-state are also required.
+</p>
+<p>An example is given below:
+</p>
+<p><code>model&lt;-function(t,y,pars)</code><br />
+<code>{</code><br />
+<code>with (as.list(c(y,pars)),{</code><br /> 
+<code>Min       = r*OM</code><br />
+<code>oxicmin   = Min*(O2/(O2+ks))</code><br />
+<code>anoxicmin = Min*(1-O2/(O2+ks))* SO4/(SO4+ks2</code><br />
+<code>dOM  = Flux - oxicmin - anoxicmin</code><br />
+<code>dO2  = -oxicmin      -2*rox*HS*(O2/(O2+ks)) + D*(BO2-O2)</code><br />
+<code>dSO4 = -0.5*anoxicmin  +rox*HS*(O2/(O2+ks)) + D*(BSO4-SO4)</code><br />
+<code>dHS  =  0.5*anoxicmin  -rox*HS*(O2/(O2+ks)) + D*(BHS-HS)</code>
+</p>
+<p><code>list(c(dOM,dO2,dSO4,dHS),SumS=SO4+HS)</code><br />
+<code>})</code><br />
+<code>}</code><br />
+</p>
+<p>This model can be solved as follows:
+</p>
+<p><code>pars &lt;- c(D=1,Flux=100,r=0.1,rox =1,</code><br />
+<code>ks=1,ks2=1,BO2=100,BSO4=10000,BHS = 0)</code><br />       
+</p>
+<p><code>y&lt;-c(OM=1,O2=1,SO4=1,HS=1)</code><br />                       
+<code>ST &lt;- stode(y=y,func=model,parms=pars,pos=TRUE))</code><br />
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list containing 
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>y </code></td>
+<td>
+<p> a vector with the state variable values from the last iteration
+during estimation of steady-state condition of the system of equations.
+If <code>y</code> has a names attribute, it will be used to label the output
+values.
+</p>
+</td></tr>
+<tr valign="top"><td><code>... </code></td>
+<td>
+<p> the number of &quot;global&quot; values returned.
+</p>
+</td></tr>
+</table>
+<p>The output will have the attribute <code>steady</code>, which returns <code>TRUE</code>,
+if steady-state has been reached and the attribute <code>precis</code> with an
+estimate of the precision attained during each iteration, the mean absolute
+rate of change (sum(abs(dy))/n).
+</p>
+
+
+<h3>Note</h3>
+
+<p>The implementation of <code>stode</code> and substantial parts of the help file
+is similar to the implementation of the integration routines (e.g.
+<code>lsode</code>) from package deSolve.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Karline Soetaert &lt;karline.soetaert@nioz.nl&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>For a description of the Newton-Raphson method, e.g.
+</p>
+<p>Press, WH, Teukolsky, SA, Vetterling, WT, Flannery, BP, 1996.
+Numerical Recipes in FORTRAN. The Art of Scientific computing. 2nd edition.
+Cambridge University Press.
+</p>
+<p>The algorithm uses LINPACK code:
+</p>
+<p>Dongarra, J.J., J.R. Bunch,  C.B. Moler and G.W. Stewart, 1979.
+LINPACK user's guide, SIAM, Philadelphia.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../rootSolve/help/steady.html">steady</a></code>, for a general interface to most of the steady-state
+solvers
+</p>
+<p><code><a href="../../rootSolve/help/steady.band.html">steady.band</a></code>, to find the steady-state of ODE models with a
+banded Jacobian
+</p>
+<p><code><a href="../../rootSolve/help/steady.1D.html">steady.1D</a></code>, <code><a href="../../rootSolve/help/steady.2D.html">steady.2D</a></code>,
+<code><a href="../../rootSolve/help/steady.3D.html">steady.3D</a></code> steady-state solvers for 1-D, 2-D and 3-D
+partial differential equations.
+</p>
+<p><code><a href="../../rootSolve/help/stodes.html">stodes</a></code>, iterative steady-state solver for ODEs with arbitrary
+sparse Jacobian.
+</p>
+<p><code><a href="../../rootSolve/help/runsteady.html">runsteady</a></code>, steady-state solver by dynamically running to
+steady-state
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## =======================================================================
+## Example 1. A simple sediment biogeochemical model
+## =======================================================================
+
+model&lt;-function(t, y, pars)
+{
+
+with (as.list(c(y, pars)),{
+
+  Min       = r*OM
+  oxicmin   = Min*(O2/(O2+ks))
+  anoxicmin = Min*(1-O2/(O2+ks))* SO4/(SO4+ks2)
+
+  dOM  = Flux - oxicmin - anoxicmin
+  dO2  = -oxicmin      -2*rox*HS*(O2/(O2+ks)) + D*(BO2-O2)
+  dSO4 = -0.5*anoxicmin  +rox*HS*(O2/(O2+ks)) + D*(BSO4-SO4)
+  dHS  = 0.5*anoxicmin   -rox*HS*(O2/(O2+ks)) + D*(BHS-HS)
+
+  list(c(dOM, dO2, dSO4, dHS), SumS = SO4+HS)
+})
+}
+
+# parameter values
+pars &lt;- c(D = 1, Flux = 100, r = 0.1, rox = 1,
+          ks = 1, ks2 = 1, BO2 = 100, BSO4 = 10000, BHS = 0)
+# initial conditions
+y&lt;-c(OM = 1, O2 = 1, SO4 = 1, HS = 1)
+
+# direct iteration  - enforces  positivitiy..
+ST &lt;- stode(y = y, func = model, parms = pars, pos = TRUE)
+
+ST
+
+## =======================================================================
+## Example 2. 1000 simultaneous equations
+## =======================================================================
+
+model &lt;- function (time, OC, parms, decay, ing) {
+ # model describing organic Carbon (C) in a sediment, 
+ # Upper boundary = imposed flux, lower boundary = zero-gradient
+ Flux  &lt;- v * c(OC[1] ,OC) +              # advection
+          -Kz*diff(c(OC[1],OC,OC[N]))/dx  # diffusion;
+ Flux[1]&lt;- flux     # imposed flux
+ 
+ # Rate of change= Flux gradient and first-order consumption
+ dOC   &lt;- -diff(Flux)/dx - decay*OC
+
+ # Fraction of OC in first 5 layers is translocated to mean depth
+ dOC[1:5]  &lt;- dOC[1:5] - ing*OC[1:5]
+ dOC[N/2]  &lt;- dOC[N/2] + ing*sum(OC[1:5])
+ list(dOC)
+}
+
+v    &lt;- 0.1    # cm/yr
+flux &lt;- 10
+dx   &lt;- 0.01
+N    &lt;- 1000 
+dist &lt;- seq(dx/2,by=dx,len=N)
+Kz   &lt;- 1  #bioturbation (diffusion), cm2/yr
+print( system.time(
+ss   &lt;- stode(runif(N), func = model, parms = NULL, positive = TRUE, 
+              decay = 5, ing = 20)))
+
+plot(ss$y[1:N], dist, ylim = rev(range(dist)), type = "l", lwd = 2,
+     xlab = "Nonlocal exchange", ylab = "sediment depth",
+     main = "stode, full jacobian")
+
+## =======================================================================
+## Example 3. Solving a system of linear equations
+## =======================================================================
+
+# this example is included to demonstrate how to use the "jactype" option.
+# (and that stode is quite efficient).
+
+A &lt;- matrix(nrow = 500, ncol = 500, runif(500*500))
+B &lt;- 1:500
+
+# this is how one would solve this in R
+print(system.time(X1 &lt;- solve(A, B)))
+
+# to use stode:
+# 1. create a function that receives the current estimate of x
+# and that returns the difference A%*%x-b, as a list:
+
+fun &lt;- function (t, x, p)  # t and p are dummies here...
+  list(A%*%x-B)
+
+# 2. jfun returns the Jacobian: here this equals "A"
+jfun &lt;- function (t, x, p) # all input parameters are dummies
+  A
+
+# 3. solve with jactype="fullusr" (a full Jacobian, specified by user)
+print (system.time(
+  X &lt;- stode(y = 1:500, func = fun, jactype = "fullusr", jacfunc = jfun)
+  ))
+
+# the results are the same (within precision)
+sum((X1-X$y)^2)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rootSolve</em> version 1.8.2.4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

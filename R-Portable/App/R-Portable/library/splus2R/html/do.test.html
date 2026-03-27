@@ -1,0 +1,192 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Test Functions and Expressions - for automated testing</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for do.test {splus2R}"><tr><td>do.test {splus2R}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Test Functions and Expressions - for automated testing
+</h2>
+
+<h3>Description</h3>
+
+<p>Expressions are parsed and evaluated from <code>file</code>.
+Each expression should evaluate to a logical <code>TRUE</code>.  Otherwise,
+<code>do.test()</code> prints the expression and its value.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+do.test(file, verbose=FALSE, strict=FALSE, local=FALSE, check)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>file</code></td>
+<td>
+
+<p>a file or connection containing code to test.
+</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+
+<p>logical flag. If <code>TRUE</code>, all expressions are printed, not just
+those that fail.  Regardless of this flag, the value is also printed
+for failures.
+</p>
+</td></tr>
+<tr valign="top"><td><code>strict</code></td>
+<td>
+
+<p>logical flag.  If <code>TRUE</code>, any validity
+failures cause an error; that is, you get to debug after the first failed
+assertion.
+</p>
+</td></tr>
+<tr valign="top"><td><code>local</code></td>
+<td>
+
+<p>logical flag controlling where the evaluation
+takes place: by default (<code>local=FALSE</code>),
+in the environment that called <code>do.test</code>, typically
+the global environment, (objects created remain there after
+<code>do.test</code> is finished).
+<code>local=TRUE</code>, causes <code>do.test</code> to create and work
+in a new environment.
+</p>
+</td></tr>
+<tr valign="top"><td><code>check</code></td>
+<td>
+
+<p>an unevaluated expression. If <code>check</code>is supplied,
+<code>do.test</code>evaluates
+this expression (it should be given via <code>Quote()</code>) between each
+parse and evaluation.  (This is for when you need to check some global
+information.)
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>A test file typically contains a sequence of expressions to test
+different aspects of a function or set of functions, including
+testing that each input argument is handled appropriately,
+error handling,
+the output has the expected structure,
+correct output under a number of combinations of inputs,
+and error handling (warning and stop invoked when appropriate and
+with appropriate messages).  Each expression may contain multiple
+lines grouped using <code>{}</code>,
+where early lines may do computations and the last line
+checks for expected results, usually using <code><a href="../../base/html/all.equal.html">all.equal</a></code>.
+</p>
+<p>Some expressions may be included that aren't intended to test anything
+by finishing them with <code>TRUE</code>, e.g. to read data:
+<code>{read.table("data.txt"); TRUE}</code>
+or to remove objects at the end of a test file:
+<code>{rm(a, b, x, y); TRUE}</code>.
+</p>
+<p>We recommend including comments inside expressions to indicate
+the purpose of each test; then if errors occur the comments are
+printed too.
+</p>
+<p>To compare just numbers, not names or matrix dimensions, functions
+<code><a href="../../base/html/unname.html">unname</a></code> and <code><a href="../../base/html/drop.html">drop</a></code> are useful.
+</p>
+<p>To exclude
+certain components or attributes from the comparison the function
+<code>all.equal.excluding</code> is useful.  This is defined in the examples
+below.
+</p>
+<p>Each test should run silently if everything is working correctly;
+there should be nothing printed.  <code><a href="../../splus2R/help/expectWarnings.html">expectWarnings</a></code> can
+be used to intercept <code><a href="../../base/html/warning.html">warning</a></code> statements.
+</p>
+
+
+<h3>Value</h3>
+
+<p>NULL
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../base/html/all.equal.html">all.equal</a></code>,
+<code><a href="../../splus2R/help/allTrue.html">allTrue</a></code>,
+<code><a href="../../base/html/drop.html">drop</a></code>,
+<code><a href="../../splus2R/help/expectStop.html">expectStop</a></code>,
+<code><a href="../../splus2R/help/expectWarnings.html">expectWarnings</a></code>,
+<code><a href="../../base/html/identical.html">identical</a></code>,
+<code><a href="../../methods/html/methodUtilities.html">Quote</a></code>,
+<code><a href="../../base/html/unname.html">unname</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+# Create a toy test file, and run it
+cat('{all.equal(24/8, 3)}',
+    '{all.equal(5, 6)}',      # this one will fail
+    'expectWarnings( { # Test subscript replacement ',
+    '  x &lt;- data.frame(a=1:3,b=2:4)',
+    '  x[,3] &lt;- x',
+    '  all.equal(ncol(x), 3)',
+    '}, expected = "provided 2 variables to replace 1 var")',
+    'expectStop(lm(5), expected = "invalid formula")',
+    '{ rm(x) ; TRUE }',       # cleanup at end of test
+    sep="\n", file = "testfile.t")
+do.test("testfile.t")
+## ------- Test file: testfile.t ---------
+## {all.equal(5, 6)}
+## [1] "Mean relative difference: 0.2"
+#
+# The test that fails is printed, with the results of the test.
+# In R 2.6.1 the subscript replacement test above also fails
+# (bug reported 14 Jan 2008), resulting in the additional printout:
+## expectWarnings( {
+##   x &lt;- data.frame(a=1:3,b=2:4)
+##   x[,3] &lt;- x
+##   all.equal(ncol(x), 3)
+## }, expected = "provided 2 variables to replace 1 var")
+## $`Test result`
+## [1] "Mean relative  difference: 0.25"
+
+## End(Not run)
+
+# This function is useful in some tests:
+all.equal.excluding &lt;- function(x, y, ..., excluding=NULL, attrs=NULL){
+  # Like all.equal, but exclude components in `excluding',
+  #   and excluding attributes named in `attrs'.
+  #
+  # `excluding' and `attrs' should be character, names of components 
+  #   and attributes.
+  # 
+  # For example:
+  #   all.equal.excluding(obj1, obj2, excluding = c("call", "x"))
+  for(i in intersect(names(x), excluding)) x[[i]] &lt;- NULL
+  for(i in intersect(names(y), excluding)) y[[i]] &lt;- NULL
+  for(i in intersect(names(attributes(x)), attrs)) attr(x,i) &lt;- NULL
+  for(i in intersect(names(attributes(y)), attrs)) attr(y,i) &lt;- NULL
+  all.equal(x,y, ...)
+}
+# Test if two objects are the same except for "call" and "x":
+data &lt;- data.frame(x = 1:20, y = exp(1:20/20))
+fit1 &lt;- lm(y ~ x, data = data, x=TRUE)
+fit2 &lt;- update(fit1, x=)
+all.equal.excluding(fit1, fit2, excluding = c("call", "x"))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>splus2R</em> version 1.3-5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

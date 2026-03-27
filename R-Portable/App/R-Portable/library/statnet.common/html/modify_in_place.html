@@ -1,0 +1,95 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Modify the argument in the calling environment of the calling...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for modify_in_place {statnet.common}"><tr><td>modify_in_place {statnet.common}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Modify the argument in the calling environment of the calling function</h2>
+
+<h3>Description</h3>
+
+<p>This is a helper function that enables a function to modify its argument in place, emulating behavior of <a href="https://CRAN.R-project.org/package=R6"><span class="pkg">R6</span></a> classes and methods in the <a href="https://CRAN.R-project.org/package=network"><span class="pkg">network</span></a>. It should typically be the last line of the calling function.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+modify_in_place(x, value = x)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>the argument (not its name!) to be modified</p>
+</td></tr>
+<tr valign="top"><td><code>value</code></td>
+<td>
+<p>the value to assign (defaulting to the current value of <code>x</code>)</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This function determines whether the argument can be assigned to by actually attempting to do so. If this results in an error, for example, because the argument is anonymous, the error is silently ignored.
+</p>
+<p>It can be called multiple times by the same function to modify multiple arguments. It uses the <code><a href="../../base/html/on.exit.html">on.exit()</a></code> mechanism, adding to the list. Thus, if some other function calls <code>on.exit(..., add = FALSE)</code> (the default) afterwards, <code>modify_in_place()</code> will fail silently.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>value</code>, invisibly, while attempting to modify <code>x</code> in place
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## A function that increments its argument in place:
+inc &lt;- function(x){
+  modify_in_place(x, x+1)
+}
+
+y &lt;- 1
+z &lt;- 1
+
+stopifnot(inc(z) == 2)
+stopifnot(z == 2)
+stopifnot(inc(y) == 2)
+stopifnot(y == 2)
+stopifnot(inc(z) == 3)
+stopifnot(z == 3)
+
+stopifnot(inc(identity(z)) == 4)
+stopifnot(z == 3) # Not updated!
+
+## Modify an argument that's been updated in place:
+inc2 &lt;- function(y){
+  y &lt;- y + 1
+  modify_in_place(y)
+}
+
+z
+stopifnot(inc2(z) == 4)
+stopifnot(z == 4)
+
+## Decrement the first argument, increment the second:
+incdec &lt;- function(x,y){
+  modify_in_place(x, x-1)
+  modify_in_place(y, y+1)
+}
+
+c(y,z)
+incdec(y,z)
+stopifnot(all(c(y,z) == c(1,5)))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>statnet.common</em> version 4.13.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

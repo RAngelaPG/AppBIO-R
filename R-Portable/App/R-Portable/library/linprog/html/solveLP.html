@@ -1,0 +1,304 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Solve Linear Programming / Optimization Problems</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for solveLP {linprog}"><tr><td>solveLP {linprog}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Solve Linear Programming / Optimization Problems</h2>
+
+<h3>Description</h3>
+
+<p>Minimizes (or maximizes) <i>c'x</i>, subject to <i>A x &lt;= b</i> and <i>x &gt;= 0</i>.
+</p>
+<p>Note that the inequality signs <code>&lt;=</code> of the individual linear constraints
+in <i>A x &lt;= b</i> can be changed with argument <code>const.dir</code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+solveLP( cvec, bvec, Amat, maximum = FALSE,
+   const.dir = rep( "&lt;=", length( bvec ) ),
+   maxiter = 1000, zero = 1e-9, tol = 1e-6, dualtol = tol,
+   lpSolve = FALSE, solve.dual = FALSE, verbose = 0 )
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>cvec</code></td>
+<td>
+<p>vector <i>c</i> (containing <i>n</i> elements).</p>
+</td></tr>
+<tr valign="top"><td><code>bvec</code></td>
+<td>
+<p>vector <i>b</i> (containing <i>m</i> elements).</p>
+</td></tr>
+<tr valign="top"><td><code>Amat</code></td>
+<td>
+<p>matrix A (of dimension <i>m \times n</i>).</p>
+</td></tr>
+<tr valign="top"><td><code>maximum</code></td>
+<td>
+<p>logical. Should we maximize or minimize (the default)?</p>
+</td></tr>
+<tr valign="top"><td><code>const.dir</code></td>
+<td>
+<p>vector of character strings giving the directions
+of the constraints: each value should be one of &quot;&lt;,&quot; &quot;&lt;=,&quot; &quot;=,&quot; &quot;==,&quot;
+&quot;&gt;,&quot; or &quot;&gt;=&quot;. (In each pair the two values are identical.)</p>
+</td></tr>
+<tr valign="top"><td><code>maxiter</code></td>
+<td>
+<p>maximum number of iterations.</p>
+</td></tr>
+<tr valign="top"><td><code>zero</code></td>
+<td>
+<p>numbers smaller than this value (in absolute terms) are
+set to zero.</p>
+</td></tr>
+<tr valign="top"><td><code>tol</code></td>
+<td>
+<p>if the constraints are violated by more than this number,
+the returned component <code>status</code> is set to <code>3</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>dualtol</code></td>
+<td>
+<p>if the constraints in the dual problem are violated by more
+than this number, the returned status is non-zero.</p>
+</td></tr>
+<tr valign="top"><td><code>lpSolve</code></td>
+<td>
+<p>logical. Should the package 'lpSolve' be used to solve
+the LP problem?</p>
+</td></tr>
+<tr valign="top"><td><code>solve.dual</code></td>
+<td>
+<p>logical value indicating if the dual problem should
+also be solved.</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>an optional integer variable to indicate how many
+intermediate results should be printed
+(0 = no output; 4 = maximum output).</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>This function uses the Simplex algorithm of George B. Dantzig (1947)
+and provides detailed results (e.g. dual prices, sensitivity analysis
+and stability analysis).<br />
+If the solution <i>x=0</i> is not feasible, a 2-phase procedure is
+applied.<br />
+Values of the simplex tableau that are actually zero might get small
+(positive or negative) numbers due to rounding errors, which might
+lead to artificial restrictions. Therefore, all values that are smaller
+(in absolute terms) than the value of <code>zero</code> (default is 1e-10) are
+set to 0.<br />
+Solving the Linear Programming problem by the package <code>lpSolve</code>
+(of course) requires the installation of this package, which is available
+on CRAN (<a href="https://cran.r-project.org/package=lpSolve">https://cran.r-project.org/package=lpSolve</a>).
+Since the <code>lpSolve</code> package uses C-code and this (<code>linprog</code>)
+package is not optimized for speed, the former is much faster.
+However, this package provides more detailed results (e.g. dual values,
+stability and sensitivity analysis).<br />
+This function has not been tested extensively and might not solve all
+feasible problems (or might even lead to wrong results). However, you can
+export your LP to a standard MPS file via <code><a href="../../linprog/help/writeMps.html">writeMps</a></code> and check
+it with other software (e.g. <code>lp_solve</code>, see
+<a href="https://lpsolve.sourceforge.net/5.5/">https://lpsolve.sourceforge.net/5.5/</a>).<br />
+Equality constraints are not implemented yet.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>solveLP</code> returns a list of the class <code>solveLP</code>
+containing following objects:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>opt</code></td>
+<td>
+<p>optimal value (minimum or maximum) of the objective function.</p>
+</td></tr>
+<tr valign="top"><td><code>solution</code></td>
+<td>
+<p>vector of optimal values of the variables.</p>
+</td></tr>
+<tr valign="top"><td><code>iter1</code></td>
+<td>
+<p>iterations of Simplex algorithm in phase 1.</p>
+</td></tr>
+<tr valign="top"><td><code>iter2</code></td>
+<td>
+<p>iterations of Simplex algorithm in phase 2.</p>
+</td></tr>
+<tr valign="top"><td><code>basvar</code></td>
+<td>
+<p>vector of basic (=non-zero) variables (at optimum).</p>
+</td></tr>
+<tr valign="top"><td><code>con</code></td>
+<td>
+<p>matrix of results regarding the constraints:<br />
+1st column = maximum values (=vector <i>b</i>);<br />
+2nd column = actual values;<br />
+3rd column = differences between maximum and actual values;<br />
+4th column = dual prices (shadow prices);<br />
+5th column = valid region for dual prices.</p>
+</td></tr>
+<tr valign="top"><td><code>allvar</code></td>
+<td>
+<p>matrix of results regarding all variables (including slack variables):<br />
+1st column = optimal values;<br />
+2nd column = values of vector <i>c</i>;<br />
+3rd column = minimum of vector <i>c</i> that does <em>not</em> change the solution;<br />
+4th column = maximum of vector <i>c</i> that does <em>not</em> change the solution;<br />
+5th column = derivatives to the objective function;<br />
+6th column = valid region for these derivatives.</p>
+</td></tr>
+<tr valign="top"><td><code>status</code></td>
+<td>
+<p>numeric. Indicates if the optimization did succeed:<br />
+0 = success; 1 = lpSolve did not succeed;
+2 = solving the dual problem did not succeed;
+3 = constraints are violated at the solution
+(internal error or large rounding errors);
+4 = simplex algorithm phase 1 did not find a solution within
+the number of iterations specified by argument <code>maxiter</code>;
+5 = simplex algorithm phase 2 did not find the optimal solution within
+the number of iterations specified by argument <code>maxiter</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>lpStatus</code></td>
+<td>
+<p>numeric. Return code of <code><a href="../../lpSolve/help/lp.html">lp</a></code>
+(only if argument <code>lpSolve</code> is <code>TRUE</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>dualStatus</code></td>
+<td>
+<p>numeric. Return code from solving the dual problem
+(only if argument <code>solve.dual</code> is <code>TRUE</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>maximum</code></td>
+<td>
+<p>logical. Indicates whether the objective function
+was maximized or minimized.</p>
+</td></tr>
+<tr valign="top"><td><code>Tab</code></td>
+<td>
+<p>final 'Tableau' of the Simplex algorith.</p>
+</td></tr>
+<tr valign="top"><td><code>lpSolve</code></td>
+<td>
+<p>logical. Has the package 'lpSolve' been used to solve
+the LP problem.</p>
+</td></tr>
+<tr valign="top"><td><code>solve.dual</code></td>
+<td>
+<p>logical. Argument <code>solve.dual</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>maxiter</code></td>
+<td>
+<p>numeric. Argument <code>maxiter</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Arne Henningsen
+</p>
+
+
+<h3>References</h3>
+
+<p>Dantzig, George B. (1951),
+<em>Maximization of a linear function of variables subject to linear inequalities</em>,
+in Koopmans, T.C. (ed.), Activity analysis of production and allocation,
+John Wiley &amp; Sons, New York, p. 339-347.
+</p>
+<p>Steinhauser, Hugo; Cay Langbehn and Uwe Peters (1992),
+Einfuehrung in die landwirtschaftliche Betriebslehre. Allgemeiner Teil,
+5th ed., Ulmer, Stuttgart.
+</p>
+<p>Witte, Thomas; Joerg-Frieder Deppe and Axel Born (1975),
+Lineare Programmierung. Einfuehrung fuer Wirtschaftswissenschaftler,
+Gabler-Verlag, Wiesbaden.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../linprog/help/readMps.html">readMps</a></code> and <code><a href="../../linprog/help/writeMps.html">writeMps</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## example of Steinhauser, Langbehn and Peters (1992)
+## Production activities
+cvec &lt;- c(1800, 600, 600)  # gross margins
+names(cvec) &lt;- c("Cows","Bulls","Pigs")
+
+## Constraints (quasi-fix factors)
+bvec &lt;- c(40, 90, 2500)  # endowment
+names(bvec) &lt;- c("Land","Stable","Labor")
+
+## Needs of Production activities
+Amat &lt;- rbind( c(  0.7,   0.35,   0 ),
+               c(  1.5,   1,      3 ),
+               c( 50,    12.5,   20 ) )
+
+## Maximize the gross margin
+solveLP( cvec, bvec, Amat, TRUE )
+
+
+## example 1.1.3 of Witte, Deppe and Born (1975)
+## Two types of Feed
+cvec &lt;- c(2.5, 2 )  # prices of feed
+names(cvec) &lt;- c("Feed1","Feed2")
+
+## Constraints (minimum (&lt;0) and maximum (&gt;0) contents)
+bvec &lt;- c(-10, -1.5, 12)
+names(bvec) &lt;- c("Protein","Fat","Fibre")
+
+## Matrix A
+Amat &lt;- rbind( c( -1.6,  -2.4 ),
+               c( -0.5,  -0.2 ),
+               c(  2.0,   2.0 ) )
+
+## Minimize the cost
+solveLP( cvec, bvec, Amat )
+
+# the same optimisation using argument const.dir
+solveLP( cvec, abs( bvec ), abs( Amat ), const.dir = c( "&gt;=", "&gt;=", "&lt;=" ) )
+
+
+## There are also several other ways to put the data into the arrays, e.g.:
+bvec &lt;- c( Protein = -10.0,
+           Fat     =  -1.5,
+           Fibre   =  12.0 )
+cvec &lt;- c( Feed1 = 2.5,
+           Feed2 = 2.0 )
+Amat &lt;- matrix( 0, length(bvec), length(cvec) )
+rownames(Amat) &lt;- names(bvec)
+colnames(Amat) &lt;- names(cvec)
+Amat[ "Protein", "Feed1" ] &lt;-  -1.6
+Amat[ "Fat",     "Feed1" ] &lt;-  -0.5
+Amat[ "Fibre",   "Feed1" ] &lt;-   2.0
+Amat[ "Protein", "Feed2" ] &lt;-  -2.4
+Amat[ "Fat",     "Feed2" ] &lt;-  -0.2
+Amat[ "Fibre",   "Feed2" ] &lt;-   2.0
+solveLP( cvec, bvec, Amat )
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>linprog</em> version 0.9-6 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

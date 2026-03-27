@@ -1,0 +1,239 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Empirical Fluctuation Processes</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for efp {strucchange}"><tr><td>efp {strucchange}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Empirical Fluctuation Processes</h2>
+
+<h3>Description</h3>
+
+<p>Computes an empirical fluctuation process according
+to a specified method from the generalized fluctuation test
+framework, which includes CUSUM and MOSUM tests based on recursive
+or OLS residuals, parameter estimates or ML scores (OLS first order
+conditions).</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+efp(formula, data, type = , h = 0.15,
+    dynamic = FALSE, rescale = TRUE, lrvar = FALSE, vcov = NULL)</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>a symbolic description for the model to be tested.</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>an optional data frame containing the variables in the model. By
+default the variables are taken from the environment which <code>efp</code> is
+called from.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>specifies which type of fluctuation process will be
+computed, the default is <code>"Rec-CUSUM"</code>. For details see below.</p>
+</td></tr>
+<tr valign="top"><td><code>h</code></td>
+<td>
+<p>a numeric from interval (0,1) specifying the bandwidth. determines the
+size of the data window relative to sample size (for MOSUM and ME processes
+only).</p>
+</td></tr>
+<tr valign="top"><td><code>dynamic</code></td>
+<td>
+<p>logical. If <code>TRUE</code> the lagged observations are included as
+a regressor.</p>
+</td></tr>
+<tr valign="top"><td><code>rescale</code></td>
+<td>
+<p>logical. If <code>TRUE</code> the estimates will be standardized by
+the regressor matrix of the corresponding subsample according to Kuan &amp; Chen
+(1994); if <code>FALSE</code> the whole regressor matrix will be used.
+(only if <code>type</code> is either <code>"RE"</code> or <code>"ME"</code>)</p>
+</td></tr>
+<tr valign="top"><td><code>lrvar</code></td>
+<td>
+<p>logical or character. Should a long-run variance estimator
+be used for the residuals? By default, the standard OLS variance is employed.
+Alternatively, <code><a href="../../sandwich/help/lrvar.html">lrvar</a></code> can be used. If <code>lrvar</code>
+is character (<code>"Andrews"</code> or <code>"Newey-West"</code>), then the corresponding
+<code>type</code> of long-run variance is used. (The argument is ignored for the
+score-based tests where <code><a href="../../strucchange/help/gefp.html">gefp</a></code> should be used instead.)</p>
+</td></tr>
+<tr valign="top"><td><code>vcov</code></td>
+<td>
+<p>a function to extract the covariance matrix for the coefficients
+of the fitted model (only for <code>"RE"</code> and <code>"ME"</code>).</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>If <code>type</code> is one of <code>"Rec-CUSUM"</code>, <code>"OLS-CUSUM"</code>,
+<code>"Rec-MOSUM"</code> or <code>"OLS-MOSUM"</code> the function <code>efp</code> will return a
+one-dimensional empirical process of sums of residuals. Either it will be based
+on recursive residuals or on OLS residuals and the process will contain
+CUmulative SUMs or MOving SUMs of residuals in a certain data window.
+For the MOSUM and ME processes all estimations are done for the
+observations in a moving data window, whose size is determined by <code>h</code> and
+which is shifted over the whole sample.
+</p>
+<p>If <code>type</code> is either <code>"RE"</code> or <code>"ME"</code> a
+<em>k</em>-dimensional process will be returned, if <em>k</em> is the number of
+regressors in the model, as it is based on recursive OLS estimates of the
+regression coefficients or moving OLS estimates respectively. The recursive
+estimates test is also called fluctuation test, therefore setting <code>type</code>
+to <code>"fluctuation"</code> was used to specify it in earlier versions of
+strucchange. It still can be used now, but will be forced to <code>"RE"</code>.
+</p>
+<p>If <code>type</code> is <code>"Score-CUSUM"</code> or <code>"Score-MOSUM"</code> a <em>k+1</em>-dimensional
+process will be returned, one for each score of the regression coefficients and one for
+the scores of the variance. The process gives the decorrelated cumulative sums of the ML
+scores (in a Gaussian model) or first order conditions respectively (in an OLS framework).
+</p>
+<p>If there is a single structural change point <i>t^*</i>, the recursive CUSUM path
+starts to depart from its mean 0 at <i>t^*</i>. The Brownian bridge type paths
+will have their respective peaks around <i>t^*</i>.
+The Brownian bridge increments type paths should have a strong change at <i>t^*</i>.
+</p>
+<p>The function <code><a href="../../graphics/html/plot.default.html">plot</a></code>
+has a method to plot the empirical fluctuation process; with
+<code>sctest</code> the corresponding test on structural change can be
+performed.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>efp</code> returns a list of class <code>"efp"</code> with components including:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>process</code></td>
+<td>
+<p>the fitted empirical fluctuation process of class
+<code>"ts"</code> or <code>"mts"</code> respectively,</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>a string with the <code>type</code> of the process fitted,</p>
+</td></tr>
+<tr valign="top"><td><code>nreg</code></td>
+<td>
+<p>the number of regressors,</p>
+</td></tr>
+<tr valign="top"><td><code>nobs</code></td>
+<td>
+<p>the number of observations,</p>
+</td></tr>
+<tr valign="top"><td><code>par</code></td>
+<td>
+<p>the bandwidth <code>h</code> used.</p>
+</td></tr>
+</table>
+
+
+<h3>References</h3>
+
+<p>Brown R.L., Durbin J., Evans J.M. (1975), Techniques for
+testing constancy of regression relationships over time, <em>Journal of the
+Royal Statistical Society</em>, B, <b>37</b>, 149-163.
+</p>
+<p>Chu C.-S., Hornik K., Kuan C.-M. (1995), MOSUM tests for parameter
+constancy, <em>Biometrika</em>, <b>82</b>, 603-617.
+</p>
+<p>Chu C.-S., Hornik K., Kuan C.-M. (1995), The moving-estimates test for
+parameter stability, <em>Econometric Theory</em>, <b>11</b>, 669-720.
+</p>
+<p>Hansen B. (1992), Testing for Parameter Instability in Linear Models,
+<em>Journal of Policy Modeling</em>, <b>14</b>, 517-533.
+</p>
+<p>Hjort N.L., Koning A. (2002), Tests for Constancy of Model Parameters
+Over Time, <em>Nonparametric Statistics</em>, <b>14</b>, 113-132.
+</p>
+<p>Krämer W., Ploberger W., Alt R. (1988), Testing for structural change in
+dynamic models, <em>Econometrica</em>, <b>56</b>, 1355-1369.
+</p>
+<p>Kuan C.-M., Hornik K. (1995), The generalized fluctuation test: A
+unifying view, <em>Econometric Reviews</em>, <b>14</b>, 135 - 161.
+</p>
+<p>Kuan C.-M., Chen (1994), Implementing the fluctuation and moving estimates
+tests in dynamic econometric models, <em>Economics Letters</em>, <b>44</b>,
+235-239.
+</p>
+<p>Ploberger W., Krämer W. (1992), The CUSUM test with OLS residuals,
+<em>Econometrica</em>, <b>60</b>, 271-285.
+</p>
+<p>Zeileis A., Leisch F., Hornik K., Kleiber C. (2002), <code>strucchange</code>:
+An R Package for Testing for Structural Change in Linear Regression Models,
+<em>Journal of Statistical Software</em>, <b>7</b>(2), 1-38.
+doi: <a href="https://doi.org/10.18637/jss.v007.i02">10.18637/jss.v007.i02</a>.
+</p>
+<p>Zeileis A. (2005), A Unified Approach to Structural Change Tests Based on
+ML Scores, F Statistics, and OLS Residuals. <em>Econometric Reviews</em>, <b>24</b>,
+445&ndash;466. doi: <a href="https://doi.org/10.1080/07474930500406053">10.1080/07474930500406053</a>.
+</p>
+<p>Zeileis A. (2006), Implementing a Class of Structural Change Tests: An
+Econometric Computing Approach. <em>Computational Statistics &amp; Data Analysis</em>, 
+<b>50</b>, 2987&ndash;3008. doi: <a href="https://doi.org/10.1016/j.csda.2005.07.001">10.1016/j.csda.2005.07.001</a>.
+</p>
+<p>Zeileis A., Hornik K. (2007), Generalized M-Fluctuation Tests for Parameter
+Instability, <em>Statistica Neerlandica</em>, <b>61</b>, 488&ndash;508.
+doi: <a href="https://doi.org/10.1111/j.1467-9574.2007.00371.x">10.1111/j.1467-9574.2007.00371.x</a>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../strucchange/help/gefp.html">gefp</a></code>, <code><a href="../../strucchange/help/plot.efp.html">plot.efp</a></code>, <code><a href="../../strucchange/help/print.efp.html">print.efp</a></code>,
+<code><a href="../../strucchange/help/sctest.efp.html">sctest.efp</a></code>, <code><a href="../../strucchange/help/boundary.efp.html">boundary.efp</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Nile data with one breakpoint: the annual flows drop in 1898
+## because the first Ashwan dam was built
+data("Nile")
+plot(Nile)
+
+## test the null hypothesis that the annual flow remains constant
+## over the years
+## compute OLS-based CUSUM process and plot
+## with standard and alternative boundaries
+ocus.nile &lt;- efp(Nile ~ 1, type = "OLS-CUSUM")
+plot(ocus.nile)
+plot(ocus.nile, alpha = 0.01, alt.boundary = TRUE)
+## calculate corresponding test statistic
+sctest(ocus.nile)
+
+## UK Seatbelt data: a SARIMA(1,0,0)(1,0,0)_12 model
+## (fitted by OLS) is used and reveals (at least) two
+## breakpoints - one in 1973 associated with the oil crisis and
+## one in 1983 due to the introduction of compulsory
+## wearing of seatbelts in the UK.
+data("UKDriverDeaths")
+seatbelt &lt;- log10(UKDriverDeaths)
+seatbelt &lt;- cbind(seatbelt, lag(seatbelt, k = -1), lag(seatbelt, k = -12))
+colnames(seatbelt) &lt;- c("y", "ylag1", "ylag12")
+seatbelt &lt;- window(seatbelt, start = c(1970, 1), end = c(1984,12))
+plot(seatbelt[,"y"], ylab = expression(log[10](casualties)))
+
+## use RE process
+re.seat &lt;- efp(y ~ ylag1 + ylag12, data = seatbelt, type = "RE")
+plot(re.seat)
+plot(re.seat, functional = NULL)
+sctest(re.seat)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>strucchange</em> version 1.5-4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

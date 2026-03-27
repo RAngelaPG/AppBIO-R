@@ -1,0 +1,640 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: p-value or consonance function</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for p_function {parameters}"><tr><td>p_function {parameters}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>p-value or consonance function</h2>
+
+<h3>Description</h3>
+
+<p>Compute p-values and compatibility (confidence) intervals for
+statistical models, at different levels. This function is also called
+consonance function. It allows to see which estimates are compatible with
+the model at various compatibility levels. Use <code>plot()</code> to generate plots
+of the <em>p</em> resp. <em>consonance</em> function and compatibility intervals at
+different levels.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+p_function(
+  model,
+  ci_levels = c(0.25, 0.5, 0.75, emph = 0.95),
+  exponentiate = FALSE,
+  effects = "fixed",
+  component = "all",
+  vcov = NULL,
+  vcov_args = NULL,
+  keep = NULL,
+  drop = NULL,
+  verbose = TRUE,
+  ...
+)
+
+consonance_function(
+  model,
+  ci_levels = c(0.25, 0.5, 0.75, emph = 0.95),
+  exponentiate = FALSE,
+  effects = "fixed",
+  component = "all",
+  vcov = NULL,
+  vcov_args = NULL,
+  keep = NULL,
+  drop = NULL,
+  verbose = TRUE,
+  ...
+)
+
+confidence_curve(
+  model,
+  ci_levels = c(0.25, 0.5, 0.75, emph = 0.95),
+  exponentiate = FALSE,
+  effects = "fixed",
+  component = "all",
+  vcov = NULL,
+  vcov_args = NULL,
+  keep = NULL,
+  drop = NULL,
+  verbose = TRUE,
+  ...
+)
+
+## S3 method for class 'parameters_p_function'
+format(
+  x,
+  digits = 2,
+  format = NULL,
+  ci_width = NULL,
+  ci_brackets = TRUE,
+  pretty_names = TRUE,
+  ...
+)
+
+## S3 method for class 'parameters_p_function'
+print(
+  x,
+  digits = 2,
+  ci_width = "auto",
+  ci_brackets = TRUE,
+  pretty_names = TRUE,
+  ...
+)
+
+## S3 method for class 'parameters_p_function'
+print_html(
+  x,
+  digits = 2,
+  ci_width = "auto",
+  ci_brackets = c("(", ")"),
+  pretty_names = TRUE,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>Statistical Model.</p>
+</td></tr>
+<tr valign="top"><td><code>ci_levels</code></td>
+<td>
+<p>Vector of scalars, indicating the different levels at which
+compatibility intervals should be printed or plotted. In plots, these levels
+are highlighted by vertical lines. It is possible to increase thickness for
+one or more of these lines by providing a names vector, where the to be
+highlighted values should be named <code>"emph"</code>, e.g
+<code>ci_levels = c(0.25, 0.5, emph = 0.95)</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>exponentiate</code></td>
+<td>
+<p>Logical, indicating whether or not to exponentiate the
+coefficients (and related confidence intervals). This is typical for
+logistic regression, or more generally speaking, for models with log or
+logit links. It is also recommended to use <code>exponentiate = TRUE</code> for models
+with log-transformed response values. For models with a log-transformed
+response variable, when <code>exponentiate = TRUE</code>, a one-unit increase in the
+predictor is associated with multiplying the outcome by that predictor's
+coefficient. <strong>Note:</strong> Delta-method standard errors are also computed (by
+multiplying the standard errors by the transformed coefficients). This is
+to mimic behaviour of other software packages, such as Stata, but these
+standard errors poorly estimate uncertainty for the transformed
+coefficient. The transformed confidence interval more clearly captures this
+uncertainty. For <code>compare_parameters()</code>, <code>exponentiate = "nongaussian"</code>
+will only exponentiate coefficients from non-Gaussian families.</p>
+</td></tr>
+<tr valign="top"><td><code>effects</code></td>
+<td>
+<p>Should parameters for fixed effects (<code>"fixed"</code>), random effects
+(<code>"random"</code>), or both fixed and random effects (<code>"all"</code>) be returned? By
+default, the variance components for random effects are returned. If
+group-level effects are requested, <code>"grouplevel"</code> returns the group-level
+random effects (BLUPs), while <code>"random_total"</code> return the overall (sum of
+fixed and random) effects (similar to what <code>coef()</code> returns). Using
+<code>"grouplevel"</code> is equivalent to setting <code>group_level = TRUE</code>. The <code>effects</code>
+argument only applies to mixed models. If the calculation of random effects
+parameters takes too long, you may use <code>effects = "fixed"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>component</code></td>
+<td>
+<p>Which type of parameters to return, such as parameters for the
+conditional model, the zero-inflation part of the model, the dispersion
+term, or other auxiliary parameters be returned? Applies to models with
+zero-inflation and/or dispersion formula, or if parameters such as <code>sigma</code>
+should be included. May be abbreviated. Note that the <em>conditional</em>
+component is also called <em>count</em> or <em>mean</em> component, depending on the
+model. There are three convenient shortcuts: <code>component = "all"</code> returns
+all possible parameters. If <code>component = "location"</code>, location parameters
+such as <code>conditional</code>, <code>zero_inflated</code>, or <code>smooth_terms</code>, are returned
+(everything that are fixed or random effects - depending on the <code>effects</code>
+argument - but no auxiliary parameters). For <code>component = "distributional"</code>
+(or <code>"auxiliary"</code>), components like <code>sigma</code>, <code>dispersion</code>, or <code>beta</code>
+(and other auxiliary parameters) are returned.</p>
+</td></tr>
+<tr valign="top"><td><code>vcov</code></td>
+<td>
+<p>Variance-covariance matrix used to compute uncertainty estimates
+(e.g., for robust standard errors). This argument accepts a covariance
+matrix, a function which returns a covariance matrix, or a string which
+identifies the function to be used to compute the covariance matrix.
+</p>
+
+<ul>
+<li><p> A covariance matrix
+</p>
+</li>
+<li><p> A function which returns a covariance matrix (e.g., <code>stats::vcov()</code>)
+</p>
+</li>
+<li><p> A string which indicates the kind of uncertainty estimates to return.
+</p>
+
+<ul>
+<li><p> Heteroskedasticity-consistent: <code>"HC"</code>, <code>"HC0"</code>, <code>"HC1"</code>, <code>"HC2"</code>,
+<code>"HC3"</code>, <code>"HC4"</code>, <code>"HC4m"</code>, <code>"HC5"</code>. See <code>?sandwich::vcovHC</code>
+</p>
+</li>
+<li><p> Cluster-robust: <code>"CR"</code>, <code>"CR0"</code>, <code>"CR1"</code>, <code>"CR1p"</code>, <code>"CR1S"</code>,
+<code>"CR2"</code>, <code>"CR3"</code>. See <code>?clubSandwich::vcovCR</code>
+</p>
+</li>
+<li><p> Bootstrap: <code>"BS"</code>, <code>"xy"</code>, <code>"residual"</code>, <code>"wild"</code>, <code>"mammen"</code>,
+<code>"fractional"</code>, <code>"jackknife"</code>, <code>"norm"</code>, <code>"webb"</code>. See
+<code>?sandwich::vcovBS</code>
+</p>
+</li>
+<li><p> Other <code>sandwich</code> package functions: <code>"HAC"</code>, <code>"PC"</code>, <code>"CL"</code>, <code>"OPG"</code>,
+<code>"PL"</code>.
+</p>
+</li></ul>
+
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>vcov_args</code></td>
+<td>
+<p>List of arguments to be passed to the function identified by
+the <code>vcov</code> argument. This function is typically supplied by the
+<strong>sandwich</strong> or <strong>clubSandwich</strong> packages. Please refer to their
+documentation (e.g., <code>?sandwich::vcovHAC</code>) to see the list of available
+arguments. If no estimation type (argument <code>type</code>) is given, the default
+type for <code>"HC"</code> equals the default from the <strong>sandwich</strong> package; for type
+<code>"CR"</code>, the default is set to <code>"CR3"</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>keep</code></td>
+<td>
+<p>Character containing a regular expression pattern that
+describes the parameters that should be included (for <code>keep</code>) or excluded
+(for <code>drop</code>) in the returned data frame. <code>keep</code> may also be a
+named list of regular expressions. All non-matching parameters will be
+removed from the output. If <code>keep</code> is a character vector, every parameter
+name in the <em>&quot;Parameter&quot;</em> column that matches the regular expression in
+<code>keep</code> will be selected from the returned data frame (and vice versa,
+all parameter names matching <code>drop</code> will be excluded). Furthermore, if
+<code>keep</code> has more than one element, these will be merged with an <code>OR</code>
+operator into a regular expression pattern like this: <code>"(one|two|three)"</code>.
+If <code>keep</code> is a named list of regular expression patterns, the names of the
+list-element should equal the column name where selection should be
+applied. This is useful for model objects where <code>model_parameters()</code>
+returns multiple columns with parameter components, like in
+<code><a href="../../parameters/help/model_parameters.lavaan.html">model_parameters.lavaan()</a></code>. Note that the regular expression pattern
+should match the parameter names as they are stored in the returned data
+frame, which can be different from how they are printed. Inspect the
+<code style="white-space: pre;">$Parameter</code> column of the parameters table to get the exact parameter
+names.</p>
+</td></tr>
+<tr valign="top"><td><code>drop</code></td>
+<td>
+<p>See <code>keep</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>Toggle warnings and messages.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Arguments passed to or from other methods. Non-documented
+arguments are
+</p>
+
+<ul>
+<li> <p><code>digits</code>, <code>p_digits</code>, <code>ci_digits</code> and <code>footer_digits</code> to set the number of
+digits for the output. <code>groups</code> can be used to group coefficients. These
+arguments will be passed to the print-method, or can directly be used in
+<code>print()</code>, see documentation in <code><a href="../../parameters/help/print.parameters_model.html">print.parameters_model()</a></code>.
+</p>
+</li>
+<li><p> If <code>s_value = TRUE</code>, the p-value will be replaced by the S-value in the
+output (cf. <em>Rafi and Greenland 2020</em>).
+</p>
+</li>
+<li> <p><code>pd</code> adds an additional column with the <em>probability of direction</em> (see
+<code><a href="../../bayestestR/help/p_direction.html">bayestestR::p_direction()</a></code> for details). Furthermore, see 'Examples' in
+<code><a href="../../parameters/help/model_parameters.default.html">model_parameters.default()</a></code>.
+</p>
+</li>
+<li><p> For developers, whose interest mainly is to get a &quot;tidy&quot; data frame of
+model summaries, it is recommended to set <code>pretty_names = FALSE</code> to speed
+up computation of the summary table.
+</p>
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>An object returned by <code><a href="../../parameters/help/model_parameters.html">model_parameters()</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>digits</code></td>
+<td>
+<p>Number of digits for rounding or significant figures. May also
+be <code>"signif"</code> to return significant figures or <code>"scientific"</code> to return
+scientific notation. Control the number of digits by adding the value as
+suffix, e.g. <code>digits = "scientific4"</code> to have scientific notation with 4
+decimal places, or <code>digits = "signif5"</code> for 5 significant figures (see also
+<code><a href="../../base/html/Round.html">signif()</a></code>).</p>
+</td></tr>
+<tr valign="top"><td><code>format</code></td>
+<td>
+<p>Name of output-format, as string. If <code>NULL</code> (or <code>"text"</code>),
+returned output is used for basic printing. Can be one of <code>NULL</code> (the
+default) resp. <code>"text"</code> for plain text, <code>"markdown"</code> (or <code>"md"</code>) for
+markdown and <code>"html"</code> for HTML output. A special option is <code>"tt"</code>, which
+creates a <code><a href="../../tinytable/help/tt.html">tinytable::tt()</a></code> object, where the output format is dependent
+on the context where the table is used, i.e. it can be markdown format when
+<code>export_table()</code> is used in markdown files, or LaTeX format when creating
+PDFs etc.</p>
+</td></tr>
+<tr valign="top"><td><code>ci_width</code></td>
+<td>
+<p>Minimum width of the returned string for confidence
+intervals. If not <code>NULL</code> and width is larger than the string's length,
+leading whitespaces are added to the string. If <code>width="auto"</code>, width
+will be set to the length of the longest string.</p>
+</td></tr>
+<tr valign="top"><td><code>ci_brackets</code></td>
+<td>
+<p>Logical, if <code>TRUE</code> (default), CI-values are
+encompassed in square brackets (else in parentheses).</p>
+</td></tr>
+<tr valign="top"><td><code>pretty_names</code></td>
+<td>
+<p>Can be <code>TRUE</code>, which will return &quot;pretty&quot; (i.e. more human
+readable) parameter names. Or <code>"labels"</code>, in which case value and variable
+labels will be used as parameters names. The latter only works for &quot;labelled&quot;
+data, i.e. if the data used to fit the model had <code>"label"</code> and <code>"labels"</code>
+attributes. See also section <em>Global Options to Customize Messages when Printing</em>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+
+
+<h4>Compatibility intervals and continuous <em>p</em>-values for different estimate values</h4>
+
+<p><code>p_function()</code> only returns the compatibility interval estimates, not the
+related <em>p</em>-values. The reason for this is because the <em>p</em>-value for a
+given estimate value is just <code>1 - CI_level</code>. The values indicating the lower
+and upper limits of the intervals are the related estimates associated with
+the <em>p</em>-value. E.g., if a parameter <code>x</code> has a 75% compatibility interval
+of <code style="white-space: pre;">(0.81, 1.05)</code>, then the <em>p</em>-value for the estimate value of <code>0.81</code>
+would be <code>1 - 0.75</code>, which is <code>0.25</code>. This relationship is more intuitive and
+better to understand when looking at the plots (using <code>plot()</code>).
+</p>
+
+
+
+<h4>Conditional versus unconditional interpretation of <em>p</em>-values and intervals</h4>
+
+<p><code>p_function()</code>, and in particular its <code>plot()</code> method, aims at re-interpreting
+<em>p</em>-values and confidence intervals (better named: <em>compatibility</em> intervals)
+in <em>unconditional</em> terms. Instead of referring to the long-term property and
+repeated trials when interpreting interval estimates (so-called &quot;aleatory
+probability&quot;, <em>Schweder 2018</em>), and assuming that all underlying assumptions
+are correct and met, <code>p_function()</code> interprets <em>p</em>-values in a Fisherian way
+as &quot;<em>continuous</em> measure of evidence against the very test hypothesis <em>and</em>
+entire model (all assumptions) used to compute it&quot;
+(<em>P-Values Are Tough and S-Values Can Help</em>, lesslikely.com/statistics/s-values;
+see also <em>Amrhein and Greenland 2022</em>).
+</p>
+<p>The common definition of p-values can be considered as &quot;conditional&quot;
+interpretation:
+</p>
+<p><em>The p-value is the probability of obtaining test results at least as
+extreme as the result actually observed, under the assumption that the
+null hypothesis is correct (Wikipedia).</em>
+</p>
+<p>However, this definition or interpretation is inadequate because it only
+refers to the test hypothesis (often the null hypothesis), which is only
+one component of the entire model that is being tested. Thus,
+<em>Greenland et al. 2022</em> suggest an &quot;unconditional&quot; interpretation.
+</p>
+<p>This interpretation as a continuous measure of evidence against the test
+hypothesis and the entire model used to compute it can be seen in the
+figure below (taken from <em>P-Values Are Tough and S-Values Can Help</em>,
+lesslikely.com/statistics/s-values). The &quot;conditional&quot; interpretation of
+<em>p</em>-values and interval estimates (A) implicitly assumes certain assumptions
+to be true, thus the interpretation is &quot;conditioned&quot; on these assumptions
+(i.e. assumptions are taken as given, only the hypothesis is tested). The
+unconditional interpretation (B), however, questions <em>all</em> these assumptions.
+</p>
+<p>A non-significant p-value could occur because the test hypothesis is false,
+but could also be the result of any of the model assumptions being incorrect.
+</p>
+<p><br /> <img src="../help/figures/unconditional_interpretation.png" alt="Conditional versus unconditional interpretations of P-values" /> <br />
+</p>
+<p>&quot;Emphasizing unconditional interpretations helps avoid overconfident and
+misleading inferences in light of uncertainties about the assumptions used
+to arrive at the statistical results.&quot; (<em>Greenland et al. 2022</em>).
+</p>
+<p><strong>Note:</strong> The term &quot;conditional&quot; as used by Rafi and Greenland probably has
+a slightly different meaning than normally. &quot;Conditional&quot; in this notion
+means that all model assumptions are taken as given - it should not be
+confused with terms like &quot;conditional probability&quot;. See also <em>Greenland et al. 2022</em>
+for a detailed elaboration on this issue.
+</p>
+<p>In other words, the term compatibility interval emphasizes &quot;the dependence
+of the <em>p</em>-value on the assumptions as well as on the data, recognizing that
+<em>p</em>&lt;0.05 can arise from assumption violations even if the effect under
+study is null&quot; (<em>Gelman/Greenland 2019</em>).
+</p>
+
+
+
+<h4>Probabilistic interpretation of p-values and compatibility intervals</h4>
+
+<p>Schweder (2018) resp. Schweder and Hjort (2016) (and others) argue that
+confidence curves (as produced by <code>p_function()</code>) have a valid probabilistic
+interpretation. They distinguish between <em>aleatory probability</em>, which
+describes the aleatory stochastic element of a distribution <em>ex ante</em>, i.e.
+before the data are obtained. This is the classical interpretation of
+confidence intervals following the Neyman-Pearson school of statistics.
+However, there is also an <em>ex post</em> probability, called <em>epistemic</em> probability,
+for confidence curves. The shift in terminology from <em>confidence</em> intervals
+to <em>compatibility</em> intervals may help emphasizing this interpretation.
+</p>
+<p>In this sense, the probabilistic interpretation of <em>p</em>-values and
+compatibility intervals is &quot;conditional&quot; - on the data <em>and</em> model assumptions
+(which is in line with the <em>&quot;unconditional&quot;</em> interpretation in the sense of
+Rafi and Greenland).
+</p>
+<p>Ascribing a probabilistic interpretation to one realized confidence interval
+is possible without repeated sampling of the specific experiment. Important
+is the assumption that a <em>sampling distribution</em> is a good description of the
+variability of the parameter (<em>Vos and Holbert 2022</em>). At the core, the
+interpretation of a confidence interval is &quot;I assume that this sampling
+distribution is a good description of the uncertainty of the parameter. If
+that's a good assumption, then the values in this interval are the most
+plausible or compatible with the data&quot;. The source of confidence in
+probability statements is the assumption that the selected sampling
+distribution is appropriate.
+</p>
+<p>&quot;The realized confidence distribution is clearly an epistemic probability
+distribution&quot; (<em>Schweder 2018</em>). In Bayesian words, compatibility intervals
+(or confidence distributons, or consonance curves) are &quot;posteriors without
+priors&quot; (<em>Schweder, Hjort, 2003</em>).
+</p>
+<p>The <em>p</em>-value indicates the degree of compatibility of the endpoints of the
+interval at a given confidence level with (1) the observed data and (2) model
+assumptions. The observed point estimate (<em>p</em>-value = 1) is the value
+estimated to be <em>most compatible</em> with the data and model assumptions,
+whereas values values far from the observed point estimate (where <em>p</em>
+approaches 0) are least compatible with the data and model assumptions
+(<em>Schweder and Hjort 2016, pp. 60-61; Amrhein and Greenland 2022</em>). In this
+regards, <em>p</em>-values are statements about <em>confidence</em> or <em>compatibility</em>:
+The p-value is not an absolute measure of evidence for a model (such as the
+null/alternative model), it is a continuous measure of the compatibility of
+the observed data with the model used to compute it (<em>Greenland et al. 2016</em>,
+<em>Greenland 2023</em>). Going one step further, and following <em>Schweder</em>, p-values
+can be considered as <em>epistemic probability</em> - &quot;not necessarily of the
+hypothesis being true, but of it <em>possibly</em> being true&quot; (<em>Schweder 2018</em>).
+Hence, the interpretation of <em>p</em>-values might be guided using
+<code><a href="../../bayestestR/help/pd_to_p.html">bayestestR::p_to_pd()</a></code>.
+</p>
+
+
+
+<h4>Probability or compatibility?</h4>
+
+<p>We here presented the discussion of p-values and confidence intervals from the
+perspective of two paradigms, one saying that probability statements can be
+made, one saying that interpretation is guided in terms of &quot;compatibility&quot;.
+Cox and Hinkley say, &quot;interval estimates cannot be taken as probability
+statements&quot; (<em>Cox and Hinkley 1979: 208</em>), which conflicts with the Schweder
+and Hjort confidence distribution school. However, if you view interval
+estimates as being intervals of values being consistent with the data,
+this comes close to the idea of (epistemic) probability. We do not believe that
+these two paradigms contradict or exclude each other. Rather, the aim is to
+emphasize the one point of view or the other, i.e. to place the linguistic
+nuances either on 'compatibility' or 'probability'.
+</p>
+<p>The main take-away is <em>not</em> to interpret p-values as dichotomous decisions
+that distinguish between &quot;we found an effect&quot; (statistically significant)&quot; vs.
+&quot;we found no effect&quot; (statistically not significant) (<em>Altman and Bland 1995</em>).
+</p>
+
+
+
+<h4>Compatibility intervals - is their interpretation &quot;conditional&quot; or not?</h4>
+
+<p>The fact that the term &quot;conditional&quot; is used in different meanings in
+statistics, is confusing. Thus, we would summarize the (probabilistic)
+interpretation of compatibility intervals as follows: The intervals are built
+from the data <em>and</em> our modeling assumptions. The accuracy of the intervals
+depends on our model assumptions. If a value is outside the interval, that
+might be because (1) that parameter value isn't supported by the data, or (2)
+the modeling assumptions are a poor fit for the situation. When we make bad
+assumptions, the compatibility interval might be too wide or (more commonly
+and seriously) too narrow, making us think we know more about the parameter
+than is warranted.
+</p>
+<p>When we say &quot;there is a 95% chance the true value is in the interval&quot;, that is
+a statement of <em>epistemic probability</em> (i.e. description of uncertainty related
+to our knowledge or belief). When we talk about repeated samples or sampling
+distributions, that is referring to <em>aleatoric</em> (physical properties) probability.
+Frequentist inference is built on defining estimators with known <em>aleatoric</em>
+probability properties, from which we can draw <em>epistemic</em> probabilistic
+statements of uncertainty (<em>Schweder and Hjort 2016</em>).
+</p>
+
+
+
+<h4>Functions in the parameters package to check for effect existence and significance</h4>
+
+<p>The <strong>parameters</strong> package provides several options or functions to aid
+statistical inference. Beyond <code>p_function()</code>, there are, for example:
+</p>
+
+<ul>
+<li> <p><code><a href="../../parameters/help/equivalence_test.lm.html">equivalence_test()</a></code>, to compute the (conditional)
+equivalence test for frequentist models
+</p>
+</li>
+<li> <p><code><a href="../../parameters/help/p_significance.lm.html">p_significance()</a></code>, to compute the probability of
+<em>practical significance</em>, which can be conceptualized as a unidirectional
+equivalence test
+</p>
+</li>
+<li><p> the <code>pd</code> argument (setting <code>pd = TRUE</code>) in <code>model_parameters()</code> includes
+a column with the <em>probability of direction</em>, i.e. the probability that a
+parameter is strictly positive or negative. See <code><a href="../../bayestestR/help/p_direction.html">bayestestR::p_direction()</a></code>
+for details. If plotting is desired, the <code><a href="../../parameters/help/p_direction.lm.html">p_direction()</a></code>
+function can be used, together with <code>plot()</code>.
+</p>
+</li>
+<li><p> the <code>s_value</code> argument (setting <code>s_value = TRUE</code>) in <code>model_parameters()</code>
+replaces the p-values with their related <em>S</em>-values (<em>Rafi and Greenland 2020</em>)
+</p>
+</li>
+<li><p> finally, it is possible to generate distributions of model coefficients by
+generating bootstrap-samples (setting <code>bootstrap = TRUE</code>) or simulating
+draws from model coefficients using <code><a href="../../parameters/help/simulate_model.html">simulate_model()</a></code>. These samples
+can then be treated as &quot;posterior samples&quot; and used in many functions from
+the <strong>bayestestR</strong> package.
+</p>
+</li></ul>
+
+
+
+
+<h3>Value</h3>
+
+<p>A data frame with p-values and compatibility intervals.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Curently, <code>p_function()</code> computes intervals based on Wald t- or z-statistic.
+For certain models (like mixed models), profiled intervals may be more
+accurate, however, this is currently not supported.
+</p>
+
+
+<h3>References</h3>
+
+
+<ul>
+<li><p> Altman DG, Bland JM. Absence of evidence is not evidence of absence. BMJ.
+1995;311(7003):485. doi: <a href="https://doi.org/10.1136/bmj.311.7003.485">10.1136/bmj.311.7003.485</a>
+</p>
+</li>
+<li><p> Amrhein V, Greenland S. Discuss practical importance of results based on
+interval estimates and p-value functions, not only on point estimates and
+null p-values. Journal of Information Technology 2022;37:316–20.
+doi: <a href="https://doi.org/10.1177/02683962221105904">10.1177/02683962221105904</a>
+</p>
+</li>
+<li><p> Cox DR, Hinkley DV. 1979. Theoretical Statistics. 6th edition.
+Chapman and Hall/CRC
+</p>
+</li>
+<li><p> Fraser DAS. The P-value function and statistical inference. The American
+Statistician. 2019;73(sup1):135-147. doi: <a href="https://doi.org/10.1080/00031305.2018.1556735">10.1080/00031305.2018.1556735</a>
+</p>
+</li>
+<li><p> Gelman A, Greenland S. Are confidence intervals better termed &quot;uncertainty
+intervals&quot;? BMJ (2019)l5381. doi: <a href="https://doi.org/10.1136/bmj.l5381">10.1136/bmj.l5381</a>
+</p>
+</li>
+<li><p> Greenland S, Rafi Z, Matthews R, Higgs M. To Aid Scientific Inference,
+Emphasize Unconditional Compatibility Descriptions of Statistics. (2022)
+https://arxiv.org/abs/1909.08583v7 (Accessed November 10, 2022)
+</p>
+</li>
+<li><p> Greenland S, Senn SJ, Rothman KJ, Carlin JB, Poole C, Goodman SN, et al.
+(2016). Statistical tests, P values, confidence intervals, and power: A
+guide to misinterpretations. European Journal of Epidemiology. 31:337-350.
+doi: <a href="https://doi.org/10.1007/s10654-016-0149-3">10.1007/s10654-016-0149-3</a>
+</p>
+</li>
+<li><p> Greenland S (2023). Divergence versus decision P-values: A distinction
+worth making in theory and keeping in practice: Or, how divergence P-values
+measure evidence even when decision P-values do not. Scand J Statist, 50(1),
+54-88.
+</p>
+</li>
+<li><p> Rafi Z, Greenland S. Semantic and cognitive tools to aid statistical
+science: Replace confidence and significance by compatibility and surprise.
+BMC Medical Research Methodology. 2020;20(1):244. doi: <a href="https://doi.org/10.1186/s12874-020-01105-9">10.1186/s12874-020-01105-9</a>
+</p>
+</li>
+<li><p> Schweder T. Confidence is epistemic probability for empirical science.
+Journal of Statistical Planning and Inference (2018) 195:116–125.
+doi: <a href="https://doi.org/10.1016/j.jspi.2017.09.016">10.1016/j.jspi.2017.09.016</a>
+</p>
+</li>
+<li><p> Schweder T, Hjort NL. Confidence and Likelihood. Scandinavian Journal of
+Statistics. 2002;29(2):309-332. doi: <a href="https://doi.org/10.1111/1467-9469.00285">10.1111/1467-9469.00285</a>
+</p>
+</li>
+<li><p> Schweder T, Hjort NL. Frequentist analogues of priors and posteriors.
+In Stigum, B. (ed.), Econometrics and the Philosophy of Economics: Theory
+Data Confrontation in Economics, pp. 285-217. Princeton University Press,
+Princeton, NJ, 2003
+</p>
+</li>
+<li><p> Schweder T, Hjort NL. Confidence, Likelihood, Probability: Statistical
+inference with confidence distributions. Cambridge University Press, 2016.
+</p>
+</li>
+<li><p> Vos P, Holbert D. Frequentist statistical inference without repeated sampling.
+Synthese 200, 89 (2022). doi: <a href="https://doi.org/10.1007/s11229-022-03560-x">10.1007/s11229-022-03560-x</a>
+</p>
+</li></ul>
+
+
+
+<h3>See Also</h3>
+
+<p>See also <code><a href="../../parameters/help/equivalence_test.html">equivalence_test()</a></code> and <code><a href="../../parameters/help/p_significance.html">p_significance()</a></code> for
+functions related to checking effect existence and significance.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+model &lt;- lm(Sepal.Length ~ Species, data = iris)
+p_function(model)
+
+model &lt;- lm(mpg ~ wt + as.factor(gear) + am, data = mtcars)
+result &lt;- p_function(model)
+
+# single panels
+plot(result, n_columns = 2)
+
+# integrated plot, the default
+plot(result)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>parameters</em> version 0.28.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Predict function for Bayesian Model Averaging for generalized...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for predict.bic.glm {BMA}"><tr><td>predict.bic.glm {BMA}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Predict function for Bayesian Model Averaging for generalized
+linear models.</h2>
+
+<h3>Description</h3>
+
+<p>Bayesian Model Averaging (BMA) accounts for the model uncertainty
+inherent in the variable selection problem by averaging over the best
+models in the model class according to approximate posterior model
+probability. This function predicts the response resulting from a BMA
+generalized linear model from given data.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'bic.glm'
+predict( object, newdata, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>a fitted object inheriting from class <code>bic.glm</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>newdata</code></td>
+<td>
+<p>a data frame containing observations on variables from 
+which the predictor variables are to be selected or 
+constructed from a formula.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>ignored (for compatibility with generic function).</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>The predicted values from the BMA model for each observation in newdata.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../BMA/help/bic.glm.html">bic.glm</a></code>  </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## Not run: 
+# Example 1 (Gaussian)
+
+     library(MASS)
+     data(UScrime)
+
+     f &lt;- formula(log(y) ~  log(M)+So+log(Ed)+log(Po1)+log(Po2)+
+            log(LF)+log(M.F)+log(Pop)+log(NW)+log(U1)+log(U2)+
+            log(GDP)+log(Ineq)+log(Prob)+log(Time))
+
+     bic.glm.crimeT &lt;- bic.glm(f, data = UScrime, 
+                               glm.family = gaussian())
+     predict(bic.glm.crimeT, newdata = UScrime)
+
+     bic.glm.crimeF &lt;- bic.glm(f, data = UScrime, 
+                               glm.family = gaussian(),
+                               factor.type = FALSE)
+     predict(bic.glm.crimeF, newdata = UScrime)
+
+## End(Not run)
+
+## Not run: 
+# Example 2 (binomial)
+
+     library(MASS)
+     data(birthwt)
+
+     y &lt;- birthwt$lo
+     x &lt;- data.frame(birthwt[,-1])
+     x$race &lt;- as.factor(x$race)
+     x$ht &lt;- (x$ht&gt;=1)+0
+     x &lt;- x[,-9]
+     x$smoke &lt;- as.factor(x$smoke)
+     x$ptl &lt;- as.factor(x$ptl)
+     x$ht  &lt;- as.factor(x$ht)
+
+     x$ui &lt;- as.factor(x$ui)
+
+     bic.glm.bwT &lt;- bic.glm(x, y, strict = FALSE, OR = 20,
+                            glm.family="binomial",  
+                            factor.type=TRUE)
+     predict( bic.glm.bwT, newdata = x)
+
+     bic.glm.bwF &lt;- bic.glm(x, y, strict = FALSE, OR = 20,
+                            glm.family="binomial",  
+                            factor.type=FALSE)
+     predict( bic.glm.bwF, newdata = x)
+
+## End(Not run)
+
+## Not run: 
+# Example 3 (Gaussian)
+
+     library(MASS)
+     data(anorexia)
+
+     anorexia.formula &lt;- formula(Postwt ~ Prewt+Treat+offset(Prewt))
+
+     bic.glm.anorexiaF &lt;- bic.glm( anorexia.formula, data=anorexia,
+                       glm.family="gaussian", factor.type=FALSE)
+     predict( bic.glm.anorexiaF, newdata=anorexia)
+
+     bic.glm.anorexiaT &lt;- bic.glm( anorexia.formula, data=anorexia,
+                           glm.family="gaussian", factor.type=TRUE)
+     predict( bic.glm.anorexiaT, newdata=anorexia)
+
+## End(Not run)
+
+## Not run: 
+# Example 4 (Gamma)
+
+     library(survival)
+     data(cancer)
+
+     surv.t &lt;- veteran$time
+     x &lt;- veteran[,-c(3,4)]
+     x$celltype &lt;- factor(as.character(x$celltype))
+     sel&lt;- veteran$status == 0
+     x &lt;- x[!sel,]
+     surv.t &lt;- surv.t[!sel]
+
+     bic.glm.vaT &lt;- bic.glm(x, y=surv.t, 
+                            glm.family=Gamma(link="inverse"),
+                            factor.type=TRUE)
+     predict( bic.glm.vaT, x)
+
+     bic.glm.vaF &lt;- bic.glm(x, y=surv.t, 
+                            glm.family=Gamma(link="inverse"),
+                            factor.type=FALSE)
+     predict( bic.glm.vaF, x)
+
+## End(Not run)
+
+# Example 5 (poisson - Yates teeth data)
+
+     x &lt;- rbind.data.frame(c(0, 0, 0),
+                           c(0, 1, 0),
+                           c(1, 0, 0),
+                           c(1, 1, 1))
+
+     y &lt;- c(4, 16, 1, 21)
+     n &lt;- c(1,1,1,1)
+
+     bic.glm.yatesF &lt;- bic.glm( x, y, glm.family=poisson(),
+                               weights=n, factor.type=FALSE)
+
+     predict( bic.glm.yatesF, x)
+
+## Not run: 
+# Example 6 (binomial - Venables and Ripley)
+
+    ldose &lt;- rep(0:5, 2)
+    numdead &lt;- c(1, 4, 9, 13, 18, 20, 0, 2, 6, 10, 12, 16)
+    sex &lt;- factor(rep(c("M", "F"), c(6, 6)))
+    SF &lt;- cbind(numdead, numalive=20-numdead) 
+
+    budworm &lt;- cbind.data.frame(ldose = ldose, numdead = numdead,
+                                sex = sex, SF = SF)
+    budworm.formula &lt;- formula(SF ~ sex*ldose)
+
+    bic.glm.budwormF &lt;- bic.glm( budworm.formula, data=budworm,
+                   glm.family="binomial", factor.type=FALSE)
+    predict(bic.glm.budwormF, newdata=budworm)
+
+    bic.glm.budwormT &lt;- bic.glm( budworm.formula, data=budworm,
+                      glm.family="binomial", factor.type=TRUE)
+    predict(bic.glm.budwormT, newdata=budworm)
+
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>BMA</em> version 3.18.21 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

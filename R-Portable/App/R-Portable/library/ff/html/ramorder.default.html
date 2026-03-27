@@ -1,0 +1,202 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Sorting: order R vector in-RAM and in-place</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for ramorder.default {ff}"><tr><td>ramorder.default {ff}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Sorting: order R vector in-RAM and in-place
+</h2>
+
+<h3>Description</h3>
+
+<p>Function <code>ramorder</code> will order the input vector in-place (without making a copy) and return the number of NAs found
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## Default S3 method:
+ramorder(x, i, has.na = TRUE, na.last = TRUE, decreasing = FALSE
+, stable = TRUE, optimize = c("time", "memory"), VERBOSE = FALSE, ...)
+## Default S3 method:
+mergeorder(x, i, has.na = TRUE, na.last = TRUE, decreasing = FALSE, ...)
+## Default S3 method:
+radixorder(x, i, has.na = TRUE, na.last = TRUE, decreasing = FALSE, ...)
+## Default S3 method:
+keyorder(x, i, keyrange=range(x, na.rm=has.na), has.na = TRUE, na.last = TRUE
+, decreasing = FALSE, ...)
+## Default S3 method:
+shellorder(x, i, has.na = TRUE, na.last = TRUE, decreasing = FALSE, stabilize=FALSE, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+
+<p>an atomic R vector
+</p>
+</td></tr>
+<tr valign="top"><td><code>i</code></td>
+<td>
+
+<p>a integer vector with a permuation of positions in x (you risk a crash if you violate this)
+</p>
+</td></tr>
+<tr valign="top"><td><code>keyrange</code></td>
+<td>
+
+<p>an integer vector with two values giving the smallest and largest possible value in x, note that you should give this explicitely for best performance, relying on the default needs one pass over the data to determine the range
+</p>
+</td></tr>
+<tr valign="top"><td><code>has.na</code></td>
+<td>
+
+<p>boolean scalar telling ramorder whether the vector might contain <code>NA</code>s.
+<em>Note</em> that you risk a crash if there are unexpected <code>NA</code>s with <code>has.na=FALSE</code>
+</p>
+</td></tr>
+<tr valign="top"><td><code>na.last</code></td>
+<td>
+
+<p>boolean scalar telling ramorder whether to order <code>NA</code>s last or first.
+<em>Note</em> that 'boolean' means that there is no third option <code>NA</code> as in <code><a href="../../base/html/order.html">order</a></code>
+</p>
+</td></tr>
+<tr valign="top"><td><code>decreasing</code></td>
+<td>
+
+<p>boolean scalar telling ramorder whether to order increasing or decreasing
+</p>
+</td></tr>
+<tr valign="top"><td><code>stable</code></td>
+<td>
+
+<p>set to false if stable ordering is not needed (may enlarge the set of ordering methods considered)
+</p>
+</td></tr>
+<tr valign="top"><td><code>optimize</code></td>
+<td>
+
+<p>by default ramorder optimizes for 'time' which requires more RAM, set to 'memory'
+to minimize RAM requirements and sacrifice speed
+</p>
+</td></tr>
+<tr valign="top"><td><code>VERBOSE</code></td>
+<td>
+
+<p>cat some info about chosen method
+</p>
+</td></tr>
+<tr valign="top"><td><code>stabilize</code></td>
+<td>
+
+<p>Set to <code>TRUE</code> for stabilizing the result of shellorder (for equal keys the order values will be sorted, this only works if <code>i=1:n</code>)
+to minimize RAM requirements and sacrifice speed
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>ignored
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Function <code>ramorder</code> is a front-end to a couple of single-threaded ordering algorithms
+that have been carefully implemented to be fast with and without <code>NA</code>s.
+<br />
+The default is a mergeorder algorithm without copying (Sedgewick 8.4) for integer and double data
+which requires 2x the RAM of its input vector (character or complex data are not supported).
+Mergeorder is fast, stable with a reliable runtime.
+<br />
+For integer data longer than a certain length we improve on mergeorder by using a faster LSD
+radixorder algorithm (Sedgewick 10.5) that uses 2x the RAM of its input vector plus 65536+1 integers.
+<br />
+For booleans, logicals, integers at or below the resolution of smallint and for factors below a certain number of levels
+we use a key-index order instead of mergeorder or radix order
+(note that R has a (slower) key-index order in <code><a href="../../base/html/order.html">sort.list</a></code> available with confusingly named <code>method='radix'</code>
+but the standard <code><a href="../../base/html/order.html">order</a></code> does not leverage it for factors (2-11.1).
+If you call <code>keyorder</code> directly, you should provide a known 'keyrange' directly to obtain the full speed.
+<br />
+Finally the user can request a order method that minimizes memory use at the price of longer computation time
+with <code>optimize='memory'</code> &ndash; currently a shellorder.
+</p>
+
+
+<h3>Value</h3>
+
+<p>integer scalar with the number of NAs. This is always 0 with has.na=FALSE
+</p>
+
+
+<h3>Note</h3>
+
+<p>This function is called for its side-effects and breaks the functional programming paradigm. Use with care.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Jens Oehlschlägel
+</p>
+
+
+<h3>References</h3>
+
+<p>Robert Sedgewick (1997). Algorithms in C, Third edition. Addison-Wesley.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../base/html/order.html">order</a></code>, <code><a href="../../ff/help/fforder.html">fforder</a></code>, <code><a href="../../ff/help/dforder.html">dforder</a></code>, <code><a href="../../bit/help/ramsort.html">ramsort</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+   n &lt;- 50
+   x &lt;- sample(c(NA, NA, 1:26), n, TRUE)
+   order(x)
+   i &lt;- 1:n
+   ramorder(x, i)
+   i
+   x[i]
+
+   ## Not run: 
+      message("Note how the datatype influences sorting speed")
+      n &lt;- 1e7
+      x &lt;- sample(1:26, n, TRUE)
+
+      y &lt;- as.double(x)
+      i &lt;- 1:n
+      system.time(ramorder(y, i))
+
+      y &lt;- as.integer(x)
+      i &lt;- 1:n
+      system.time(ramorder(y, i))
+
+      y &lt;- as.short(x)
+      i &lt;- 1:n
+      system.time(ramorder(y, i))
+
+      y &lt;- factor(letters)[x]
+      i &lt;- 1:n
+      system.time(ramorder(y, i))
+   
+## End(Not run)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ff</em> version 4.5.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

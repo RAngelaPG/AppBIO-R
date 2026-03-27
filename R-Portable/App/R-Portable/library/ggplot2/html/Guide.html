@@ -1,0 +1,789 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Guides</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for Guide {ggplot2}"><tr><td>Guide {ggplot2}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Guides</h2>
+
+<h3>Description</h3>
+
+<p>The <code style="white-space: pre;">guide_*</code> functions (like <code>guide_legend()</code>) return <code style="white-space: pre;">Guide*</code> objects
+(like <code>GuideLegend</code>). The <code style="white-space: pre;">Guide*</code> object is responsible for rendering the
+guide for at least one aesthetic.
+</p>
+
+
+<h3>Details</h3>
+
+<p>Each of the <code style="white-space: pre;">Guide*</code> objects is a <code><a href="../../ggplot2/help/ggproto.html">ggproto()</a></code> object, descended from the
+top-level <code>Guide</code>, and each implements various methods and fields.
+</p>
+<p>Building a guide has three stages:
+</p>
+
+<ol>
+<li><p> The guide extracts the relevant information from scales.
+</p>
+</li>
+<li><p> The guide interacts with other parts of the plot, like coords or layers to
+supplement information.
+</p>
+</li>
+<li><p> The guide is rendered.
+</p>
+</li></ol>
+
+<p>When creating a new Guide class, you may want to consider overriding one or
+more of the following:
+</p>
+
+<ul>
+<li><p> The <code>params</code>, <code>elements</code>, <code>hashables</code> and <code>available_aes</code> fields.
+</p>
+</li>
+<li><p> The <code>extract_key()</code>, <code>extract_decor()</code> and <code>extract_params()</code> methods.
+</p>
+</li>
+<li><p> The <code>transform()</code> or <code>get_layer_key()</code> methods.
+</p>
+</li>
+<li><p> The <code>setup_params()</code> and <code>override_elements()</code> methods.
+</p>
+</li>
+<li><p> Any of the <code style="white-space: pre;">build_*</code> methods.
+</p>
+</li>
+<li><p> As a last resort the <code>measure_grobs()</code>, <code>arrange_layout()</code>, and
+<code>assemble_drawing()</code> methods.
+</p>
+</li></ul>
+
+
+
+<h3>Fields</h3>
+
+
+<dl>
+<dt><code>params</code></dt><dd><p>A list of initial parameters that the guide needs to
+function. The base <code>Guide$params</code> contains mandatory parameters,
+but extensions can  add new parameters. It has the following roles:
+</p>
+
+<ul>
+<li><p> It provides the default values for parameters.
+</p>
+</li>
+<li> <p><code>names(params)</code> determines what are valid arguments for <code>new_guide()</code>.
+</p>
+</li>
+<li><p> During build stages, a mutable copy of <code>params</code> holds information
+about the guide.
+</p>
+</li></ul>
+</dd>
+<dt><code>available_aes</code></dt><dd><p>A character vector of aesthetic names for which the
+guide is appropriate. Can use keyword <code>"any"</code> to indicate all non-position
+aesthetics.</p>
+</dd>
+<dt><code>elements</code></dt><dd><p>A named list of strings stating which theme elements this
+guide uses. By default, strings will be translated in
+<code>Guide$setup_elements()</code> using <code>calc_element()</code>. Strings are expected to
+occur in <code>names(get_element_tree())</code>, like <code>"legend.text"</code> for example.
+Position guides typically append the  <code style="white-space: pre;">{aes}.{position}</code> suffix in the
+<code>setup_elements()</code> method when the position is known.</p>
+</dd>
+<dt><code>hashables</code></dt><dd><p>A list of calls or names constructed by <code>rlang::exprs()</code>
+indicating objects in the <code>params</code> field. These will be evaluated in the
+context of the <code>params</code> field and the resulting list will be hashed. The
+hash uniquely identify guides that can merge. Guides that have different
+hashes will not merge. For extensions, you should include objects that
+clearly mark two guides from one another that cannot be merged.</p>
+</dd>
+<dt><code>train</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for orchestrating the training of a guide, which extracts
+necessary information from a Scale object. As orchestrator, this method is
+not intended for extension.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Guide$train(params, scale, aesthetic, ...)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>params</code></dt><dd><p>A list of parameters initiated by the <code>params</code> field.</p>
+</dd>
+<dt><code>scale</code></dt><dd><p>A <code style="white-space: pre;">&lt;Scale&gt;</code> ggproto object. In the case of position
+guides, can be a <code style="white-space: pre;">&lt;ViewScale&gt;</code> ggproto object.</p>
+</dd>
+<dt><code>aesthetic</code></dt><dd><p>A scalar string specifying the aesthetic.
+If missing (default), it will use the first aesthetic specified in the
+scale.</p>
+</dd>
+<dt><code>...</code></dt><dd><p>Additional parameters passed on to the <code>extract_params()</code>
+method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A modified list of parameters</p>
+</dd>
+<dt><code>extract_key</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for extracting break information from the scale called
+the 'key'. It retrieves breaks, maps these breaks and derives labels. These
+form the basis for tick marks and labels in some guides. It is appropriate
+to override in extensions.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Guide$extract_key(scale, aesthetic, ...)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>scale</code></dt><dd><p>A <code style="white-space: pre;">&lt;Scale&gt;</code> ggproto object. In the case of position
+guides, can be a <code style="white-space: pre;">&lt;ViewScale&gt;</code> ggproto object.</p>
+</dd>
+<dt><code>aesthetic</code></dt><dd><p>A scalar string specifying the aesthetic.</p>
+</dd>
+<dt><code>...</code></dt><dd><p>Optional arguments from the <code>params</code> field.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A 'key' data frame containing annotated scale breaks, including at least a
+column for the aesthetic, <code>.label</code> and <code>.value</code>. If there are no breaks,
+returns <code>NULL</code>.</p>
+</dd>
+<dt><code>extract_decor</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for extracting 'decor' from the scale. The 'decor' acts
+as a wildcard for anything the guide may need to render that is not based
+on the key. For this reason, it has guide specific meaning that indicates
+different things for different guides. In <code>guide_colourbar()</code> it is the
+colour gradient, but in <code>guide_axis()</code> it is the axis line information.
+It is appropriate to override in extensions.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Guide$extract_decor(scale, aesthetic, ...)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>scale</code></dt><dd><p>A <code style="white-space: pre;">&lt;Scale&gt;</code> ggproto object. In the case of position
+guides, can be a <code style="white-space: pre;">&lt;ViewScale&gt;</code> ggproto object.</p>
+</dd>
+<dt><code>aesthetic</code></dt><dd><p>A scalar string specifying the aesthetic.</p>
+</dd>
+<dt><code>...</code></dt><dd><p>Optional arguments from the <code>params</code> field.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>Undefined. <code>NULL</code> by default.</p>
+</dd>
+<dt><code>extract_params</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for extracting any other information from the scale that
+the guide may need. A typical example is to derive the title from the scale,
+or apply any edits to the <code>key</code> or <code>decor</code> variables.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Geom$extract_params(scale, params, ...)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>scale</code></dt><dd><p>A <code style="white-space: pre;">&lt;Scale&gt;</code> ggproto object. In the case of position
+guides, can be a <code style="white-space: pre;">&lt;ViewScale&gt;</code> ggproto object.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters initiated by the <code>params</code> field,
+which at this point includes the <code>key</code> and <code>decor</code> from previous
+extractors.</p>
+</dd>
+<dt><code>...</code></dt><dd><p>Additional arguments passed from the <code>train()</code> method. For
+non-position guides, often includes <code>title</code> as derived from the
+<code>plot$labels</code> field.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A modified list of parameters</p>
+</dd>
+<dt><code>transform</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method to apply coord transformation and munching to the
+'key' and 'decor' parameters. This method only applies to position guides
+like <code>guide_axis()</code> and is not called for non-position guides. It is
+recommended to override this method if you have a position guide that
+does not inherit from <code>GuideAxis</code> or has custom key' or 'decor' structures
+that <code>GuideAxis$transform()</code> does not handle well.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Guide$transform(params, coord, ...)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>params</code></dt><dd><p>A list of parameters initiated by the <code>params</code> field.</p>
+</dd>
+<dt><code>coord</code></dt><dd><p>A <code style="white-space: pre;">&lt;Coord&gt;</code> ggproto object.</p>
+</dd>
+<dt><code>...</code></dt><dd><p>Optional arguments, typically <code>panel_params</code> for most
+position guides.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A list of parameters. The default throws an error.</p>
+</dd>
+<dt><code>merge</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for combining information from two guides. When two
+guides have the same computed <code>hash</code> parameter derived from the <code>hashables</code>
+field, this function will be called to merge them. If more than two guides
+need to be merged, they are merged successively in a <code>Reduce()</code>-like
+fashion.
+</p>
+<p>Merging guides is the mechanism by which <code>guide_legend()</code> can take one
+guide trained on the <code>shape</code> scale, another trained on the <code>colour</code> scale
+and display them together in the same guide, for example.
+</p>
+<p>Overriding this method is recommended if the extension descends directly
+from <code>Guide</code> and not its children. Otherwise, it should be overridden if
+presented with no superior options.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Guide$merge(params, new_guide, new_params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>params</code></dt><dd><p>A list of parameters derived from the <code>params</code> field of
+this guide.</p>
+</dd>
+<dt><code>new_guide</code></dt><dd><p>A <code style="white-space: pre;">&lt;Guide&gt;</code> ggproto object representing the other guide class</p>
+</dd>
+<dt><code>new_params</code></dt><dd><p>A list of parameters derived from the <code>params</code> field
+of the other guide</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A named list containing <code>guide</code> and <code>params</code>, where <code>guide</code> is a <code style="white-space: pre;">&lt;Guide&gt;</code>
+ggproto object and <code>params</code> is a list with parameters. By default, returns
+the new guide and its parameters.</p>
+</dd>
+<dt><code>process_layers,get_layer_key</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>These function methods extract information from layers that the guide may
+need. The <code>process_layers()</code> method is tasked with selecting layers that
+are represented by the guide and are to be included. The selected layers
+should be passed on to the <code>get_layer_key()</code> method.
+</p>
+<p>Typical use of these methods is for <code>guide_legend()</code> to extract the
+<code>Geom$draw_key</code> function to render glyphs in addition to any default or
+fixed aesthetics. While these methods are called in position guides,
+the <code>layers</code> and <code>data</code> arguments are empty as these are unavailable at
+that point.
+</p>
+<p>You can override <code>get_layer_key()</code>, but <code>process_layers()</code> should
+probably only be overridden if the extension does not inherit from
+<code>GuideLegend</code>.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Guide$process_layers(params, layers, data, theme)
+Guide$get_layer_key(params, layers, data, theme)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>params</code></dt><dd><p>A list of parameters initiated by the <code>params</code> field.</p>
+</dd>
+<dt><code>layers</code></dt><dd><p>A list of layers from <code>plot$layers</code>.</p>
+</dd>
+<dt><code>data</code></dt><dd><p>A list of layer data frames.</p>
+</dd>
+<dt><code>theme</code></dt><dd><p>A <a href="../../ggplot2/help/complete_theme.html">completed theme</a> object.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A list of parameters</p>
+</dd>
+<dt><code>draw</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method is the main orchestrator for drawing the guide. It sets
+up the final pieces in context of the position, direction and theme
+and. Subsequenty, it renders the individual components like titles, ticks,
+labels and decor. Finally, it arranges these components into a guide.
+</p>
+<p>This method should only be overridden if the extension has non standard
+components that do not fit into 'decor' or when this method can be greatly
+simplified for humble guides. All subsidiaries are fine to override.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Geom$setup_params(theme, position, direction, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>theme</code></dt><dd><p>A <a href="../../ggplot2/help/complete_theme.html">complete theme</a> object.</p>
+</dd>
+<dt><code>position</code></dt><dd><p>A scalar string indicating the position where
+the guide should be drawn. Typically <code>"top"</code>, <code>"right"</code>, <code>"bottom"</code>
+or <code>"left"</code>, unless it is a position guide for an exotic coord. Can be
+<code>NULL</code>, in which case <code>params$position</code> should be used.</p>
+</dd>
+<dt><code>direction</code></dt><dd><p>A scalar string indicating the legend direction.
+Can be <code>NULL</code>, in which case <code>params$direction</code> should be used.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters initiated by the <code>params</code> field.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A grob with the guide.</p>
+</dd>
+<dt><code>draw_early_exit</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method that determines what should be drawn when the guide 'key'
+is empty. The default method returns <code><a href="../../ggplot2/help/zeroGrob.html">zeroGrob()</a></code>. You can override
+this method if an empty key should draw anything. Used in <code>guide_axis()</code>
+to render the <code>axis.line</code> part even if no ticks or labels should be drawn.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Guide$draw_early_exit(params, elements)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>params</code></dt><dd><p>A list of parameters initiated by the <code>params</code> field.</p>
+</dd>
+<dt><code>elements</code></dt><dd><p>A list of elements or resolved theme settings from
+the <code>override_elements()</code> method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A grob.</p>
+</dd>
+<dt><code>setup_params</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for finalising parameters. Typically used to make checks
+on the <code>params</code> object or to make any position or direction based
+adjustments.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Guide$setup_params(params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>params</code></dt><dd><p>A list of parameters initiated by the <code>params</code> field.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A list of parameters</p>
+</dd>
+<dt><code>setup_elements,override_elements</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for resolving required theme elements. The
+<code>setup_elements()</code> method joins local guide theme with global theme and
+calculates the necessary theme elements. The <code>override_elements()</code> method
+is a hook to edit elements after they've been calculated.
+</p>
+<p>You can override the <code>setup_elements()</code> method if you need more complicated
+theme handling before calculating elements or want to intervene in inheritance.
+For example, <code>guide_legend()</code> has special handling of text margins and
+<code>guide_axis()</code> suffixes <code style="white-space: pre;">{aes}.{position}</code> to get the theme elements for
+the correct position.
+</p>
+<p>For other purposes, you can override the <code>override_elements()</code> method.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Guide$setup_elements(params, elements, theme)
+Guide$override_elements(params, elements, theme)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>params</code></dt><dd><p>A list of parameters initiated by the <code>params</code> field.</p>
+</dd>
+<dt><code>elements</code></dt><dd><p>A named list of strings initiated by the <code>elements</code> field.</p>
+</dd>
+<dt><code>theme</code></dt><dd><p>A <a href="../../ggplot2/help/complete_theme.html">complete theme</a></p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A list of elements or resolved theme settings.</p>
+</dd>
+<dt><code>build_title</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for rendering the title. Note that titles for position
+guides are rendered by the Facet class and not this method.
+</p>
+<p>You can override this method if you need to render more than one title
+(or none) or adjust margin settings.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Guide$build_title(label, elements, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>label</code></dt><dd><p>A single string or expression with the title text.</p>
+</dd>
+<dt><code>elements</code></dt><dd><p>A list of elements or resolved theme settings from
+the <code>override_elements()</code> method. The default method expects
+<code>elements$title</code> to inherit from the <code style="white-space: pre;">&lt;element_text&gt;</code> class.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters initiated by the <code>params</code> field.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A grob representing the title.</p>
+</dd>
+<dt><code>build_ticks</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for rendering tick marks.
+</p>
+<p>You can override this function if you don't need ticks or have completely
+different logic on how these should be drawn.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Guide$build_ticks(key, elements, params, position, length)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>key</code></dt><dd><p>A data frame with the key information derived from the
+<code>extract_key()</code> method.</p>
+</dd>
+<dt><code>elements</code></dt><dd><p>A list of elements or resolved theme settings from
+the <code>override_elements()</code> method. The default method expects
+<code>elements$ticks</code> to inherit from the <code style="white-space: pre;">&lt;element_line&gt;</code> class and
+<code>elements$ticks_length</code> to be a scalar <code style="white-space: pre;">&lt;unit&gt;</code> object.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters initiated by the <code>params</code> field.</p>
+</dd>
+<dt><code>position</code></dt><dd><p>A scalar string indicating the position. Due to
+historic error this works in the opposite way to intuition: if you want
+ticks for an axis at the bottom of a plot, you should use <code>"top"</code> here.</p>
+</dd>
+<dt><code>length</code></dt><dd><p>A scalar <code style="white-space: pre;">&lt;unit&gt;</code> object giving the tick length.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A grob representing tick marks.</p>
+</dd>
+<dt><code>build_labels</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for rendering labels. The default method returns an
+empty grob. It is recommended to override this method when your extension
+directly descends from Guide.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Guide$build_labels(key, elements, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>key</code></dt><dd><p>A data frame with the key information derived from the
+<code>extract_key()</code> method.</p>
+</dd>
+<dt><code>elements</code></dt><dd><p>A list of elements or resolved theme settings from
+the <code>override_elements()</code> method. Most non-default methods expects
+<code>elements$text</code> to inherit from the <code style="white-space: pre;">&lt;element_text&gt;</code>.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters initiated by the <code>params</code> field.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A grob representing labels.</p>
+</dd>
+<dt><code>build_decor</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for rendering decor. As the 'wildcard' component, this
+can draw whatever component the guide needs that isn't already captured by
+the key. The default method returns an empty grob. It is recommended to
+override this method.
+</p>
+<p>For some examples: <code>guide_legend()</code> renders the keys with the glyphs,
+<code>guide_colourbar()</code> renders the colour gradient rectangle and
+<code>guide_axis()</code> renders the axis line.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Guide$build_decor(decor, grobs, elements, params)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>decor</code></dt><dd><p>A data frame (or other structure) with information derived
+from the <code>extract_decor()</code> method.</p>
+</dd>
+<dt><code>grobs</code></dt><dd><p>A list with grobs generated by the other <code style="white-space: pre;">build_*</code>
+methods.</p>
+</dd>
+<dt><code>elements</code></dt><dd><p>A list of elements or resolved theme settings from
+the <code>override_elements()</code> method. Most non-default methods expects
+<code>elements$text</code> to inherit from the <code style="white-space: pre;">&lt;element_text&gt;</code>.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters initiated by the <code>params</code> field.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A grob.</p>
+</dd>
+<dt><code>measure_grobs</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for measuring grobs. In preparation for arranging grobs,
+they often need to be measured to determine their widths and heights.
+It is convention that every measurement is converted to centimetres.
+You can override this method if your extension directly descends from
+Guide, or the parent class measurement is defective.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Guide$measure_grobs(grobs, params, elements)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>grobs</code></dt><dd><p>A list with grobs generated by the <code style="white-space: pre;">build_*</code> methods.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters initiated by the <code>params</code> field.</p>
+</dd>
+<dt><code>elements</code></dt><dd><p>A list of elements or resolved theme settings from
+the <code>override_elements()</code> method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A named list or <code style="white-space: pre;">&lt;unit&gt;</code> vector giving sizes of components, coordinated
+with <code>arrange_layout()</code> and <code>assemble_drawing()</code> methods. The default
+method returns <code>NULL</code>.</p>
+</dd>
+<dt><code>arrange_layout</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for determining the location or order of grobs in a
+gtable. Typically determines rows and columns where decor and labels are
+placed. Titles are added seperately.You can override this method if your
+extension directly descends from Guide.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Guide$arrange_layout(key, sizes, params, elements)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>key</code></dt><dd><p>A data frame with the key information derived from the
+<code>extract_key()</code> method.</p>
+</dd>
+<dt><code>sizes</code></dt><dd><p>A list of <code style="white-space: pre;">&lt;unit&gt;</code> vector from the <code>measure_grobs()</code> method.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters initiated by the <code>params</code> field.</p>
+</dd>
+<dt><code>elements</code></dt><dd><p>A list of elements or resolved theme settings from
+the <code>override_elements()</code> method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>Any structure holding placement information coordinated with the
+<code>assemble_drawing()</code> method.</p>
+</dd>
+<dt><code>assemble_drawing</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method that takes measurements, placement information and grobs
+and assembles these together in a gtable structure. You can override this
+method if your extension directly descends from Guide, or the parent class
+assembly does not work for your guide.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Guide$assemble_drawing(grobs, layout, sizes, params, elements)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>grobs</code></dt><dd><p>A list with grobs generated by the <code style="white-space: pre;">build_*</code> methods.</p>
+</dd>
+<dt><code>layout</code></dt><dd><p>A data structure from the <code>arrange_layout()</code> method.</p>
+</dd>
+<dt><code>sizes</code></dt><dd><p>A list of <code style="white-space: pre;">&lt;unit&gt;</code> vector from the <code>measure_grobs()</code> method.</p>
+</dd>
+<dt><code>params</code></dt><dd><p>A list of parameters initiated by the <code>params</code> field.</p>
+</dd>
+<dt><code>elements</code></dt><dd><p>A list of elements or resolved theme settings from
+the <code>override_elements()</code> method.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>A finished gtable containing the guide.</p>
+</dd>
+<dt><code>arrange_layout</code></dt><dd><p><strong>Description</strong>
+</p>
+<p>A function method for placing the title. It is a subsidiary method used
+in the <code>assemble_drawing()</code> method for non-position guides. Titles are
+typically added before <code>legend.margin</code> is applied. It is not
+recommended to override this method.
+</p>
+<p><strong>Usage</strong>
+</p>
+<div class="sourceCode r"><pre>Guide$add_title(gtable, title, position, just)
+</pre></div>
+<p><strong>Arguments</strong>
+</p>
+
+<dl>
+<dt><code>gtable</code></dt><dd><p>An unfinished gtable under construction in the
+<code>assemble_drawing()</code> method.</p>
+</dd>
+<dt><code>title</code></dt><dd><p>The grob resulting from the <code>build_title()</code> method.</p>
+</dd>
+<dt><code>position</code></dt><dd><p>A scaler string, either <code>"top"</code>, <code>"right"</code>, <code>"bottom"</code>
+or <code>"left"</code> corresponding to the <code>legend.title.position</code>.</p>
+</dd>
+<dt><code>just</code></dt><dd><p>A named list having <code>hjust</code> and <code>vjust</code> components with
+scalar numeric values between 0 and 1.</p>
+</dd>
+</dl>
+
+<p><strong>Value</strong>
+</p>
+<p>The <code>gtable</code> argument with added title.</p>
+</dd>
+</dl>
+
+
+<h3>Conventions</h3>
+
+<p>The object name that a new class is assigned to is typically the same as the
+class name. Guide class names are in UpperCamelCase and start with the
+<code style="white-space: pre;">Guide*</code> prefix, like <code>GuideNew</code>.
+</p>
+<p>A constructor function is usually paired with a Guide class. The constructor
+wraps a call to <code>new_guide()</code>, where e.g. <code>new_guide(super = GuideNew)</code>. The
+constructor name is formatted by taking the Guide class name and formatting
+it with snake_case, so that <code>GuideNew</code> becomes <code>guide_new()</code>.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Run <code>vignette("extending-ggplot2")</code>, in particular the &quot;Creating
+new guides&quot; section.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Extending the class
+GuideDescribe &lt;- ggproto(
+  "GuideDescribe", Guide,
+  # Fields
+  elements  = list(text = "legend.text", margin = "legend.margin"),
+  hashables = rlang::exprs(key$.label),
+
+  # Methods
+  build_title = function(...) zeroGrob(), # Turn off title
+
+  build_labels = function(key, elements, params) {
+    labels &lt;- key$.label
+    n &lt;- length(labels)
+    labels &lt;- paste0(paste0(labels[-n], collapse = ", "), ", and ", labels[n])
+    labels &lt;- paste0("A guide showing ", labels, " categories")
+    element_grob(elements$text, label = labels, margin_x = TRUE, margin_y = TRUE)
+  },
+
+  measure_grobs = function(grobs, params, elements) {
+    # Measuring in centimetres is the convention
+    width  &lt;- grid::convertWidth(grid::grobWidth(grobs$labels), "cm", valueOnly = TRUE)
+    height &lt;- grid::convertHeight(grid::grobHeight(grobs$labels), "cm", valueOnly = TRUE)
+    list(width = unit(width, "cm"), height = unit(height, "cm"))
+  },
+
+  assemble_drawing = function(self, grobs, layout, sizes, params, elements) {
+    gt &lt;- gtable::as.gtable(grobs$labels, width = sizes$width, height = sizes$height)
+    gt &lt;- gtable::gtable_add_padding(gt, elements$margin)
+    gt
+  }
+)
+
+# Building a constructor
+guide_describe &lt;- function(position = NULL) {
+  new_guide(position = position, super = GuideDescribe)
+}
+
+# Use new guide plot
+ggplot(mpg, aes(displ, hwy, colour = class)) +
+  geom_point() +
+  guides(colour = guide_describe("bottom"))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>ggplot2</em> version 4.0.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

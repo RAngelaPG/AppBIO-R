@@ -1,0 +1,311 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Solves for n roots of n (nonlinear) equations, created by...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for multiroot.1D {rootSolve}"><tr><td>multiroot.1D {rootSolve}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Solves for n roots of n (nonlinear) equations, created by discretizing
+ordinary differential equations.
+</h2>
+
+<h3>Description</h3>
+
+<p>multiroot.1D finds the solution to boundary value problems of ordinary
+differential equations, which are approximated using the method-of-lines
+approach.
+</p>
+<p>Assumes a banded Jacobian matrix, uses the Newton-Raphson method.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+multiroot.1D(f, start, maxiter = 100,
+             rtol = 1e-6, atol = 1e-8, ctol = 1e-8, 
+             nspec = NULL, dimens = NULL, verbose = FALSE, 
+             positive = FALSE, names = NULL, parms = NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>f </code></td>
+<td>
+<p>function for which the root is sought; it must return a vector
+with as many values as the length of <code>start</code>.
+It is called either as <code>f(x, ...)</code> if <code>parms = NULL</code> or as
+<code>f(x, parms, ...)</code> if <code>parms</code> is not <code>NULL</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>start </code></td>
+<td>
+<p>vector containing initial guesses for the unknown x;
+if <code>start</code> has a name attribute, the names will be used to label
+the output vector.
+</p>
+</td></tr>
+<tr valign="top"><td><code>maxiter </code></td>
+<td>
+<p>maximal number of iterations allowed.
+</p>
+</td></tr>
+<tr valign="top"><td><code>rtol </code></td>
+<td>
+<p>relative error tolerance, either a scalar or a vector, one
+value for each element in the unknown x.
+</p>
+</td></tr>
+<tr valign="top"><td><code>atol </code></td>
+<td>
+<p>absolute error tolerance, either a scalar or a vector, one
+value for each element in x.
+</p>
+</td></tr>
+<tr valign="top"><td><code>ctol </code></td>
+<td>
+<p>a scalar. If between two iterations, the maximal change in
+the variable values is less than this amount, then it is assumed that
+the root is found.
+</p>
+</td></tr>
+<tr valign="top"><td><code>nspec </code></td>
+<td>
+<p>the number of *species* (components) in the model.
+If <code>NULL</code>, then <code>dimens</code> should be specified.
+</p>
+</td></tr>
+<tr valign="top"><td><code>dimens</code></td>
+<td>
+<p>the number of *boxes* in the model. If NULL, then
+<code>nspec</code> should be specified.
+</p>
+</td></tr>
+<tr valign="top"><td><code>verbose </code></td>
+<td>
+<p>if <code>TRUE</code>: full output to the screen, e.g. will output
+the steady-state settings.
+</p>
+</td></tr>
+<tr valign="top"><td><code>positive</code></td>
+<td>
+<p>if <code>TRUE</code>, the unknowns y are forced to be
+non-negative numbers.
+</p>
+</td></tr>
+<tr valign="top"><td><code>names </code></td>
+<td>
+<p>the names of the components; used to label the output, which
+will be written as a matrix.
+</p>
+</td></tr>
+<tr valign="top"><td><code>parms </code></td>
+<td>
+<p>vector or list of parameters used in <code>f</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>... </code></td>
+<td>
+<p>additional arguments passed to function <code>f</code>.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p><code>multiroot.1D</code> is similar to <code><a href="../../rootSolve/help/steady.1D.html">steady.1D</a></code>, except for the
+function specification which is simpler in <code>multiroot.1D</code>.
+</p>
+<p>It is to be used to solve (simple) boundary value problems of
+differential equations.
+</p>
+<p>The following differential equation:
+</p>
+<p style="text-align: center;"><i>0=f(x,y,y',y'')</i></p>
+
+<p>with boundary conditions
+</p>
+<p><i>y(x=a)</i> = ya, at the start and <i>y(x=b)</i>=yb
+at the end of the integration interval [a,b] is approximated
+</p>
+<p>as follows:
+</p>
+<p>1. First the integration interval x is discretized, for instance:
+</p>
+<p><code>dx &lt;- 0.01</code>
+</p>
+<p><code>x &lt;- seq(a,b,by=dx)</code>
+</p>
+<p>where <code>dx</code> should be small enough to keep numerical errors small.
+</p>
+<p>2. Then the first- and second-order
+derivatives are differenced on this numerical
+grid. R's <code>diff</code> function is very efficient in taking numerical
+differences, so it is used to approximate the first-, and second-order
+derivates as follows.
+</p>
+<p>A <em>first-order derivative y'</em> can be approximated either as:
+</p>
+
+<dl>
+<dt>y'=<code>diff(c(ya,y))/dx</code></dt><dd><p>if only the initial condition ya is prescribed,</p>
+</dd>
+<dt>y'=<code>diff(c(y,yb))/dx</code></dt><dd><p>if only the final condition, yb is prescribed,</p>
+</dd>
+<dt>y'=<code>0.5*(diff(c(ya,y))/dx+diff(c(y,yb))/dx)</code></dt><dd><p>if initial, ya,
+and final condition, yb are prescribed.</p>
+</dd>
+</dl>
+
+<p>The latter (centered differences) is to be preferred.
+</p>
+<p>A <em>second-order derivative y&rdquo;</em> can be approximated by differencing twice.
+</p>
+<p>y&rdquo;=<code>diff(diff(c(ya,y,yb))/dx)/dx</code>
+</p>
+<p>3. Finally, function <code>multiroot.1D</code> is used to locate the root.
+</p>
+<p>See the examples
+</p>
+
+
+<h3>Value</h3>
+
+<p>a list containing:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>root </code></td>
+<td>
+<p>the values of the root.
+</p>
+</td></tr>
+<tr valign="top"><td><code>f.root </code></td>
+<td>
+<p>the value of the function evaluated at the <code>root</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>iter </code></td>
+<td>
+<p>the number of iterations used.
+</p>
+</td></tr>
+<tr valign="top"><td><code>estim.precis </code></td>
+<td>
+<p>the estimated precision for <code>root</code>. 
+It is defined as the mean of the absolute function values
+(mean(abs(<code>f.root</code>))).
+</p>
+</td></tr>
+</table>
+
+
+<h3>Note</h3>
+
+<p><code>multiroot.1D</code> makes use of function <code>steady.1D</code>.
+</p>
+<p>It is NOT guaranteed that the method will converge to the root.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Karline Soetaert &lt;karline.soetaert@nioz.nl&gt;
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../rootSolve/help/stode.html">stode</a></code>, which uses a different function call.
+</p>
+<p><code><a href="../../rootSolve/help/uniroot.all.html">uniroot.all</a></code>, to solve for all roots of one (nonlinear) equation
+</p>
+<p><code><a href="../../rootSolve/help/steady.html">steady</a></code>, <code><a href="../../rootSolve/help/steady.band.html">steady.band</a></code>,  <code><a href="../../rootSolve/help/steady.1D.html">steady.1D</a></code>,
+<code><a href="../../rootSolve/help/steady.2D.html">steady.2D</a></code>, <code><a href="../../rootSolve/help/steady.3D.html">steady.3D</a></code>, steady-state solvers,
+which find the roots of ODEs or PDEs. The function call differs from
+<code>multiroot</code>.
+</p>
+<p><code><a href="../../rootSolve/help/jacobian.full.html">jacobian.full</a></code>, <code><a href="../../rootSolve/help/jacobian.band.html">jacobian.band</a></code>, estimates the
+Jacobian matrix assuming a full or banded structure.
+</p>
+<p><code><a href="../../rootSolve/help/gradient.html">gradient</a></code>, <code><a href="../../rootSolve/help/hessian.html">hessian</a></code>, estimates the gradient
+matrix or the Hessian.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## =======================================================================
+## Example 1: simple standard problem
+## solve the BVP ODE:
+## d2y/dt^2=-3py/(p+t^2)^2
+## y(t= -0.1)=-0.1/sqrt(p+0.01)
+## y(t=  0.1)= 0.1/sqrt(p+0.01)
+## where p = 1e-5
+##
+## analytical solution y(t) = t/sqrt(p + t^2).
+##
+## =======================================================================
+
+bvp &lt;- function(y) {
+  dy2 &lt;- diff(diff(c(ya, y, yb))/dx)/dx
+  return(dy2 + 3*p*y/(p+x^2)^2)
+}
+
+dx &lt;- 0.0001
+x &lt;- seq(-0.1, 0.1, by = dx)
+
+p  &lt;- 1e-5
+ya &lt;- -0.1/sqrt(p+0.01)
+yb &lt;-  0.1/sqrt(p+0.01)
+
+print(system.time(
+  y &lt;- multiroot.1D(start = runif(length(x)), f = bvp, nspec = 1)
+))
+
+plot(x, y$root, ylab = "y", main = "BVP test problem")
+
+# add analytical solution
+curve(x/sqrt(p+x*x), add = TRUE, type = "l", col = "red")
+
+## =======================================================================
+## Example 2: bvp test problem 28
+## solve:
+## xi*y'' + y*y' - y=0
+## with boundary conditions:
+## y0=1
+## y1=3/2
+## =======================================================================
+
+prob28 &lt;-function(y, xi) {
+ dy2 &lt;- diff(diff(c(ya, y, yb))/dx)/dx          # y''
+ dy  &lt;- 0.5*(diff(c(ya, y)) +diff(c(y, yb)))/dx # y' - centered differences
+
+ xi*dy2 +dy*y-y
+}
+
+ya &lt;- 1
+yb &lt;- 3/2
+dx &lt;- 0.001
+x &lt;- seq(0, 1, by = dx)
+N &lt;- length(x)
+print(system.time(
+  Y1 &lt;- multiroot.1D(f = prob28, start = runif(N), 
+                     nspec = 1, xi = 0.1)
+))
+Y2&lt;- multiroot.1D(f = prob28, start = runif(N), nspec = 1, xi = 0.01)
+Y3&lt;- multiroot.1D(f = prob28, start = runif(N), nspec = 1, xi = 0.001)
+
+plot(x, Y3$root, type = "l", col = "green", main = "bvp test problem 28")
+lines(x, Y2$root, col = "red")
+lines(x, Y1$root, col = "blue")
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rootSolve</em> version 1.8.2.4 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: An object representing a sequence of future values.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for channel {async}"><tr><td>channel {async}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>An object representing a sequence of future values.</h2>
+
+<h3>Description</h3>
+
+<p>A <code>channel</code> is an object that represents a sequence of values yet
+to be determined. It is something like a combination of a <a href="../../base/html/delayedAssign.html">promise</a>
+and an <a href="../../async/help/iteror.html">iteror</a>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+channel(obj, ...)
+
+## S3 method for class ''function''
+channel(
+  obj,
+  ...,
+  max_queue = 500L,
+  max_awaiting = 500L,
+  wakeup = function(...) NULL
+)
+
+is.channel(x)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>obj</code></td>
+<td>
+<p>A user-provided function; it will receive three
+callback functions as arguments, in order, <code>emit(val)</code>,
+<code>reject(err)</code> and <code>close()</code></p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Specialized channel methods may take other arguments.</p>
+</td></tr>
+<tr valign="top"><td><code>max_queue</code></td>
+<td>
+<p>The maximum number of outgoing values to store if
+there are no listeners. Beyond this, calling <code>emit</code> will return
+an error.</p>
+</td></tr>
+<tr valign="top"><td><code>max_awaiting</code></td>
+<td>
+<p>The maximum number of pending requests. If
+there are this many outstanding requests, for values, calling
+<code>nextThen(ch, ...)</code> or <code>nextElem(ch)</code> will raise an error.</p>
+</td></tr>
+<tr valign="top"><td><code>wakeup</code></td>
+<td>
+<p>You may optionally provide a callback function here.
+It will be called when the queue is empty and there is at least
+one listener/outstanding promise.</p>
+</td></tr>
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>an object.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The channel interface is intended to represent and work with
+asynchronous, live data sources, for instance event logs,
+non-blocking connections, paginated query results, reactive values,
+and other processes that yield a sequence of values over time.
+</p>
+<p><code>channel</code> is an S3 method and will attempt to convert the argument
+<code>obj</code> into a channel object according to its class.
+</p>
+<p>The friendly way to obtain values from a channel is to use
+<code>awaitNext</code> or <code>for</code> loops within an <a href="../../async/help/async.html">async</a> or <a href="../../async/help/stream.html">stream</a> coroutine.
+</p>
+<p>The low-level interface to obtain values from a channel is to call
+<a href="../../async/help/nextThen.html">nextThen</a><code style="white-space: pre;">(ch, onNext=, onError=, onClose=, ...)]</code>, providing callback
+functions for at least <code>onNext(val)</code>. Those callbacks will be
+appended to an internal queue, and will be called as soon as data
+is available, in the order that requests were received.
+</p>
+<p>You can also treat a channel as an <a href="../../async/help/iteror.html">iteror</a> over promises, calling
+<code>nextOr(pri)</code> to return a <a href="../../base/html/delayedAssign.html">promise</a> representing the next
+available value. Each promise created this way will be resolved in
+the order that data come in. Note that this way there is no special
+signal for end of iteration; a promise will reject with
+a condition message <code>"StopIteration"</code> to signal end of iteration.
+</p>
+<p>Be careful with the iterator-over-promises interface though: if you
+call <code>as.list.iteror(pr)</code> you may get stuck in an infinite loop, as
+<code>as.list</code> keeps calling <code>nextElem</code> and receives more promises to
+represent values that exist only hypothetically. This is one
+reason for the <code>max_listeners</code> limit.
+</p>
+<p>The friendly way to create a channel with custom behavior is to use
+a <a href="../../async/help/stream.html">stream</a> coroutine. Inside of <code>stream()</code> call <a href="../../async/help/await.html">await</a> to wait on
+promises, <a href="../../async/help/awaitNext.html">awaitNext</a> to wait on other streams and <a href="../../async/help/yield.html">yield</a> to yield
+values. To signal end of iteration use <code>return()</code> (which will
+discard its value) and to signal an error use <code>stop()</code>.
+</p>
+<p>The low-level interface to create a channel with custom behavior
+is to call <code>channel(function(emit, reject, cancel) {...})</code>,
+providing your own function definition; your function will
+receive those three callback methods as arguments. Then use
+whatever means to arrange to call <code>emit(val)</code> some time in the
+future as data comes in. When you are done emitting values, call
+the <code>close()</code> callback. To report an error call
+<code>reject(err)</code>; the next requestor will receive the error. If there
+is more than one listener, other queued listeners will get a
+<code>close</code> signal.
+</p>
+
+
+<h3>Value</h3>
+
+<p>a channel object, supporting methods &quot;nextThen&quot; and &quot;nextOr&quot;
+</p>
+<p><code>is.channel(x)</code> returns TRUE if its argument is a channel object.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Peter Meilstrup
+</p>
+
+<hr /><div style="text-align: center;">[Package <em>async</em> version 0.3.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

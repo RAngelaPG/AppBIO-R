@@ -1,0 +1,218 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Create x-coordinates so the points form a hexagon</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for hexagonalize {rearrr}"><tr><td>hexagonalize {rearrr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Create x-coordinates so the points form a hexagon</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental"><img src="../help/figures/lifecycle-experimental.svg" alt='[Experimental]' /></a>
+</p>
+<p>Create the x-coordinates for a <code>vector</code> of y-coordinates such that
+they form a hexagon.
+</p>
+<p>This will likely look most like a hexagon when the y-coordinates are somewhat equally distributed,
+e.g. a uniform distribution.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+hexagonalize(
+  data,
+  y_col = NULL,
+  .min = NULL,
+  .max = NULL,
+  offset_x = 0,
+  keep_original = TRUE,
+  x_col_name = ".hexagon_x",
+  edge_col_name = ".edge",
+  overwrite = FALSE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p><code>data.frame</code> or <code>vector</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>y_col</code></td>
+<td>
+<p>Name of column in <code>`data`</code> with y-coordinates to create x-coordinates for.</p>
+</td></tr>
+<tr valign="top"><td><code>.min</code></td>
+<td>
+<p>Minimum y-coordinate. If <code>NULL</code>, it is inferred by the given y-coordinates.</p>
+</td></tr>
+<tr valign="top"><td><code>.max</code></td>
+<td>
+<p>Maximum y-coordinate. If <code>NULL</code>, it is inferred by the given y-coordinates.</p>
+</td></tr>
+<tr valign="top"><td><code>offset_x</code></td>
+<td>
+<p>Value to offset the x-coordinates by.</p>
+</td></tr>
+<tr valign="top"><td><code>keep_original</code></td>
+<td>
+<p>Whether to keep the original columns. (Logical)
+</p>
+<p>Some columns may have been overwritten, in which case only the newest versions are returned.</p>
+</td></tr>
+<tr valign="top"><td><code>x_col_name</code></td>
+<td>
+<p>Name of new column with the x-coordinates.</p>
+</td></tr>
+<tr valign="top"><td><code>edge_col_name</code></td>
+<td>
+<p>Name of new column with the edge identifiers. If <code>NULL</code>, no column is added.
+</p>
+<p>Numbering is clockwise and starts at the upper-right edge.</p>
+</td></tr>
+<tr valign="top"><td><code>overwrite</code></td>
+<td>
+<p>Whether to allow overwriting of existing columns. (Logical)</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p><code>data.frame</code> (<code>tibble</code>) with the added x-coordinates and an identifier
+for the edge the data point is a part of.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Ludvig Renbo Olsen, <a href="mailto:r-pkgs@ludvigolsen.dk">r-pkgs@ludvigolsen.dk</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p>Other forming functions: 
+<code><a href="../../rearrr/help/circularize.html">circularize</a>()</code>,
+<code><a href="../../rearrr/help/square.html">square</a>()</code>,
+<code><a href="../../rearrr/help/triangularize.html">triangularize</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Attach packages
+library(rearrr)
+library(dplyr)
+library(purrr)
+has_ggplot &lt;- require(ggplot2)  # Attach if installed
+
+# Set seed
+set.seed(1)
+
+# Create a data frame
+df &lt;- data.frame(
+  "y" = runif(200),
+  "g" = factor(rep(1:5, each = 40))
+)
+
+# Hexagonalize 'y'
+df_hex &lt;- hexagonalize(df, y_col = "y")
+df_hex
+
+# Plot hexagon
+if (has_ggplot){
+  df_hex %&gt;%
+    ggplot(aes(x = .hexagon_x, y = y, color = .edge)) +
+    geom_point() +
+    theme_minimal()
+}
+
+#
+# Grouped hexagonalization
+#
+
+# Hexagonalize 'y' for each group
+# First cluster the groups a bit to move the
+# hexagons away from each other
+df_hex &lt;- df %&gt;%
+  cluster_groups(
+    cols = "y",
+    group_cols = "g",
+    suffix = "",
+    overwrite = TRUE
+  ) %&gt;%
+  dplyr::group_by(g) %&gt;%
+  hexagonalize(
+    y_col = "y",
+    overwrite = TRUE
+  )
+
+# Plot hexagons
+if (has_ggplot){
+  df_hex %&gt;%
+    ggplot(aes(x = .hexagon_x, y = y, color = g)) +
+    geom_point() +
+    theme_minimal()
+}
+
+#
+# Specifying minimum value
+#
+
+# Specify minimum value manually
+df_hex &lt;- hexagonalize(df, y_col = "y", .min = -2)
+df_hex
+
+# Plot hexagon
+if (has_ggplot){
+  df_hex %&gt;%
+    ggplot(aes(x = .hexagon_x, y = y, color = .edge)) +
+    geom_point() +
+    theme_minimal()
+}
+
+#
+# Multiple hexagons by contraction
+#
+
+# Start by hexagonalizing 'y'
+df_hex &lt;- hexagonalize(df, y_col = "y")
+
+# Contract '.hexagon_x' and 'y' towards the centroid
+# To contract with multiple multipliers at once,
+# we wrap the call in purrr::map_dfr
+df_expanded &lt;- purrr::map_dfr(
+  .x = c(1, 0.75, 0.5, 0.25, 0.125),
+  .f = function(mult) {
+    expand_distances(
+      data = df_hex,
+      cols = c(".hexagon_x", "y"),
+      multiplier = mult,
+      origin_fn = centroid,
+      overwrite = TRUE
+    )
+  }
+)
+df_expanded
+
+if (has_ggplot){
+  df_expanded %&gt;%
+    ggplot(aes(
+      x = .hexagon_x_expanded, y = y_expanded,
+      color = .edge, alpha = .multiplier
+    )) +
+    geom_point() +
+    theme_minimal()
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rearrr</em> version 0.3.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

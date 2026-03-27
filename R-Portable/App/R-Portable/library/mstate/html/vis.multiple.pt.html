@@ -1,0 +1,182 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Visualise multiple probtrans objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for vis.multiple.pt {mstate}"><tr><td>vis.multiple.pt {mstate}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Visualise multiple probtrans objects</h2>
+
+<h3>Description</h3>
+
+<p>Helper function allowing to visualise state probabilities for 
+different reference patients/covariates. Multiple <code>"probtrans"</code> objects
+are thus needed.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+vis.multiple.pt(
+  x,
+  from = 1,
+  to,
+  xlab = "Time",
+  ylab = "Probability",
+  xlim = NULL,
+  ylim = NULL,
+  cols,
+  lwd,
+  labels,
+  conf.int = 0.95,
+  conf.type = c("log", "plain", "none"),
+  legend.title
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A list of <code>"probtrans"</code> objects</p>
+</td></tr>
+<tr valign="top"><td><code>from</code></td>
+<td>
+<p>The starting state from which the probabilities are used to plot
+Numeric, as in <code>plot.probtrans</code></p>
+</td></tr>
+<tr valign="top"><td><code>to</code></td>
+<td>
+<p>(Numeric) destination state</p>
+</td></tr>
+<tr valign="top"><td><code>xlab</code></td>
+<td>
+<p>A title for the x-axis; default is <code>"Time"</code></p>
+</td></tr>
+<tr valign="top"><td><code>ylab</code></td>
+<td>
+<p>A title for the y-axis; default is <code>"Probability"</code></p>
+</td></tr>
+<tr valign="top"><td><code>xlim</code></td>
+<td>
+<p>The x limits of the plot(s), default is range of time</p>
+</td></tr>
+<tr valign="top"><td><code>ylim</code></td>
+<td>
+<p>The y limits of the plot(s); if ylim is specified for
+type=&quot;separate&quot;, then all plots use the same ylim for y limits</p>
+</td></tr>
+<tr valign="top"><td><code>cols</code></td>
+<td>
+<p>A vector specifying colors for the different transitions;
+default is a palette from green to red, when type=<code>"filled"</code> (reordered
+according to <code>ord</code>, and 1 (black), otherwise</p>
+</td></tr>
+<tr valign="top"><td><code>lwd</code></td>
+<td>
+<p>The line width, see <code><a href="../../graphics/html/par.html">par</a></code>; default is 1</p>
+</td></tr>
+<tr valign="top"><td><code>labels</code></td>
+<td>
+<p>Character vector labelling each element of x (e.g. label
+for a reference patient) - so labels = c(&quot;Patient 1&quot;, &quot;Patient 2&quot;)</p>
+</td></tr>
+<tr valign="top"><td><code>conf.int</code></td>
+<td>
+<p>Confidence level (%) from 0-1 for probabilities, 
+default is 0.95 (95% CI). Setting to 0 removes the CIs.</p>
+</td></tr>
+<tr valign="top"><td><code>conf.type</code></td>
+<td>
+<p>Type of confidence interval - either &quot;log&quot; or &quot;plain&quot; . See
+function details for details.</p>
+</td></tr>
+<tr valign="top"><td><code>legend.title</code></td>
+<td>
+<p>Character - title of legend</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>A ggplot object.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Edouard F. Bonneville <a href="mailto:e.f.bonneville@lumc.nl">e.f.bonneville@lumc.nl</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+library(ggplot2)
+
+data("aidssi")
+head(aidssi)
+si &lt;- aidssi
+
+# Prepare transition matrix
+tmat &lt;- trans.comprisk(2, names = c("event-free", "AIDS", "SI"))
+
+# Run msprep
+si$stat1 &lt;- as.numeric(si$status == 1)
+si$stat2 &lt;- as.numeric(si$status == 2)
+
+silong &lt;- msprep(
+time = c(NA, "time", "time"), 
+status = c(NA, "stat1", "stat2"), 
+data = si, keep = "ccr5", trans = tmat
+)
+
+# Run cox model
+silong &lt;- expand.covs(silong, "ccr5")
+c1 &lt;- coxph(Surv(time, status) ~ ccr5WM.1 + ccr5WM.2 + strata(trans),
+            data = silong)
+            
+# 1. Prepare patient data - both CCR5 genotypes
+WW &lt;- data.frame(
+ccr5WM.1 = c(0, 0), 
+ccr5WM.2 = c(0, 0), 
+trans = c(1, 2), 
+strata = c(1, 2)
+)
+
+WM &lt;- data.frame(
+ccr5WM.1 = c(1, 0), 
+ccr5WM.2 = c(0, 1),
+trans = c(1, 2), 
+strata = c(1, 2)
+)
+
+# 2. Make msfit objects
+msf.WW &lt;- msfit(c1, WW, trans = tmat)
+msf.WM &lt;- msfit(c1, WM, trans = tmat)
+
+# 3. Make probtrans objects
+pt.WW &lt;- probtrans(msf.WW, predt = 0)
+pt.WM &lt;- probtrans(msf.WM, predt = 0)           
+
+# Plot - see vignette for more details
+vis.multiple.pt(
+x = list(pt.WW, pt.WM), 
+from = 1,
+to = 2, 
+conf.type = "log",
+cols = c(1, 2),
+labels = c("Pat WW", "Pat WM"),
+legend.title = "Ref patients"
+)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>mstate</em> version 0.3.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

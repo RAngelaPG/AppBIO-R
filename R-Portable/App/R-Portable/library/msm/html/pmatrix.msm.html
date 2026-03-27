@@ -1,0 +1,189 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Transition probability matrix</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for pmatrix.msm {msm}"><tr><td>pmatrix.msm {msm}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Transition probability matrix</h2>
+
+<h3>Description</h3>
+
+<p>Extract the estimated transition probability matrix from a fitted
+continuous-time multi-state model for a given time interval, at a given set
+of covariate values.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+pmatrix.msm(
+  x = NULL,
+  t = 1,
+  t1 = 0,
+  covariates = "mean",
+  ci = c("none", "normal", "bootstrap"),
+  cl = 0.95,
+  B = 1000,
+  cores = NULL,
+  qmatrix = NULL,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A fitted multi-state model, as returned by <code><a href="../../msm/help/msm.html">msm</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>t</code></td>
+<td>
+<p>The time interval to estimate the transition probabilities for, by
+default one unit.</p>
+</td></tr>
+<tr valign="top"><td><code>t1</code></td>
+<td>
+<p>The starting time of the interval. Used for models <code>x</code> with
+piecewise-constant intensities fitted using the <code>pci</code> option to
+<code><a href="../../msm/help/msm.html">msm</a></code>. The probabilities will be computed on the interval [t1,
+t1+t].</p>
+</td></tr>
+<tr valign="top"><td><code>covariates</code></td>
+<td>
+<p>The covariate values at which to estimate the transition
+probabilities.  This can either be:<br />
+</p>
+<p>the string <code>"mean"</code>, denoting the means of the covariates in the data
+(this is the default),<br />
+</p>
+<p>the number <code>0</code>, indicating that all the covariates should be set to
+zero,<br />
+</p>
+<p>or a list of values, with optional names. For example
+</p>
+<p><code>list (60, 1)</code>
+</p>
+<p>where the order of the list follows the order of the covariates originally
+given in the model formula, or a named list,
+</p>
+<p><code>list (age = 60, sex = 1)</code>
+</p>
+<p>If some covariates are specified but not others, the missing ones default to
+zero.
+</p>
+<p>For time-inhomogeneous models fitted using the <code>pci</code> option to
+<code><a href="../../msm/help/msm.html">msm</a></code>, &quot;covariates&quot; here include only those specified using the
+<code>covariates</code> argument to <code><a href="../../msm/help/msm.html">msm</a></code>, and exclude the artificial
+covariates representing the time period.
+</p>
+<p>For time-inhomogeneous models fitted &quot;by hand&quot; by using a time-dependent
+covariate in the <code>covariates</code> argument to <code><a href="../../msm/help/msm.html">msm</a></code>, the
+function <code><a href="../../msm/help/pmatrix.piecewise.msm.html">pmatrix.piecewise.msm</a></code> should be used to to calculate
+transition probabilities.</p>
+</td></tr>
+<tr valign="top"><td><code>ci</code></td>
+<td>
+<p>If <code>"normal"</code>, then calculate a confidence interval for the
+transition probabilities by simulating <code>B</code> random vectors from the
+asymptotic multivariate normal distribution implied by the maximum
+likelihood estimates (and covariance matrix) of the log transition
+intensities and covariate effects, then calculating the resulting transition
+probability matrix for each replicate. See, e.g. Mandel (2013) for a
+discussion of this approach.
+</p>
+<p>If <code>"bootstrap"</code> then calculate a confidence interval by non-parametric
+bootstrap refitting.  This is 1-2 orders of magnitude slower than the
+<code>"normal"</code> method, but is expected to be more accurate. See
+<code><a href="../../msm/help/boot.msm.html">boot.msm</a></code> for more details of bootstrapping in <span class="pkg">msm</span>.
+</p>
+<p>If <code>"none"</code> (the default) then no confidence interval is calculated.</p>
+</td></tr>
+<tr valign="top"><td><code>cl</code></td>
+<td>
+<p>Width of the symmetric confidence interval, relative to 1.</p>
+</td></tr>
+<tr valign="top"><td><code>B</code></td>
+<td>
+<p>Number of bootstrap replicates, or number of normal simulations
+from the distribution of the MLEs</p>
+</td></tr>
+<tr valign="top"><td><code>cores</code></td>
+<td>
+<p>Number of cores to use for bootstrapping using parallel
+processing. See <code><a href="../../msm/help/boot.msm.html">boot.msm</a></code> for more details.</p>
+</td></tr>
+<tr valign="top"><td><code>qmatrix</code></td>
+<td>
+<p>A transition intensity matrix.  Either this or a fitted model
+<code>x</code> must be supplied.  No confidence intervals are available if
+<code>qmatrix</code> is supplied.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Optional arguments to be passed to <code><a href="../../msm/help/MatrixExp.html">MatrixExp</a></code> to
+control the method of computing the matrix exponential.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>For a continuous-time homogeneous Markov process with transition intensity
+matrix <i>Q</i>, the probability of occupying state <i>s</i> at time <i>u +
+t</i> conditionally on occupying state <i>r</i> at time <i>u</i> is given by the
+<i>(r,s)</i> entry of the matrix <i>P(t) = exp(tQ)</i>, where
+<i>exp()</i> is the matrix exponential.
+</p>
+<p>For non-homogeneous processes, where covariates and hence the transition
+intensity matrix <i>Q</i> are piecewise-constant in time, the transition
+probability matrix is calculated as a product of matrices over a series of
+intervals, as explained in <code><a href="../../msm/help/pmatrix.piecewise.msm.html">pmatrix.piecewise.msm</a></code>.
+</p>
+<p>The <code><a href="../../msm/help/pmatrix.piecewise.msm.html">pmatrix.piecewise.msm</a></code> function is only necessary for
+models fitted using a time-dependent covariate in the <code>covariates</code>
+argument to <code><a href="../../msm/help/msm.html">msm</a></code>. For time-inhomogeneous models fitted using
+&quot;pci&quot;, <code>pmatrix.msm</code> can be used, with arguments <code>t</code> and
+<code>t1</code>, to calculate transition probabilities over any time period.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The matrix of estimated transition probabilities <i>P(t)</i> in the
+given time.  Rows correspond to &quot;from-state&quot; and columns to &quot;to-state&quot;.
+</p>
+<p>Or if <code>ci="normal"</code> or <code>ci="bootstrap"</code>, <code>pmatrix.msm</code>
+returns a list with components <code>estimates</code> and <code>ci</code>, where
+<code>estimates</code> is the matrix of estimated transition probabilities, and
+<code>ci</code> is a list of two matrices containing the upper and lower
+confidence limits.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>C. H. Jackson <a href="mailto:chris.jackson@mrc-bsu.cam.ac.uk">chris.jackson@mrc-bsu.cam.ac.uk</a>.
+</p>
+
+
+<h3>References</h3>
+
+<p>Mandel, M. (2013). &quot;Simulation based confidence intervals for
+functions with complicated derivatives.&quot; The American Statistician
+67(2):76-81
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../msm/help/qmatrix.msm.html">qmatrix.msm</a></code>, <code><a href="../../msm/help/pmatrix.piecewise.msm.html">pmatrix.piecewise.msm</a></code>,
+<code><a href="../../msm/help/boot.msm.html">boot.msm</a></code>
+</p>
+
+<hr /><div style="text-align: center;">[Package <em>msm</em> version 1.8.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

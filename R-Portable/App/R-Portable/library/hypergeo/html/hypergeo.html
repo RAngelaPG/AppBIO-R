@@ -1,0 +1,160 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: The hypergeometric function</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for hypergeo {hypergeo}"><tr><td>hypergeo {hypergeo}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>The hypergeometric function</h2>
+
+<h3>Description</h3>
+
+<p>The Hypergeometric and generalized hypergeometric functions as defined
+by Abramowitz and Stegun.    Function <code>hypergeo()</code> is the user
+interface to the majority of the package functionality; it dispatches to
+one of a number of subsidiary functions.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+hypergeo(A, B, C, z, tol = 0, maxiter=2000)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>A,B,C</code></td>
+<td>
+<p>Parameters for <code>hypergeo()</code></p>
+</td></tr>
+<tr valign="top"><td><code>z</code></td>
+<td>
+<p>Primary argument, complex</p>
+</td></tr>
+<tr valign="top"><td><code>tol</code></td>
+<td>
+<p>absolute tolerance; default value of zero means to continue
+iterating until the result does not change to machine precision;
+strictly positive values give less accuracy but faster evaluation</p>
+</td></tr>
+<tr valign="top"><td><code>maxiter</code></td>
+<td>
+<p>Integer specifying maximum number of iterations</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The hypergeometric function as defined by Abramowitz and Stegun,
+equation 15.1.1, page 556 is
+</p>
+<p style="text-align: center;"><i>[omitted;
+    see PDF]</i></p>
+
+<p>where
+<i>(a)_n=Gamma(a+n)/Gamma(a)</i>
+is the Pochammer symbol (6.1.22, page 256).
+</p>
+<p>Function <code>hypergeo()</code> is the front-end for a rather unwieldy set
+of back-end functions which are called when the parameters <code>A</code>,
+<code>B</code>, <code>C</code> take certain values.
+</p>
+<p>The general case (that is, when the parameters do not fall into a
+&ldquo;special&rdquo; category), is handled by <code>hypergeo_general()</code>.
+This applies whichever of the transformations given on page 559 gives
+the smallest modulus for the argument <code>z</code>.
+</p>
+<p>Sometimes <code>hypergeo_general()</code> and all the transformations on
+page 559 fail to converge, in which case <code>hypergeo()</code> uses the
+continued fraction expansion <code>hypergeo_contfrac()</code>.
+</p>
+<p>If this fails, the function uses integration via <code>f15.3.1()</code>.
+</p>
+
+
+<h3>Note</h3>
+
+<p>Abramowitz and Stegun state:
+</p>
+<p>&ldquo;The radius of convergence of the Gauss hypergeometric series
+<i>...</i> is <i>|z|=1</i>&rdquo; (AMS-55, section
+15.1, page 556).
+</p>
+<p>This reference book gives the correct radius of convergence; use the
+ratio test to verify it.  Thus if <i>|z|&gt;1</i>, the hypergeometric series
+will diverge and function <code>genhypergeo()</code> will fail to converge.
+</p>
+<p>However, the hypergeometric function is defined over the whole of the
+complex plane, so analytic continuation may be used if appropriate cut
+lines are used.  A cut line must join <i>z=1</i> to (complex) infinity;
+it is conventional for it to follow the real axis in a positive
+direction from <i>z=1</i> but other choices are possible.
+</p>
+<p>Note that in using the package one sometimes draws a
+&ldquo;full precision not achieved&rdquo; warning from <code>gamma()</code>; and
+complex arguments are not allowed.  I would suggest either ignoring the
+warning (the error of <code>gamma()</code> is unlikely to be large) or to use
+one of the bespoke functions such as <code>f15.3.4()</code> and tolerate the
+slower convergence, although this is not always possible.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Robin K. S. Hankin</p>
+
+
+<h3>References</h3>
+
+<p>Abramowitz and Stegun 1955.
+<em>Handbook of mathematical functions with formulas, 
+graphs and mathematical tables</em> (AMS-55).
+National Bureau of Standards</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../hypergeo/help/hypergeo_powerseries.html">hypergeo_powerseries</a></code>,
+<code><a href="../../hypergeo/help/hypergeo_contfrac.html">hypergeo_contfrac</a></code>, <code><a href="../../hypergeo/help/genhypergeo.html">genhypergeo</a></code></p>
+
+
+<h3>Examples</h3>
+
+<pre>
+#  equation 15.1.3, page 556:
+f1 &lt;- function(x){-log(1-x)/x}
+f2 &lt;- function(x){hypergeo(1,1,2,x)}
+f3 &lt;- function(x){hypergeo(1,1,2,x,tol=1e-10)}
+x &lt;- seq(from = -0.6,to=0.6,len=14)
+f1(x)-f2(x)
+f1(x)-f3(x)  # Note tighter tolerance
+
+# equation 15.1.7, p556:
+g1 &lt;- function(x){log(x + sqrt(1+x^2))/x}
+g2 &lt;- function(x){hypergeo(1/2,1/2,3/2,-x^2)}
+g1(x)-g2(x)  # should be small 
+abs(g1(x+0.1i) - g2(x+0.1i))  # should have small modulus.
+
+# Just a random call, verified by Maple [ Hypergeom([],[1.22],0.9087) ]:
+genhypergeo(NULL,1.22,0.9087)
+
+
+# Little test of vectorization (warning: inefficient):
+hypergeo(A=1.2+matrix(1:10,2,5)/10, B=1.4, C=1.665, z=1+2i)
+
+
+# following calls test for former bugs:
+hypergeo(1,2.1,4.1,1+0.1i)
+hypergeo(1.1,5,2.1,1+0.1i)
+hypergeo(1.9, 2.9, 1.9+2.9+4,1+0.99i) # c=a+b+4; hypergeo_cover1()
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>hypergeo</em> version 1.2-14 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,405 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Monte Carlo Power Evaluation for Experimental Designs</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for eval_design_mc {skpr}"><tr><td>eval_design_mc {skpr}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Monte Carlo Power Evaluation for Experimental Designs</h2>
+
+<h3>Description</h3>
+
+<p>Evaluates the power of an experimental design, given the run matrix and the
+statistical model to be fit to the data, using monte carlo simulation. Simulated data is fit using a
+generalized linear model
+and power is estimated by the fraction of times a parameter is significant.
+Returns a data frame of parameter powers.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+eval_design_mc(
+  design,
+  model = NULL,
+  alpha = 0.05,
+  blocking = NULL,
+  nsim = 1000,
+  glmfamily = "gaussian",
+  calceffect = TRUE,
+  effect_anova = TRUE,
+  varianceratios = NULL,
+  rfunction = NULL,
+  anticoef = NULL,
+  firth = FALSE,
+  effectsize = 2,
+  contrasts = contr.sum,
+  high_resolution_candidate_set = NA,
+  moment_sample_density = 10,
+  parallel = FALSE,
+  adjust_alpha_inflation = FALSE,
+  detailedoutput = FALSE,
+  progress = TRUE,
+  advancedoptions = NULL,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>design</code></td>
+<td>
+<p>The experimental design. Internally, <code>eval_design_mc</code> rescales each numeric column
+to the range -1 to 1.</p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>The model used in evaluating the design. If this is missing and the design
+was generated with skpr, the generating model will be used. It can be a subset of the model used to
+generate the design, or include higher order effects not in the original design generation. It cannot include
+factors that are not present in the experimental design.</p>
+</td></tr>
+<tr valign="top"><td><code>alpha</code></td>
+<td>
+<p>Default <code>0.05</code>. The type-I error. p-values less than this will be counted as significant.</p>
+</td></tr>
+<tr valign="top"><td><code>blocking</code></td>
+<td>
+<p>Default <code>NULL</code>. If <code>TRUE</code>, <code>eval_design_mc</code> will look at the rownames (or blocking columns) to determine blocking structure. Default FALSE.</p>
+</td></tr>
+<tr valign="top"><td><code>nsim</code></td>
+<td>
+<p>Default <code>1000</code>. The number of Monte Carlo simulations to perform.</p>
+</td></tr>
+<tr valign="top"><td><code>glmfamily</code></td>
+<td>
+<p>Default <code>gaussian</code>. String indicating the family of distribution for the <code>glm</code> function
+(&quot;gaussian&quot;, &quot;binomial&quot;, &quot;poisson&quot;, or &quot;exponential&quot;).</p>
+</td></tr>
+<tr valign="top"><td><code>calceffect</code></td>
+<td>
+<p>Default <code>TRUE</code>. Whether to calculate effect power. This calculation is more expensive than parameter power,
+so turned off (if not needed) can greatly speed up calculation time.</p>
+</td></tr>
+<tr valign="top"><td><code>effect_anova</code></td>
+<td>
+<p>Default <code>TRUE</code>, whether to a Type-III Anova or a likelihood ratio test to calculate effect power.
+If <code>TRUE</code>, effect power will be calculated using a Type-III Anova (using the car package) and a Wald test. If <code>FALSE</code>,
+a likelihood ratio test (using a reduced model for each effect) will performed using the <code>lmtest</code> package. If <code>firth = TRUE</code>,
+this will be set to <code>FALSE</code> automatically.</p>
+</td></tr>
+<tr valign="top"><td><code>varianceratios</code></td>
+<td>
+<p>Default <code>NULL</code>. The ratio of the whole plot variance to the run-to-run variance.
+If not specified during design generation, this will default to 1. For designs with more than one subplot
+this ratio can be a vector specifying the variance ratio for each subplot (comparing to the run-to-run variance).
+Otherwise, it will use a single value for all strata.</p>
+</td></tr>
+<tr valign="top"><td><code>rfunction</code></td>
+<td>
+<p>Default <code>NULL</code>.Random number generator function for the response variable. Should be a function of the form f(X, b, delta), where X is the
+model matrix, b are the anticipated coefficients, and delta is a vector of blocking errors. Typically something like rnorm(nrow(X), X * b + delta, 1).
+You only need to specify this if you do not like the default behavior described below.</p>
+</td></tr>
+<tr valign="top"><td><code>anticoef</code></td>
+<td>
+<p>Default <code>NULL</code>.The anticipated coefficients for calculating the power. If missing, coefficients
+will be automatically generated based on the <code>effectsize</code> argument.</p>
+</td></tr>
+<tr valign="top"><td><code>firth</code></td>
+<td>
+<p>Default <code>FALSE</code>. Whether to apply the firth correction (via the <code>mbest</code> package) to a logistic regression. This
+setting also automatically sets <code>effect_lr = TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>effectsize</code></td>
+<td>
+<p>Helper argument to generate anticipated coefficients. See details for more info.
+If you specify <code>anticoef</code>, <code>effectsize</code> will be ignored.</p>
+</td></tr>
+<tr valign="top"><td><code>contrasts</code></td>
+<td>
+<p>Default <code>contr.sum</code>. The contrasts to use for categorical factors. If the user has specified their own contrasts
+for a categorical factor using the contrasts function, those will be used. Otherwise, skpr will use contr.sum.
+If the user wants to set the number of cores manually, they can do this by setting <code>options("cores")</code> to the desired number (e.g. <code>options("cores" = parallel::detectCores())</code>).
+NOTE: If you have installed BLAS libraries that include multicore support (e.g. Intel MKL that comes with Microsoft R Open), turning on parallel could result in reduced performance.</p>
+</td></tr>
+<tr valign="top"><td><code>high_resolution_candidate_set</code></td>
+<td>
+<p>Default <code>NA</code>. If you have continuous numeric terms and disallowed combinations, the closed-form I-optimality value
+cannot be calculated and must be approximated by numeric integration. This requires sampling the allowed space densely, but most candidate sets will provide
+a sparse sampling of allowable points. To work around this, skpr will generate a convex hull of the numeric terms for each unique combination of categorical
+factors to generate a dense sampling of the space and cache that value internally, but this is a slow calculation and does not support non-convex candidate sets.
+To speed up moment matrix calculation,  pass a higher resolution version of your candidate set here with the disallowed combinations already applied.
+If you generated your design externally from skpr, there are disallowed combinations in your design, and need correct I-optimalituy values, you must pass your candidate set here.</p>
+</td></tr>
+<tr valign="top"><td><code>moment_sample_density</code></td>
+<td>
+<p>Default <code>10</code>. The density of points to sample when calculating the moment matrix to compute I-optimality. Only
+required if the design was generated outside of skpr and there are disallowed combinations.</p>
+</td></tr>
+<tr valign="top"><td><code>parallel</code></td>
+<td>
+<p>Default <code>FALSE</code>. If <code>TRUE</code>, the Monte Carlo power calculation will use all but one of the available cores. If the user wants to set the number of cores manually, they can do this by setting <code>options("cores")</code> to the desired number (e.g. <code>options("cores" = parallel::detectCores())</code>).
+NOTE: If you have installed BLAS libraries that include multicore support (e.g. Intel MKL that comes with Microsoft R Open), turning on parallel could result in reduced performance.</p>
+</td></tr>
+<tr valign="top"><td><code>adjust_alpha_inflation</code></td>
+<td>
+<p>Default <code>FALSE</code>. If <code>TRUE</code>, this will run the simulation twice:
+first to calculate the empirical distribution of p-values under the null hypothesis and find
+the true Type-I error cutoff that corresponds to the desired Type-I error rate,
+and then again given effect size to calculate power values.</p>
+</td></tr>
+<tr valign="top"><td><code>detailedoutput</code></td>
+<td>
+<p>Default <code>FALSE</code>. If <code>TRUE</code>, return additional information about evaluation in results.</p>
+</td></tr>
+<tr valign="top"><td><code>progress</code></td>
+<td>
+<p>Default <code>TRUE</code>. Whether to include a progress bar.</p>
+</td></tr>
+<tr valign="top"><td><code>advancedoptions</code></td>
+<td>
+<p>Default <code>NULL</code>. Named list of advanced options. <code>advancedoptions$anovatype</code> specifies the Anova type in the car package (default type <code>III</code>),
+user can change to type <code>II</code>). <code>advancedoptions$anovatest</code> specifies the test statistic if the user does not want a <code>Wald</code> test&ndash;other options are likelyhood-ratio <code>LR</code> and F-test <code>F</code>.
+<code>advancedoptions$progressBarUpdater</code> is a function called in non-parallel simulations that can be used to update external progress bar.<code>advancedoptions$GUI</code> turns off some warning messages when in the GUI.
+If <code>advancedoptions$save_simulated_responses = TRUE</code>, the dataframe will have an attribute <code>simulated_responses</code> that contains the simulated responses from the power evaluation. <code>advancedoptions$ci_error_conf</code> will
+set the confidence level for power intervals, which are printed when <code>detailedoutput = TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Additional arguments.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Evaluates the power of a design with Monte Carlo simulation. Data is simulated and then fit
+with a generalized linear model, and the fraction of simulations in which a parameter
+is significant (its p-value, according to the fit function used, is less than the specified <code>alpha</code>)
+is the estimate of power for that parameter.
+</p>
+<p>First, if <code>blocking = TURE</code>, the random noise from blocking is generated with <code>rnorm</code>.
+Each block gets a single sample of Gaussian random noise, with a variance as specified in
+<code>varianceratios</code>,
+and that sample is copied to each run in the block. Then, <code>rfunction</code> is called to generate a simulated
+response for each run of the design, and the data is fit using the appropriate fitting function.
+The functions used to simulate the data and fit it are determined by the <code>glmfamily</code>
+and <code>blocking</code> arguments
+as follows. Below, X is the model matrix, b is the anticipated coefficients, and d
+is a vector of blocking noise (if <code>blocking = FALSE</code> then d = 0):
+</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: left;">
+<b>glmfamily</b>      </td><td style="text-align: left;"> <b>blocking</b> </td><td style="text-align: right;"> <b>rfunction</b> </td><td style="text-align: right;"> <b>fit</b> </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+"gaussian"     </td><td style="text-align: left;"> F        </td><td style="text-align: right;"> <code>rnorm(mean = X %*% b + d, sd = 1)</code>        </td><td style="text-align: right;"> <code>lm</code>         </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+"gaussian"     </td><td style="text-align: left;"> T        </td><td style="text-align: right;"> <code>rnorm(mean = X %*% b + d, sd = 1)</code>        </td><td style="text-align: right;"> <code>lme4::lmer</code> </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+"binomial"     </td><td style="text-align: left;"> F        </td><td style="text-align: right;"> <code>rbinom(prob = 1/(1+exp(-(X %*% b + d))))</code> </td><td style="text-align: right;"> <code>glm(family = "binomial")</code>  </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+"binomial"     </td><td style="text-align: left;"> T        </td><td style="text-align: right;"> <code>rbinom(prob = 1/(1+exp(-(X %*% b + d))))</code> </td><td style="text-align: right;"> <code>lme4::glmer(family = "binomial")</code> </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+"poisson"      </td><td style="text-align: left;"> F        </td><td style="text-align: right;"> <code>rpois(lambda = exp((X %*% b + d)))</code>       </td><td style="text-align: right;"> <code>glm(family = "poisson")</code>         </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+"poisson"      </td><td style="text-align: left;"> T        </td><td style="text-align: right;"> <code>rpois(lambda = exp((X %*% b + d)))</code>       </td><td style="text-align: right;"> <code>lme4::glmer(family = "poisson")</code> </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+"exponential"  </td><td style="text-align: left;"> F        </td><td style="text-align: right;"> <code>rexp(rate = exp(-(X %*% b + d)))</code>            </td><td style="text-align: right;"> <code>glm(family = Gamma(link = "log"))</code> </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+"exponential"  </td><td style="text-align: left;"> T        </td><td style="text-align: right;"> <code>rexp(rate = exp(-(X %*% b + d)))</code>            </td><td style="text-align: right;"> <code>lme4:glmer(family = Gamma(link = "log"))</code> </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+</td>
+</tr>
+
+</table>
+
+<p>Note that the exponential random generator uses the &quot;rate&quot; parameter, but <code>skpr</code> and <code>glm</code> use
+the mean value parameterization (= 1 / rate), hence the minus sign above. Also note that
+the gaussian model assumes a root-mean-square error of 1.
+</p>
+<p>Power is dependent on the anticipated coefficients. You can specify those directly with the <code>anticoef</code>
+argument, or you can use the <code>effectsize</code> argument to specify an effect size and <code>skpr</code> will auto-generate them.
+You can provide either a length-1 or length-2 vector. If you provide a length-1 vector, the anticipated
+coefficients will be half of <code>effectsize</code>; this is equivalent to saying that the <em>linear predictor</em>
+(for a gaussian model, the mean response; for a binomial model, the log odds ratio; for an exponential model,
+the log of the mean value; for a poisson model, the log of the expected response)
+changes by <code>effectsize</code> when a continuous factor goes from its lowest level to its highest level. If you provide a
+length-2 vector, the anticipated coefficients will be set such that the <em>mean response</em> (for
+a gaussian model, the mean response; for a binomial model, the probability; for an exponential model, the mean
+response; for a poisson model, the expected response) changes from
+<code>effectsize[1]</code> to <code>effectsize[2]</code> when a factor goes from its lowest level to its highest level, assuming
+that the other factors are inactive (their x-values are zero).
+</p>
+<p>The effect of a length-2 <code>effectsize</code> depends on the <code>glmfamily</code> argument as follows:
+</p>
+<p>For <code>glmfamily = 'gaussian'</code>, the coefficients are set to <code>(effectsize[2] - effectsize[1]) / 2</code>.
+</p>
+<p>For <code>glmfamily = 'binomial'</code>, the intercept will be
+<code>1/2 * log(effectsize[1] * effectsize[2] / (1 - effectsize[1]) / (1 - effectsize[2]))</code>,
+and the other coefficients will be
+<code>1/2 * log(effectsize[2] * (1 - effectsize[1]) / (1 - effectsize[2]) / effectsize[1])</code>.
+</p>
+<p>For <code>glmfamily = 'exponential'</code> or <code>'poisson'</code>,
+the intercept will be
+<code>1 / 2 * (log(effectsize[2]) + log(effectsize[1]))</code>,
+and the other coefficients will be
+<code>1 / 2 * (log(effectsize[2]) - log(effectsize[1]))</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A data frame consisting of the parameters and their powers, with supplementary information
+stored in the data frame's attributes. The parameter estimates from the simulations are stored in the &quot;estimates&quot;
+attribute. The &quot;model_matrix&quot; attribute contains the model matrix that was used for power evaluation, and
+also provides the encoding used for categorical factors. If you want to specify the anticipated
+coefficients manually, do so in the order the parameters appear in the model matrix.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+#We first generate a full factorial design using expand.grid:
+factorialcoffee = expand.grid(cost = c(-1, 1),
+                              type = as.factor(c("Kona", "Colombian", "Ethiopian", "Sumatra")),
+                              size = as.factor(c("Short", "Grande", "Venti")))
+if(skpr:::run_documentation()) {
+#And then generate the 21-run D-optimal design using gen_design.
+designcoffee = gen_design(factorialcoffee,
+                         model = ~cost + type + size, trials = 21, optimality = "D")
+}
+if(skpr:::run_documentation()) {
+#To evaluate this design using a normal approximation, we just use eval_design
+#(here using the default settings for contrasts, effectsize, and the anticipated coefficients):
+
+eval_design(design = designcoffee, model = ~cost + type + size, 0.05)
+}
+if(skpr:::run_documentation()) {
+#To evaluate this design with a Monte Carlo method, we enter the same information
+#used in eval_design, with the addition of the number of simulations "nsim" and the distribution
+#family used in fitting for the glm "glmfamily". For gaussian, binomial, exponential, and poisson
+#families, a default random generating function (rfunction) will be supplied. If another glm
+#family is used or the default random generating function is not adequate, a custom generating
+#function can be supplied by the user. Like in `eval_design()`, if the model isn't entered, the
+#model used in generating the design will be used.
+
+eval_design_mc(designcoffee, nsim = 100, glmfamily = "gaussian")
+}
+if(skpr:::run_documentation()) {
+#We can also add error bars on the Monte Carlo power values by setting
+#`detailedoutput = TRUE` (which will print out other information as well).
+#We can set the confidence via the `advancedoptions` argument.
+eval_design_mc(designcoffee, nsim = 100, glmfamily = "gaussian",
+              detailedoutput = TRUE, advancedoptions = list(ci_error_conf  = 0.8))
+}
+if(skpr:::run_documentation()) {
+#We see here we generate approximately the same parameter powers as we do
+#using the normal approximation in eval_design. Like eval_design, we can also change
+#effectsize to produce a different signal-to-noise ratio:
+
+eval_design_mc(design = designcoffee, nsim = 100,
+                       glmfamily = "gaussian", effectsize = 1)
+}
+if(skpr:::run_documentation()) {
+#Like eval_design, we can also evaluate the design with a different model than
+#the one that generated the design.
+eval_design_mc(design = designcoffee, model = ~cost + type, alpha = 0.05,
+              nsim = 100, glmfamily = "gaussian")
+}
+if(skpr:::run_documentation()) {
+#And here it is evaluated with additional interactions included:
+eval_design_mc(design = designcoffee, model = ~cost + type + size + cost * type, 0.05,
+              nsim = 100, glmfamily = "gaussian")
+}
+if(skpr:::run_documentation()) {
+#We can also set "parallel = TRUE" to use all the cores available to speed up
+#computation.
+eval_design_mc(design = designcoffee, nsim = 10000,
+                       glmfamily = "gaussian", parallel = TRUE)
+}
+if(skpr:::run_documentation()) {
+#We can also evaluate split-plot designs. First, let us generate the split-plot design:
+
+factorialcoffee2 = expand.grid(Temp = c(1, -1),
+                               Store = as.factor(c("A", "B")),
+                               cost = c(-1, 1),
+                               type = as.factor(c("Kona", "Colombian", "Ethiopian", "Sumatra")),
+                               size = as.factor(c("Short", "Grande", "Venti")))
+
+vhtcdesign = gen_design(factorialcoffee2,
+                       model = ~Store, trials = 6, varianceratio = 1)
+htcdesign = gen_design(factorialcoffee2, model = ~Store + Temp, trials = 18,
+                       splitplotdesign = vhtcdesign, blocksizes = rep(3, 6), varianceratio = 1)
+splitplotdesign = gen_design(factorialcoffee2,
+                            model = ~Store + Temp + cost + type + size, trials = 54,
+                            splitplotdesign = htcdesign, blocksizes = rep(3, 18),
+                            varianceratio = 1)
+
+#Each block has an additional noise term associated with it in addition to the normal error
+#term in the model. This is specified by a vector specifying the additional variance for
+#each split-plot level. This is equivalent to specifying a variance ratio of one between
+#the whole plots and the run-to-run variance for gaussian models.
+
+#Evaluate the design. Note the decreased power for the blocking factors.
+eval_design_mc(splitplotdesign, blocking = TRUE, nsim = 100,
+                       glmfamily = "gaussian", varianceratios = c(1, 1, 1))
+}
+if(skpr:::run_documentation()) {
+#We can also use this method to evaluate designs that cannot be easily
+#evaluated using normal approximations. Here, we evaluate a design with a binomial response and see
+#whether we can detect the difference between each factor changing whether an event occurs
+#70% of the time or 90% of the time.
+
+factorialbinom = expand.grid(a = c(-1, 1), b = c(-1, 1))
+designbinom = gen_design(factorialbinom, model = ~a + b, trials = 90, optimality = "D")
+
+eval_design_mc(designbinom, ~a + b, alpha = 0.2, nsim = 100, effectsize = c(0.7, 0.9),
+              glmfamily = "binomial")
+}
+if(skpr:::run_documentation()) {
+#We can also use this method to determine power for poisson response variables.
+#Generate the design:
+
+factorialpois = expand.grid(a = as.numeric(c(-1, 0, 1)), b = c(-1, 0, 1))
+designpois = gen_design(factorialpois, ~a + b, trials = 70, optimality = "D")
+
+#Evaluate the power:
+
+eval_design_mc(designpois, ~a + b, 0.05, nsim = 100, glmfamily = "poisson",
+               anticoef = log(c(0.2, 2, 2)))
+}
+
+#The coefficients above set the nominal value -- that is, the expected count
+#when all inputs = 0 -- to 0.2 (from the intercept), and say that each factor
+#changes this count by a factor of 4 (multiplied by 2 when x= +1, and divided by 2 when x = -1).
+#Note the use of log() in the anticipated coefficients.
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>skpr</em> version 1.9.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

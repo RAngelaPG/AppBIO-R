@@ -1,0 +1,131 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Post-Prune 'modelparty' Objects</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for prune.modelparty {partykit}"><tr><td>prune.modelparty {partykit}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Post-Prune <code>modelparty</code> Objects</h2>
+
+<h3>Description</h3>
+
+<p>Post-pruning of <code>modelparty</code> objects based on information
+criteria like AIC, BIC, or related user-defined criteria.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+## S3 method for class 'modelparty'
+prune(tree, type = "AIC", ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>tree</code></td>
+<td>
+<p>object of class <code>modelparty</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>pruning type. Can be <code>"AIC"</code>, <code>"BIC"</code> or a
+user-defined function (details below).</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>additional arguments.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>In <code><a href="../../partykit/help/mob.html">mob</a></code>-based model trees, pre-pruning based on p-values
+is used by default and often no post-pruning is necessary in such trees.
+However, if pre-pruning is switched off (by using a large <code>alpha</code>)
+or does is not sufficient (e.g., possibly in large samples) the <code>prune</code>
+method can be used for subsequent post-pruning based on information criteria.
+</p>
+<p>The function <code>prune.modelparty</code> can be called directly but it is also
+registered as a method for the generic <code><a href="../../rpart/help/prune.html">prune</a></code> function
+from the <span class="pkg">rpart</span> package. Thus, if <span class="pkg">rpart</span> is attached,
+<code>prune(tree, type = "AIC", ...)</code> also works (see examples below).
+</p>
+<p>To customize the post-pruning strategy,
+<code>type</code> can be set to a <code>function(objfun, df, nobs)</code>
+which either returns <code>TRUE</code> to signal that a current node can be pruned
+or <code>FALSE</code>. All supplied arguments are of length two: <code>objfun</code> is the sum of objective
+function values in the current node and its child nodes, respectively.
+<code>df</code> is the degrees of freedom in the current node and its child nodes,
+respectively. <code>nobs</code> is vector with the number of observations in the
+current node and the total number of observations in the dataset, respectively. 
+</p>
+<p>For <code>"AIC"</code> and <code>"BIC"</code> <code>type</code> is transformed so that AIC
+or BIC are computed. However, this assumes that the <code>objfun</code> used in <code>tree</code>
+is actually the negative log-likelihood. The degrees of freedom assumed for a split 
+can be set via the <code>dfsplit</code> argument in <code><a href="../../partykit/help/mob_control.html">mob_control</a></code> when computing
+the <code>tree</code> or manipulated later by changing the value of <code>tree$info$control$dfsplit</code>.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>modelparty</code> where the associated tree is either the
+same as the original or smaller.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../rpart/help/prune.html">prune</a></code>, <code><a href="../../partykit/help/lmtree.html">lmtree</a></code>, <code><a href="../../partykit/help/glmtree.html">glmtree</a></code>, <code><a href="../../partykit/help/mob.html">mob</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+set.seed(29)
+n &lt;- 1000
+d &lt;- data.frame(
+  x = runif(n),
+  z = runif(n),
+  z_noise = factor(sample(1:3, size = n, replace = TRUE))
+)
+d$y &lt;- rnorm(n, mean = d$x * c(-1, 1)[(d$z &gt; 0.7) + 1], sd = 3)
+
+## glm versus lm / logLik versus sum of squared residuals
+fmla &lt;- y ~ x | z + z_noise
+lm_big &lt;- lmtree(formula = fmla, data = d, maxdepth = 3, alpha = 1)
+glm_big &lt;- glmtree(formula = fmla, data = d, maxdepth = 3, alpha = 1)
+
+AIC(lm_big)
+AIC(glm_big)
+
+## load rpart for prune() generic
+## (otherwise: use prune.modelparty directly)
+if (require("rpart")) {
+
+## pruning
+lm_aic &lt;- prune(lm_big, type = "AIC")
+lm_bic &lt;- prune(lm_big, type = "BIC")
+
+width(lm_big)
+width(lm_aic)
+width(lm_bic)
+
+glm_aic &lt;- prune(glm_big, type = "AIC")
+glm_bic &lt;- prune(glm_big, type = "BIC")
+
+width(glm_big)
+width(glm_aic)
+width(glm_bic)
+
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>partykit</em> version 1.2-27 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

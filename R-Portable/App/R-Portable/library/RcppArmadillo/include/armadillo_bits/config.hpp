@@ -139,11 +139,6 @@
 //// Note that ARMA_USE_OPENMP is automatically enabled when a compiler supporting OpenMP 3.1 is detected.
 #endif
 
-#if !defined(ARMA_USE_STD_MUTEX)
-  #define ARMA_USE_STD_MUTEX
-//// Comment out the above line to disable use of std::mutex
-#endif
-
 #if !defined(ARMA_64BIT_WORD)
 // #define ARMA_64BIT_WORD
 //// Uncomment the above line if you require matrices/vectors capable of holding more than 4 billion elements.
@@ -167,14 +162,6 @@
   #define ARMA_OPTIMISE_INVEXPR
   //// Comment out the above line to disable optimised handling
   //// of inv() and inv_sympd() within compound expressions
-#endif
-
-#if !defined(ARMA_CHECK_CONFORMANCE)
-  #define ARMA_CHECK_CONFORMANCE
-  //// Comment out the above line to disable conformance checks for bounds and size.
-  //// This is NOT RECOMMENDED.
-  //// It is strongly recommended that conformance checks are enabled during development,
-  //// as this greatly aids in finding mistakes in your code.
 #endif
 
 #if !defined(ARMA_CHECK_NONFINITE)
@@ -202,14 +189,20 @@
 //// The maximum number of threads to use for OpenMP based parallelisation;
 //// it must be an integer that is at least 1.
 
-// #define ARMA_DEBUG
+// #define ARMA_NO_DEBUG
+//// Uncomment the above line to disable all run-time checks. NOT RECOMMENDED.
+//// It is strongly recommended that run-time checks are enabled during development,
+//// as this greatly aids in finding mistakes in your code.
+
+// #define ARMA_EXTRA_DEBUG
 //// Uncomment the above line to see the function traces of how Armadillo evaluates expressions.
 //// This is mainly useful for debugging of the library.
 
+
 #if defined(ARMA_EXTRA_DEBUG)
-  // for compatibility with earlier versions of Armadillo
-  #undef  ARMA_DEBUG
-  #define ARMA_DEBUG
+  #undef  ARMA_NO_DEBUG
+  #undef  ARMA_WARN_LEVEL
+  #define ARMA_WARN_LEVEL 3
 #endif
 
 
@@ -287,15 +280,17 @@
   #undef ARMA_USE_FORTRAN_HIDDEN_ARGS
 #endif
 
-#if defined(ARMA_DONT_USE_STD_MUTEX)
-  #undef ARMA_USE_STD_MUTEX
+#if !defined(ARMA_DONT_USE_STD_MUTEX)
+  // #define ARMA_DONT_USE_STD_MUTEX
+  //// Uncomment the above line to disable use of std::mutex
 #endif
 
 // for compatibility with earlier versions of Armadillo
 #if defined(ARMA_DONT_USE_CXX11_MUTEX)
   #pragma message ("WARNING: support for ARMA_DONT_USE_CXX11_MUTEX is deprecated and will be removed;")
   #pragma message ("WARNING: use ARMA_DONT_USE_STD_MUTEX instead")
-  #undef ARMA_USE_STD_MUTEX
+  #undef  ARMA_DONT_USE_STD_MUTEX
+  #define ARMA_DONT_USE_STD_MUTEX
 #endif
 
 #if defined(ARMA_DONT_USE_OPENMP)
@@ -318,35 +313,8 @@
   #undef ARMA_OPTIMISE_INVEXPR
 #endif
 
-#if defined(ARMA_DONT_CHECK_CONFORMANCE)
-  #if defined(ARMA_CHECK_CONFORMANCE) && (ARMA_WARN_LEVEL >= 2)
-    #pragma message ("WARNING: conformance checks disabled")
-  #endif
-  
-  #undef ARMA_CHECK_CONFORMANCE
-#endif
-
 #if defined(ARMA_DONT_CHECK_NONFINITE)
   #undef ARMA_CHECK_NONFINITE
-#endif
-
-#if defined(ARMA_NO_DEBUG)
-  #undef ARMA_DEBUG
-  #undef ARMA_EXTRA_DEBUG
-#endif
-
-#if defined(ARMA_DEBUG)
-  #undef  ARMA_DONT_CHECK_CONFORMANCE
-  #undef  ARMA_DONT_CHECK_NONFINITE
-  
-  #undef  ARMA_CHECK_CONFORMANCE
-  #define ARMA_CHECK_CONFORMANCE
-  
-  #undef  ARMA_CHECK_NONFINITE
-  #define ARMA_CHECK_NONFINITE
-  
-  #undef  ARMA_WARN_LEVEL
-  #define ARMA_WARN_LEVEL 3
 #endif
 
 #if defined(ARMA_DONT_PRINT_ERRORS)
@@ -363,6 +331,11 @@
 
 #if defined(ARMA_DONT_PRINT_EXCEPTIONS)
   #undef ARMA_PRINT_EXCEPTIONS
+#endif
+
+#if !defined(ARMA_DONT_ZERO_INIT)
+  // #define ARMA_DONT_ZERO_INIT
+  //// Uncomment the above line to disable initialising elements to zero during construction of dense matrices and cubes
 #endif
 
 #if defined(ARMA_NO_CRIPPLED_LAPACK)

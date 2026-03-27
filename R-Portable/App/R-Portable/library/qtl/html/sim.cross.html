@@ -1,0 +1,275 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Simulate a QTL experiment</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for sim.cross {qtl}"><tr><td>sim.cross {qtl}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Simulate a QTL experiment</h2>
+
+<h3>Description</h3>
+
+<p>Simulates data for a QTL experiment using a model in which QTLs act additively.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+sim.cross(map, model=NULL, n.ind=100,
+         type=c("f2", "bc", "4way", "risib", "riself",
+           "ri4sib", "ri4self", "ri8sib", "ri8self", "bcsft"),
+          error.prob=0, missing.prob=0, partial.missing.prob=0,
+          keep.qtlgeno=TRUE, keep.errorind=TRUE, m=0, p=0,
+      map.function=c("haldane","kosambi","c-f","morgan"),
+          founderGeno, random.cross=TRUE, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>map</code></td>
+<td>
+<p>A list whose components are vectors containing the marker
+locations on each of the chromosomes.</p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>A matrix where each row corresponds to a
+different QTL, and gives the chromosome number, cM position and
+effects of the QTL.</p>
+</td></tr>
+<tr valign="top"><td><code>n.ind</code></td>
+<td>
+<p>Number of individuals to simulate.</p>
+</td></tr>
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>Indicates whether to simulate an intercross (<code>f2</code>),
+a backcross (<code>bc</code>), a phase-known 4-way cross (<code>4way</code>),
+or recombinant inbred lines (by selfing or by sib-mating, and with
+the usual 2 founder strains or with 4 or 8 founder strains).</p>
+</td></tr>
+<tr valign="top"><td><code>error.prob</code></td>
+<td>
+<p>The genotyping error rate.</p>
+</td></tr>
+<tr valign="top"><td><code>missing.prob</code></td>
+<td>
+<p>The rate of missing genotypes.</p>
+</td></tr>
+<tr valign="top"><td><code>partial.missing.prob</code></td>
+<td>
+<p>When simulating an intercross or 4-way
+cross, this gives the rate at which markers will be incompletely
+informative (i.e., dominant or recessive).</p>
+</td></tr>
+<tr valign="top"><td><code>keep.qtlgeno</code></td>
+<td>
+<p>If TRUE, genotypes for the simulated QTLs will be
+included in the output.</p>
+</td></tr>
+<tr valign="top"><td><code>keep.errorind</code></td>
+<td>
+<p>If TRUE, and if <code>error.prob &gt; 0</code>, the
+identity of genotyping errors will be included in the output.</p>
+</td></tr>
+<tr valign="top"><td><code>m</code></td>
+<td>
+<p>Interference parameter; a non-negative integer.  0 corresponds
+to no interference.</p>
+</td></tr>
+<tr valign="top"><td><code>p</code></td>
+<td>
+<p>Probability that a chiasma comes from the no-interference
+mechanism</p>
+</td></tr>
+<tr valign="top"><td><code>map.function</code></td>
+<td>
+<p>Indicates whether to use the Haldane, Kosambi,
+Carter-Falconer, or Morgan map function when converting genetic
+distances into recombination fractions.</p>
+</td></tr>
+<tr valign="top"><td><code>founderGeno</code></td>
+<td>
+<p>For 4- or 8-way RIL, the genotype data of the
+founder strains, as a list whose components are numeric matrices
+(no. markers x no. founders), one for each chromosome.</p>
+</td></tr>
+<tr valign="top"><td><code>random.cross</code></td>
+<td>
+<p>For 4- or 8-way RIL, indicates whether the order of the
+founder strains should be randomized, independently for each RIL, or
+whether all RIL be derived from a common cross.  In the latter case,
+for a 4-way RIL, the cross would be (AxB)x(CxD).</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>For <code>type = "bcsft"</code>, additional arguments passed to <code>sim.cross.bcsft</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Meiosis is assumed to follow the Stahl model for crossover
+interference (see the references, below), of which the no interference
+model and the chi-square model are special cases.  Chiasmata on the
+four-strand bundle are a superposition of chiasmata from two different
+mechanisms.  With probability <code>p</code>, they arise by a mechanism
+exhibiting no interference; the remainder come from a chi-square model
+with inteference parameter <code>m</code>.  Note that <code>m=0</code> corresponds
+to no interference, and with <code>p=0</code>, one gets a pure chi-square
+model.
+</p>
+<p>If a chromosomes has class <code>X</code>, it is assumed to be the X
+chromosome, and is assumed to be segregating in the cross.  Thus, in
+an intercross, it is segregating like a backcross chromosome.  In a
+4-way cross, a second phenotype, <code>sex</code>, will be generated.
+</p>
+<p>QTLs are assumed to act additively, and the residual phenotypic
+variation is assumed to be normally distributed with variance 1.
+</p>
+<p>For a backcross, the effect of a QTL is a single number corresponding
+to the difference between the homozygote and the heterozygote.
+</p>
+<p>For an intercross, the effect of a QTL is a pair of numbers,
+(<i>a,d</i>), where <i>a</i> is the additive effect (half the difference
+between the homozygotes) and <i>d</i> is the dominance deviation (the
+difference between the heterozygote and the midpoint between the
+homozygotes).
+</p>
+<p>For a four-way cross, the effect of a QTL is a set of three numbers,
+(<i>a,b,c</i>), where, in the case of one QTL, the mean phenotype,
+conditional on the QTL genotyping being AC, BC, AD or BD, is  <i>a</i>,
+<i>b</i>, <i>c</i> or 0, respectively.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An object of class <code>cross</code>.  See <code><a href="../../qtl/help/read.cross.html">read.cross</a></code> for
+details.
+</p>
+<p>If <code>keep.qtlgeno</code> is TRUE, the cross object will contain a
+component <code>qtlgeno</code> which is a matrix containing the QTL
+genotypes (with complete data and no errors), coded as in the genotype
+data.
+</p>
+<p>If <code>keep.errorind</code> is TRUE and errors were simulated, each
+component of <code>geno</code> will each contain a matrix <code>errors</code>,
+with 1's indicating simulated genotyping errors.
+</p>
+
+
+<h3>Recombinant inbred lines</h3>
+
+<p>In the simulation of recombinant inbred lines (RIL), we simulate a
+single individual from each line, and no phenotypes are simulated (so the
+argument <code>model</code> is ignored).
+</p>
+<p>The types <code>riself</code> and <code>risib</code> are the usual two-way RIL.
+</p>
+<p>The types <code>ri4self</code>, <code>ri4sib</code>, <code>ri8self</code>, and
+<code>ri8sib</code> are RIL by selfing or sib-mating derived from four or
+eight founding parental strains.
+</p>
+<p>For the 4- and 8-way RIL, one must include the genotypes of the
+founding individuals; these may be simulated with
+<code><a href="../../qtl/help/simFounderSnps.html">simFounderSnps</a></code>.  Also, the output cross will
+contain a component <code>cross</code>, which is a matrix with rows
+corresponding to RIL and columns corresponding to the founders,
+indicating order of the founder strains in the crosses used to
+generate the RIL.
+</p>
+<p>The coding of genotypes in 4- and 8-way RIL is rather complicated.  It
+is a binary encoding of which founder strains' genotypes match the
+RIL's genotype at a marker, and not that this is specific to the order
+of the founders in the crosses used to generate the RIL.  For example,
+if an RIL generated from 4 founders has the 1 allele at a SNP, and the
+four founders have SNP alleles 0, 1, 0, 1, then the RIL allele matches
+that of founders B and D.  If the RIL was derived by the cross (AxB)x(CxD),
+then the RIL genotype would be encoded <i>2^(2-1) + 2^(3-1) = 6</i>.
+If the cross was derived by the cross (DxA)x(CxB), then the RIL
+genotype would be encoded <i>2^(1-1) + 2^(4-1) = 6</i>.
+These get reorganized after calls to <code><a href="../../qtl/help/calc.genoprob.html">calc.genoprob</a></code>,
+<code><a href="../../qtl/help/sim.geno.html">sim.geno</a></code>, or <code><a href="../../qtl/help/argmax.geno.html">argmax.geno</a></code>, and
+this approach simplifies the hidden Markov model (HMM) code.
+</p>
+<p>For the 4- and 8-way RIL, genotyping errors are simulated only if the
+founder genotypes are 0/1 SNPs.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Karl W Broman, <a href="mailto:broman@wisc.edu">broman@wisc.edu</a> </p>
+
+
+<h3>References</h3>
+
+<p>Copenhaver, G. P., Housworth, E. A. and Stahl, F. W. (2002) Crossover
+interference in arabidopsis.  <em>Genetics</em> <b>160</b>, 1631&ndash;1639.
+</p>
+<p>Foss, E., Lande, R., Stahl, F. W. and Steinberg, C. M. (1993) Chiasma
+interference as a function of genetic distance. <em>Genetics</em>
+<b>133</b>, 681&ndash;691.
+</p>
+<p>Zhao, H., Speed, T. P. and McPeek, M. S. (1995) Statistical analysis
+of crossover interference using the chi-square model.  <em>Genetics</em>
+<b>139</b>, 1045&ndash;1056.
+</p>
+<p>Broman, K. W. (2005) The genomes of recombinant inbred lines
+<em>Genetics</em> <b>169</b>, 1133&ndash;1146.
+</p>
+<p>Teuscher, F. and Broman, K. W. (2007) Haplotype probabilities for
+multiple-strain recombinant inbred lines.  <em>Genetics</em> <b>175</b>,
+1267&ndash;1274.
+</p>
+
+
+<h3>See Also</h3>
+
+ <p><code><a href="../../qtl/help/sim.map.html">sim.map</a></code>, <code><a href="../../qtl/help/read.cross.html">read.cross</a></code>,
+<code><a href="../../qtl/help/fake.f2.html">fake.f2</a></code>, <code><a href="../../qtl/help/fake.bc.html">fake.bc</a></code>
+<code><a href="../../qtl/help/fake.4way.html">fake.4way</a></code>, <code><a href="../../qtl/help/simFounderSnps.html">simFounderSnps</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# simulate a genetic map
+map &lt;- sim.map()
+
+
+### simulate 250 intercross individuals with 2 QTLs
+fake &lt;- sim.cross(map, type="f2", n.ind=250,
+                  model = rbind(c(1,45,1,1),c(5,20,0.5,-0.5)))
+
+
+### simulate 100 backcross individuals with 3 QTL
+# a 10-cM map model after the mouse
+data(map10)
+
+fakebc &lt;- sim.cross(map10, type="bc", n.ind=100,
+                    model=rbind(c(1,45,1), c(5,20,1), c(5,50,1)))
+
+
+### simulate 8-way RIL by sibling mating
+# get lengths from the above 10-cM map
+L &lt;- ceiling(sapply(map10, max))
+
+# simulate a 1 cM map
+themap &lt;- sim.map(L, n.mar=L+1, eq.spacing=TRUE)
+
+# simulate founder genotypes
+pg &lt;- simFounderSnps(themap, "8")
+
+# simulate the 8-way RIL by sib mating (256 lines)
+ril &lt;- sim.cross(themap, n.ind=256, type="ri8sib", founderGeno=pg)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>qtl</em> version 1.74 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

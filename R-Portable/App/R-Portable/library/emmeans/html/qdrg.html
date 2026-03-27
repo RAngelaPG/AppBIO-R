@@ -1,0 +1,199 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Quick and dirty reference grid</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for qdrg {emmeans}"><tr><td>qdrg {emmeans}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Quick and dirty reference grid</h2>
+
+<h3>Description</h3>
+
+<p>This function may make it possible to compute a reference grid for a model 
+object that is otherwise not supported.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+qdrg(formula, data, coef, vcov, df, mcmc, object, subset, weights, contrasts,
+  link, qr, ordinal, ...)
+
+## Default S3 method:
+qdrg(formula = stats::formula(object),
+  data = try(recover_data.lm(object), silent = TRUE),
+  coef = stats::coef(object), vcov = stats::vcov(object),
+  df = stats::df.residual(object), mcmc, object, subset,
+  weights = stats::weights(object), contrasts = object$contrasts,
+  link = ifelse(!is.null(lnk &lt;- object$family$link), lnk, object$link),
+  qr = object$qr, ordinal, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>Formula for the fixed effects</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>Dataset containing the variables in the model</p>
+</td></tr>
+<tr valign="top"><td><code>coef</code></td>
+<td>
+<p>Fixed-effect regression coefficients (must conform to formula)</p>
+</td></tr>
+<tr valign="top"><td><code>vcov</code></td>
+<td>
+<p>Variance-covariance matrix of the fixed effects</p>
+</td></tr>
+<tr valign="top"><td><code>df</code></td>
+<td>
+<p>Error degrees of freedom</p>
+</td></tr>
+<tr valign="top"><td><code>mcmc</code></td>
+<td>
+<p>Posterior sample of fixed-effect coefficients</p>
+</td></tr>
+<tr valign="top"><td><code>object</code></td>
+<td>
+<p>Optional model object. <em>This rarely works!</em>; 
+but if provided, we try to set 
+other arguments based on an expectation that 'object' has a similar
+structure to 'lm' objects. See Details.</p>
+</td></tr>
+<tr valign="top"><td><code>subset</code></td>
+<td>
+<p>Subset of <code>data</code> used in fitting the model</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>Weights used in fitting the model</p>
+</td></tr>
+<tr valign="top"><td><code>contrasts</code></td>
+<td>
+<p>List of contrasts specified in fitting the model</p>
+</td></tr>
+<tr valign="top"><td><code>link</code></td>
+<td>
+<p>Link function (character or list) used, if a generalized linear model.
+(Note: response transformations are auto-detected from <code>formula</code>)</p>
+</td></tr>
+<tr valign="top"><td><code>qr</code></td>
+<td>
+<p>QR decomposition of the model matrix; used only if there are <code>NA</code>s
+in <code>coef</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>ordinal</code></td>
+<td>
+<p><code>list</code> with elements <code>dim</code> and <code>mode</code>.
+<code>ordinal$dim</code> (integer) is the number of levels in an ordinal response. If 
+<code>ordinal</code> is provided, the intercept terms are modified appropriate to predicting 
+an ordinal response, as described in <code>vignette("models")</code>, Section O,
+using <code>ordinal$mode</code> as the <code>mode</code> argument (if not
+provided, <code>"latent"</code> is assumed).
+(All modes are supported except 'scale')
+For this to work, we expect
+the first <code>ordinal$dim - 1</code> elements of <code>coef</code> to be the
+estimated threshold parameters, followed by the coefficients for the
+linear predictor. Also, if <code>mode</code> requires back-transforming (e.g.,
+<code>"prob"</code> or <code>"mean.class"</code>), the user may need to supply the <code>link</code>
+for it to work correctly.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Optional arguments passed to <code><a href="../../emmeans/help/ref_grid.html">ref_grid</a></code></p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Usually, you need to provide either <code>object</code>; or
+<code>formula</code>, <code>coef</code>, <code>vcov</code>, <code>data</code>, and perhaps other
+parameters. It is often fairly straightforward to figure out how to get
+these from the model <code>object</code>; see the documentation for the model class that
+was fitted. Sometimes one or more of these quantities contains extra parameters,
+and if so, you may need to subset them to make everything conformable. For a given <code>formula</code> and <code>data</code>,
+you can find out what is needed via <code>colnames(model.matrix(formula, data))</code>.
+(However, for an ordinal model, we expect the first <code>ordinal.dim - 1</code> coefficients
+to replace <code>(Intercept)</code>. And for a multivariate model, we expect <code>coef</code> 
+to be a matrix with these row names, and <code>vcov</code> to have as many rows and columns as
+the total number of elements of <code>coef</code>.)
+</p>
+<p>If <code>object</code> is specified, this function serves as a generic for dispatching
+a method for <code>object</code>'s class. See the arguments for <code>qdrg.default</code> to
+see how the arguments are determined by default. For many <code>lm</code>- or <code>glm</code>-like
+models, it may suffice override just one or two of these
+defaults. The possibility of a custom <code>qdrg</code> method also provides a
+minimal way for package developers to provide <span class="pkg">emmeans</span> support: it doesn't
+allow directly applying <code>emmeans()</code> on the model, but at least the user
+can obtain a reference grid, and then go from there. Note that when using a 'qdrg' 
+method, it is best for the user to specify 'object =' explicitly in the
+call, since 'object' is not the first argument of 'qdrg()'. However, if the
+first argument is not a formula, the function is retried with it as <code>object</code>.
+</p>
+<p>The functions <code><a href="../../emmeans/help/qdrg.html">qdrg</a></code> and <code>emmobj</code> are close cousins, in that
+they both produce <code>emmGrid</code> objects. When starting with summary
+statistics for an existing grid, <code>emmobj</code> is more useful, while
+<code>qdrg</code> is more useful when starting from a fitted model.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An <code>emmGrid</code> object constructed from the arguments
+</p>
+
+
+<h3>Rank deficiencies</h3>
+
+<p>Different model-fitting packages take different approaches when the model
+matrix is singular, but <code>qdrg</code> tries to reconcile them by comparing the
+linear functions created by <code>formula</code> to <code>coefs</code> and <code>vcov</code>.
+We may then use the <span class="pkg">estimability</span> package to determine what quantities
+are estimable. For reconciling to work properly, <code>coef</code> should be named
+and <code>vcov</code> should have dimnames. To disable this name-matching
+action, remove the names from <code>coef</code>, e.g., by calling <code>unname()</code>.
+No reconciliation is attempted in multivariate-response cases. For more
+details on estimability, see the documentation in the <span class="pkg">estimability</span>
+package.
+</p>
+
+
+<h3>Note</h3>
+
+<p>For backwards compatibility, an argument <code>ordinal.dim</code> is invisibly 
+supported as part of <code>...</code>, and if present, sets 
+<code>ordinal = list(dim = ordinal.dim, mode = "latent")</code>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../emmeans/help/emmobj.html">emmobj</a></code> for an alternative way to construct an <code>emmGrid</code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# In these examples, use emm_example(..., list = TRUE) # to see just the code
+
+if (require(biglm, quietly = TRUE)) 
+    emm_example("qdrg-biglm")
+    
+if(require(coda, quietly = TRUE) &amp;&amp; require(lme4, quietly = TRUE)) 
+    emm_example("qdrg-coda")
+    
+if(require(ordinal, quietly = TRUE)) 
+    emm_example("qdrg-ordinal")
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>emmeans</em> version 2.0.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,709 @@
+## -----------------------------------------------------------------------------
+library("grid")
+library("gridpattern")
+add_borders <- function() {
+    pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+    grid.rect(gp = gpar(fill = NA, col = "white", lwd = 6))
+    popViewport()
+    pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+    grid.rect(gp = gpar(fill = NA, col = "white", lwd = 6))
+    popViewport()
+    pushViewport(viewport(x=0.25, y=0.25, width=0.5, height=0.5))
+    grid.rect(gp = gpar(fill = NA, col = "white", lwd = 6))
+    popViewport()
+    pushViewport(viewport(x=0.75, y=0.25, width=0.5, height=0.5))
+    grid.rect(gp = gpar(fill = NA, col = "white", lwd = 6))
+    popViewport()
+}
+x_sq <- c(0, 0, 1, 1)
+y_sq <- c(0, 1, 1, 0)
+# colorblind accessible scheme https://jfly.uni-koeln.de/color/
+blue <- grDevices::rgb(0.35, 0.70, 0.90)
+yellow <- grDevices::rgb(0.95, 0.90, 0.25)
+red <- grDevices::rgb(0.80, 0.40, 0.00)
+green <- grDevices::rgb(0.00, 0.60, 0.50)
+orange <- grDevices::rgb(0.90, 0.60, 0.00)
+
+## ----fig.alt = "Four different uniform colorings of a triangular tiling"------
+grid.triangular_tiling <- function(...) {
+    grid.pattern_regular_polygon(..., shape = "convex3", density = 1, grid = "hex",
+                                 spacing = 0.2, angle = 0, rot = 180)
+}
+# 1 color uniform triangular tiling
+pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = yellow, col = NA))
+gp <- gpar(fill = yellow, col = "black")
+grid.triangular_tiling(gp = gp)
+popViewport()
+
+# 2 color uniform triangular tiling
+pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = yellow, col = NA))
+gp <- gpar(fill = red, col = "black")
+grid.triangular_tiling(gp = gp)
+popViewport()
+
+# 3 color uniform triangular tiling
+pushViewport(viewport(x=0.25, y=0.25, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = yellow, col = NA))
+gp <- gpar(fill = c(blue, red), col = "black")
+grid.triangular_tiling(gp = gp)
+popViewport()
+
+# 4 color uniform triangular tiling
+pushViewport(viewport(x=0.75, y=0.25, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = yellow, col = NA))
+gp <- gpar(fill = c(red, blue, green), col = "black")
+grid.triangular_tiling(gp = gp)
+popViewport()
+add_borders()
+
+## ----fig.alt = "Four different uniform colorings of a square tiling"----------
+# 2 color uniform square tiling (1212)
+pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+gp <- gpar(fill = c(yellow, red), col = "black")
+grid.pattern_regular_polygon(shape = "square", density = 1, 
+                             spacing = 0.2, angle = 0, gp = gp)
+popViewport()
+# 2 color uniform square tiling (1122)
+pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+gp <- gpar(fill = c(yellow, red), col = "black")
+grid.pattern_regular_polygon(shape = "square", density = 1, type = "horizontal",
+                             spacing = 0.2, angle = 0, gp = gp)
+popViewport()
+# 3 color uniform square tiling (1213)
+pushViewport(viewport(x=0.25, y=0.25, width=0.5, height=0.5))
+gp <- gpar(fill = c(yellow, red, blue), col = "black")
+grid.pattern_regular_polygon(shape = "square", density = 1,
+                             spacing = 0.2, angle = 0, gp = gp)
+popViewport()
+# 4 color uniform square tiling (1234)
+pushViewport(viewport(x=0.75, y=0.25, width=0.5, height=0.5))
+gp <- gpar(fill = c(yellow, red, blue, green), col = "black")
+grid.pattern_regular_polygon(shape = "square", density = 1,
+                             spacing = 0.2, angle = 0, gp = gp)
+popViewport()
+add_borders()
+
+## ----fig.alt = "Four different uniform colorings of a hexagonal tiling"-------
+grid.hexagonal_tiling <- function(..., shape = "convex6", spacing = 0.2) {
+    scale <- star_scale(6, 30)
+    grid.pattern_regular_polygon(..., shape = shape, density = 1, grid = "hex",
+                                 spacing = spacing, scale = scale, angle = 0)
+}
+# 1 color uniform hexagonal tiling
+pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+gp <- gpar(fill = yellow, col = "black")
+grid.hexagonal_tiling(gp = gp)
+popViewport()
+
+# One of several 2 color uniform hexagonal tiling
+pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+gp <- gpar(fill = c(red, yellow), col = "black")
+grid.hexagonal_tiling(gp = gp)
+popViewport()
+
+# 3 color uniform hexagonal tiling
+pushViewport(viewport(x=0.25, y=0.25, width=0.5, height=0.5))
+gp <- gpar(fill = c(yellow, red, blue), col = "black")
+grid.hexagonal_tiling(gp = gp)
+popViewport()
+
+# (4.6_{π/6})^3
+pushViewport(viewport(x=0.75, y=0.25, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = yellow, col = NA))
+gp <- gpar(fill = red, col = "black")
+grid.hexagonal_tiling(shape = "star6", spacing = 0.3, gp = gp)
+popViewport()
+add_borders()
+
+## ----fig.alt = "Three different uniform colorings of an elongated triangular tiling"----
+grid.elongated_triangular_tiling <- function(...) {
+    grid.polygon(x_sq, y_sq, gp = gpar(fill = yellow, col = NA))
+    grid.pattern_regular_polygon(..., shape = rep(c("convex4", "convex3"), each = 2), 
+                                 density = rep(c(1.41, 1.15), each = 2), 
+                                 grid = "elongated_triangle",
+                                 type = "square_tiling", subtype = "3412",
+                                 spacing = 0.2, angle = 0, 
+                                 rot = rep(c(45, 0), each = 2))
+}
+# 1 color elongated triangular tiling
+pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+gp <- gpar(fill = yellow, col = "black")
+grid.elongated_triangular_tiling(gp = gp)
+popViewport()
+
+# 2 color elongated triangular tiling
+pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+gp <- gpar(fill = c(red, red, yellow, yellow), col = "black")
+grid.elongated_triangular_tiling(gp = gp)
+popViewport()
+
+# 3 color elongated triangular tiling
+pushViewport(viewport(x=0.25, y=0.25, width=0.5, height=0.5))
+gp <- gpar(fill = c(red, blue, yellow, yellow), col = "black")
+grid.elongated_triangular_tiling(gp = gp)
+popViewport()
+add_borders()
+
+## ----fig.alt = "Three different uniform colorings of a snub square tiling"----
+grid.snub_square <- function(..., gp_sq, gp_sq2 = gp_sq, gp_tri = gp_sq) {
+    scale_star <- star_scale(4, 90 + 60, external = TRUE)
+    grid.polygon(x_sq, y_sq, gp = gp_sq)
+    grid.pattern_regular_polygon(shape = "star4", scale = scale_star,
+                                 angle = 0, rot = 15, spacing = 0.2,
+                                 density = 1.4, gp = gp_tri)
+    grid.pattern_regular_polygon(shape = "convex4", scale = scale_star,
+                                 angle = 0, rot = 60, spacing = 0.2,
+                                 density = scale_star * 1.4, gp = gp_sq2)
+}
+
+# 2 color uniform snub square tiling
+pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+gp_y <- gpar(fill = yellow, col = "black")
+gp_r <- gpar(fill = red, col = "black")
+grid.snub_square(gp_sq = gp_y, gp_tri = gp_r)
+popViewport()
+
+# 3 color uniform snub square tiling
+pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+gp_b <- gpar(fill = blue, col = "black")
+grid.snub_square(gp_sq = gp_r, gp_sq2 = gp_b, gp_tri = gp_y)
+popViewport()
+
+# 1 color uniform hexagonal tiling
+pushViewport(viewport(x=0.25, y=0.25, width=0.5, height=0.5))
+grid.snub_square(gp_sq = gp_y)
+popViewport()
+
+pushViewport(viewport(x=0.75, y=0.25, width=0.5, height=0.5))
+popViewport()
+add_borders()
+
+## ----fig.alt = "Four different uniform colorings of a truncated square tiling"----
+# 2 color uniform truncated square tiling
+pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+gp <- gpar(fill = red, col = NA)
+grid.polygon(x_sq, y_sq, gp = gp)
+gp <- gpar(fill = yellow, col = "black")
+grid.pattern_regular_polygon(shape = "convex8", density = 1.082, rot = 22.5, 
+                             angle = 0, spacing = 0.3, gp = gp)
+popViewport()
+
+# 3 color uniform truncated square tiling
+pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+gp <- gpar(fill = blue, col = NA)
+grid.polygon(x_sq, y_sq, gp = gp)
+gp <- gpar(fill = c(red, yellow), col = "black")
+grid.pattern_regular_polygon(shape = "convex8", density = 1.082, rot = 22.5, 
+                             angle = 0, spacing = 0.3, gp = gp)
+popViewport()
+
+# 3 color uniform truncated square tiling with star
+pushViewport(viewport(x=0.25, y=0.25, width=0.5, height=0.5))
+gp <- gpar(fill = red, col = NA)
+grid.polygon(x_sq, y_sq, gp = gp)
+gp <- gpar(fill = yellow, col = "black")
+grid.pattern_regular_polygon(shape = "convex8", density = 1.082, rot = 22.5, 
+                             angle = 0, spacing = 0.3, gp = gp)
+gp <- gpar(fill = orange, col = "black")
+scale <- star_scale(8, 60, external = TRUE)
+grid.pattern_regular_polygon(shape = "star8", density = 1.082, rot = 22.5, 
+                             angle = 0, scale = scale, spacing = 0.3, gp = gp)
+popViewport()
+
+# 4 color uniform truncated square tiling with an alternating star
+pushViewport(viewport(x=0.75, y=0.25, width=0.5, height=0.5))
+gp <- gpar(fill = blue, col = NA)
+grid.polygon(x_sq, y_sq, gp = gp)
+gp <- gpar(fill = c(red, yellow), col = "black")
+grid.pattern_regular_polygon(shape = "convex8", density = 1.082, rot = 22.5, 
+                             angle = 0, spacing = 0.3, gp = gp)
+gp <- gpar(fill = orange, col = c("black"))
+grid.pattern_regular_polygon(shape = c("null", "star8"), 
+                             density = 1.082, rot = 22.5, 
+                             angle = 0, scale = scale, spacing = 0.3, gp = gp)
+popViewport()
+add_borders()
+
+## ----fig.alt = "A truncated hexagonal tiling and a related 'star12' variation"----
+# 2 color uniform truncated hexagonal tiling
+grid.truncated_hexagonal_tiling <- function(..., shape = "convex12") {
+    scale <- star_scale(12, 60, external = TRUE)
+    grid.pattern_regular_polygon(..., shape = shape, density = 1.034, spacing = 0.3,
+                                 angle = 0, rot = 15, scale = scale, 
+                                 grid = "hex_circle")
+}
+pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+gp <- gpar(fill = red, col = NA)
+grid.polygon(x_sq, y_sq, gp = gp)
+gp <- gpar(fill = yellow, col = "black")
+grid.truncated_hexagonal_tiling(gp = gp)
+popViewport()
+
+# Add in a "convex12" star within
+pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+gp <- gpar(fill = red, col = NA)
+grid.polygon(x_sq, y_sq, gp = gp)
+gp <- gpar(fill = yellow, col = "black")
+grid.truncated_hexagonal_tiling(gp = gp)
+gp <- gpar(fill = blue, col = "black")
+grid.truncated_hexagonal_tiling(gp = gp, shape = "star12")
+popViewport()
+add_borders()
+
+## ----fig.alt = "A trihexagonal tiling plus 'star6', 'star3', and 'convex3' variations"----
+grid.trihexagonal_tiling <- function(..., shape = "convex6", density = 1) {
+    grid.pattern_regular_polygon(..., shape = shape, density = density, grid = "hex_circle",
+                                 spacing = 0.2, rot = 30, angle = 0)
+}
+# 2 color uniform trihexagonal tiling
+pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = red, col = NA))
+gp <- gpar(fill = yellow, col = "black")
+grid.trihexagonal_tiling(gp = gp)
+popViewport()
+
+# 'star6' trihexagonal tiling
+pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = red, col = NA))
+scale <- star_scale(6, 120, external = TRUE)
+grid.trihexagonal_tiling(shape = "star6", scale = scale, gp = gp)
+popViewport()
+
+# 'star3' trihexagonal tiling
+pushViewport(viewport(x=0.25, y=0.25, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = red, col = NA))
+scale <- star_scale(3, 30)
+grid.trihexagonal_tiling(shape = "star3", scale = scale, density=1.57, gp = gp)
+popViewport()
+
+# 'convex3' trihexagonal tiling
+pushViewport(viewport(x=0.75, y=0.25, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = red, col = NA))
+grid.trihexagonal_tiling(shape = "convex3", density=1.33, gp = gp)
+popViewport()
+add_borders()
+
+## ----fig.alt = "Three different colorings of a snub trihexagonal tiling"------
+grid.snub_trihexagonal <- function(..., gp_tri, gp_tri2 = gp_tri, gp_hex = gp_tri) {
+    scale_star <- star_scale(6, 60 + 60, external = TRUE)
+    grid.polygon(x_sq, y_sq, gp = gp_tri)
+    grid.pattern_regular_polygon(shape = "star6", scale = scale_star,
+                                 grid = "hex_circle",
+                                 angle = 0, rot = 19, spacing = 0.2,
+                                 density = 1.305, gp = gp_tri2)
+    grid.pattern_regular_polygon(shape = "convex6", grid = "hex_circle",
+                                 angle = 0, rot = 19 + 30, spacing = 0.2,
+                                 density = scale_star * 1.305, gp = gp_hex)
+}
+
+# 3 color uniform snub square tiling
+pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+gp_y <- gpar(fill = yellow, col = "black")
+gp_r <- gpar(fill = red, col = "black")
+gp_b <- gpar(fill = blue, col = "black")
+grid.snub_trihexagonal(gp_tri = gp_b, gp_tri2 = gp_r, gp_hex = gp_y)
+popViewport()
+
+# 2 color snub trihexagonal tiling
+pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+grid.snub_trihexagonal(gp_tri = gp_y, gp_hex = gp_r)
+popViewport()
+
+# 1 color snub trihexagonal tiling
+pushViewport(viewport(x=0.25, y=0.25, width=0.5, height=0.5))
+grid.snub_trihexagonal(gp_tri = gp_y)
+popViewport()
+
+pushViewport(viewport(x=0.75, y=0.25, width=0.5, height=0.5))
+popViewport()
+add_borders()
+
+## ----fig.alt = "Two different colorings of a truncated trihexagonal tiling"----
+# truncated trihexagonal
+pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = yellow, col = NA))
+gp <- gpar(fill = red, col = "black")
+grid.pattern_stripe(grid = "hex_circle", density = 0.42, spacing = 0.3,
+                    angle = 0, gp = gp)
+grid.pattern_stripe(grid = "hex_circle", density = 0.42, spacing = 0.3, 
+                    angle = -60, gp = gp)
+grid.pattern_stripe(grid = "hex_circle", density = 0.42, spacing = 0.3, 
+                    angle = 60, gp = gp)
+gp <- gpar(fill = blue, col = "black")
+grid.pattern_regular_polygon(shape = "convex6", grid = "hex_circle", 
+                             density = 0.75, spacing = 0.3, angle = 0, gp = gp)
+popViewport()
+
+# truncated trihexagonal with 5 colors
+pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = green, col = NA))
+gp <- gpar(fill = orange, col = "black")
+grid.pattern_stripe(grid = "hex_circle", density = 0.42, spacing = 0.3, 
+                    angle = 0, gp = gp)
+grid.pattern_stripe(grid = "hex_circle", density = 0.42, spacing = 0.3, 
+                    angle = -60, gp = gp)
+grid.pattern_stripe(grid = "hex_circle", density = 0.42, spacing = 0.3, 
+                    angle = 60, gp = gp)
+gp <- gpar(fill = c(yellow, red, blue), col = "black")
+grid.pattern_regular_polygon(shape = "convex6", grid = "hex_circle", 
+                             density = 0.75, spacing = 0.3, angle = 0, gp = gp)
+popViewport()
+pushViewport(viewport(x=0.25, y=0.25, width=0.5, height=0.5))
+popViewport()
+pushViewport(viewport(x=0.75, y=0.25, width=0.5, height=0.5))
+popViewport()
+add_borders()
+
+## ----fig.alt = "Two different colorings of a rhombitrihexagonal tiling plus a 'star12' variation"----
+# rhombitrihexagonal
+pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = yellow, col = NA))
+gp <- gpar(fill = red, col = "black")
+grid.pattern_stripe(grid = "hex_circle", density = 0.25, spacing = 0.3, 
+                    angle = 0, gp = gp)
+grid.pattern_stripe(grid = "hex_circle", density = 0.25, spacing = 0.3, 
+                    angle = -60, gp = gp)
+grid.pattern_stripe(grid = "hex_circle", density = 0.25, spacing = 0.3, 
+                    angle = 60, gp = gp)
+gp <- gpar(fill = blue, col = "black")
+grid.pattern_regular_polygon(shape = "convex12", grid = "hex_circle", rot = 15,
+                             density = 0.82, spacing = 0.3, angle = 0, gp = gp)
+popViewport()
+
+# rhombitrihexagonal with 5 colors
+pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = green, col = NA))
+gp <- gpar(fill = red, col = "black")
+grid.pattern_stripe(grid = "hex_circle", density = 0.25, spacing = 0.3, 
+                    angle = 0, gp = gp)
+gp <- gpar(fill = yellow, col = "black")
+grid.pattern_stripe(grid = "hex_circle", density = 0.25, spacing = 0.3, 
+                    angle = -60, gp = gp)
+gp <- gpar(fill = blue, col = "black")
+grid.pattern_stripe(grid = "hex_circle", density = 0.25, spacing = 0.3, 
+                    angle = 60, gp = gp)
+gp <- gpar(fill = orange, col = "black")
+grid.pattern_regular_polygon(shape = "convex12", grid = "hex_circle", rot = 15,
+                             density = 0.82, spacing = 0.3, angle = 0, gp = gp)
+popViewport()
+
+# 3.4.6.3.12* rhombitrihexagonal plus star
+pushViewport(viewport(x=0.25, y=0.25, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = yellow, col = NA))
+gp <- gpar(fill = red, col = "black")
+grid.pattern_stripe(grid = "hex_circle", density = 0.25, spacing = 0.3, 
+                    angle = 0, gp = gp)
+grid.pattern_stripe(grid = "hex_circle", density = 0.25, spacing = 0.3, 
+                    angle = -60, gp = gp)
+grid.pattern_stripe(grid = "hex_circle", density = 0.25, spacing = 0.3, 
+                    angle = 60, gp = gp)
+gp <- gpar(fill = blue, col = "black")
+grid.pattern_regular_polygon(shape = "convex12", grid = "hex_circle", rot = 15,
+                             density = 0.82, spacing = 0.3, angle = 0, gp = gp)
+gp <- gpar(fill = green, col = "black")
+scale <- star_scale(12, 30)
+grid.pattern_regular_polygon(shape = "star12", grid = "hex_circle", rot = 15,
+                             density = 0.82, spacing = 0.3, angle = 0, gp = gp,
+                             scale = scale)
+popViewport()
+
+pushViewport(viewport(x=0.75, y=0.25, width=0.5, height=0.5))
+popViewport()
+add_borders()
+
+## ----fig.alt = "Four uniform tilings with star polygons"----------------------
+# 12.12.4*
+pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = red, col = NA))
+gp <- gpar(fill = c(yellow, blue), col = "black")
+grid.pattern_regular_polygon(shape="convex12", rot=15, density=1.035, 
+                             angle=0, gp = gp, spacing=0.3)
+popViewport()
+
+# 12.3*.12.3*
+pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = red, col = NA))
+gp <- gpar(fill = c(yellow), col = "black")
+grid.pattern_regular_polygon(shape="convex12", density=1, grid = "hex_circle",
+                             angle=0, gp = gp, spacing=0.4)
+popViewport()
+
+# 4.4*.4**
+pushViewport(viewport(x=0.25, y=0.25, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = red, col = NA))
+gp <- gpar(fill = c(yellow, blue), col = "black")
+gp <- gpar(fill=yellow)
+scale <- star_scale(4, 30)
+grid.pattern_regular_polygon(shape="star4", density=1.60, angle=0, scale=scale, 
+                             rot=-9.5, spacing=0.3, gp = gp)
+popViewport()
+
+# 3.3.8*.4**.8*
+pushViewport(viewport(x=0.75, y=0.25, width=0.5, height=0.5))
+sp <- 0.35
+gp <- gpar(fill = red, col = "black")
+grid.pattern_regular_polygon(shape = "square", density = 1, angle = 0, 
+                             spacing = sp, gp = gp)
+gp <- gpar(fill = yellow, col = "black")
+scale <- star_scale(4, 60)
+grid.pattern_regular_polygon(shape = "star4", density = 1.14, rot = 45, 
+                             xoffset = sp / 2, yoffset = sp / 2,
+                             angle = 0, scale = scale, spacing = sp, gp = gp)
+gp <- gpar(fill = blue, col = "black")
+scale <- star_scale(8, 15)
+grid.pattern_regular_polygon(shape = "star8", density = 1.082, rot = 22.5, 
+                             angle = 0, scale = 0.30, spacing = sp, gp = gp)
+popViewport()
+add_borders()
+
+## ----fig.alt = "Four more uniform tilings with star polygons"-----------------
+# 3.6*.6**
+pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = red, col = NA))
+gp <- gpar(fill = yellow, col = "black")
+scale <- star_scale(6, 30)
+grid.pattern_regular_polygon(shape="star6", density=1.30, angle=0, scale=scale, rot=-22.0, 
+                             spacing=0.3, grid="hex", gp=gp)
+popViewport()
+
+# 4.6.4*.6
+pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = yellow, col = NA))
+gp <- gpar(fill = c(blue, red), col = "black")
+scale <- star_scale(4, 120, external = TRUE)
+grid.pattern_regular_polygon(shape=c("star4", "convex4"), density=c(1.2, 0.8), 
+                             scale = scale, 
+                             spacing = 0.2, gp = gp, angle=45)
+popViewport()
+
+# 9.3.9.3*
+pushViewport(viewport(x=0.25, y=0.25, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = red, col = NA))
+gp <- gpar(fill = blue, col = NA)
+grid.pattern_stripe(spacing = 0.4, density = 0.35, angle = 0,
+                    grid = "hex_circle", gp = gp, yoffset = 0.096)
+gp <- gpar(fill = yellow, col = "black")
+grid.pattern_regular_polygon(shape = "convex9", density = 1.01, angle = 0, 
+                             grid = "hex_circle", spacing = 0.4, gp = gp)
+popViewport()
+
+# 8.4*.8.4*
+pushViewport(viewport(x=0.75, y=0.25, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = red, col = NA))
+gp <- gpar(fill = yellow, col = "black")
+grid.pattern_regular_polygon(shape = c("convex8", "null"), density = 1.41, 
+                             angle = 0, spacing = 0.2, gp = gp)
+popViewport()
+add_borders()
+
+## ----fig.alt = "Two more uniform tilings with star polygons"------------------
+# 18.18.3*
+pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = blue, col = NA))
+gp <- gpar(fill = c(red, yellow), col = "black")
+grid.pattern_regular_polygon(shape = "convex18", density = 1, 
+                             grid = "hex_circle", angle = 0,
+                             spacing = 0.2, gp = gp)
+popViewport()
+
+# Only uniform if you consider the larger squares to be four-pointed stars...
+# 4.8*.4**.8*
+pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = blue, col = NA))
+gp <- gpar(fill = c(yellow, red), col = "black")
+scale <- star_scale(8, 90, external = TRUE)
+grid.pattern_regular_polygon(shape = c("star8", "convex4"), scale = scale,
+                             density = c(1.53, 1.2), rot = c(22.5, 0), 
+                             angle = 0, spacing = 0.2, gp = gp)
+popViewport()
+add_borders()
+
+## ----fig.alt = "Four different herringbone tilings"---------------------------
+grid.herringbone_tiling <- function(..., subtype = "2/2(1)") {
+    grid.pattern_weave(..., type = "twill", subtype = subtype, density = 1, 
+                       spacing = 0.1, angle = 45)
+}
+# 1 color 2:1 herringbone 
+pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+gp <- gpar(fill = yellow, col = "black")
+grid.herringbone_tiling(gp = gp)
+popViewport()
+
+# 2 color 2:1 herringbone
+pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+gp <- gpar(fill = yellow, col = "black")
+grid.herringbone_tiling(gp = gp, fill2 = red)
+popViewport()
+
+# 1 color 3:1 herringbone
+pushViewport(viewport(x=0.25, y=0.25, width=0.5, height=0.5))
+gp <- gpar(fill = yellow, col = "black")
+grid.herringbone_tiling(gp = gp, subtype = "3/3(1)")
+popViewport()
+
+# 2 color 3:1 herringbone
+pushViewport(viewport(x=0.75, y=0.25, width=0.5, height=0.5))
+gp <- gpar(fill = yellow, col = "black")
+grid.herringbone_tiling(gp = gp, fill2 = red, subtype = "3/3(1)")
+popViewport()
+add_borders()
+
+## ----fig.alt = "Four different colorings of a Pythagorean tiling"-------------
+grid.pythagorean_tiling <- function(...) {
+    grid.pattern_regular_polygon(..., shape = "convex4", density = 1.222, 
+                                 rot = 15, spacing = 0.2, angle = -15)
+}
+# 1 color Pythagorean tiling
+pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = yellow, col = NA))
+gp <- gpar(fill = yellow, col = "black")
+grid.pythagorean_tiling(gp = gp)
+popViewport()
+
+# 2 color Pythagorean tiling
+pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = yellow, col = NA))
+gp <- gpar(fill = red, col = "black")
+grid.pythagorean_tiling(gp = gp)
+popViewport()
+
+# 3 color Pythagorean tiling
+pushViewport(viewport(x=0.25, y=0.25, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = yellow, col = NA))
+gp <- gpar(fill = c(blue, red), col = "black")
+grid.pythagorean_tiling(gp = gp)
+popViewport()
+
+# 4 color Pythagorean tiling
+pushViewport(viewport(x=0.75, y=0.25, width=0.5, height=0.5))
+grid.polygon(x_sq, y_sq, gp = gpar(fill = yellow, col = NA))
+gp <- gpar(fill = c(red, blue, green), col = "black")
+grid.pythagorean_tiling(gp = gp)
+popViewport()
+add_borders()
+
+## ----fig.alt = "Three different colorings of a rhombille tiling"--------------
+grid.rhombille_tiling <- function(gp1, gp2 = gp1, gp3 = gp2) {
+    grid.pattern_regular_polygon(shape = "rhombille_rhombus", density = 1,
+                       angle = 0, rot = -120, spacing = 0.2,
+                       grid = "hex", gp = gp3)
+    grid.pattern_regular_polygon(shape = "rhombille_rhombus", density = 1,
+                       angle = 0, rot =  120, spacing = 0.2,
+                       grid = "hex", gp = gp2)
+    grid.pattern_regular_polygon(shape = "rhombille_rhombus", density = 1,
+                       angle = 0, rot = 0, spacing = 0.2,
+                       grid = "hex", gp = gp1)
+}
+gp1 <- gpar(fill = yellow, col = "black")
+gp2 <- gpar(fill = blue, col = "black")
+gp3 <- gpar(fill = red, col = "black")
+# 1 color rhombille tiling
+pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+grid.rhombille_tiling(gp1)
+popViewport()
+# 2 color rhombille tiling
+pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+grid.rhombille_tiling(gp1, gp2)
+popViewport()
+# 3 color rhombille tiling
+pushViewport(viewport(x=0.25, y=0.25, width=0.5, height=0.5))
+grid.rhombille_tiling(gp1, gp2, gp3)
+popViewport()
+add_borders()
+
+## ----fig.alt = "Four different colorings of a tetrakis square tiling"---------
+grid.tetrakis_tiling <- function(gp1, gp2 = gp1, gp3 = gp2, gp4 = gp1) {
+    grid.pattern_regular_polygon(shape = "tetrakis_left", density = 1, 
+                                 angle = 0, rot=0, gp = gp1, spacing = 0.25)
+    grid.pattern_regular_polygon(shape = "tetrakis_left", density = 1, 
+                                 angle = 0, rot=90, gp = gp4, spacing = 0.25)
+    grid.pattern_regular_polygon(shape = "tetrakis_left", density = 1,
+                                 angle = 0, rot=180, gp = gp1, spacing = 0.25)
+    grid.pattern_regular_polygon(shape = "tetrakis_left", density = 1,
+                                 angle = 0, rot=270, gp = gp4, spacing = 0.25)
+    grid.pattern_regular_polygon(shape = "tetrakis_right", density = 1,
+                                 angle = 0, rot=0, gp = gp2, spacing = 0.25)
+    grid.pattern_regular_polygon(shape = "tetrakis_right", density = 1,
+                                 angle = 0, rot=90, gp = gp3, spacing = 0.25)
+    grid.pattern_regular_polygon(shape = "tetrakis_right", density = 1,
+                                 angle = 0, rot=180, gp = gp2, spacing = 0.25)
+    grid.pattern_regular_polygon(shape = "tetrakis_right", density = 1,
+                                 angle = 0, rot=270, gp = gp3, spacing = 0.25)
+
+}
+gp1 <- gpar(fill = yellow, col = "black")
+gp2 <- gpar(fill = blue, col = "black")
+gp3 <- gpar(fill = red, col = "black")
+gp4 <- gpar(fill = green, col = "black")
+# 1 color tetrakis square tiling
+pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+grid.tetrakis_tiling(gp1)
+popViewport()
+# 2 color tetrakis square tiling
+pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+grid.tetrakis_tiling(gp1, gp2)
+popViewport()
+# 3 color tetrakis square tiling
+pushViewport(viewport(x=0.25, y=0.25, width=0.5, height=0.5))
+grid.tetrakis_tiling(gp1, gp2, gp3)
+popViewport()
+# 4 color tetrakis square tiling
+pushViewport(viewport(x=0.75, y=0.25, width=0.5, height=0.5))
+grid.tetrakis_tiling(gp1, gp2, gp3, gp4)
+popViewport()
+add_borders()
+
+## ----fig.alt = "Three different tilings using rhombi"-------------------------
+# 2*.2**.2*.2**
+pushViewport(viewport(x=0.25, y=0.75, width=0.5, height=0.5))
+sp <- 0.3
+ang <- 63.5
+scale <- 0.5
+gpy <- gpar(fill = yellow, col = "black")
+grid.pattern_regular_polygon(shape = "star2", scale = scale, angle = ang,
+                             density = 1, spacing = sp, gp = gpy)
+grid.pattern_regular_polygon(shape = "star2", scale = scale, angle = ang,
+                             density = 1, spacing = sp, gp = gpy,
+                             xoffset = 0.5 * sp)
+gpr <- gpar(fill = red, col = "black")
+grid.pattern_regular_polygon(shape = "star2", scale = scale, angle = ang,
+                             density = 1, spacing = sp, gp = gpr,
+                             xoffset = 0.25 * sp, yoffset = 0.5 * sp)
+grid.pattern_regular_polygon(shape = "star2", scale = scale, angle = ang,
+                             density = 1, spacing = sp, gp = gpr,
+                             xoffset = 0.75 * sp, yoffset = 0.5 * sp)
+popViewport()
+
+# 4.2*.4.2**
+pushViewport(viewport(x=0.75, y=0.75, width=0.5, height=0.5))
+dens_sq <- 0.73
+scale <- star_scale(2, 60)
+dens_rh <- 0.88
+gpy <- gpar(fill = yellow, col = "black")
+gpb <- gpar(fill = blue, col = "black")
+gpr <- gpar(fill = red, col = "black")
+grid.pattern_regular_polygon(shape = "convex4", scale = scale, angle = 0,
+                             rot = 60,
+                             density = dens_sq, spacing = sp, gp = gpb)
+grid.pattern_regular_polygon(shape = "star2", scale = scale, angle = 0,
+                             density = dens_rh, spacing = sp, gp = gpy,
+                             rot = 45, xoffset = 0.5 * sp)
+grid.pattern_regular_polygon(shape = "convex4", scale = scale, angle = 0,
+                             rot = -60, yoffset = 0.5 * sp, xoffset = 0.5 * sp,
+                             density = dens_sq, spacing = sp, gp = gpr)
+grid.pattern_regular_polygon(shape = "star2", scale = scale, angle = 0,
+                             density = dens_rh, spacing = sp, gp = gpy,
+                             rot = -45, yoffset = 0.5 * sp)
+popViewport()
+
+# Use a "star12" instead of a "convex12" in truncated hexagonal tiling
+pushViewport(viewport(x=0.25, y=0.25, width=0.5, height=0.5))
+gp <- gpar(fill = yellow, col = NA)
+grid.polygon(x_sq, y_sq, gp = gp)
+gp <- gpar(fill = blue, col = "black")
+grid.truncated_hexagonal_tiling(gp = gp, shape = "star12")
+popViewport()
+add_borders()
+

@@ -1,8 +1,8 @@
-## ---- echo = FALSE, results = "hide", message = FALSE-------------------------
+## ----echo = FALSE, results = "hide", message = FALSE--------------------------
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
-require(bit)
-.ff.version <- try(packageVersion("ff"), silent = TRUE)
-.ff.is.available <- !inherits(.ff.version, "try-error") && .ff.version >= "4.0.0" && require(ff)
+library(bit)
+.ff.is.available = requireNamespace("ff", quietly=TRUE) && packageVersion("ff") >= "4.0.0"
+if (.ff.is.available) library(ff)
 #tools::buildVignette("vignettes/bit-demo.Rmd")
 #devtools::build_vignettes()
 
@@ -12,7 +12,7 @@ b1 <- bit(n)
 b1
 
 ## -----------------------------------------------------------------------------
-object.size(b1)/n
+object.size(b1) / n
 
 ## -----------------------------------------------------------------------------
 b1[10:30] <- TRUE
@@ -30,9 +30,9 @@ b1 & b2
 summary(b1 & b2)
 
 ## -----------------------------------------------------------------------------
-w1 <- as.bitwhich(b1) 
+w1 <- as.bitwhich(b1)
 w2 <- as.bitwhich(b2)
-object.size(w1)/n
+object.size(w1) / n
 
 ## -----------------------------------------------------------------------------
 w1 & w2
@@ -44,21 +44,21 @@ summary(w1 & w2)
 summary(b1 & w2)
 
 ## -----------------------------------------------------------------------------
-summary(b1, range=c(1,1000))
+summary(b1, range=c(1, 1000))
 
 ## -----------------------------------------------------------------------------
 as.which(b1, range=c(1, 1000))
 
 ## -----------------------------------------------------------------------------
-lapply(chunk(from=1, to=n, length=10), function(i)as.which(b1, range=i))
+lapply(chunk(from=1, to=n, length=10), function(i) as.which(b1, range=i))
 
-## ---- eval=.ff.is.available---------------------------------------------------
-options(ffbatchbytes=1024^3)
-x <- ff(vmode="single", length=n)
-x[1:1000] <- runif(1000)
-lapply(chunk(x, length.out = 10), function(i)sum(x[as.hi(b1, range=i)]))
+## ----eval=.ff.is.available----------------------------------------------------
+# options(ffbatchbytes=1024^3)
+# x <- ff(vmode="single", length=n)
+# x[1:1000] <- runif(1000)
+# lapply(chunk(x, length.out = 10), function(i) sum(x[as.hi(b1, range=i)]))
 
-## ---- eval=.ff.is.available---------------------------------------------------
-delete(x)
-rm(x, b1, b2, w1, w2, n)
+## ----eval=.ff.is.available----------------------------------------------------
+# delete(x)
+# rm(x, b1, b2, w1, w2, n)
 

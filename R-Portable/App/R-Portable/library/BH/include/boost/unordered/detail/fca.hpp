@@ -1,4 +1,4 @@
-// Copyright (C) 2022-2023 Joaquin M Lopez Munoz.
+// Copyright (C) 2022-2025 Joaquin M Lopez Munoz.
 // Copyright (C) 2022 Christian Mazakas
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -134,11 +134,37 @@ namespace boost {
   namespace unordered {
     namespace detail {
 
+      template <class ValueType, class VoidPtr> struct node;
+
+      // access to node::value_type and node::pointer for incomplete node
+
+      template<class Node> struct node_value_type_impl;
+
+      template <class ValueType, class VoidPtr>
+      struct node_value_type_impl<node<ValueType, VoidPtr>>
+      {
+        typedef ValueType type;
+      };
+
+      template<class Node> using node_value_type = 
+        typename node_value_type_impl<Node>::type;
+
+      template<class Node> struct node_pointer_impl;
+
+      template <class ValueType, class VoidPtr>
+      struct node_pointer_impl<node<ValueType, VoidPtr>>
+      {
+        typedef typename boost::pointer_traits<VoidPtr>::template rebind_to<
+          node<ValueType, VoidPtr>>::type type;
+      };
+
+      template<class Node> using node_pointer = 
+        typename node_pointer_impl<Node>::type;
+
       template <class ValueType, class VoidPtr> struct node
       {
-        typedef ValueType value_type;
-        typedef typename boost::pointer_traits<VoidPtr>::template rebind_to<
-          node>::type node_pointer;
+        typedef node_value_type<node> value_type;
+        typedef detail::node_pointer<node> node_pointer;
 
         node_pointer next;
         opt_storage<value_type> buf;
@@ -304,10 +330,10 @@ namespace boost {
 
       template <class Node> struct grouped_local_bucket_iterator
       {
-        typedef typename Node::node_pointer node_pointer;
+        typedef detail::node_pointer<Node> node_pointer;
 
       public:
-        typedef typename Node::value_type value_type;
+        typedef detail::node_value_type<Node> value_type;
         typedef value_type element_type;
         typedef value_type* pointer;
         typedef value_type& reference;
@@ -370,10 +396,10 @@ namespace boost {
 
       template <class Node> struct const_grouped_local_bucket_iterator
       {
-        typedef typename Node::node_pointer node_pointer;
+        typedef detail::node_pointer<Node> node_pointer;
 
       public:
-        typedef typename Node::value_type const value_type;
+        typedef detail::node_value_type<Node> const value_type;
         typedef value_type const element_type;
         typedef value_type const* pointer;
         typedef value_type const& reference;
@@ -518,7 +544,8 @@ namespace boost {
         }
 
         grouped_bucket_array(size_type n, const Allocator& al)
-            : empty_value<node_allocator_type>(empty_init_t(), al),
+            : empty_value<node_allocator_type>(
+                empty_init_t(), node_allocator_type(al)),
               size_index_(0), size_(0), buckets(), groups()
         {
           if (n == 0) {
@@ -658,12 +685,7 @@ namespace boost {
           std::swap(buckets, other.buckets);
           std::swap(groups, other.groups);
 
-          bool b = boost::allocator_propagate_on_container_swap<
-            allocator_type>::type::value;
-          if (b) {
-            boost::core::invoke_swap(
-              get_node_allocator(), other.get_node_allocator());
-          }
+          swap_allocator_if_pocs(other);
         }
 
         node_allocator_type const& get_node_allocator() const
@@ -678,12 +700,17 @@ namespace boost {
 
         bucket_allocator_type get_bucket_allocator() const
         {
-          return this->get_node_allocator();
+          return bucket_allocator_type(this->get_node_allocator());
         }
 
         group_allocator_type get_group_allocator() const
         {
-          return this->get_node_allocator();
+          return group_allocator_type(this->get_node_allocator());
+        }
+
+        Allocator get_allocator() const
+        {
+          return Allocator(this->get_node_allocator());
         }
 
         size_type buckets_len() const noexcept { return size_ + 1; }
@@ -869,6 +896,27 @@ namespace boost {
           pbg->next->prev = pbg->prev;
           pbg->prev->next = pbg->next;
           pbg->prev = pbg->next = group_pointer();
+        }
+
+        void swap_allocator_if_pocs(grouped_bucket_array& other)
+        {
+          using allocator_pocs =
+            typename boost::allocator_propagate_on_container_swap<
+              allocator_type>::type;
+          swap_allocator_if_pocs(
+            other, std::integral_constant<bool, allocator_pocs::value>());
+        }
+
+        void swap_allocator_if_pocs(
+          grouped_bucket_array& other, std::true_type /* propagate */)
+        {
+          boost::core::invoke_swap(
+            get_node_allocator(), other.get_node_allocator());
+        }
+
+        void swap_allocator_if_pocs(
+          grouped_bucket_array&, std::false_type /* don't propagate */)
+        {
         }
       };
     } // namespace detail

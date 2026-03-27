@@ -1,0 +1,204 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Parametric accelerated failure time model with smooth time...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for aft {rstpm2}"><tr><td>aft {rstpm2}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>
+Parametric accelerated failure time model with smooth time functions
+</h2>
+
+<h3>Description</h3>
+
+<p>This implements the accelerated failure time models S_0(t exp(beta x))
+and S_0(int_0^t exp(beta x(u)) du). The baseline function S_0(t*) is
+modelled as exp(-exp(eta_0(log(t*)))), where eta_0(log(t*)) is a linear
+predictor using natural splines.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+aft(formula, data, smooth.formula = NULL, df = 3,
+    tvc = NULL, cure.formula = ~1, control = list(),
+    init = NULL, weights = NULL, tvc.intercept = TRUE,
+    tvc.integrated = FALSE,
+    timeVar = "", time0Var = "",
+    cure = FALSE, mixture = FALSE, contrasts = NULL, subset = NULL, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+
+<p>a formula object, with the response on the left of a <code>~</code> operator,
+and the regression terms (excluding time) on the right. The response
+should be a survival object as returned by the <code><a href="../../survival/help/Surv.html">Surv</a></code>
+function. The terms can include linear effects for any time-varying
+coefficients. [required]
+</p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+
+<p>a data-frame in which to interpret the variables named in the
+<code>formula</code> argument. [at present: required]
+</p>
+</td></tr>
+<tr valign="top"><td><code>smooth.formula</code></td>
+<td>
+
+<p>a formula for describing the time effects for the linear predictor,
+excluding the baseline S_0(t*), but including time-dependent
+acceleration factors. The time-dependent acceleration factors can be
+modelled with any smooth functions.
+</p>
+</td></tr>
+<tr valign="top"><td><code>df</code></td>
+<td>
+
+<p>an integer that describes the degrees of freedom for the <code>ns</code>
+function for modelling the baseline log-cumulative hazards function (default=3).
+</p>
+</td></tr>
+<tr valign="top"><td><code>tvc</code></td>
+<td>
+
+<p>a list with the names of the time-varying coefficients. This uses natural splines
+(e.g. <code>tvc=list(hormon=3)</code> is equivalent to
+<code>smooth.formula=~...+hormon:nsx(log(time),df=3)</code>), which by default
+does <em>not</em> include an intercept (or main effect) term. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>cure.formula</code></td>
+<td>
+
+<p>a formula for describing the cure fraction.
+</p>
+</td></tr>
+<tr valign="top"><td><code>control</code></td>
+<td>
+
+<p><code>control</code> argument passed to <code>optim</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>init</code></td>
+<td>
+
+<p><code>init</code> should either be <code>FALSE</code>, such that initial
+values will be determined using Cox regression, or a numeric
+vector of initial values.
+</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+
+<p>an optional vector of 'prior weights' to be used in the
+fitting process. Should be <code>NULL</code> or a numeric vector.
+</p>
+</td></tr>
+<tr valign="top"><td><code>tvc.intercept</code></td>
+<td>
+
+<p>logical for whether to include an intercept in the time-varying
+acceleration factor (defaults to TRUE)
+</p>
+</td></tr>
+<tr valign="top"><td><code>tvc.integrated</code></td>
+<td>
+
+<p>logical for whether the time-varying
+acceleration factor should be based on a integration, rather than a
+cumulative effect (defaults to FALSE)
+</p>
+</td></tr>
+<tr valign="top"><td><code>timeVar</code></td>
+<td>
+
+<p>string variable defining the time variable. By default, this is
+determined from the survival object, however this may be ambiguous if
+two variables define the time.
+</p>
+</td></tr>
+<tr valign="top"><td><code>time0Var</code></td>
+<td>
+
+<p>string variable to determine the entry variable; useful
+for when more than one data variable is used in the entry time.
+</p>
+</td></tr>
+<tr valign="top"><td><code>cure</code></td>
+<td>
+
+<p>logical for whether to model for cure using a non-mixture model (default=FALSE)
+</p>
+</td></tr>
+<tr valign="top"><td><code>mixture</code></td>
+<td>
+
+<p>logical for whether to model for cure using a mixture model (default=FALSE)
+</p>
+</td></tr>
+<tr valign="top"><td><code>contrasts</code></td>
+<td>
+
+<p>an optional list. See the <code>contrasts.arg</code>
+of <code><a href="../../stats/html/model.matrix.html">model.matrix.default</a></code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>subset</code></td>
+<td>
+
+<p>an optional vector specifying a subset of observations to
+be used in the fitting process.
+</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+
+<p>additional arguments to be passed to the <code><a href="../../bbmle/help/mle2.html">mle2</a></code>.
+</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The implementation extends the <code>mle2</code> object from the
+<code>bbmle</code> package. The model inherits all of the methods from the
+<code>mle2</code> class.
+</p>
+
+
+<h3>Value</h3>
+
+<p>An <code>aft-class</code> object that inherits from <code>mle2-class</code>. 
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Mark Clements.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../survival/help/survreg.html">survreg</a></code>, <code><a href="../../survival/help/coxph.html">coxph</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+summary(aft(Surv(rectime,censrec==1)~hormon,data=brcancer,df=4))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rstpm2</em> version 1.7.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

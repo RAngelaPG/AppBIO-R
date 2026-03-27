@@ -1,0 +1,659 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Flexible parametric regression for time-to-event data</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for flexsurvreg {flexsurv}"><tr><td>flexsurvreg {flexsurv}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Flexible parametric regression for time-to-event data</h2>
+
+<h3>Description</h3>
+
+<p>Parametric modelling or regression for time-to-event data.  Several built-in
+distributions are available, and users may supply their own.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+flexsurvreg(
+  formula,
+  anc = NULL,
+  data,
+  weights,
+  bhazard,
+  rtrunc,
+  subset,
+  na.action,
+  dist,
+  inits,
+  fixedpars = NULL,
+  dfns = NULL,
+  aux = NULL,
+  cl = 0.95,
+  integ.opts = NULL,
+  sr.control = survreg.control(),
+  hessian = TRUE,
+  hess.control = NULL,
+  ...
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>A formula expression in conventional R linear modelling
+syntax. The response must be a survival object as returned by the
+<code><a href="../../survival/help/Surv.html">Surv</a></code> function, and any covariates are given on the
+right-hand side.  For example,
+</p>
+<p><code>Surv(time, dead) ~ age + sex</code>
+</p>
+<p><code>Surv</code> objects of <code>type="right"</code>,<code>"counting"</code>,
+<code>"interval1"</code> or <code>"interval2"</code> are supported, corresponding to
+right-censored, left-truncated or interval-censored observations.
+</p>
+<p>If there are no covariates, specify <code>1</code> on the right hand side, for
+example <code>Surv(time, dead) ~ 1</code>.
+</p>
+<p>If the right hand side is specified as <code>.</code> all remaining variables are
+included as covariates. For example, <code>Surv(time, dead) ~ .</code>
+corresponds to <code>Surv(time, dead) ~ age + sex</code> if <code>data</code> contains
+the variables <code>time</code>, <code>dead</code>, <code>age</code>, and <code>sex</code>.
+</p>
+<p>By default, covariates are placed on the &ldquo;location&rdquo; parameter of the
+distribution, typically the &quot;scale&quot; or &quot;rate&quot; parameter, through a linear
+model, or a log-linear model if this parameter must be positive.  This
+gives an accelerated failure time model or a proportional hazards model
+(see <code>dist</code> below) depending on how the distribution is
+parameterised.
+</p>
+<p>Covariates can be placed on other (&ldquo;ancillary&rdquo;) parameters by using the
+name of the parameter as a &ldquo;function&rdquo; in the formula.  For example, in a
+Weibull model, the following expresses the scale parameter in terms of age
+and a treatment variable <code>treat</code>, and the shape parameter in terms of
+sex and treatment.
+</p>
+<p><code>Surv(time, dead) ~ age + treat + shape(sex) + shape(treat)</code>
+</p>
+<p>However, if the names of the ancillary parameters clash with any real
+functions that might be used in formulae (such as <code>I()</code>, or
+<code>factor()</code>), then those functions will not work in the formula.  A
+safer way to model covariates on ancillary parameters is through the
+<code>anc</code> argument to <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>.
+</p>
+<p><code><a href="../../survival/help/survreg.html">survreg</a></code> users should also note that the function
+<code>strata()</code> is ignored, so that any covariates surrounded by
+<code>strata()</code> are applied to the location parameter.  Likewise the
+function <code>frailty()</code> is not handled.</p>
+</td></tr>
+<tr valign="top"><td><code>anc</code></td>
+<td>
+<p>An alternative and safer way to model covariates on ancillary
+parameters, that is, parameters other than the main location parameter of
+the distribution.  This is a named list of formulae, with the name of each
+component giving the parameter to be modelled.  The model above can also
+be defined as:
+</p>
+<p><code>Surv(time, dead) ~ age + treat, anc = list(shape = ~ sex +
+  treat)</code></p>
+</td></tr>
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p>A data frame in which to find variables supplied in
+<code>formula</code>.  If not given, the variables should be in the
+working environment.</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>Optional numeric variable giving weights for each
+individual in the data.  The fitted model is then defined by
+maximising the weighted sum of the individual-specific log-likelihoods.</p>
+</td></tr>
+<tr valign="top"><td><code>bhazard</code></td>
+<td>
+<p>Optional variable giving expected hazards for relative
+survival models.  The model is described by Nelson et al. (2007).
+</p>
+<p><code>bhazard</code> should contain a vector of values for each person in
+the data.
+</p>
+
+<ul>
+<li><p>  For people with observed events, <code>bhazard</code> refers to the
+hazard at the observed event time.
+</p>
+</li>
+<li><p>  For people whose event time is
+left-censored or interval-censored, <code>bhazard</code> should contain the
+probability of dying by the end of the corresponding interval,
+conditionally on being alive at the start.
+</p>
+</li>
+<li><p> For people whose event time
+is right-censored, the value of <code>bhazard</code> is ignored and does not
+need to be specified.
+</p>
+</li></ul>
+
+<p>If <code>bhazard</code> is supplied, then the parameter estimates returned by
+<code>flexsurvreg</code> and the outputs returned by <code>summary.flexsurvreg</code>
+describe the parametric model for relative survival.
+</p>
+<p>For relative survival models, the log-likelihood returned by <code>flexsurvreg</code> is a partial
+log-likelihood, which omits a constant term defined by the sum of the
+cumulative hazards at the event or censoring time for each individual.   
+Hence this constant must be added if a full likelihood is needed.</p>
+</td></tr>
+<tr valign="top"><td><code>rtrunc</code></td>
+<td>
+<p>Optional variable giving individual-specific right-truncation
+times.  Used for analysing data with &quot;retrospective ascertainment&quot;.  For
+example, suppose we want to estimate the distribution of the time from
+onset of a disease to death, but have only observed cases known to have
+died by the current date.   In this case, times from onset to death for
+individuals in the data are right-truncated by the current date minus the
+onset date.   Predicted survival times for new cases can then be described
+by an un-truncated version of the fitted distribution.
+</p>
+<p>These models can suffer from weakly identifiable parameters and
+badly-behaved likelihood functions, and it is advised to compare
+convergence for different initial values by supplying different
+<code>inits</code> arguments to <code>flexsurvreg</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>subset</code></td>
+<td>
+<p>Vector of integers or logicals specifying the subset of the
+observations to be used in the fit.</p>
+</td></tr>
+<tr valign="top"><td><code>na.action</code></td>
+<td>
+<p>a missing-data filter function, applied after any 'subset'
+argument has been used. Default is <code>options()$na.action</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>dist</code></td>
+<td>
+<p>Typically, one of the strings in the first column of the
+following table, identifying a built-in distribution.  This table also
+identifies the location parameters, and whether covariates on these
+parameters represent a proportional hazards (PH) or accelerated failure
+time (AFT) model.  In an accelerated failure time model, the covariate
+speeds up or slows down the passage of time.  So if the coefficient
+(presented on the log scale) is log(2), then doubling the covariate value
+would give half the expected survival time.
+</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: left;"> <code>"gengamma"</code> </td><td style="text-align: left;"> Generalized gamma (stable) </td><td style="text-align: left;"> mu
+  </td><td style="text-align: left;"> AFT </td>
+</tr>
+<tr>
+ <td style="text-align: left;"> <code>"gengamma.orig"</code> </td><td style="text-align: left;"> Generalized gamma (original) </td><td style="text-align: left;">
+  scale </td><td style="text-align: left;"> AFT </td>
+</tr>
+<tr>
+ <td style="text-align: left;"> <code>"genf"</code> </td><td style="text-align: left;"> Generalized F (stable) </td><td style="text-align: left;"> mu </td><td style="text-align: left;">
+  AFT </td>
+</tr>
+<tr>
+ <td style="text-align: left;"> <code>"genf.orig"</code> </td><td style="text-align: left;"> Generalized F (original) </td><td style="text-align: left;"> mu </td><td style="text-align: left;"> AFT
+  </td>
+</tr>
+<tr>
+ <td style="text-align: left;"> <code>"weibull"</code> </td><td style="text-align: left;"> Weibull </td><td style="text-align: left;"> scale </td><td style="text-align: left;"> AFT </td>
+</tr>
+<tr>
+ <td style="text-align: left;"> <code>"gamma"</code>
+  </td><td style="text-align: left;"> Gamma </td><td style="text-align: left;"> rate </td><td style="text-align: left;"> AFT </td>
+</tr>
+<tr>
+ <td style="text-align: left;"> <code>"exp"</code> </td><td style="text-align: left;"> Exponential </td><td style="text-align: left;"> rate
+  </td><td style="text-align: left;"> PH </td>
+</tr>
+<tr>
+ <td style="text-align: left;"> <code>"llogis"</code> </td><td style="text-align: left;"> Log-logistic </td><td style="text-align: left;"> scale </td><td style="text-align: left;"> AFT </td>
+</tr>
+<tr>
+ <td style="text-align: left;">
+  <code>"lnorm"</code> </td><td style="text-align: left;"> Log-normal </td><td style="text-align: left;"> meanlog </td><td style="text-align: left;"> AFT </td>
+</tr>
+<tr>
+ <td style="text-align: left;"> <code>"gompertz"</code>
+  </td><td style="text-align: left;"> Gompertz </td><td style="text-align: left;"> rate </td><td style="text-align: left;"> PH </td>
+</tr>
+<tr>
+ <td style="text-align: left;"> </td>
+</tr>
+
+</table>
+
+<p><code>"exponential"</code> and <code>"lognormal"</code> can be used as aliases for
+<code>"exp"</code> and <code>"lnorm"</code>, for compatibility with
+<code><a href="../../survival/help/survreg.html">survreg</a></code>.
+</p>
+<p>Alternatively, <code>dist</code> can be a list specifying a custom distribution.
+See section &ldquo;Custom distributions&rdquo; below for how to construct this list.
+</p>
+<p>Very flexible spline-based distributions can also be fitted with
+<code><a href="../../flexsurv/help/flexsurvspline.html">flexsurvspline</a></code>.
+</p>
+<p>The parameterisations of the built-in distributions used here are the same
+as in their built-in distribution functions: <code><a href="../../flexsurv/help/dgengamma.html">dgengamma</a></code>,
+<code><a href="../../flexsurv/help/dgengamma.orig.html">dgengamma.orig</a></code>, <code><a href="../../flexsurv/help/dgenf.html">dgenf</a></code>,
+<code><a href="../../flexsurv/help/dgenf.orig.html">dgenf.orig</a></code>, <code><a href="../../stats/html/Weibull.html">dweibull</a></code>, <code><a href="../../stats/html/GammaDist.html">dgamma</a></code>,
+<code><a href="../../stats/html/Exponential.html">dexp</a></code>, <code><a href="../../stats/html/Lognormal.html">dlnorm</a></code>, <code><a href="../../flexsurv/help/dgompertz.html">dgompertz</a></code>,
+respectively.  The functions in base R are used where available,
+otherwise, they are provided in this package.
+</p>
+<p>A package vignette &quot;Distributions reference&quot; lists the survivor functions
+and covariate effect parameterisations used by each built-in distribution.
+</p>
+<p>For the Weibull, exponential and log-normal distributions,
+<code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code> simply works by calling <code><a href="../../survival/help/survreg.html">survreg</a></code> to
+obtain the maximum likelihood estimates, then calling <code><a href="../../stats/html/optim.html">optim</a></code>
+to double-check convergence and obtain the covariance matrix for
+<code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>'s preferred parameterisation.
+</p>
+<p>The Weibull parameterisation is different from that in
+<code><a href="../../survival/help/survreg.html">survreg</a></code>, instead it is consistent with
+<code><a href="../../stats/html/Weibull.html">dweibull</a></code>.  The <code>"scale"</code> reported by
+<code><a href="../../survival/help/survreg.html">survreg</a></code> is equivalent to <code>1/shape</code> as defined
+by <code><a href="../../stats/html/Weibull.html">dweibull</a></code> and hence <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>.  The first
+coefficient <code>(Intercept)</code> reported by <code><a href="../../survival/help/survreg.html">survreg</a></code>
+is equivalent to <code>log(scale)</code> in <code><a href="../../stats/html/Weibull.html">dweibull</a></code> and
+<code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>.
+</p>
+<p>Similarly in the exponential distribution, the rate, rather than the mean,
+is modelled on covariates.
+</p>
+<p>The object <code>flexsurv.dists</code> lists the names of the built-in
+distributions, their parameters, location parameter, functions used to
+transform the parameter ranges to and from the real line, and the
+functions used to generate initial values of each parameter for
+estimation.</p>
+</td></tr>
+<tr valign="top"><td><code>inits</code></td>
+<td>
+<p>An optional numeric vector giving initial values for each
+unknown parameter.  These are numbered in the order: baseline parameters
+(in the order they appear in the distribution function, e.g. shape before
+scale in the Weibull), covariate effects on the location parameter,
+covariate effects on the remaining parameters.  This is the same order as
+the printed estimates in the fitted model.
+</p>
+<p>If not specified, default initial values are chosen from a simple summary
+of the survival or censoring times, for example the mean is often used to
+initialize scale parameters.  See the object <code>flexsurv.dists</code> for the
+exact methods used.  If the likelihood surface may be uneven, it is
+advised to run the optimisation starting from various different initial
+values to ensure convergence to the true global maximum.</p>
+</td></tr>
+<tr valign="top"><td><code>fixedpars</code></td>
+<td>
+<p>Vector of indices of parameters whose values will be fixed
+at their initial values during the optimisation.  The indices are ordered
+as in <code>inits</code>.  For example, in a stable generalized Gamma model with
+two covariates, to fix the third of three generalized gamma parameters
+(the shape <code>Q</code>, see the help for <code><a href="../../flexsurv/help/GenGamma.html">GenGamma</a></code>) and the
+second covariate, specify <code>fixedpars = c(3, 5)</code></p>
+</td></tr>
+<tr valign="top"><td><code>dfns</code></td>
+<td>
+<p>An alternative way to define a custom survival distribution (see
+section &ldquo;Custom distributions&rdquo; below).  A list whose components may
+include <code>"d"</code>, <code>"p"</code>, <code>"h"</code>, or <code>"H"</code> containing the
+probability density, cumulative distribution, hazard, or cumulative hazard
+functions of the distribution.  For example,
+</p>
+<p><code>list(d=dllogis, p=pllogis)</code>.
+</p>
+<p>If <code>dfns</code> is used, a custom <code>dlist</code> must still be provided, but
+<code>dllogis</code> and <code>pllogis</code> need not be visible from the global
+environment.  This is useful if <code>flexsurvreg</code> is called within other
+functions or environments where the distribution functions are also
+defined dynamically.</p>
+</td></tr>
+<tr valign="top"><td><code>aux</code></td>
+<td>
+<p>A named list of other arguments to pass to custom distribution
+functions.  This is used, for example, by <code><a href="../../flexsurv/help/flexsurvspline.html">flexsurvspline</a></code> to
+supply the knot locations and modelling scale (e.g. hazard or odds).  This
+cannot be used to fix parameters of a distribution &mdash; use
+<code>fixedpars</code> for that.</p>
+</td></tr>
+<tr valign="top"><td><code>cl</code></td>
+<td>
+<p>Width of symmetric confidence intervals for maximum likelihood
+estimates, by default 0.95.</p>
+</td></tr>
+<tr valign="top"><td><code>integ.opts</code></td>
+<td>
+<p>List of named arguments to pass to
+<code><a href="../../stats/html/integrate.html">integrate</a></code>, if a custom density or hazard is provided without
+its cumulative version.  For example,
+</p>
+<p><code>integ.opts = list(rel.tol=1e-12)</code></p>
+</td></tr>
+<tr valign="top"><td><code>sr.control</code></td>
+<td>
+<p>For the models which use <code><a href="../../survival/help/survreg.html">survreg</a></code> to find the
+maximum likelihood estimates (Weibull, exponential, log-normal), this list
+is passed as the <code>control</code> argument to <code><a href="../../survival/help/survreg.html">survreg</a></code>.</p>
+</td></tr>
+<tr valign="top"><td><code>hessian</code></td>
+<td>
+<p>Calculate the covariances and confidence intervals for the
+parameters. Defaults to <code>TRUE</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>hess.control</code></td>
+<td>
+<p>List of options to control covariance matrix computation. 
+Available options are:
+</p>
+<p><code>numeric</code>.  If <code>TRUE</code> then numerical methods are used
+to compute the Hessian for models where an analytic Hessian is
+available.  These models include the Weibull (both versions),
+exponential, Gompertz and spline models with hazard or odds
+scale.  The default is to use the analytic Hessian for these
+models.  For all other models, numerical methods are always used
+to compute the Hessian, whether or not this option is set.
+</p>
+<p><code>tol.solve</code>. The tolerance used for <code><a href="../../Matrix/html/solve-methods.html">solve</a></code>
+when inverting the Hessian (default <code>.Machine$double.eps</code>)
+</p>
+<p><code>tol.evalues</code> The accepted tolerance for negative
+eigenvalues in the covariance matrix (default <code>1e-05</code>).
+</p>
+<p>The Hessian is positive definite, thus invertible, at the maximum
+likelihood.  If the Hessian computed after optimisation convergence can't
+be inverted, this is either because the converged result is not the
+maximum likelihood (e.g. it could be a &quot;saddle point&quot;), or because the
+numerical methods used to obtain the Hessian were inaccurate. If you
+suspect that the Hessian was computed wrongly enough that it is not
+invertible, but not wrongly enough that the nearest valid inverse would be
+an inaccurate estimate of the covariance matrix, then these tolerance
+values can be modified (reducing <code>tol.solve</code> or increasing
+<code>tol.evalues</code>) to allow the inverse to be computed.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Optional arguments to the general-purpose optimisation routine
+<code><a href="../../stats/html/optim.html">optim</a></code>.  For example, the BFGS optimisation algorithm is the
+default in <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>, but this can be changed, for example
+to <code>method="Nelder-Mead"</code> which can be more robust to poor initial
+values.  If the optimisation fails to converge, consider normalising the
+problem using, for example, <code>control=list(fnscale = 2500)</code>, for
+example, replacing 2500 by a number of the order of magnitude of the
+likelihood. If 'false' convergence is reported with a
+non-positive-definite Hessian, then consider tightening the tolerance
+criteria for convergence. If the optimisation takes a long time,
+intermediate steps can be printed using the <code>trace</code> argument of the
+control list. See <code><a href="../../stats/html/optim.html">optim</a></code> for details.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Parameters are estimated by maximum likelihood using the algorithms
+available in the standard R <code><a href="../../stats/html/optim.html">optim</a></code> function.  Parameters
+defined to be positive are estimated on the log scale.  Confidence intervals
+are estimated from the Hessian at the maximum, and transformed back to the
+original scale of the parameters.
+</p>
+<p>The usage of <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code> is intended to be similar to
+<code><a href="../../survival/help/survreg.html">survreg</a></code> in the <span class="pkg">survival</span> package.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A list of class <code>"flexsurvreg"</code> containing information about
+the fitted model.  Components of interest to users may include:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>call</code></td>
+<td>
+<p>A copy of the function call, for use in post-processing.</p>
+</td></tr>
+<tr valign="top"><td><code>dlist</code></td>
+<td>
+<p>List defining the survival distribution used.</p>
+</td></tr>
+<tr valign="top"><td><code>res</code></td>
+<td>
+<p>Matrix of maximum likelihood estimates and confidence limits,
+with parameters on their natural scales.</p>
+</td></tr> <tr valign="top"><td><code>res.t</code></td>
+<td>
+<p>Matrix of maximum
+likelihood estimates and confidence limits, with parameters all
+transformed to the real line (using a log transform for all built-in
+models where this is necessary).  The
+<code><a href="../../stats/html/coef.html">coef</a></code>, <code><a href="../../stats/html/vcov.html">vcov</a></code>
+and <code><a href="../../stats/html/confint.html">confint</a></code> methods for <code>flexsurvreg</code> objects work on
+this scale.</p>
+</td></tr> <tr valign="top"><td><code>coefficients</code></td>
+<td>
+<p>The transformed maximum likelihood
+estimates, as in <code>res.t</code>. Calling <code>coef()</code> on a
+<code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code> object simply returns this component.</p>
+</td></tr>
+<tr valign="top"><td><code>loglik</code></td>
+<td>
+<p>Log-likelihood. This will differ from Stata, where the sum
+of the log uncensored survival times is added to the log-likelihood in
+survival models, to remove dependency on the time scale.   
+</p>
+<p>For relative survival models specified with <code>bhazard</code>, this is a partial 
+log-likelihood which omits a constant term defined by the sum of the
+cumulative hazards over all event or censoring times. 
+</p>
+</td></tr>
+<tr valign="top"><td><code>logliki</code></td>
+<td>
+<p>Vector of individual contributions to the log-likelihood</p>
+</td></tr>
+<tr valign="top"><td><code>AIC</code></td>
+<td>
+<p>Akaike's information criterion (-2*log likelihood + 2*number of
+estimated parameters)</p>
+</td></tr> <tr valign="top"><td><code>cov</code></td>
+<td>
+<p>Covariance matrix of the parameters, on
+the real-line scale (e.g. log scale), which can be extracted with
+<code><a href="../../stats/html/vcov.html">vcov</a></code>.</p>
+</td></tr> <tr valign="top"><td><code>data</code></td>
+<td>
+<p>Data used in the model fit.  To extract
+this in the standard R formats, use use
+<code><a href="../../flexsurv/help/model.frame.flexsurvreg.html">model.frame.flexsurvreg</a></code> or
+<code><a href="../../flexsurv/help/model.matrix.flexsurvreg.html">model.matrix.flexsurvreg</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Custom distributions</h3>
+
+<p><code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code> is intended to be
+easy to extend to handle new distributions.  To define a new distribution
+for use in <code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code>, construct a list with the following
+elements:
+</p>
+ <dl>
+<dt><code>"name"</code></dt><dd><p>A string naming the distribution.  If this
+is called <code>"dist"</code>, for example, then there must be visible in the
+working environment, at least, either
+</p>
+<p>a) a function called <code>ddist</code> which defines the probability density,
+</p>
+<p>or
+</p>
+<p>b) a function called <code>hdist</code> which defines the hazard.
+</p>
+<p>Ideally, in case a) there should also be a function called <code>pdist</code>
+which defines the probability distribution or cumulative density, and in
+case b) there should be a function called <code>Hdist</code> defining the
+cumulative hazard.  If these additional functions are not provided,
+<span class="pkg">flexsurv</span> attempts to automatically create them by numerically
+integrating the density or hazard function.  However, model fitting will
+be much slower, or may not even work at all, if the analytic versions of
+these functions are not available.
+</p>
+<p>The functions must accept vector arguments (representing different times,
+or alternative values for each parameter) and return the results as a
+vector.  The function <code><a href="../../base/html/Vectorize.html">Vectorize</a></code> may be helpful for doing
+this: see the example below.
+These functions may be in an add-on package (see below for an example) or
+may be user-written.  If they are user-written they must be defined in the
+global environment, or supplied explicitly through the <code>dfns</code> argument
+to <code>flexsurvreg</code>.  The latter may be useful if the functions are
+created dynamically (as in the source of <code>flexsurvspline</code>) and thus
+not visible through R's scoping rules.
+</p>
+<p>Arguments other than parameters must be named in the conventional way &ndash;
+for example <code>x</code> for the first argument of the density function or
+hazard, as in <code><a href="../../stats/html/Normal.html">dnorm</a>(x, ...)</code> and <code>q</code> for the first
+argument of the probability function.  Density functions should also have
+an argument <code>log</code>, after the parameters, which when <code>TRUE</code>,
+computes the log density, using a numerically stable additive formula if
+possible.
+</p>
+<p>Additional functions with names beginning with <code>"DLd"</code> and
+<code>"DLS"</code> may be defined to calculate the derivatives of the log density
+and log survival probability, with respect to the parameters of the
+distribution.  The parameters are expressed on the real line, for example
+after log transformation if they are defined as positive.  The first
+argument must be named <code>t</code>, representing the time, and the remaining
+arguments must be named as the parameters of the density function. The
+function must return a matrix with rows corresponding to times, and columns
+corresponding to the parameters of the distribution.  The derivatives are
+used, if available, to speed up the model fitting with <code><a href="../../stats/html/optim.html">optim</a></code>.
+</p>
+</dd> <dt><code>"pars"</code></dt><dd><p>Vector of strings naming the parameters of the
+distribution. These must be the same names as the arguments of the density
+and probability functions.  </p>
+</dd>
+<dt><code>"location"</code></dt><dd><p>Name of the main parameter governing the mean of
+the distribution.  This is the default parameter on which covariates are
+placed in the <code>formula</code> supplied to <code>flexsurvreg</code>. </p>
+</dd>
+<dt><code>"transforms"</code></dt><dd><p>List of R
+functions which transform the range of values taken by each parameter onto
+the real line.  For example, <code>c(log, log)</code> for a distribution with two
+positive parameters. </p>
+</dd>
+<dt><code>"inv.transforms"</code></dt><dd><p>List of R functions defining the
+corresponding inverse transformations.  Note these must be lists, even for
+single parameter distributions they should be supplied as, e.g.
+<code>c(exp)</code> or <code>list(exp)</code>. </p>
+</dd>
+<dt><code>"inits"</code></dt><dd><p>A function of the
+observed survival times <code>t</code> (including right-censoring times, and
+using the halfway point for interval-censored times) which returns a vector
+of reasonable initial values for maximum likelihood estimation of each
+parameter.  For example, <code>function(t){ c(1, mean(t)) }</code> will always
+initialize the first of two parameters at 1, and the second (a scale
+parameter, for instance) at the mean of <code>t</code>.  </p>
+</dd> </dl>
+
+<p>For example, suppose we want to use an extreme value survival distribution.
+This is available in the CRAN package <span class="pkg">eha</span>, which provides
+conventionally-defined density and probability functions called
+<code><a href="../../eha/help/EV.html">eha::dEV</a></code> and <code><a href="../../eha/help/EV.html">eha::pEV</a></code>.  See the Examples below
+for the custom list in this case, and the subsequent command to fit the
+model.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Christopher Jackson &lt;chris.jackson@mrc-bsu.cam.ac.uk&gt;
+</p>
+
+
+<h3>References</h3>
+
+<p>Jackson, C. (2016). flexsurv: A Platform for Parametric
+Survival Modeling in R. Journal of Statistical Software, 70(8), 1-33.
+doi:10.18637/jss.v070.i08
+</p>
+<p>Cox, C. (2008) The generalized <i>F</i> distribution: An umbrella for
+parametric survival analysis.  Statistics in Medicine 27:4301-4312.
+</p>
+<p>Cox, C., Chu, H., Schneider, M. F. and Muñoz, A. (2007) Parametric survival
+analysis and taxonomy of hazard functions for the generalized gamma
+distribution.  Statistics in Medicine 26:4252-4374
+</p>
+<p>Jackson, C. H. and Sharples, L. D. and Thompson, S. G. (2010) Survival
+models in health economic evaluations: balancing fit and parsimony to
+improve prediction. International Journal of Biostatistics 6(1):Article 34.
+</p>
+<p>Nelson, C. P., Lambert, P. C., Squire, I. B., &amp; Jones, D. R. (2007).
+Flexible parametric models for relative survival, with application in
+coronary heart disease. Statistics in medicine, 26(30), 5486-5498.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../flexsurv/help/flexsurvspline.html">flexsurvspline</a></code> for flexible survival modelling using
+the spline model of Royston and Parmar.
+</p>
+<p><code><a href="../../flexsurv/help/plot.flexsurvreg.html">plot.flexsurvreg</a></code> and <code><a href="../../flexsurv/help/lines.flexsurvreg.html">lines.flexsurvreg</a></code> to plot
+fitted survival, hazards and cumulative hazards from models fitted by
+<code><a href="../../flexsurv/help/flexsurvreg.html">flexsurvreg</a></code> and <code><a href="../../flexsurv/help/flexsurvspline.html">flexsurvspline</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## Compare generalized gamma fit with Weibull
+fitg &lt;- flexsurvreg(formula = Surv(futime, fustat) ~ 1, data = ovarian, dist="gengamma")
+fitg
+fitw &lt;- flexsurvreg(formula = Surv(futime, fustat) ~ 1, data = ovarian, dist="weibull")
+fitw
+plot(fitg)
+lines(fitw, col="blue", lwd.ci=1, lty.ci=1)
+## Identical AIC, probably not enough data in this simple example for a
+## very flexible model to be worthwhile.
+
+## Custom distribution
+## make "dEV" and "pEV" from eha package (if installed)
+##   available to the working environment
+if (require("eha")) {
+custom.ev &lt;- list(name="EV",
+                      pars=c("shape","scale"),
+                      location="scale",
+                      transforms=c(log, log),
+                      inv.transforms=c(exp, exp),
+                      inits=function(t){ c(1, median(t)) })
+fitev &lt;- flexsurvreg(formula = Surv(futime, fustat) ~ 1, data = ovarian,
+                    dist=custom.ev)
+fitev
+lines(fitev, col="purple", col.ci="purple")
+}
+
+
+## Custom distribution: supply the hazard function only
+hexp2 &lt;- function(x, rate=1){ rate } # exponential distribution
+hexp2 &lt;- Vectorize(hexp2)
+custom.exp2 &lt;- list(name="exp2", pars=c("rate"), location="rate",
+                    transforms=c(log), inv.transforms=c(exp),
+                    inits=function(t)1/mean(t))
+flexsurvreg(Surv(futime, fustat) ~ 1, data = ovarian, dist=custom.exp2)
+flexsurvreg(Surv(futime, fustat) ~ 1, data = ovarian, dist="exp")
+## should give same answer
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>flexsurv</em> version 2.3.2 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

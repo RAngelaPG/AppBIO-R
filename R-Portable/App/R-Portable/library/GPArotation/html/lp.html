@@ -1,0 +1,203 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Lp Rotation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for lp {GPArotation}"><tr><td>lp {GPArotation}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2><i>Lp</i> Rotation</h2>
+
+<h3>Description</h3>
+
+<p>Performs <i>Lp</i> rotation to obtain sparse loadings. 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+     GPForth.lp(A, Tmat=diag(rep(1, ncol(A))), p=1, normalize=FALSE, eps=1e-05, 
+            maxit=10000, gpaiter=5) 
+     GPFoblq.lp(A, Tmat=diag(rep(1, ncol(A))), p=1, normalize=FALSE, eps=1e-05, 
+            maxit=10000, gpaiter=5)  
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>A</code></td>
+<td>
+<p>Initial factor loadings matrix to be rotated.</p>
+</td></tr>
+<tr valign="top"><td><code>Tmat</code></td>
+<td>
+<p>Initial rotation matrix.</p>
+</td></tr>
+<tr valign="top"><td><code>p</code></td>
+<td>
+<p>Component-wise <i>Lp</i> where 0 &lt; p <i>=&lt;</i> 1.</p>
+</td></tr>
+<tr valign="top"><td><code>normalize</code></td>
+<td>
+<p>Not recommended for <i>Lp</i> rotation.</p>
+</td></tr>
+<tr valign="top"><td><code>eps</code></td>
+<td>
+<p>Convergence is assumed when the norm of the gradient is smaller than eps.</p>
+</td></tr>
+<tr valign="top"><td><code>maxit</code></td>
+<td>
+<p>Maximum number of iterations allowed in the main loop.</p>
+</td></tr>
+<tr valign="top"><td><code>gpaiter</code></td>
+<td>
+<p>Maximum iterations for GPA rotation. 
+The goal is to decrease the objective value, not optimize the inner loop. 
+Warnings may appear, but they can be ignored if the main loop converges.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>These functions optimize an <i>L^p</i> rotation objective, where <code>0 &lt; p =&lt; 1</code>. A smaller <code>p</code> promotes sparsity in the loading matrix but increases computational difficulty. For guidance on choosing <code>p</code>, see the Concluding Remarks in the references.
+</p>
+<p>Since the <i>Lp</i> function is nonsmooth, a different optimization method is required compared to smooth rotation criteria. Two new functions, <code>GPForth.lp</code> and <code>GPFoblq.lp</code>, replace <code>GPForth</code> and <code>GPFoblq</code> for orthogonal and oblique <i>Lp</i> rotations, respectively.
+</p>
+<p>The optimization method follows an iterative reweighted least squares (IRLS) approach. It approximates the nonsmooth objective function with a smooth weighted least squares function in the main loop and optimizes it using GPA in the inner loop.
+</p>
+<p>Normalization is not recommended for <i>Lp</i> rotation. Its use may have unexpected results.
+</p>
+
+
+<h3>Value</h3>
+
+<p>A <code>GPArotation</code> object, which is a list containing:
+</p>
+<table summary="R valueblock">
+<tr valign="top"><td><code>loadings</code></td>
+<td>
+<p>Rotated loadings matrix, with one column per factor. If <code>randomStarts</code> 
+were used, this contains the loadings with the lowest criterion value.</p>
+</td></tr>
+<tr valign="top"><td><code>Th</code></td>
+<td>
+<p>Rotation matrix, satisfying <code>loadings %*% t(Th) = A</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>Table</code></td>
+<td>
+<p>Matrix recording iteration details during optimization.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p>String indicating the rotation objective function.</p>
+</td></tr>
+<tr valign="top"><td><code>orthogonal</code></td>
+<td>
+<p>Logical indicating whether the rotation is orthogonal.</p>
+</td></tr>
+<tr valign="top"><td><code>convergence</code></td>
+<td>
+<p>Logical indicating whether convergence was achieved. 
+Convergence is controlled element-wise by tolerance.</p>
+</td></tr>
+<tr valign="top"><td><code>Phi</code></td>
+<td>
+<p>Covariance matrix of rotated factors, <code>t(Th) %*% Th</code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Author(s)</h3>
+
+<p>Xinyi Liu, with minor modifications for GPArotation by C. Bernaards</p>
+
+
+<h3>References</h3>
+
+<p>Liu, X., Wallin, G., Chen, Y., &amp; Moustaki, I. (2023). Rotation to sparse 
+loadings using <i>Lp</i> losses and related inference problems. 
+<em>Psychometrika</em>, <b>88</b>(2), 527&ndash;553.
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../GPArotation/help/lpT.html">lpT</a></code>,
+<code><a href="../../GPArotation/help/lpQ.html">lpQ</a></code>,
+<code><a href="../../GPArotation/help/vgQ.lp.wls.html">vgQ.lp.wls</a></code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+  data("WansbeekMeijer", package = "GPArotation")
+  fa.unrotated &lt;- factanal(factors = 2, covmat = NetherlandsTV, rotation = "none")
+  
+  options(warn = -1)
+  
+  # Orthogonal rotation
+  # Single start from random position
+  fa.lpT1 &lt;- GPForth.lp(loadings(fa.unrotated), p = 1)
+  # 10 random starts
+  fa.lpT &lt;- lpT(loadings(fa.unrotated), Tmat=Random.Start(2), p = 1, randomStarts = 10)
+  print(fa.lpT, digits = 5, sortLoadings = FALSE, Table = TRUE, rotateMat = TRUE)
+  
+  p &lt;- 1
+  # Oblique rotation
+  # Single start
+  fa.lpQ1 &lt;- GPFoblq.lp(loadings(fa.unrotated), p = p)
+  # 10 random starts
+  fa.lpQ &lt;- lpQ(loadings(fa.unrotated), p = p, randomStarts = 10)
+  summary(fa.lpQ, Structure = TRUE)
+
+
+  # this functions ensures consistent ordering of factors of a
+  # GPArotation object for cleaner comparison
+  # Inspired by fungible::orderFactors and fungible::faSort functions
+  sortFac &lt;- function(x){
+    # Only works for object of class GPArotation 
+    if (!inherits(x, "GPArotation")) {stop("argument not of class GPArotation")}
+    cln &lt;- colnames(x$loadings) 
+    # ordering for oblique slightly different from orthogonal
+    ifelse(x$orthogonal, vx &lt;- colSums(x$loadings^2), 
+      vx &lt;- diag(x$Phi %*% t(x$loadings) %*% x$loadings) )
+    # sort by squared loadings from high to low
+    vxo &lt;- order(vx, decreasing = TRUE)
+    vx &lt;- vx[vxo]
+    # maintain the right sign
+    Dsgn &lt;- diag(sign(colSums(x$loadings^3))) [ , vxo]
+    x$Th &lt;- x$Th %*% Dsgn 
+    x$loadings &lt;- x$loadings %*% Dsgn
+    if (match("Phi", names(x))) { 
+            # If factor is negative, reverse corresponding factor correlations
+            x$Phi &lt;- t(Dsgn) %*% x$Phi %*% Dsgn
+      }
+    colnames(x$loadings) &lt;- cln 
+    x 
+  } 
+  
+  # seed set to see the results of sorting
+  set.seed(1020)
+  fa.lpQ1 &lt;- lpQ(loadings(fa.unrotated),p=1,randomStarts=10)
+  fa.lpQ0.5 &lt;- lpQ(loadings(fa.unrotated),p=0.5,randomStarts=10)
+  fa.geo &lt;- geominQ(loadings(fa.unrotated), randomStarts=10)
+  
+  # with ordered factor loadings
+  res &lt;- round(cbind(sortFac(fa.lpQ1)$loadings, sortFac(fa.lpQ0.5)$loadings, 
+    sortFac(fa.geo)$loadings),3)
+  print(c("oblique-  Lp 1           Lp 0.5         geomin")); print(res)
+
+  # without ordered factor loadings
+  res &lt;- round(cbind(fa.lpQ1$loadings, fa.lpQ0.5$loadings, fa.geo$loadings),3)
+  print(c("oblique-  Lp 1           Lp 0.5         geomin")); print(res)
+
+  options(warn = 0)
+  
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>GPArotation</em> version 2025.3-1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

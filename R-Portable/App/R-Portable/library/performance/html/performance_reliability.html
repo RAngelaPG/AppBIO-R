@@ -1,0 +1,215 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Random Effects Reliability</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for performance_reliability {performance}"><tr><td>performance_reliability {performance}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Random Effects Reliability</h2>
+
+<h3>Description</h3>
+
+<p>These functions provide information about the reliability of
+group-level estimates (i.e., random effects) in mixed models. They are useful
+to assess whether the predictors yield consistent group-level variability.
+&quot;Group-level&quot; can refer, for instance, to different participants in a study,
+and the predictors to the effect of some experimental condition.
+</p>
+<p>The conceptually related functions are implemented,
+<code>performance_reliability()</code>, based on Rouder &amp; Mehrvarz (2024) that uses
+estimated model variances, and <code>performance_dvour()</code> (d-vour), which
+corresponds to the Variability-Over-Uncertainty Ratio (&quot;vour&quot;) between random
+effects coefficient variability and their associated uncertainty.
+</p>
+<p><strong>Note</strong>: <code>performance_reliability()</code> requires to recompute the model to
+estimate some of the variances of interest, which does not make it very
+usable with Bayesian models. Please get in touch if you have would like to
+help addressing this.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+performance_reliability(x, ...)
+
+performance_dvour(x, ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>A model object.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Currently not used.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+
+
+<h4>Reliability (Signal-to-Noise Ratio)</h4>
+
+<p><code>performance_reliability()</code> estimates the reliability of random effects
+(intercepts and slopes) in mixed-effects models using variance decomposition.
+This method follows the <strong>hierarchical modeling</strong> framework of Rouder &amp;
+Mehrvarz (2024), defining reliability as the <strong>signal-to-noise variance
+ratio</strong>:
+</p>
+<p style="text-align: center;"><i>&gamma;^2 = \frac{&sigma;_B^2}{&sigma;_B^2 + &sigma;_W^2}</i></p>
+
+<p>where:
+</p>
+
+<ul>
+<li> <p><i>&sigma;_B^2</i> is the <strong>between-subject variance</strong> (i.e., variability
+across groups).
+</p>
+</li>
+<li> <p><i>&sigma;_W^2</i> is the <strong>within-subject variance</strong> (i.e., trial-level
+measurement noise).
+</p>
+</li></ul>
+
+<p>This metric quantifies <strong>how much observed variability is due to actual
+differences between groups</strong>, rather than measurement error or within-group
+fluctuations.
+</p>
+<p>To account for <strong>trial count (<i>L</i>)</strong>, reliability is adjusted following:
+</p>
+<p style="text-align: center;"><i>E(r) = \frac{&gamma;^2}{&gamma;^2 + 1/L}</i></p>
+
+<p>where <i>L</i> is the number of <strong>observations per random effect level</strong> (note
+that Rouder (2024) recommends 2/L to adjust for contrast effects).
+</p>
+
+
+
+<h4>Variability-Over-Uncertainty Ratio (d-vour)</h4>
+
+<p><code>performance_dvour()</code> computes an alternative reliability measure corresponding
+to the normalized <strong>ratio of observed variability to uncertainty in random effect
+estimates</strong>. This is defined as:
+</p>
+<p style="text-align: center;"><i>\text{D-vour} = \frac{&sigma;_B^2}{&sigma;_B^2 + &mu;_{\text{SE}}^2}</i></p>
+
+<p>where:
+</p>
+
+<ul>
+<li> <p><i>&sigma;_B^2</i> is the <strong>between-group variability</strong> (computed as the SD
+of the random effect estimates).
+</p>
+</li>
+<li> <p><i>&mu;_{\text{SE}}^2</i> is the <strong>mean squared uncertainty</strong> in random
+effect estimates (i.e., the average uncertainty).
+</p>
+</li></ul>
+
+
+
+<h5>Interpretation:</h5>
+
+
+<ul>
+<li> <p><strong>D-vour &gt; 0.75</strong>: Strong group-level effects (between-group variance is at
+least 3 times greater than uncertainty).
+</p>
+</li>
+<li> <p><strong>D-vour ~ 0.5</strong>: Within-group and between-group variability are similar;
+random effect estimates should be used with caution.
+</p>
+</li>
+<li> <p><strong>D-vour &lt; 0.5</strong>: Measurement noise dominates; random effect estimates are
+probably unreliable.
+</p>
+</li></ul>
+
+<p>While d-vour shares some similarity to Rouder's Reliability, it does not
+explicitly model within-group trial-level noise and is only based on the
+random effect estimates, and can thus be not accurate when there is not
+a lot of random factor groups (the reliability of this index -
+the meta-reliability - depends on the number of groups).
+</p>
+
+
+
+
+<h3>References</h3>
+
+
+<ul>
+<li><p> Rouder, J. N., Pena, A. L., Mehrvarz, M., &amp; Vandekerckhove, J. (2024). On
+Cronbach’s merger: Why experiments may not be suitable for measuring
+individual differences.
+</p>
+</li>
+<li><p> Rouder, J. N., &amp; Mehrvarz, M. (2024). Hierarchical-model insights for
+planning and interpreting individual-difference studies of cognitive
+abilities. Current Directions in Psychological Science, 33(2), 128-135.
+</p>
+</li>
+<li><p> Williams, D. R., Mulder, J., Rouder, J. N., &amp; Rast, P. (2021). Beneath the
+surface: Unearthing within-person variability and mean relations with
+Bayesian mixed models. Psychological methods, 26(1), 74.
+</p>
+</li>
+<li><p> Williams, D. R., Martin, S. R., DeBolt, M., Oakes, L., &amp; Rast, P. (2020). A
+fine-tooth comb for measurement reliability: Predicting true score and
+error variance in hierarchical models.
+</p>
+</li></ul>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+
+url &lt;- "https://raw.githubusercontent.com/easystats/circus/refs/heads/main/data/illusiongame.csv"
+df &lt;- read.csv(url)
+
+m &lt;- lme4::lmer(RT ~ (1 | Participant), data = df)
+performance_reliability(m)
+performance_dvour(m)
+
+m &lt;- glmmTMB::glmmTMB(RT ~ (1 | Participant), data = df)
+performance_reliability(m)
+performance_dvour(m)
+
+m &lt;- lme4::lmer(RT ~ (1 | Participant) + (1 | Trial), data = df)
+performance_reliability(m)
+performance_dvour(m)
+
+m &lt;- glmmTMB::glmmTMB(RT ~ (1 | Participant) + (1 | Trial), data = df)
+performance_reliability(m)
+performance_dvour(m)
+
+
+m &lt;- lme4::lmer(
+  RT ~ Illusion_Difference + (Illusion_Difference | Participant) + (1 | Trial),
+  data = df
+)
+performance_reliability(m)
+performance_dvour(m)
+
+m &lt;- glmmTMB::glmmTMB(
+  RT ~ Illusion_Difference + (Illusion_Difference | Participant) + (1 | Trial),
+  data = df
+)
+performance_reliability(m)
+performance_dvour(m)
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>performance</em> version 0.16.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

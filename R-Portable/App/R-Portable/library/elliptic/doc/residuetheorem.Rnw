@@ -1,0 +1,299 @@
+% -*- mode: noweb; noweb-default-code-mode: R-mode; -*-
+\documentclass[nojss]{jss}
+
+\usepackage{dsfont}
+\usepackage{bbm}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{wasysym}
+\usepackage{wrapfig}
+\usepackage{tikz}
+\usetikzlibrary{calc,decorations.markings}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% declarations for jss.cls %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%% just as usual
+\author{Robin K. S. Hankin}
+\title{Cauchy's integral theorem: a numerical perspective}
+%\VignetteIndexEntry{The residue theorem from a numerical perspective}
+%% for pretty printing and a nice hypersummary also set:
+%% \Plainauthor{Achim Zeileis, Second Author} %% comma-separated
+\Plaintitle{The residue theorem from a numerical perspective}
+
+
+%% for pretty printing and a nice hypersummary also set:
+\Plainauthor{Robin K. S. Hankin}
+
+%% an abstract and keywords
+
+\Abstract{Here I use the {\tt myintegrate()} function of the
+  \pkg{elliptic} package to illustrate three classical theorems from
+  analysis: Cauchy's integral theorem, the residue theorem, and
+  Cauchy's integral formula.  In all cases, numerical values agree
+  with analytical results to within numerical precision.  Some further
+  work is suggested.
+}
+
+\Keywords{Residue theorem, Cauchy formula, Cauchy's integral formula,
+  contour integration, complex integration, Cauchy's theorem}
+
+
+\Keywords{Elliptic functions, residue theorem, numerical integration, \proglang{R}}
+\Plainkeywords{Elliptic functions, residue theorem, numerical integration, R}
+
+%% publication information
+%% NOTE: This needs to filled out ONLY IF THE PAPER WAS ACCEPTED.
+%% If it was not (yet) accepted, leave them commented.
+\Volume{0}
+\Issue{0}
+% \Month{MONTH}
+\Year{0000}
+\Submitdate{0000-00-00}
+\Acceptdate{0000-00-00}
+%% \Repository{https://github.com/RobinHankin/elliptic}
+
+%% The address of (at least) one author should be given
+%% in the following format:
+\Address{
+  Robin K. S. Hankin\\
+  University of Stirling\\
+  Scotland\\
+  email: \email{hankin.robin@gmail.com}
+}
+
+
+%% It is also possible to add a telephone and fax number
+%% before the e-mail in the following format:
+%% Telephone: +43/1/31336-5053
+%% Fax: +43/1/31336-734
+
+%% for those who use Sweave please include the following line (with % symbols):
+%% need no \usepackage{Sweave.sty}
+
+%% end of declarations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+<<requirepackage,echo=FALSE,print=FALSE>>=
+require(elliptic,quietly=TRUE)
+@ 
+
+\setlength{\intextsep}{0pt}
+\begin{wrapfigure}{r}{0.2\textwidth}
+\begin{center}
+\includegraphics[width=1in]{\Sexpr{system.file("help/figures/elliptic.png",package="elliptic")}}
+\end{center}
+\end{wrapfigure}
+
+\section{Introduction}
+
+Cauchy's integral theorem and its corollaries are some of the most
+startling and fruitful ideas in the whole of mathematics.  They place
+powerful constraints on analytical functions; and show that a
+function's local behaviour dictates its global properties.
+Cauchy's integral theorem may be used to prove the residue theorem and
+Cauchy's integral formula; these three theorems form a powerful and
+cohesive suite of results.
+
+In this short document I use numerical methods to illustrate and
+highlight some of their consequences for complex analysis.
+
+\subsection{Cauchy's integral theorem}
+
+Augustin-Louis Cauchy proved an early version of the integral theorem
+in 1814; it required that the function's derivative was continuous.
+This assumption was removed in 1900 by \'Edouard Goursat at the
+expense of a more difficult proof; the result is sometimes known as
+the Cauchy-Goursat theorem and is now a cornerstone of complex analysis.
+Formally, in modern notation, we have:
+
+\noindent {\bf Cauchy's integral theorem}.  If $f(z)$ is holomorphic
+in a simply connected domain $\Omega\subset\mathbb{C}$, then for any
+closed contour $C$ in $\Omega$,
+
+$$\int_{C}f(z)\,dz=0.$$
+\\
+
+To demonstrate this theorem numerically, I will use the integration
+suite of functions provided with the \pkg{elliptic} package which
+perform complex integration of a function along a path specified
+either as a sequence of segments [{\tt integrate.segments()}] or a
+curve [{\tt integrate.contour()}].  
+
+Let us consider $f(z)=\exp z$, holomorphic over all of $\mathbb{C}$,
+and evaluate
+
+$$\oint_C f(z)\,dz$$
+
+where $C$ is the square $0\longrightarrow 1\longrightarrow
+1+i\longrightarrow i\longrightarrow 0$ (figure~\ref{square}).  Numerically:
+
+\begin{figure}\centering
+\begin{tikzpicture}
+% Axes
+\draw [help lines,->] (-1,  0) -- (2, 0);
+\draw [help lines,->] ( 0, -1) -- (0, 2);
+% Red path
+
+\begin{scope}[very thick,decoration={
+    markings,
+    mark=at position 0.5 with {\arrow{>}}}
+    ] 
+    \draw[red,postaction={decorate}] (0,0)--(1,0) node[black, midway, below]{\tiny A};
+    \draw[red,postaction={decorate}] (1,0)--(1,1) node[black, midway, right]{\tiny B};
+    \draw[red,postaction={decorate}] (1,1)--(0,1) node[black, midway, above]{\tiny C};
+    \draw[red,postaction={decorate}] (0,1)--(0,0) node[black, midway,  left]{\tiny D};
+\end{scope}
+% The labels
+\node at ( 1.70, -0.2){$x$ };
+\node at (-0.24,  1.7){$iy$};
+
+\end{tikzpicture}
+\caption{A square contour integral \label{square} on the complex plane}
+\end{figure}
+
+<<>>=
+integrate.segments(exp, c(0, 1, 1+1i, 1i), close=TRUE)
+@ 
+
+Above we see that the result is zero (to within numerical precision),
+in agreement with the integral theorem.  It is interesting to consider
+each leg separately.  We have
+
+$$
+A=e-1\qquad B=e(e^i-1)\qquad C=-e^i(e-1)\qquad D=-(e^i-1)
+$$
+
+And taking B as an example:
+
+<<>>=
+analytic <- exp(1)*(exp(1i)-1)
+numeric  <- integrate.segments(exp, c(1, 1+1i), close=FALSE)
+c(analytic=analytic, numeric=numeric, difference=analytic-numeric)
+@ 
+
+showing agreement to within numerical precision.
+
+\subsection{The residue theorem}
+
+{\bf residue theorem}.  Given $U$, a simply connected open subset of
+$\mathbb{C}$, and a finite list of points $a_1,\ldots,a_n$.
+Suppose $f(z)$ is holomorphic on $U_0=U\setminus\left\lbrace
+a_1,\ldots a_n\right\rbrace$ and $\gamma$ is a closed rectifiable
+curve in $U_0$.  Then
+
+$$\oint_\gamma f(z)\,dz = 2\pi i\sum_{k=1}^n
+\operatorname{I}(\gamma,a_k)\cdot\operatorname{Res}(f,a_k)$$
+
+where $\operatorname{I}(\gamma,a_k)$ is the winding number of $\gamma$
+about $a_k$ and $\operatorname{Res}(f,a_k)$ is the residue of $f$ at
+$a_k$.  \\
+
+The canonical, and simplest, application of this is to derive the log
+function by integrating $f(z)=1/z$ along the unit circle, as per
+figure \ref{circular}.  Here the residue at the origin is 1, so the
+integral round the unit circle is, analytically, $2\pi i$.
+Numerically:
+
+<<>>=
+u     <- function(x){exp(pi*2i*x)}
+udash <- function(x){pi*2i * exp(pi*2i*x)}
+
+analytic <- pi*2i
+numeric  <- integrate.contour(function(z){1/z}, u, udash)
+c(analytic=analytic, numeric=numeric, difference=analytic-numeric)
+@ 
+
+
+
+\begin{figure}\centering
+\begin{tikzpicture}
+% Axes
+\draw [help lines,->] (-2,  0) -- (2, 0);
+\draw [help lines,->] ( 0, -2) -- (0, 2);
+
+% Red path
+
+\draw [
+  decoration = {markings, mark = at position 0 with {\arrow{>}}},
+  postaction = {decorate},
+  very thick, red] (0,0) circle (1cm);
+
+% The labels
+\node at ( 1.70, -0.2){$x$ };
+\node at (-0.24,  1.7){$iy$};
+
+\end{tikzpicture}
+\caption{A circular contour integral \label{circular} on the complex plane}
+\end{figure}
+
+
+again we see very close agreement.
+
+\subsection{Cauchy's integral formula}
+
+{\bf Cauchy's integral formula}.  If $f(z)$ is analytic within and on
+a simple closed curve $C$ (assumed to be oriented anticlockwise)
+inside a simply-connected domain, and if $z_0$ is any point inside
+$C$, then
+
+$$f(z_0)=\frac{1}{2\pi i}\int_C\frac{f(z)\,dz}{z-z_0}.$$
+
+
+We may use this to evaluate the Gauss hypergeometric function at a
+critical point.  The Gauss hypergeometric function ${}_2F_1(a,b;c;z)$
+is defined as
+
+$$1+\frac{ab}{c}\frac{z}{1!} + \frac{a(a+1)b(b+1)}{c(c+1)}\frac{z^2}{2!}+\cdots$$
+
+Now, this series has a radius of convergence of
+1~\citep{abramowitz1965}; but the function is defined over the whole
+complex plane by analytic continuation~\citep{buhring1987}.  The
+\pkg{hypergeo} package~\citep{hankin2015} evaluates ${}_2F_1(a,b;c;z)$
+for different values of $z$ by applying a sequence of transformations
+to reduce $\left|z\right|$ to its minimum value; however, this process
+is ineffective for $z=\frac{1}{2}\pm i\sqrt{3}/2$, these points
+transforming to themselves.  Numerically:
+
+<<showhypergeofail>>=
+library("hypergeo")
+z0 <- 1/2 + sqrt(3)/2i
+f <- function(z){hypergeo_powerseries(1/2, 1/3, 1/5, z)}
+f(z0)
+@
+
+Above we see {\tt NA}, signifying failure to converge.  However, the
+residue theorem may be used to evaluate ${}_2F_1$ at this point:
+
+<<>>=
+r <- 0.1 # radius of contour
+u <- function(x){z0 + r*exp(pi * 2i * x)}
+udash <- function(x){r * pi * (0+2i) * exp(pi * 2i * x)}
+(val_residue <- integrate.contour(function(z){f(z) / (z-z0)}, u, udash) / (pi*2i))
+@ 
+
+We can compare this value with that obtained by a more sophisticated
+[and computationally expensive] method, that of
+Gosper~\citep{hankin2015}:
+
+<<>>=
+(val_gosper <- hypergeo_gosper(1/2, 1/3, 1/5, z0))
+abs(val_gosper - val_residue)
+@ 
+
+Above we see reasonable numerical agreement.
+
+
+\section{Conclusions}
+
+The \pkg{elliptic} package includes a suite of functionality for
+complex integration using numerical methods and these are used to
+demonstrate Cauchy's integral theorem, the residue theorem, and
+Cauchy's integral formula.  Numerical errors are generally small.
+
+\bibliography{elliptic}
+\end{document}

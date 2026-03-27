@@ -1,0 +1,145 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Utilities for performing calculations on logarithmic scale.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for logspace.utils {statnet.common}"><tr><td>logspace.utils {statnet.common}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Utilities for performing calculations on logarithmic scale.</h2>
+
+<h3>Description</h3>
+
+<p>A small suite of functions to compute sums, means, and weighted means on
+logarithmic scale, minimizing loss of precision.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+log_sum_exp(logx, use_ldouble = FALSE)
+
+log_mean_exp(logx, use_ldouble = FALSE)
+
+lweighted.mean(x, logw)
+
+lweighted.var(x, logw, onerow = NA)
+
+lweighted.cov(x, y, logw, onerow = NA)
+
+log1mexp(x)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>logx</code></td>
+<td>
+<p>Numeric vector of <i>\log(x)</i>, the natural logarithms of the
+values to be summed or averaged.</p>
+</td></tr>
+<tr valign="top"><td><code>use_ldouble</code></td>
+<td>
+<p>Whether to use <code>long double</code> precision in the
+calculation. If <code>TRUE</code>, 's C built-in <code>logspace_sum()</code> is used. If
+<code>FALSE</code>, the package's own implementation based on it is used, using
+<code>double</code> precision, which is (on most systems) several times faster, at
+the cost of precision.</p>
+</td></tr>
+<tr valign="top"><td><code>x, y</code></td>
+<td>
+<p>Numeric vectors or matrices of <i>x</i> and <i>y</i>, the (raw) values
+to be summed, averaged, or whose variances and covariances are to
+be calculated.</p>
+</td></tr>
+<tr valign="top"><td><code>logw</code></td>
+<td>
+<p>Numeric vector of <i>\log(w)</i>, the natural logarithms of the
+weights.</p>
+</td></tr>
+<tr valign="top"><td><code>onerow</code></td>
+<td>
+<p>If given a matrix or matrices with only one row
+(i.e., sample size 1), <code><a href="../../stats/html/cor.html">var()</a></code> and <code><a href="../../stats/html/cor.html">cov()</a></code> will return <code>NA</code>. But,
+since weighted matrices are often a product of compression, the
+same could be interpreted as a variance of variables that do not
+vary, i.e., 0. This argument controls what value should be
+returned.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p>The functions return the equivalents of the R expressions given below,
+but faster and with less loss of precision.
+</p>
+
+
+<h3>Functions</h3>
+
+
+<ul>
+<li> <p><code>log_sum_exp()</code>: <code>log(sum(exp(logx)))</code>
+</p>
+</li>
+<li> <p><code>log_mean_exp()</code>: <code>log(mean(exp(logx)))</code>
+</p>
+</li>
+<li> <p><code>lweighted.mean()</code>: weighted mean of <code>x</code>:
+<code>sum(x*exp(logw))/sum(exp(logw))</code> for <code>x</code> scalar and
+<code>colSums(x*exp(logw))/sum(exp(logw))</code> for <code>x</code> matrix
+</p>
+</li>
+<li> <p><code>lweighted.var()</code>: weighted variance of <code>x</code>: <code>crossprod(x-lweighted.mean(x,logw)*exp(logw/2))/sum(exp(logw))</code>
+</p>
+</li>
+<li> <p><code>lweighted.cov()</code>: weighted covariance between <code>x</code> and <code>y</code>: <code>crossprod(x-lweighted.mean(x,logw)*exp(logw/2), y-lweighted.mean(y,logw)*exp(logw/2))/sum(exp(logw))</code>
+</p>
+</li>
+<li> <p><code>log1mexp()</code>: <code>log(1-exp(-x))</code> for <code>x &gt;= 0</code> (a wrapper for the eponymous C macro provided by R)
+</p>
+</li></ul>
+
+
+<h3>Author(s)</h3>
+
+<p>Pavel N. Krivitsky
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+x &lt;- rnorm(1000)
+stopifnot(all.equal(log_sum_exp(x), log(sum(exp(x))), check.attributes=FALSE))
+stopifnot(all.equal(log_mean_exp(x), log(mean(exp(x))), check.attributes=FALSE))
+
+logw &lt;- rnorm(1000)
+stopifnot(all.equal(m &lt;- sum(x*exp(logw))/sum(exp(logw)),lweighted.mean(x, logw)))
+stopifnot(all.equal(sum((x-m)^2*exp(logw))/sum(exp(logw)),
+                    lweighted.var(x, logw), check.attributes=FALSE))
+
+x &lt;- cbind(x, rnorm(1000))
+stopifnot(all.equal(mx &lt;- colSums(x*exp(logw))/sum(exp(logw)),
+                    lweighted.mean(x, logw), check.attributes=FALSE))
+stopifnot(all.equal(crossprod(t(t(x)-mx)*exp(logw/2))/sum(exp(logw)),
+                    lweighted.var(x, logw), check.attributes=FALSE))
+
+
+y &lt;- cbind(x, rnorm(1000))
+my &lt;- colSums(y*exp(logw))/sum(exp(logw))
+stopifnot(all.equal(crossprod(t(t(x)-mx)*exp(logw/2), t(t(y)-my)*exp(logw/2))/sum(exp(logw)),
+                    lweighted.cov(x, y, logw), check.attributes=FALSE))
+stopifnot(all.equal(crossprod(t(t(y)-my)*exp(logw/2), t(t(x)-mx)*exp(logw/2))/sum(exp(logw)),
+                    lweighted.cov(y, x, logw), check.attributes=FALSE))
+
+x &lt;- rexp(1000)
+stopifnot(isTRUE(all.equal(log1mexp(x), log(1-exp(-x)))))
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>statnet.common</em> version 4.13.0 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: 'Word' computed field</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for as_word_field {flextable}"><tr><td>as_word_field {flextable}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>'Word' computed field</h2>
+
+<h3>Description</h3>
+
+<p>This function is used to insert
+'Word' computed field into flextable.
+</p>
+<p>It is used to add it to the content of a cell of the
+flextable with the functions <code><a href="../../flextable/help/compose.html">compose()</a></code>, <code><a href="../../flextable/help/append_chunks.html">append_chunks()</a></code>
+or <code><a href="../../flextable/help/prepend_chunks.html">prepend_chunks()</a></code>.
+</p>
+<p>This has only effect on 'Word' output. If you want to
+condition its execution only for Word output, you can
+use it in the post processing step (see
+<code>set_flextable_defaults(post_process_docx = ...)</code>)
+</p>
+<p><strong>Do not forget to update the computed field in Word</strong>.
+Fields are defined but are not computed, this computing is an
+operation that has to be made by 'Microsoft Word'
+(select all text and hit <code>F9</code> when on mac os).
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+as_word_field(x, props = NULL, width = 0.1, height = 0.15, unit = "in")
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+<p>computed field strings</p>
+</td></tr>
+<tr valign="top"><td><code>props</code></td>
+<td>
+<p>text properties (see <code><a href="../../flextable/help/fp_text_default.html">fp_text_default()</a></code> or <code><a href="../../officer/help/fp_text.html">officer::fp_text()</a></code>)
+object to be used to format the text. If not specified, it will use
+the default text properties of the cell(s).</p>
+</td></tr>
+<tr valign="top"><td><code>width, height</code></td>
+<td>
+<p>size computed field</p>
+</td></tr>
+<tr valign="top"><td><code>unit</code></td>
+<td>
+<p>unit for width and height, one of &quot;in&quot;, &quot;cm&quot;, &quot;mm&quot;.</p>
+</td></tr>
+</table>
+
+
+<h3>See Also</h3>
+
+<p>Other chunk elements for paragraph: 
+<code><a href="../../flextable/help/as_b.html">as_b</a>()</code>,
+<code><a href="../../flextable/help/as_bracket.html">as_bracket</a>()</code>,
+<code><a href="../../flextable/help/as_chunk.html">as_chunk</a>()</code>,
+<code><a href="../../flextable/help/as_equation.html">as_equation</a>()</code>,
+<code><a href="../../flextable/help/as_highlight.html">as_highlight</a>()</code>,
+<code><a href="../../flextable/help/as_i.html">as_i</a>()</code>,
+<code><a href="../../flextable/help/as_image.html">as_image</a>()</code>,
+<code><a href="../../flextable/help/as_sub.html">as_sub</a>()</code>,
+<code><a href="../../flextable/help/as_sup.html">as_sup</a>()</code>,
+<code><a href="../../flextable/help/colorize.html">colorize</a>()</code>,
+<code><a href="../../flextable/help/gg_chunk.html">gg_chunk</a>()</code>,
+<code><a href="../../flextable/help/grid_chunk.html">grid_chunk</a>()</code>,
+<code><a href="../../flextable/help/hyperlink_text.html">hyperlink_text</a>()</code>,
+<code><a href="../../flextable/help/linerange.html">linerange</a>()</code>,
+<code><a href="../../flextable/help/lollipop.html">lollipop</a>()</code>,
+<code><a href="../../flextable/help/minibar.html">minibar</a>()</code>,
+<code><a href="../../flextable/help/plot_chunk.html">plot_chunk</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(flextable)
+
+# define some default values ----
+set_flextable_defaults(font.size = 22, border.color = "gray")
+
+# an example with append_chunks ----
+pp_docx &lt;- function(x) {
+  x &lt;- add_header_lines(x, "Page ")
+  x &lt;- append_chunks(
+    x = x, i = 1, part = "header", j = 1,
+    as_word_field(x = "Page")
+  )
+  align(x, part = "header", align = "left")
+}
+ft_1 &lt;- flextable(cars)
+ft_1 &lt;- autofit(ft_1)
+ft_1 &lt;- pp_docx(ft_1)
+
+## or:
+# set_flextable_defaults(post_process_docx = pp_docx)
+## to prevent this line addition when output is not docx
+
+# print(ft_1, preview = "docx")
+
+# an example with compose ----
+
+library(officer)
+ft_2 &lt;- flextable(head(cars))
+ft_2 &lt;- add_footer_lines(ft_2, "temp text")
+ft_2 &lt;- compose(
+  x = ft_2, part = "footer", i = 1, j = 1,
+  as_paragraph(
+    "p. ",
+    as_word_field(x = "Page", width = .05),
+    " on ", as_word_field(x = "NumPages", width = .05)
+  )
+)
+ft_2 &lt;- autofit(ft_2, part = c("header", "body"))
+
+doc &lt;- read_docx()
+doc &lt;- body_add_flextable(doc, ft_2)
+doc &lt;- body_add_break(doc)
+doc &lt;- body_add_flextable(doc, ft_2)
+outfile &lt;- print(doc, target = tempfile(fileext = ".docx"))
+
+# reset default values ----
+init_flextable_defaults()
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>flextable</em> version 0.9.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

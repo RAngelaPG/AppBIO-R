@@ -1,0 +1,118 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Registering doRNG for Persistent Reproducible Parallel...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for registerDoRNG {doRNG}"><tr><td>registerDoRNG {doRNG}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Registering doRNG for Persistent Reproducible Parallel Foreach Loops</h2>
+
+<h3>Description</h3>
+
+<p><code>registerDoRNG</code> registers the doRNG foreach backend.
+Subsequent '
+registered foreach backend, but are internally performed as [
+making them fully reproducible.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+registerDoRNG(seed = NULL, once = TRUE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>seed</code></td>
+<td>
+<p>a numerical seed to use (as a single or 6-length numerical value)</p>
+</td></tr>
+<tr valign="top"><td><code>once</code></td>
+<td>
+<p>a logical to indicate if the RNG sequence should be seeded at the 
+beginning of each loop or only at the first loop.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Briefly, the RNG is set, before each iteration, with seeds for L'Ecuyer's CMRG 
+that overall generate a reproducible sequence of statistically independent 
+random streams.
+</p>
+<p>Note that (re-)registering a foreach backend other than doRNG, after a call 
+to <code>registerDoRNG</code> disables doRNG &ndash; which then needs to be registered.
+</p>
+
+
+<h3>Value</h3>
+
+<p>The value returned by [foreach::setDoPar]
+</p>
+
+
+<h3>See Also</h3>
+
+<p>[
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+if (requireNamespace("doParallel", quietly = TRUE)) {
+  cl &lt;- parallel::makeCluster(2)
+  doParallel::registerDoParallel(cl)
+
+  tryCatch({
+    # One can make reproducible loops using the %dorng% operator
+    r1 &lt;- foreach(i=1:4, .options.RNG=1234) %dorng% { runif(1) }
+
+    # or convert %dopar% loops using registerDoRNG
+    registerDoRNG(1234)
+    r2 &lt;- foreach(i=1:4) %dopar% { runif(1) }
+    identical(r1, r2)
+
+    # Registering another foreach backend disables doRNG
+    doParallel::registerDoParallel(cl)
+    set.seed(1234)
+    s1 &lt;- foreach(i=1:4) %dopar% { runif(1) }
+    set.seed(1234)
+    s2 &lt;- foreach(i=1:4) %dopar% { runif(1) }
+    identical(s1, s2)
+    
+
+    # doRNG is re-enabled by re-registering it
+    registerDoRNG()
+    set.seed(1234)
+    r3 &lt;- foreach(i=1:4) %dopar% { runif(1) }
+    identical(r2, r3)
+
+    # argument `once=FALSE` reseeds doRNG's seed at the beginning of each loop
+    registerDoRNG(1234, once=FALSE)
+    a1 &lt;- foreach(i=1:4) %dopar% { runif(1) }
+    a2 &lt;- foreach(i=1:4) %dopar% { runif(1) }
+    identical(a1, a2)
+
+    # Once doRNG is registered the seed can also be passed as an option to %dopar%
+    b1 &lt;- foreach(i=1:4, .options.RNG=456) %dopar% { runif(1) }
+    b2 &lt;- foreach(i=1:4, .options.RNG=456) %dopar% { runif(1) }
+    identical(b1, b2) &amp;&amp; !identical(b1, r1)
+    
+  }, finally = {
+    foreach::registerDoSEQ()
+    parallel::stopCluster(cl)
+  })
+} else {
+  message("Package 'doParallel' is not installed; skipping this example.")
+}
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>doRNG</em> version 1.8.6.3 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Checks if a Connection is Valid</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for isConnectionValid {parallelly}"><tr><td>isConnectionValid {parallelly}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Checks if a Connection is Valid</h2>
+
+<h3>Description</h3>
+
+<p>Get a unique identifier for an R <a href="../../base/help/connections.html">connection</a>
+and check whether or not the connection is still valid.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+isConnectionValid(con)
+
+connectionId(con)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>con</code></td>
+<td>
+<p>A <a href="../../base/help/connections.html">connection</a>.</p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p><code>isConnectionValid()</code> returns TRUE if the connection is still valid,
+otherwise FALSE.  If FALSE, then character attribute <code>reason</code> provides
+an explanation why the connection is not valid.
+</p>
+<p><code>connectionId()</code> returns an non-negative integer, -1, or <code>NA_integer_</code>.
+For connections stdin, stdout, and stderr, 0, 1, and 2, are returned,
+respectively.  For all other connections, an integer greater or equal to
+3 based on the connection's internal pointer is returned.
+A connection that has been serialized, which is no longer valid, has
+identifier -1.
+Attribute <code>raw_id</code> returns the pointer string from which the above is
+inferred.
+</p>
+
+
+<h3>Connection Index versus Connection Identifier</h3>
+
+<p>R represents <a href="../../base/help/connections.html">connections</a> as indices using plain
+integers, e.g. <code>idx &lt;- as.integer(con)</code>.
+The three connections standard input (&quot;stdin&quot;), standard output (&quot;stdout&quot;),
+and standard error (&quot;stderr&quot;) always exists and have indices 0, 1, and 2.
+Any connection opened beyond these will get index three or greater,
+depending on availability as given by <code><a href="../../base/help/showConnections.html">base::showConnections()</a></code>.
+To get the connection with a given index, use <code><a href="../../base/help/showConnections.html">base::getConnection()</a></code>.
+<strong>Unfortunately, this index representation of connections is non-robust</strong>,
+e.g. there are cases where two or more 'connection' objects can end up with
+the same index and if used, the written output may end up at the wrong
+destination and files and database might get corrupted.  This can for
+instance happen if <code><a href="../../base/help/showConnections.html">base::closeAllConnections()</a></code> is used (*).
+<strong>In contrast, <code>id &lt;- connectionId(con)</code> gives an identifier that is unique
+to that 'connection' object.</strong>  This identifier is based on the internal
+pointer address of the object.  The risk for two connections in the same
+<span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> session to end up with the same pointer address is very small.
+Thus, in case we ended up in a situation where two connections <code>con1</code> and
+<code>con2</code> share the same index&mdash;<code>as.integer(con1) == as.integer(con2)</code>&mdash;
+they will never share the same identifier&mdash;
+<code>connectionId(con1) != connectionId(con2)</code>.
+Here, <code>isConnectionValid()</code> can be used to check which one of these
+connections, if any, are valid.
+</p>
+<p>(*) Note that there is no good reason for calling <code>closeAllConnections()</code>
+If called, there is a great risk that the files get corrupted etc.
+See (1) for examples and details on this problem.
+If you think there is a need to use it, it is much safer to restart <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span>
+because that is guaranteed to give you a working <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> session with
+non-clashing connections.
+It might also be that <code>closeAllConnections()</code> is used because
+<code><a href="../../base/help/base-internal.html">base::sys.save.image()</a></code> is called, which might happen if <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> is being
+forced to terminate.
+</p>
+
+
+<h3>Connections Cannot be Serialized Or Saved</h3>
+
+<p>A 'connection' cannot be serialized, e.g. it cannot be saved to file to
+be read and used in another <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> session.  If attempted, the connection will
+not be valid.  This is a problem that may occur in parallel processing
+when passing an <span style="font-family: Courier New, Courier; color: #666666;"><b>R</b></span> object to parallel worker for further processing, e.g.
+the exported object may hold an internal database connection which will
+no longer be valid on the worker.
+When a connection is serialized, its internal pointer address will be
+invalidated (set to nil). In such cases, <code>connectionId(con)</code> returns -1
+and <code>isConnectionValid(con)</code> returns FALSE.
+</p>
+
+
+<h3>References</h3>
+
+
+<ol>
+<li> <p><a href="https://github.com/HenrikBengtsson/Wishlist-for-R/issues/81">'BUG: A <code>connection</code> object may become corrupt and re-referenced to another connection (PATCH)'</a>, 2018-10-30.
+</p>
+</li>
+<li><p> R-devel thread <a href="https://stat.ethz.ch/pipermail/r-devel/2018-October/077004.html">PATCH: Asserting that 'connection' used has not changed + R_GetConnection2()</a>, 2018-10-31.
+</p>
+</li></ol>
+
+
+
+<h3>See Also</h3>
+
+<p>See <code><a href="../../base/help/showConnections.html">base::showConnections()</a></code> for currently open connections and their
+indices. To get a connection by its index, use <code><a href="../../base/help/showConnections.html">base::getConnection()</a></code>.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## R represents connections as plain indices
+as.integer(stdin())          ## int 0
+as.integer(stdout())         ## int 1
+as.integer(stderr())         ## int 2
+
+## The first three connections always exist and are always valid
+isConnectionValid(stdin())   ## TRUE
+connectionId(stdin())        ## 0L
+isConnectionValid(stdout())  ## TRUE
+connectionId(stdout())       ## 1L
+isConnectionValid(stderr())  ## TRUE
+connectionId(stderr())       ## 2L
+
+## Connections cannot be serialized
+con &lt;- file(tempfile(), open = "w")
+x &lt;- list(value = 42, stderr = stderr(), con = con)
+y &lt;- unserialize(serialize(x, connection = NULL))
+isConnectionValid(y$stderr)  ## TRUE
+connectionId(y$stderr)       ##  2L
+isConnectionValid(y$con)     ## FALSE with attribute 'reason'
+connectionId(y$con)          ## -1L
+close(con)
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>parallelly</em> version 1.46.1 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

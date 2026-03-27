@@ -1,0 +1,862 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Collapse groups with categorical, numerical, ID, and size...</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for collapse_groups {groupdata2}"><tr><td>collapse_groups {groupdata2}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Collapse groups with categorical, numerical, ID, and size balancing</h2>
+
+<h3>Description</h3>
+
+<p><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental"><img src="../help/figures/lifecycle-experimental.svg" alt='[Experimental]' /></a>
+</p>
+<p>Collapses a set of groups into a smaller set of groups.
+</p>
+<p><em>Attempts</em> to balance the new groups by specified numerical columns,
+categorical columns,
+level counts in ID columns,
+and/or the number of rows (size).
+</p>
+<p><strong>Note</strong>: The more of these you balance at a time,
+the less balanced each of them may become. While, <em>on average</em>,
+the balancing work better than without, this is
+<strong>not guaranteed on every run</strong>. Enabling <code>`auto_tune`</code> can yield a
+much better overall balance than without in most contexts.
+This generates a larger set of group columns using all combinations of the
+balancing columns and selects the most balanced group column(s).
+This is slower and we recommend enabling parallelization (see <code>`parallel`</code>).
+</p>
+<p>While this balancing algorithm will not be <em>optimal</em> in all cases,
+it allows balancing a <strong>large</strong> number of columns at once. Especially
+with auto-tuning enabled, this can be very powerful.
+</p>
+<p><strong>Tip</strong>: Check the balances of the new groups with
+<code><a href="../help/summarize_balances.html">summarize_balances()</a></code> and
+<code><a href="../help/ranked_balances.html">ranked_balances()</a></code>.
+</p>
+<p><strong>Note</strong>: The categorical and ID balancing algorithms are different to those
+in <code><a href="../help/fold.html">fold()</a></code> and
+<code><a href="../help/partition.html">partition()</a></code>.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+collapse_groups(
+  data,
+  n,
+  group_cols,
+  cat_cols = NULL,
+  cat_levels = NULL,
+  num_cols = NULL,
+  id_cols = NULL,
+  balance_size = TRUE,
+  auto_tune = FALSE,
+  weights = NULL,
+  method = "balance",
+  group_aggregation_fn = mean,
+  num_new_group_cols = 1,
+  unique_new_group_cols_only = TRUE,
+  max_iters = 5,
+  extreme_pairing_levels = 1,
+  combine_method = "avg_standardized",
+  col_name = ".coll_groups",
+  parallel = FALSE,
+  verbose = TRUE
+)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>data</code></td>
+<td>
+<p><code>data.frame</code>. Can be <em>grouped</em>, in which case
+the function is applied group-wise.</p>
+</td></tr>
+<tr valign="top"><td><code>n</code></td>
+<td>
+<p>Number of new groups.
+</p>
+<p>When <code>`num_new_group_cols` &gt; 1</code>, <code>`n`</code> can also be a vector
+with one <code>`n`</code> per new group column. This allows trying multiple <code>`n`</code>
+settings at a time. Note that the generated group columns are not guaranteed
+to be in the order of <code>`n`</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>group_cols</code></td>
+<td>
+<p>Names of factors in <code>`data`</code> for identifying the <em>existing</em> groups
+that should be collapsed.
+</p>
+<p>Multiple names are treated as in <code><a href="../../dplyr/help/group_by.html">dplyr::group_by()</a></code>
+(i.e., a hierarchy of groups), where each leaf group within each parent group is
+considered a unique group to be collapsed.
+Parent groups are not considered during collapsing, why leaf groups from different
+parent groups can be collapsed together.
+</p>
+<p><strong>Note</strong>: Do not confuse these group columns with potential columns that <code>`data`</code> is grouped by.
+<code>`group_cols`</code> identifies the groups to be collapsed. When <code>`data`</code> is
+grouped with <code><a href="../../dplyr/help/group_by.html">dplyr::group_by()</a></code>, the function is
+applied separately to each of those subsets.</p>
+</td></tr>
+<tr valign="top"><td><code>cat_cols</code></td>
+<td>
+<p>Names of categorical columns to balance the average frequency
+of one or more levels of.</p>
+</td></tr>
+<tr valign="top"><td><code>cat_levels</code></td>
+<td>
+<p>Names of the levels in the <code>`cat_cols`</code> columns to balance the average frequencies
+of. When <code>`NULL`</code> (default), all levels are balanced.
+Can be weights indicating the balancing importance of each level (within each column).
+</p>
+<p>The weights are automatically scaled to sum to <code>1</code>.
+</p>
+<p>Can be <code>".minority"</code> or <code>".majority"</code>, in which case the minority/majority level
+are found and used.
+</p>
+
+
+<h4>When <code>`cat_cols`</code> has single column name:</h4>
+
+<p>Either a <code>vector</code> with level names or a named <code>numeric vector</code> with weights:
+</p>
+<p>E.g. <code>c("dog", "pidgeon", "mouse")</code> or <code>c("dog" = 5, "pidgeon" = 1, "mouse" = 3)</code>
+</p>
+
+
+
+<h4>When <code>`cat_cols`</code> has multiple column names:</h4>
+
+<p>A named <code>list</code> with <code>vector</code>s for each column name in <code>`cat_cols`</code>.
+When not providing a <code>vector</code> for a <code>`cat_cols`</code>
+column, all levels are balanced in that column.
+</p>
+<p>E.g. <code>list("col1" = c("dog" = 5, "pidgeon" = 1, "mouse" = 3),
+ "col2" = c("hydrated", "dehydrated"))</code>.
+</p>
+</td></tr>
+<tr valign="top"><td><code>num_cols</code></td>
+<td>
+<p>Names of numerical columns to balance between groups.</p>
+</td></tr>
+<tr valign="top"><td><code>id_cols</code></td>
+<td>
+<p>Names of factor columns with IDs to balance the counts of between groups.
+</p>
+<p>E.g. useful to get a similar number of participants in each group.</p>
+</td></tr>
+<tr valign="top"><td><code>balance_size</code></td>
+<td>
+<p>Whether to balance the size of the collapsed groups. (logical)</p>
+</td></tr>
+<tr valign="top"><td><code>auto_tune</code></td>
+<td>
+<p>Whether to create a larger set of collapsed group columns
+from all combinations of the balancing dimensions and select the
+overall most balanced group column(s).
+</p>
+<p>This tends to create much more balanced collapsed group columns.
+</p>
+<p>Can be slow, why we recommend enabling parallelization (see <code>`parallel`</code>).</p>
+</td></tr>
+<tr valign="top"><td><code>weights</code></td>
+<td>
+<p>Named <code>vector</code> with balancing importance weights for each of
+the balancing columns. Besides the columns in <code>`cat_cols`</code>, <code>`num_cols`</code>, and <code>`id_cols`</code>,
+the <em>size</em> balancing weight can be given as <code>"size"</code>.
+</p>
+<p>The weights are automatically scaled to sum to <code>1</code>.
+</p>
+<p>Dimensions that are <em>not</em> given a weight is automatically given the weight <code>1</code>.
+</p>
+<p>E.g. <code>c("size" = 1, "cat" = 1, "num1" = 4, "num2" = 7, "id" = 2)</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>method</code></td>
+<td>
+<p><code>"balance"</code>, <code>"ascending"</code>, or <code>"descending"</code>:
+</p>
+<p>After calculating a <em>combined balancing column</em> from each of the balancing columns (see <code>Details &gt;&gt; Balancing columns</code>):
+</p>
+
+<ul>
+<li> <p><code>"balance"</code> balances the combined balancing column between the groups.
+</p>
+</li>
+<li> <p><code>"ascending"</code> orders the combined balancing column and groups from the lowest to highest value.
+</p>
+</li>
+<li> <p><code>"descending"</code> orders the combined balancing column and groups from the highest to lowest value.
+</p>
+</li></ul>
+</td></tr>
+<tr valign="top"><td><code>group_aggregation_fn</code></td>
+<td>
+<p>Function for aggregating values in the <code>`num_cols`</code> columns
+for each group in <code>`group_cols`</code>.
+</p>
+<p>Default is <code>mean()</code>, where the average value(s) are balanced across the new groups.
+</p>
+<p>When using <code>sum()</code>, the groups will have similar sums across the new groups.
+</p>
+<p><strong>N.B.</strong> Only used when <code>`num_cols`</code> is specified.</p>
+</td></tr>
+<tr valign="top"><td><code>num_new_group_cols</code></td>
+<td>
+<p>Number of group columns to create.
+</p>
+<p>When <code>`num_new_group_cols` &gt; 1</code>, columns are named
+with a combination of <code>`col_name`</code> and <code>"_1"</code>, <code>"_2"</code>, etc.
+E.g. <i>".coll_groups_1"</i>, <i>".coll_groups_2"</i>, ...
+</p>
+<p><strong>N.B.</strong> When <code>`unique_new_group_cols_only`</code> is <code>`TRUE`</code>,
+we may end up with fewer columns than specified, see <code>`max_iters`</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>unique_new_group_cols_only</code></td>
+<td>
+<p>Whether to only return unique new group columns.
+</p>
+<p>As the number of column comparisons can be quite time consuming,
+we recommend enabling parallelization. See <code>`parallel`</code>.
+</p>
+<p><strong>N.B.</strong> We can end up with fewer columns than specified in
+<code>`num_new_group_cols`</code>, see <code>`max_iters`</code>.
+</p>
+<p><strong>N.B.</strong> Only used when <code>`num_new_group_cols` &gt; 1</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>max_iters</code></td>
+<td>
+<p>Maximum number of attempts at reaching
+<code>`num_new_group_cols`</code> <em>unique</em> new group columns.
+</p>
+<p>When only keeping unique new group columns, we risk having fewer columns than expected.
+Hence, we repeatedly create the missing columns and remove those that are not unique.
+This is done until we have <code>`num_new_group_cols`</code> unique group columns
+or we have attempted <code>`max_iters`</code> times.
+</p>
+<p>In some cases, it is not possible to create <code>`num_new_group_cols`</code>
+unique combinations of the dataset.
+<code>`max_iters`</code> specifies when to stop trying.
+Note that we can end up with fewer columns than specified in <code>`num_new_group_cols`</code>.
+</p>
+<p><strong>N.B.</strong> Only used when <code>`num_new_group_cols` &gt; 1</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>extreme_pairing_levels</code></td>
+<td>
+<p>How many levels of extreme pairing to do
+when balancing the groups by the combined balancing column (see <code>Details</code>).
+</p>
+<p><strong>Extreme pairing</strong>: Rows/pairs are ordered as smallest, largest,
+second smallest, second largest, etc. If <code>extreme_pairing_levels &gt; 1</code>,
+this is done &quot;recursively&quot; on the extreme pairs.
+</p>
+<p><strong>N.B.</strong> Larger values work best with large datasets. If set too high,
+the result might not be stochastic. Always check if an increase
+actually makes the groups more balanced.</p>
+</td></tr>
+<tr valign="top"><td><code>combine_method</code></td>
+<td>
+<p>Method to combine the balancing columns by.
+One of <code>"avg_standardized"</code> or <code>"avg_min_max_scaled"</code>.
+</p>
+<p>For each balancing column (all columns in <em><code>num_cols</code></em>, <em><code>cat_cols</code></em>,
+and <em><code>id_cols</code></em>, plus <em>size</em>), we calculate a normalized, numeric group summary column, which indicates the
+&quot;size&quot; of each group in that dimension. These are then combined to a single
+<em>combined balancing column</em>.
+</p>
+<p>The three steps are:
+</p>
+
+<ol>
+<li><p> Calculate a numeric representation of the balance for each column.
+E.g. the number of unique levels within each group of an ID column
+(see <code>Details &gt; Balancing columns</code> for more on this).
+</p>
+</li>
+<li><p> Normalize each column separately with standardization (<code>"avg_standardized"</code>; Default) or MinMax scaling
+to the [0, 1] range (<code>"avg_min_max_scaled"</code>).
+</p>
+</li>
+<li><p> Average the columns <em>rowwise</em> to get a single column with one value per group. The averaging
+is weighted by <code>`weights`</code>, which is useful when one of the dimensions is
+more important to get a good balance of.
+</p>
+</li></ol>
+
+<p><code>`combine_method`</code> chooses whether to use standardization or MinMax scaling in step 2.</p>
+</td></tr>
+<tr valign="top"><td><code>col_name</code></td>
+<td>
+<p>Name of the new group column. When creating multiple new group columns
+(<code>`num_new_group_cols`&gt;1</code>), this is the prefix for the names, which will
+be suffixed with an underscore and a number (_1, _2, _3, etc.).</p>
+</td></tr>
+<tr valign="top"><td><code>parallel</code></td>
+<td>
+<p>Whether to parallelize the group column comparisons
+when <code>`unique_new_group_cols_only`</code> is <code>`TRUE`</code>.
+</p>
+<p>Especially highly recommended when <code>`auto_tune`</code> is enabled.
+</p>
+<p>Requires a registered parallel backend.
+Like <code>doParallel::registerDoParallel</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>Whether to print information about the process.
+May make the function slightly slower.
+</p>
+<p>N.B. Currently only used during auto-tuning.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>The goal of <code>collapse_groups()</code> is to combine existing groups
+to a lower number of groups while (optionally) balancing one or more
+<em>numeric</em>, <em>categorical</em> and/or <em>ID</em> columns, along with the group
+<em>size</em>.
+</p>
+<p>For each of these columns (and size), we calculate a normalized, numeric <em>&quot;balancing column&quot;</em>
+that when balanced between the groups lead to its original column being balanced as well.
+</p>
+<p>To balance multiple columns at once, we combine their balancing columns with
+weighted averaging (see <code>`combine_method`</code> and <code>`weights`</code>) to a single
+<em>combined balancing column</em>.
+</p>
+<p>Finally, we create groups where this combined balancing column is balanced between the groups,
+using the numerical balancing in <code><a href="../help/fold.html">fold()</a></code>.
+</p>
+
+
+<h4>Auto-tuning</h4>
+
+<p>This strategy is not guaranteed to produce balanced groups in all contexts,
+e.g. when the balancing columns cancel out. To increase the probability of
+balanced groups, we can produce multiple group columns with all combinations
+of the balancing columns and select the overall most balanced group column(s).
+We refer to this as auto-tuning (see <code>`auto_tune`</code>).
+</p>
+<p>We find the overall most balanced group column by ranking the across-group
+standard deviations for each of the balancing columns, as found with
+<code><a href="../help/summarize_balances.html">summarize_balances()</a></code>.
+</p>
+<p><strong>Example</strong> of finding the overall most balanced group column(s):
+</p>
+<p>Given a group column with the following average <em>age</em> per group: <code>`c(16, 18, 25, 21)`</code>,
+the standard deviation hereof (<code>3.92</code>) is a measure of how balanced the <em>age</em>
+column is. Another group column can thus have a lower/higher standard deviation
+and be considered more/less balanced.
+</p>
+<p>We find the rankings of these standard deviations for all the balancing columns
+and average them (again weighted by <code>`weights`</code>). We select the group column(s) with the,
+on average, highest rank (i.e. lowest standard deviations).
+</p>
+
+
+<h4>Checking balances</h4>
+
+<p>We highly recommend using
+<code><a href="../help/summarize_balances.html">summarize_balances()</a></code>
+and <code><a href="../help/ranked_balances.html">ranked_balances()</a></code> to
+check how balanced the created groups are on the various dimensions.
+When applying <code><a href="../help/ranked_balances.html">ranked_balances()</a></code>
+to the output of <code><a href="../help/summarize_balances.html">summarize_balances()</a></code>,
+we get a <code>data.frame</code> with the standard deviations
+for each balancing dimension (lower means more balanced),
+ordered by the average rank (see <code>Examples</code>).
+</p>
+
+
+<h4>Balancing columns</h4>
+
+<p>The following describes the creation of the balancing columns
+for each of the supported column types:
+</p>
+
+
+<h5>cat_cols</h5>
+
+<p>For each column in <code>`cat_cols`</code>:
+</p>
+
+<ul>
+<li> <p><strong>Count each level</strong> within each group. This creates a <code>data.frame</code> with
+one count column per level, with one row per group.
+</p>
+</li>
+<li> <p><strong>Standardize</strong> the count columns.
+</p>
+</li>
+<li> <p><strong>Average</strong> the standardized counts rowwise to create one combined column representing
+the balance of the levels for each group. When <code>cat_levels</code> contains weights for each of the levels,
+we apply weighted averaging.
+</p>
+</li></ul>
+
+<p><strong>Example</strong>: Consider a factor column with the levels <code>c("A", "B", "C")</code>.
+We count each level per group, <strong>n</strong>ormalize the counts and combine them with weighted averaging:
+</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: right;">
+<strong>Group</strong> </td><td style="text-align: right;"> <strong>A</strong> </td><td style="text-align: right;">
+<strong>B</strong> </td><td style="text-align: right;"> <strong>C</strong> </td><td style="text-align: right;">
+<strong> -&gt; </strong> </td><td style="text-align: right;"> <strong>nA</strong> </td><td style="text-align: right;">
+<strong>nB</strong> </td><td style="text-align: right;"> <strong>nC</strong> </td><td style="text-align: right;">
+<strong> -&gt; </strong> </td><td style="text-align: right;"> <strong>Combined</strong></td>
+</tr>
+<tr>
+ <td style="text-align: right;">
+1 </td><td style="text-align: right;"> 5 </td><td style="text-align: right;"> 57 </td><td style="text-align: right;"> 1 </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 0.24 </td><td style="text-align: right;"> 0.55 </td><td style="text-align: right;"> -0.77 </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 0.007  </td>
+</tr>
+<tr>
+ <td style="text-align: right;">
+2 </td><td style="text-align: right;"> 7 </td><td style="text-align: right;"> 69 </td><td style="text-align: right;"> 2 </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 0.93 </td><td style="text-align: right;"> 0.64 </td><td style="text-align: right;"> -0.77 </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 0.267 </td>
+</tr>
+<tr>
+ <td style="text-align: right;">
+3 </td><td style="text-align: right;"> 2 </td><td style="text-align: right;"> 34 </td><td style="text-align: right;"> 14</td><td style="text-align: right;"> | </td><td style="text-align: right;"> -1.42</td><td style="text-align: right;"> 0.29 </td><td style="text-align: right;"> 1.34  </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 0.07 </td>
+</tr>
+<tr>
+ <td style="text-align: right;">
+4 </td><td style="text-align: right;"> 5 </td><td style="text-align: right;"> 0 </td><td style="text-align: right;"> 4  </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 0.24 </td><td style="text-align: right;"> -1.48</td><td style="text-align: right;"> 0.19  </td><td style="text-align: right;"> | </td><td style="text-align: right;"> -0.35 </td>
+</tr>
+<tr>
+ <td style="text-align: right;">
+... </td><td style="text-align: right;"> ... </td><td style="text-align: right;"> ... </td><td style="text-align: right;"> ... </td><td style="text-align: right;"> | </td><td style="text-align: right;"> ... </td><td style="text-align: right;"> ... </td><td style="text-align: right;"> ... </td><td style="text-align: right;"> | </td><td style="text-align: right;"> ... </td>
+</tr>
+
+</table>
+
+
+
+
+<h5>id_cols</h5>
+
+<p>For each column in <code>`id_cols`</code>:
+</p>
+
+<ul>
+<li> <p><strong>Count</strong> the unique IDs (levels) within each group.
+(Note: The same ID can be counted in multiple groups.)
+</p>
+</li></ul>
+
+
+
+
+<h5>num_cols</h5>
+
+<p>For each column in <code>`num_cols`</code>:
+</p>
+
+<ul>
+<li> <p><strong>Aggregate</strong> the numeric columns by group using the <code>`group_aggregation_fn`</code>.
+</p>
+</li></ul>
+
+
+
+
+<h5>size</h5>
+
+
+<ul>
+<li> <p><strong>Count</strong> the number of rows per group.
+</p>
+</li></ul>
+
+
+
+
+<h5>Combining balancing columns</h5>
+
+
+<ul>
+<li><p> Apply standardization or MinMax scaling to each of the balancing columns (see <code>`combine_method`</code>).
+</p>
+</li>
+<li><p> Perform weighted averaging to get a single balancing column (see <code>`weights`</code>).
+</p>
+</li></ul>
+
+<p><strong>Example</strong>: We apply standardization and perform weighted averaging:
+</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: right;">
+<strong>Group</strong> </td><td style="text-align: right;"> <strong>Size</strong> </td><td style="text-align: right;">
+<strong>Num</strong> </td><td style="text-align: right;"> <strong>Cat</strong> </td><td style="text-align: right;">
+<strong>ID</strong> </td><td style="text-align: right;"> <strong>-&gt;</strong> </td><td style="text-align: right;">
+<strong>nSize</strong> </td><td style="text-align: right;"> <strong>nNum</strong>
+</td><td style="text-align: right;"> <strong>nCat</strong> </td><td style="text-align: right;"> <strong>nID</strong> </td><td style="text-align: right;">
+<strong>-&gt;</strong> </td><td style="text-align: right;"> <strong>Combined</strong></td>
+</tr>
+<tr>
+ <td style="text-align: right;">
+1 </td><td style="text-align: right;"> 34 </td><td style="text-align: right;"> 1.3 </td><td style="text-align: right;"> 0.007 </td><td style="text-align: right;"> 3 </td><td style="text-align: right;"> | </td><td style="text-align: right;"> -0.33 </td><td style="text-align: right;"> -0.82 </td><td style="text-align: right;"> 0.03 </td><td style="text-align: right;"> -0.46</td><td style="text-align: right;"> | </td><td style="text-align: right;"> -0.395  </td>
+</tr>
+<tr>
+ <td style="text-align: right;">
+2 </td><td style="text-align: right;"> 23 </td><td style="text-align: right;"> 4.6 </td><td style="text-align: right;"> 0.267 </td><td style="text-align: right;"> 4 </td><td style="text-align: right;"> | </td><td style="text-align: right;"> -1.12 </td><td style="text-align: right;"> 0.34  </td><td style="text-align: right;"> 1.04 </td><td style="text-align: right;"> 0.0  </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 0.065 </td>
+</tr>
+<tr>
+ <td style="text-align: right;">
+3 </td><td style="text-align: right;"> 56 </td><td style="text-align: right;"> 7.2 </td><td style="text-align: right;"> 0.07  </td><td style="text-align: right;"> 7 </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 1.27  </td><td style="text-align: right;"> 1.26  </td><td style="text-align: right;"> 0.28 </td><td style="text-align: right;"> 1.39 </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 1.05 </td>
+</tr>
+<tr>
+ <td style="text-align: right;">
+4 </td><td style="text-align: right;"> 41 </td><td style="text-align: right;"> 1.4 </td><td style="text-align: right;"> -0.35 </td><td style="text-align: right;"> 2 </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 0.18  </td><td style="text-align: right;"> -0.79 </td><td style="text-align: right;"> -1.35</td><td style="text-align: right;"> -0.93</td><td style="text-align: right;"> | </td><td style="text-align: right;"> -0.723 </td>
+</tr>
+<tr>
+ <td style="text-align: right;">
+... </td><td style="text-align: right;"> ... </td><td style="text-align: right;"> ... </td><td style="text-align: right;"> ... </td><td style="text-align: right;"> ... </td><td style="text-align: right;"> |
+</td><td style="text-align: right;"> ... </td><td style="text-align: right;"> ... </td><td style="text-align: right;"> ... </td><td style="text-align: right;"> ... </td><td style="text-align: right;"> | </td><td style="text-align: right;"> ... </td>
+</tr>
+
+</table>
+
+
+
+
+<h4>Creating the groups</h4>
+
+<p>Finally, we get to the group creation. There are three methods for creating groups based on the
+combined balancing column: <code>"balance"</code> (default), <code>"ascending"</code>, and <code>"descending"</code>.
+</p>
+
+
+<h5><code>method</code> is &quot;balance&quot;</h5>
+
+<p>To create groups that are balanced by the combined balancing column, we use the numerical balancing
+in <code><a href="../help/fold.html">fold()</a></code>.
+</p>
+<p>The following describes the numerical balancing in broad terms:
+</p>
+
+<ol>
+<li><p> Rows are shuffled.
+<strong>Note</strong> that this will only affect rows with the same value in the combined balancing column.
+</p>
+</li>
+<li><p> Extreme pairing 1: Rows are ordered as <em>smallest, largest, second smallest, second largest</em>, etc.
+Each small+large pair get an <em>extreme-group</em> identifier. (See <code><a href="../../rearrr/help/pair_extremes.html">rearrr::pair_extremes()</a></code>)
+</p>
+</li>
+<li><p> If <code>`extreme_pairing_levels` &gt; 1</code>: These extreme-group identifiers are reordered as <em>smallest,
+largest, second smallest, second largest</em>, etc., by the <code>sum</code> of the combined balancing column in the represented rows.
+These pairs (of pairs) get a new set of extreme-group identifiers, and the process is repeated
+<code>`extreme_pairing_levels`-2</code> times. Note that the extreme-group identifiers at the last level will represent
+<code>2^`extreme_pairing_levels`</code> rows, why you should be careful when choosing a larger setting.
+</p>
+</li>
+<li><p> The extreme-group identifiers from the last pairing are randomly divided into the final groups
+and these final identifiers are transferred to the original rows.
+</p>
+</li></ol>
+
+<p><strong>N.B.</strong> When doing extreme pairing of an unequal number of rows,
+the row with the smallest value is placed in a group by itself, and the order is instead:
+(smallest), <em>(second smallest, largest), (third smallest, second largest)</em>, etc.
+</p>
+<p>A similar approach with <em>extreme triplets</em> (i.e. smallest, closest to median, largest,
+second smallest, second closest to median, second largest, etc.) may also be utilized in some scenarios.
+(See <code><a href="../../rearrr/help/triplet_extremes.html">rearrr::triplet_extremes()</a></code>)
+</p>
+<p><strong>Example</strong>: We order the <code>data.frame</code> by smallest <em>&quot;Num&quot;</em> value,
+largest <em>&quot;Num&quot;</em> value, second smallest, and so on.
+We <em>could</em> further (when <code>`extreme_pairing_levels` &gt; 1</code>)
+find the sum of <em>&quot;Num&quot;</em> for each pair and perform extreme pairing on the pairs.
+Finally, we group the <code>data.frame</code>:
+</p>
+
+<table summary="Rd table">
+<tr>
+ <td style="text-align: right;">
+<strong>Group</strong> </td><td style="text-align: right;"> <strong>Num</strong> </td><td style="text-align: right;">
+<strong>-&gt;</strong> </td><td style="text-align: right;">
+<strong>Group</strong> </td><td style="text-align: right;"> <strong>Num</strong> </td><td style="text-align: right;">
+<strong>Pair</strong> </td><td style="text-align: right;"> <strong>-&gt;</strong> </td><td style="text-align: right;">
+<strong>New group</strong></td>
+</tr>
+<tr>
+ <td style="text-align: right;">
+1 </td><td style="text-align: right;"> -0.395</td><td style="text-align: right;"> | </td><td style="text-align: right;"> 5 </td><td style="text-align: right;"> -1.23 </td><td style="text-align: right;"> 1 </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 3 </td>
+</tr>
+<tr>
+ <td style="text-align: right;">
+2 </td><td style="text-align: right;"> 0.065 </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 3 </td><td style="text-align: right;"> 1.05  </td><td style="text-align: right;"> 1 </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 3 </td>
+</tr>
+<tr>
+ <td style="text-align: right;">
+3 </td><td style="text-align: right;"> 1.05  </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 4 </td><td style="text-align: right;"> -0.723</td><td style="text-align: right;"> 2 </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 1 </td>
+</tr>
+<tr>
+ <td style="text-align: right;">
+4 </td><td style="text-align: right;"> -0.723</td><td style="text-align: right;"> | </td><td style="text-align: right;"> 2 </td><td style="text-align: right;"> 0.065 </td><td style="text-align: right;"> 2 </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 1 </td>
+</tr>
+<tr>
+ <td style="text-align: right;">
+5 </td><td style="text-align: right;"> -1.23 </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 1 </td><td style="text-align: right;"> -0.395</td><td style="text-align: right;"> 3 </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 2 </td>
+</tr>
+<tr>
+ <td style="text-align: right;">
+6 </td><td style="text-align: right;"> -0.15 </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 6 </td><td style="text-align: right;"> -0.15 </td><td style="text-align: right;"> 3 </td><td style="text-align: right;"> | </td><td style="text-align: right;"> 2 </td>
+</tr>
+<tr>
+ <td style="text-align: right;">
+... </td><td style="text-align: right;"> ... </td><td style="text-align: right;"> | </td><td style="text-align: right;"> ... </td><td style="text-align: right;"> ... </td><td style="text-align: right;"> ... </td><td style="text-align: right;"> | </td><td style="text-align: right;"> ... </td>
+</tr>
+
+</table>
+
+
+
+
+<h5><code>method</code> is &quot;ascending&quot; or &quot;descending&quot;</h5>
+
+<p>These methods order the data by the combined balancing column and
+creates groups such that the sums get increasingly larger (<code>`ascending`</code>)
+or smaller (<code>`descending`</code>). This will in turn lead to a <em>pattern</em> of
+increasing/decreasing sums in the balancing columns (e.g. increasing/decreasing counts
+of the categorical levels, counts of IDs, number of rows and sums of numeric columns).
+</p>
+
+
+
+
+<h3>Value</h3>
+
+<p><code>data.frame</code> with one or more new grouping factors.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Ludvig Renbo Olsen, <a href="mailto:r-pkgs@ludvigolsen.dk">r-pkgs@ludvigolsen.dk</a>
+</p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../help/fold.html">fold()</a></code> for creating balanced folds/groups.
+</p>
+<p><code><a href="../help/partition.html">partition()</a></code> for creating balanced partitions.
+</p>
+<p>Other grouping functions: 
+<code><a href="../../groupdata2/help/all_groups_identical.html">all_groups_identical</a>()</code>,
+<code><a href="../../groupdata2/help/collapse_groups_by.html">collapse_groups_by</a></code>,
+<code><a href="../../groupdata2/help/fold.html">fold</a>()</code>,
+<code><a href="../../groupdata2/help/group.html">group</a>()</code>,
+<code><a href="../../groupdata2/help/group_factor.html">group_factor</a>()</code>,
+<code><a href="../../groupdata2/help/partition.html">partition</a>()</code>,
+<code><a href="../../groupdata2/help/splt.html">splt</a>()</code>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# Attach packages
+library(groupdata2)
+library(dplyr)
+
+# Set seed
+if (requireNamespace("xpectr", quietly = TRUE)){
+  xpectr::set_test_seed(42)
+}
+
+# Create data frame
+df &lt;- data.frame(
+  "participant" = factor(rep(1:20, 3)),
+  "age" = rep(sample(c(1:100), 20), 3),
+  "answer" = factor(sample(c("a", "b", "c", "d"), 60, replace = TRUE)),
+  "score" = sample(c(1:100), 20 * 3)
+)
+df &lt;- df %&gt;% dplyr::arrange(participant)
+df$session &lt;- rep(c("1", "2", "3"), 20)
+
+# Sample rows to get unequal sizes per participant
+df &lt;- dplyr::sample_n(df, size = 53)
+
+# Create the initial groups (to be collapsed)
+df &lt;- fold(
+  data = df,
+  k = 8,
+  method = "n_dist",
+  id_col = "participant"
+)
+
+# Ungroup the data frame
+# Otherwise `collapse_groups()` would be
+# applied to each fold separately!
+df &lt;- dplyr::ungroup(df)
+
+# NOTE: Make sure to check the examples with `auto_tune`
+# in the end, as this is where the magic lies
+
+# Collapse to 3 groups with size balancing
+# Creates new `.coll_groups` column
+df_coll &lt;- collapse_groups(
+  data = df,
+  n = 3,
+  group_cols = ".folds",
+  balance_size = TRUE # enabled by default
+)
+
+# Check balances
+(coll_summary &lt;- summarize_balances(
+  data = df_coll,
+  group_cols = ".coll_groups",
+  cat_cols = 'answer',
+  num_cols = c('score', 'age'),
+  id_cols = 'participant'
+))
+
+# Get ranked balances
+# NOTE: When we only have a single new group column
+# we don't get ranks - but this is good to use
+# when comparing multiple group columns!
+# The scores are standard deviations across groups
+ranked_balances(coll_summary)
+
+# Collapse to 3 groups with size + *categorical* balancing
+# We create 2 new `.coll_groups_1/2` columns
+df_coll &lt;- collapse_groups(
+  data = df,
+  n = 3,
+  group_cols = ".folds",
+  cat_cols = "answer",
+  balance_size = TRUE,
+  num_new_group_cols = 2
+)
+
+# Check balances
+# To simplify the output, we only find the
+# balance of the `answer` column
+(coll_summary &lt;- summarize_balances(
+  data = df_coll,
+  group_cols = paste0(".coll_groups_", 1:2),
+  cat_cols = 'answer'
+))
+
+# Get ranked balances
+# All scores are standard deviations across groups or (average) ranks
+# Rows are ranked by most to least balanced
+# (i.e. lowest average SD rank)
+ranked_balances(coll_summary)
+
+# Collapse to 3 groups with size + categorical + *numerical* balancing
+# We create 2 new `.coll_groups_1/2` columns
+df_coll &lt;- collapse_groups(
+  data = df,
+  n = 3,
+  group_cols = ".folds",
+  cat_cols = "answer",
+  num_cols = "score",
+  balance_size = TRUE,
+  num_new_group_cols = 2
+)
+
+# Check balances
+(coll_summary &lt;- summarize_balances(
+  data = df_coll,
+  group_cols = paste0(".coll_groups_", 1:2),
+  cat_cols = 'answer',
+  num_cols = 'score'
+))
+
+# Get ranked balances
+# All scores are standard deviations across groups or (average) ranks
+ranked_balances(coll_summary)
+
+# Collapse to 3 groups with size and *ID* balancing
+# We create 2 new `.coll_groups_1/2` columns
+df_coll &lt;- collapse_groups(
+  data = df,
+  n = 3,
+  group_cols = ".folds",
+  id_cols = "participant",
+  balance_size = TRUE,
+  num_new_group_cols = 2
+)
+
+# Check balances
+# To simplify the output, we only find the
+# balance of the `participant` column
+(coll_summary &lt;- summarize_balances(
+  data = df_coll,
+  group_cols = paste0(".coll_groups_", 1:2),
+  id_cols = 'participant'
+))
+
+# Get ranked balances
+# All scores are standard deviations across groups or (average) ranks
+ranked_balances(coll_summary)
+
+###################
+#### Auto-tune ####
+
+# As you might have seen, the balancing does not always
+# perform as optimal as we might want or need
+# To get a better balance, we can enable `auto_tune`
+# which will create a larger set of collapsings
+# and select the most balanced new group columns
+# While it is not required, we recommend
+# enabling parallelization
+
+## Not run: 
+# Uncomment for parallelization
+# library(doParallel)
+# doParallel::registerDoParallel(7) # use 7 cores
+
+# Collapse to 3 groups with lots of balancing
+# We enable `auto_tune` to get a more balanced set of columns
+# We create 10 new `.coll_groups_1/2/...` columns
+df_coll &lt;- collapse_groups(
+  data = df,
+  n = 3,
+  group_cols = ".folds",
+  cat_cols = "answer",
+  num_cols = "score",
+  id_cols = "participant",
+  balance_size = TRUE,
+  num_new_group_cols = 10,
+  auto_tune = TRUE,
+  parallel = FALSE # Set to TRUE for parallelization!
+)
+
+# Check balances
+# To simplify the output, we only find the
+# balance of the `participant` column
+(coll_summary &lt;- summarize_balances(
+  data = df_coll,
+  group_cols = paste0(".coll_groups_", 1:10),
+  cat_cols = "answer",
+  num_cols = "score",
+  id_cols = 'participant'
+))
+
+# Get ranked balances
+# All scores are standard deviations across groups or (average) ranks
+ranked_balances(coll_summary)
+
+# Now we can choose the .coll_groups_* column(s)
+# that we favor the balance of
+# and move on with our lives!
+
+## End(Not run)
+
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>groupdata2</em> version 2.0.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

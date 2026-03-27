@@ -1,0 +1,113 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Yeast gene model sample data</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for sgd {intervals}"><tr><td>sgd {intervals}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Yeast gene model sample data</h2>
+
+<h3>Description</h3>
+
+<p>This data set contains a data frame describing a subset of
+the chromosome feature data represented in Fall 2007 version of
+&lsquo;<span class="file">saccharomyces_cerevisiae.gff</span>&rsquo;, available for download from the
+<em>Saccharomyces</em> Genome Database (<a href="https://www.yeastgenome.org:443/">https://www.yeastgenome.org:443/</a>). 
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>data(sgd)</pre>
+
+
+<h3>Format</h3>
+
+<p>A data frame with 14080 observations on the following 8 variables.
+</p>
+
+<dl>
+<dt><code>SGDID</code></dt><dd><p>SGD feature ID.</p>
+</dd>
+<dt><code>type</code></dt><dd>
+<p>Only four feature types have been retatined: <code>"CDS"</code>,
+<code>"five_prime_UTR_intron"</code>, <code>"intron"</code>, and <code>"ORF"</code>. Note
+that <code>"ORF"</code> correspond to a whole gene while <code>"CDS"</code>, to an
+exon. <em>S. cerevisae</em> does not, however, have many
+multi-exonic genes.
+</p>
+</dd>
+<dt><code>feature_name</code></dt><dd><p>A character vector</p>
+</dd>
+<dt><code>parent_feature_name</code></dt><dd>
+<p>The <code>feature_name</code> of the a larger element to which the
+current feature belongs. All retained <code>"CDS"</code> entries, for
+example, belong to an <code>"ORF"</code> entry.
+</p>
+</dd>
+<dt><code>chr</code></dt><dd>
+<p>The chromosome on which the feature occurs.
+</p>
+</dd>
+<dt><code>start</code></dt><dd><p>Feature start base.</p>
+</dd>
+<dt><code>stop</code></dt><dd><p>Feature stop base.</p>
+</dd>
+<dt><code>strand</code></dt><dd><p>Is the feature on the Watson or Crick strand?</p>
+</dd>
+</dl>
+
+
+
+<h3>Examples</h3>
+
+<pre>
+
+# An example to compute "promoters", defined to be the 500 bases
+# upstream from an ORF annotation, provided these bases don't intersect
+# another orf. See documentation for the sgd data set for more details
+# on the annotation set.
+
+use_chr &lt;- "chr01"
+
+data( sgd )
+sgd &lt;- subset( sgd, chr == use_chr )
+
+orf &lt;- Intervals(
+                 subset( sgd, type == "ORF", c( "start", "stop" ) ),
+                 type = "Z"
+                 )
+rownames( orf ) &lt;- subset( sgd, type == "ORF" )$feature_name
+
+W &lt;- subset( sgd, type == "ORF", "strand" ) == "W"
+
+promoters_W &lt;- Intervals(
+                         cbind( orf[W,1] - 500, orf[W,1] - 1 ),
+                         type = "Z"
+                         )
+
+promoters_W &lt;- interval_intersection(
+                                     promoters_W,
+                                     interval_complement( orf )
+                                     )
+
+# Many Watson-strand genes have another ORF upstream at a distance of
+# less than 500 bp
+
+hist( size( promoters_W ) )
+
+# All CDS entries are completely within their corresponding ORF entry.
+
+cds_W &lt;- Intervals(
+                 subset( sgd, type == "CDS" &amp; strand == "W", c( "start", "stop" ) ),
+                 type = "Z"
+                 )
+rownames( cds_W ) &lt;- NULL
+
+interval_intersection( cds_W, interval_complement( orf[W,] ) )
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>intervals</em> version 0.15.5 <a href="00Index.html">Index</a>]</div>
+</div></body></html>

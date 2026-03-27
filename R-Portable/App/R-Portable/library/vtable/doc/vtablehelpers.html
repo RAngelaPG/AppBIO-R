@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Nick Huntington-Klein" />
+
+<meta name="date" content="2024-12-20" />
+
+<title>vtable Bonus Functions</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">vtable Bonus Functions</h1>
+<h4 class="author">Nick Huntington-Klein</h4>
+<h4 class="date">2024-12-20</h4>
+
+
+
+<p>The <code>vtable</code> package serves the purpose of outputting
+automatic variable documentation that can be easily viewed while
+continuing to work with data.</p>
+<p><code>vtable</code> contains four main functions:
+<code>vtable()</code> (or <code>vt()</code>), <code>sumtable()</code>
+(or <code>st()</code>), <code>labeltable()</code>, and
+<code>dftoHTML()</code>/<code>dftoLaTeX()</code>.</p>
+<p>This vignette focuses on some bonus helper functions that come with
+<code>vtable</code> that have been exported because they may be handy to
+you. This can come in handy for saving a little time, and can help you
+avoid having to create an unnamed function when you need to call a
+function.</p>
+<hr />
+<div id="shortcut-helper-functions" class="section level1">
+<h1>Shortcut Helper Functions</h1>
+<p><code>vtable</code> includes four shortcut functions. These are
+generally intended for use with the <code>summ</code> option in
+<code>vtable</code> and <code>sumtable</code> because nested functions
+don’t look very nice in a <code>vtable</code>, or in a
+<code>sumtable</code> unless you explicitly set the
+<code>summ.names</code>.</p>
+<div id="nuniq" class="section level2">
+<h2><code>nuniq</code></h2>
+<p><code>nuniq(x)</code> returns <code>length(unique(x))</code>, the
+number of unique values in the vector.</p>
+</div>
+<div id="countna-propna-and-notna" class="section level2">
+<h2><code>countNA</code>, <code>propNA</code>, and
+<code>notNA</code></h2>
+<p>These three functions are shortcuts for dealing with missing data.
+You have probably written out the nested versions of these many
+times!</p>
+<table>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Short For</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>countNA()</code></td>
+<td><code>sum(is.na())</code></td>
+</tr>
+<tr class="even">
+<td><code>propNA()</code></td>
+<td><code>mean(is.na())</code></td>
+</tr>
+<tr class="odd">
+<td><code>notNA()</code></td>
+<td><code>sum(!is.na())</code></td>
+</tr>
+</tbody>
+</table>
+<p>Note that <code>notNA()</code> also has some additional formatting
+options, which you would probably ignore if using it iteractively.</p>
+</div>
+<div id="is.round" class="section level2">
+<h2><code>is.round</code></h2>
+<p>This function is a shortcut for
+<code>!any(!(x == round(x,digits)))</code>.</p>
+<p>It takes two arguments: a vector <code>x</code> and a number of
+<code>digits</code> (0 by default). It checks whether you can round to
+<code>digits</code> digits without losing any information.</p>
+<hr />
+</div>
+</div>
+<div id="other-helper-functions" class="section level1">
+<h1>Other Helper Functions</h1>
+<div id="formatfunc" class="section level2">
+<h2><code>formatfunc</code></h2>
+<p><code>formatfunc()</code> is a function that returns a function,
+which itself helps format numbers using the <code>format()</code>
+function, in the same spirit as the <code>label_</code> functions in the
+scales package. It is largely used for the <code>numformat</code>
+argument of <code>sumtable()</code>.</p>
+<p><code>formatfunc()</code> for the most part takes the same arguments
+as <code>format()</code>, and so <code>help(format)</code> can be a
+guide for using it. However, there are some differences.</p>
+<p>Some defaults are changed. By default,
+<code>scientific = FALSE, trim = TRUE</code>.</p>
+<p>There are four new arguments as well. <code>percent = TRUE</code>
+will format the number as a percentage by multiplying it by 100 and
+adding a % at the end. You can instead set <code>percent</code> equal to
+some number, and that number will instead be taken as 100%, instead of
+1. So <code>percent = 100</code>, for example, will just add a % at the
+end without doing any multiplying.</p>
+<p><code>prefix</code> and <code>suffix</code> will, naturally, add
+prefixes or suffixes to the formatted number. So
+<code>prefix = &#39;$&#39;, suffix = &#39;M&#39;</code>, for example, will produce a
+function that will turn <code>3</code> into <code>$3M</code>.
+<code>scale</code> will multiply the number by <code>scale</code> before
+formatting it. So
+<code>prefix = &#39;$&#39;, suffix = &#39;M&#39;, scale = 1/1000000</code> will turn
+<code>3000000</code> into <code>$3M</code>.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(vtable)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>my_formatter_func <span class="ot">&lt;-</span> <span class="fu">formatfunc</span>(<span class="at">percent =</span> <span class="cn">TRUE</span>, <span class="at">digits =</span> <span class="dv">3</span>, <span class="at">nsmall =</span> <span class="dv">2</span>, <span class="at">big.mark =</span> <span class="st">&#39;,&#39;</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">my_formatter_func</span>(<span class="fl">523.2355987</span>)</span></code></pre></div>
+<pre><code>## [1] &quot;52,323.56%&quot;</code></pre>
+</div>
+<div id="pctile" class="section level2">
+<h2><code>pctile</code></h2>
+<p><code>pctile(x)</code> is short for
+<code>quantile(x,1:100/100)</code>. So in one sense this is another
+shortcut function. But this inherently lets you interact with
+percentiles a bit differently.</p>
+<p>While <code>quantile()</code> has you specify which percentile you
+want in the function call, <code>pctile()</code> returns an object with
+all integer percentiles, and you can pull out which ones you want
+afterwards. <code>pctile(x)[50]</code> is the 50th percentile, etc..
+This can be convenient in several applications, an obvious one being in
+<code>sumtable</code>.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">library</span>(vtable)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co">#Some random normal data, and its percentiles</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">1000</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>pc <span class="ot">&lt;-</span> <span class="fu">pctile</span>(d)</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#25th, 50th, 75th percentile</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>pc[<span class="fu">c</span>(<span class="dv">25</span>,<span class="dv">50</span>,<span class="dv">75</span>)]</span></code></pre></div>
+<pre><code>##          25%          50%          75% 
+## -0.634294888 -0.009370405  0.703579880</code></pre>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co">#Inverse normal CDF with 100 points of articulation</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">plot</span>(pc)</span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,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" /><!-- --></p>
+</div>
+<div id="weighted.sd" class="section level2">
+<h2><code>weighted.sd</code></h2>
+<p><code>weighted.sd(x, w)</code> is a function to calculate a weighted
+standard deviation of <code>x</code> using <code>w</code> as weights,
+much like the base <code>weighted.mean()</code> does for means. It is
+mostly used as a helper function for <code>sumtable()</code> when
+<code>group.weights</code> is specified. However, you can use it on its
+own if you like. Unlike <code>weighted.mean()</code>, setting
+<code>na.rm = TRUE</code> will account for missings both in
+<code>x</code> and <code>w</code>.</p>
+<p>The weighted standard deviation is calculated as</p>
+<p><span class="math display">\[
+\frac{\sum_i(w_i*(x_i-\bar{x}_w)^2)}{\frac{N_w-1}{N_w}\sum_iw_i}
+\]</span></p>
+<p>Where <span class="math inline">\(\bar{x}_w\)</span> is the weighted
+mean of <span class="math inline">\(x\)</span>, and <span class="math inline">\(N_w\)</span> is the number of observations with a
+nonzero weight.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">100</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>w <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">100</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="fu">weighted.mean</span>(x, w)</span></code></pre></div>
+<pre><code>## [1] 67</code></pre>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">sd</span>(x)</span></code></pre></div>
+<pre><code>## [1] 29.01149</code></pre>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">weighted.sd</span>(x, w)</span></code></pre></div>
+<pre><code>## [1] 23.80476</code></pre>
+</div>
+</div>
+<div id="independence.test" class="section level1">
+<h1><code>independence.test</code></h1>
+<p><code>independence.test</code> is a helper function for
+<code>sumtable(group.test=TRUE)</code> that tests for independence
+between a categorical variable <code>x</code> and another variable
+<code>y</code> that may be categorical or numerical.</p>
+<p>Then, it outputs a <em>formatted string</em> as its output, with
+significance stars, for printing.</p>
+<p>The function takes the format</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">independence.test</span>(x,y,<span class="at">w=</span><span class="cn">NA</span>,</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>                  <span class="at">factor.test =</span> <span class="cn">NA</span>,</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>                  <span class="at">numeric.test =</span> <span class="cn">NA</span>,</span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>                  <span class="at">star.cutoffs =</span> <span class="fu">c</span>(.<span class="dv">01</span>,.<span class="dv">05</span>,.<span class="dv">1</span>),</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>                  <span class="at">star.markers =</span> <span class="fu">c</span>(<span class="st">&#39;***&#39;</span>,<span class="st">&#39;**&#39;</span>,<span class="st">&#39;*&#39;</span>),</span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a>                  <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>                  <span class="at">fixed.digits =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a>                  <span class="at">format =</span> <span class="st">&#39;{name}={stat}{stars}&#39;</span>,</span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a>                  <span class="at">opts =</span> <span class="fu">list</span>())</span></code></pre></div>
+<div id="factor.test-and-numeric.test" class="section level2">
+<h2><code>factor.test</code> and <code>numeric.test</code></h2>
+<p>These are functions that actually perform the independence test.
+<code>numeric.test</code> is used when <code>y</code> is numeric, and
+<code>factor.test</code> is used in all other instances.</p>
+<p>Specifically, these functions should take only <code>x</code>,
+<code>y</code>, and <code>w=NULL</code> as arguments, and should return
+a list with three elements: the name of the test statistic, the test
+statistic itself, and the p-value of the test.</p>
+<p>By default, these are the internal functions
+<code>vtable:::chisq.it</code> for <code>factor.test</code> and
+<code>vtable:::groupf.it</code> for <code>numeric.test</code>, so you
+can take a look at those (just put <code>vtable:::chisq.it</code> in the
+terminal and it will show you the function’s code) if you’d like to make
+your own test functions.</p>
+</div>
+<div id="star.cutoffs-and-star.markers" class="section level2">
+<h2><code>star.cutoffs</code> and <code>star.markers</code></h2>
+<p>These are numeric and character vectors, respectively, used for
+p-value cutoffs and to create significance markers.</p>
+<p><code>star.cutoffs</code> indicates the cutoffs, and
+<code>star.markers</code> indicates the markers to be used with each
+cutoff, in the same order. So with
+<code>star.cutoffs = c(.01,.05,.1)</code> and
+<code>star.markers = c(&#39;***&#39;,&#39;**&#39;,&#39;*&#39;)</code>, each p-value below .01
+will get marked with <code>&#39;***&#39;</code>, each from .01 to .05 will get
+<code>&#39;**&#39;</code>, and each from .05 to .1 will get <code>*</code>.</p>
+<p>Defaults are set to “economics defaults” (.1, .05, .01). But these
+are of course easy to change.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">data</span>(iris)</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="fu">independence.test</span>(iris<span class="sc">$</span>Species,</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>                  iris<span class="sc">$</span>Sepal.Length,</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>                  <span class="at">star.cutoffs =</span> <span class="fu">c</span>(.<span class="dv">05</span>,.<span class="dv">01</span>,.<span class="dv">001</span>))</span></code></pre></div>
+<pre><code>## [1] &quot;F=119.265*&quot;</code></pre>
+</div>
+<div id="digits-and-fixed.digits" class="section level2">
+<h2><code>digits</code> and <code>fixed.digits</code></h2>
+<p><code>digits</code> indicates how many digits after the decimal place
+from the test statistics and p-values should be displayed.
+<code>fixed.digits</code> determines whether trailing zeros are
+maintained.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">independence.test</span>(iris<span class="sc">$</span>Species,</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>                  iris<span class="sc">$</span>Sepal.Width,</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>                  <span class="at">digits=</span><span class="dv">1</span>)</span></code></pre></div>
+<pre><code>## [1] &quot;F=49.2***&quot;</code></pre>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="fu">independence.test</span>(iris<span class="sc">$</span>Species,</span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>                  iris<span class="sc">$</span>Sepal.Width,</span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a>                  <span class="at">digits=</span><span class="dv">4</span>,</span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a>                  <span class="at">fixed.digits =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<pre><code>## [1] &quot;F=49.1600***&quot;</code></pre>
+</div>
+<div id="format" class="section level2">
+<h2><code>format</code></h2>
+<p>This is the printing format that the output will produce,
+incorporating the name of the test statistic <code>{name}</code>, the
+test statistic <code>{stat}</code>, the significance markers
+<code>{stars}</code>, and the p-value <code>{pval}</code>.</p>
+<p>If your <code>independence.test</code> is heading out to another
+format besides being printed in the R console, you may want to add
+additional markup like <code>&#39;{name}$={stat}^{stars}$&#39;}</code> in LaTeX
+or <code>&#39;{name}={stat}&lt;sup&gt;{stars}&lt;/sup&gt;&#39;</code> in HTML.
+If you do this, be sure to think carefully about escaping or not
+escaping characters as appropriate when you print!</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu">independence.test</span>(iris<span class="sc">$</span>Species,</span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a>                  iris<span class="sc">$</span>Sepal.Width,</span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a>                  <span class="at">format =</span> <span class="st">&#39;Pr(&gt;{name}): {pval}{stars}&#39;</span>)</span></code></pre></div>
+<pre><code>## [1] &quot;Pr(&gt;F): &lt;0.001***&quot;</code></pre>
+</div>
+<div id="opts" class="section level2">
+<h2><code>opts</code></h2>
+<p>You can create a named list where the names are the above options and
+the values are the settings for those options, and input it into
+<code>independence.test</code> using <code>opts=</code>. This is an easy
+way to set the same options for many
+<code>independence.test</code>s.</p>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

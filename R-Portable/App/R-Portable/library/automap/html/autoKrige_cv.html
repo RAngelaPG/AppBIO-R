@@ -1,0 +1,137 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Automatic cross-validation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+
+<table width="100%" summary="page for autoKrige.cv {automap}"><tr><td>autoKrige.cv {automap}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Automatic cross-validation</h2>
+
+<h3>Description</h3>
+
+<p>Uses <code><a href="../../automap/help/autofitVariogram.html">autofitVariogram</a></code> to fit a variogram model to the data and then calls
+<code><a href="../../gstat/help/krige.cv.html">krige.cv</a></code> to perform cross-validation.</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+autoKrige.cv(formula, 
+	     input_data, 
+	     data_variogram = input_data,
+	     model = c("Sph", "Exp", "Gau", "Ste"), 
+	     kappa = c(0.05, seq(0.2, 2, 0.1), 5, 10), 
+	     fix.values = c(NA,NA,NA), 
+	     verbose = c(FALSE, interactive()), 
+	     GLS.model = NA,
+         start_vals = c(NA,NA,NA),
+         miscFitOptions = list(),
+	     ...)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>formula</code></td>
+<td>
+<p>formula that defines the dependent variable as a linear model
+of independent variables; suppose the dependent variable has
+name 'z', for ordinary and simple kriging use the formula
+'z~1'; for simple kriging also define 'beta' (see below); for
+universal kriging, suppose 'z' is linearly dependent on 'x'
+and 'y', use the formula 'z~x+y'.</p>
+</td></tr>
+<tr valign="top"><td><code>input_data</code></td>
+<td>
+<p>An object of the 
+<a href="../../sp/help/SpatialPointsDataFrame-class.html">SpatialPointsDataFrame-class</a> containing the data to be interpolated.</p>
+</td></tr>
+<tr valign="top"><td><code>data_variogram</code></td>
+<td>
+<p>An optional way to provide a different dataset for
+the building of the variogram.</p>
+</td></tr>
+<tr valign="top"><td><code>model</code></td>
+<td>
+<p>List of models that will be tested during automatic variogram fitting.</p>
+</td></tr>
+<tr valign="top"><td><code>kappa</code></td>
+<td>
+<p>List of values for the smoothing parameter of the Matern model that will be tested during automatic variogram fitting.</p>
+</td></tr>
+<tr valign="top"><td><code>fix.values</code></td>
+<td>
+<p>Can be used to fix a variogram parameter to a certain value. It 
+consists of a list with a length of three. The items describe the
+fixed value for the nugget, range and sill respectively. Setting
+the value to NA means that the value is not fixed. Is passed on to autofitVariogram.</p>
+</td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+<p>vector of 2 logicals. The first element sets the verbosity of autofitVariogram, see its documentation
+for more information. The second element sets the verbosity level of krige.cv, see its documentation
+for more information.</p>
+</td></tr>
+<tr valign="top"><td><code>GLS.model</code></td>
+<td>
+<p>If a variogram model is passed on through this parameter a Generalized Least Squares 
+sample variogram is calculated.</p>
+</td></tr> 
+<tr valign="top"><td><code>start_vals</code></td>
+<td>
+<p>Can be used to give the starting values for the variogram fitting. The items describe the
+fixed value for the nugget, range and sill respectively. They need to be given in that order.
+Setting the value to NA means that the value will be automatically chosen.</p>
+</td></tr> 
+<tr valign="top"><td><code>miscFitOptions</code></td>
+<td>
+<p>Additional options to set the behavior of <a href="../../automap/help/autofitVariogram.html">autofitVariogram</a>. For details see the 
+documentation of <a href="../../automap/help/autofitVariogram.html">autofitVariogram</a>.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>arguments passed to <code><a href="../../gstat/help/krige.cv.html">krige.cv</a></code></p>
+</td></tr>
+</table>
+
+
+<h3>Value</h3>
+
+<p><code>autoKrige.cv</code> returns an object of class <code>autoKrige.cv</code>. This is a list
+containing one object of class <code>SpatialPointsDataFrame</code> with the results of
+the cross-validation, see <code><a href="../../gstat/help/krige.cv.html">krige.cv</a></code> for more details. The
+attribute name is <code>krige.cv_output</code>.</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Paul Hiemstra, <a href="mailto:paul@numbertheory.nl">paul@numbertheory.nl</a></p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="../../gstat/help/krige.cv.html">krige.cv</a></code>, <code><a href="../../automap/help/autofitVariogram.html">autofitVariogram</a></code>, <code><a href="../../automap/help/compare.cv.html">compare.cv</a></code> </p>
+
+
+<h3>Examples</h3>
+
+<pre>
+library(sp)
+data(meuse)
+coordinates(meuse) = ~x+y
+data(meuse.grid)
+gridded(meuse.grid) = ~x+y
+
+kr.cv = autoKrige.cv(log(zinc)~1, meuse, model = c("Exp"), nfold = 10)
+kr_dist.cv = autoKrige.cv(log(zinc)~sqrt(dist), meuse, 
+       model = c("Exp"), nfold = 10)
+kr_dist_ffreq.cv = autoKrige.cv(log(zinc)~sqrt(dist)+ffreq, 
+       meuse, model = c("Exp"), nfold = 10)
+       
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>automap</em> version 1.1-20 <a href="00Index.html">Index</a>]</div>
+</div></body></html>
