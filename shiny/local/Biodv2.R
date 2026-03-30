@@ -1,4 +1,4 @@
-Biodv=function(file_name,datos,nall,distk,mayorque,menorque,missval,typedata,ht1,ht2,ht3,missvalG,mixture,gap,methodgap){
+Biodv=function(file_name,datos,nall,distk,mayorque,menorque,missval,typedata,ht1,ht2,ht3,missvalG,mixture,gap,methodgap,nclust){
 #save(file_name,datos,nall,distk,mayorque,menorque,missval,typedata,ht1,ht2,ht3,gap,file="check.RData")
 
 #######################################################
@@ -292,57 +292,75 @@ tablaOpt <- rbind(tablaOpt,
 			if (BestNc==1) {BestNc=1; print("Optimization fail (k=1)")}
 			if (is.infinite(BestNc)==T){BestNc=1; print("Optimization fail (k=InF)")}
 		}		
-	}else{BestNc=3}
+	}else{BestNc=nclust}
 	
 #######################################################
 if(mixture==TRUE){
-print("Calculate ancenstry...")
-if (typedata=="SNP" | typedata=="vcfile"){
-	genotype_matrix=t(datos[,1:(ncol(datos)-4)])
-	rownames(genotype_matrix)=colnames(datos)[1:(ncol(datos)-4)]
-	genotype_matrix[genotype_matrix==0]=9
-	genotype_matrix[genotype_matrix==0.5]=99
-	genotype_matrix[genotype_matrix==1]=999
-	genotype_matrix[genotype_matrix==9]=2
-	genotype_matrix[genotype_matrix==99]=1
-	genotype_matrix[genotype_matrix==999]=0
-}
-if (typedata=="FREQ" | typedata=="CUENTA"){
-	genotype_matrix=t(datos[,1:(ncol(datos)-4)])
-	rownames(genotype_matrix)=colnames(datos)[1:(ncol(datos)-4)]
-	genotype_matrix[genotype_matrix < 0.35]=9
-	genotype_matrix[genotype_matrix >= 0.35 & genotype_matrix <= 0.65] <- 99
-	genotype_matrix[genotype_matrix > 0.65]=999
-	genotype_matrix[genotype_matrix==9]=2
-	genotype_matrix[genotype_matrix==99]=1
-	genotype_matrix[genotype_matrix==999]=0
-}
-  write.geno(genotype_matrix, "datos.geno")
-		#########################################################################
-		###For do ancestry
-		#########################################################################
-		#########################################################################		
-			#write.geno(genotype_matrix, "datos.geno")
-			# Correr an?lisis sNMF
-			project <- snmf("datos.geno", K = 1:10, repetitions = 20, entropy=T, project="new",CPU=4)
-			# Ver mejor K
-			Ks <- 1:10
-			ce_list <- lapply(Ks, function(k) {
-				cross.entropy(project, K = k)
-			})
-			ce_matrix <- do.call(cbind, ce_list)
-			mean_ce <- colMeans(ce_matrix)
-			best_K <- Ks[which.min(mean_ce)]
-			best_K=as.numeric(as.character(best_K))
-			if(best_K==1){best_K=2}
-			if(gap==TRUE){if(best_K<=BestNc){best_K=best_K}else{best_K=BestNc}}
-			cat("Best K is:", best_K, "\n")
-			best_run <- which.min(ce_matrix[,best_K])
-			cat("Better run for K =", best_K, "is:", best_run, "\n")
-			# Extraer matriz Q para K optimo
-			qmatrix <- Q(project, K = best_K, run=best_run)	
-			rownames(qmatrix) <- rownames(genotype_matrix)
-			colnames(qmatrix) <- paste0("Cluster_",1:best_K)
+	print("Calculate ancenstry...")
+	if (typedata=="SNP" | typedata=="vcfile"){
+		genotype_matrix=t(datos[,1:(ncol(datos)-4)])
+		rownames(genotype_matrix)=colnames(datos)[1:(ncol(datos)-4)]
+		genotype_matrix[genotype_matrix==0]=9
+		genotype_matrix[genotype_matrix==0.5]=99
+		genotype_matrix[genotype_matrix==1]=999
+		genotype_matrix[genotype_matrix==9]=2
+		genotype_matrix[genotype_matrix==99]=1
+		genotype_matrix[genotype_matrix==999]=0
+	}
+	if (typedata=="FREQ" | typedata=="CUENTA"){
+		genotype_matrix=t(datos[,1:(ncol(datos)-4)])
+		rownames(genotype_matrix)=colnames(datos)[1:(ncol(datos)-4)]
+		genotype_matrix[genotype_matrix < 0.35]=9
+			genotype_matrix[genotype_matrix >= 0.35 & genotype_matrix <= 0.65] <- 99
+				genotype_matrix[genotype_matrix > 0.65]=999
+				genotype_matrix[genotype_matrix==9]=2
+				genotype_matrix[genotype_matrix==99]=1
+				genotype_matrix[genotype_matrix==999]=0
+		}
+		write.geno(genotype_matrix, "datos.geno")
+			#########################################################################
+			###For do ancestry
+			#########################################################################
+			#########################################################################	
+	if(gap==TRUE & BestNc!=1){
+		project <- snmf("datos.geno", K = 1:BestNc, repetitions = 20, entropy=T, project="new",CPU=4)
+		# Ver mejor K
+		Ks <- 1:BestNc
+		ce_list <- lapply(Ks, function(k) {
+			cross.entropy(project, K = k)
+		})
+		ce_matrix <- do.call(cbind, ce_list)
+		mean_ce <- colMeans(ce_matrix)
+		best_K <- Ks[which.min(mean_ce)]
+		best_K=as.numeric(as.character(best_K))
+		if(best_K==1){best_K=2}
+		cat("Best K is:", best_K, "\n")
+		best_run <- which.min(ce_matrix[,best_K])
+		cat("Better run for K =", best_K, "is:", best_run, "\n")
+		# Extraer matriz Q para K optimo
+		qmatrix <- Q(project, K = best_K, run=best_run)	
+		rownames(qmatrix) <- rownames(genotype_matrix)
+		colnames(qmatrix) <- paste0("Cluster_",1:best_K)
+	}else{
+		project <- snmf("datos.geno", K = 1:10, repetitions = 20, entropy=T, project="new",CPU=4)
+		# Ver mejor K
+		Ks <- 1:10
+		ce_list <- lapply(Ks, function(k) {
+			cross.entropy(project, K = k)
+		})
+		ce_matrix <- do.call(cbind, ce_list)
+		mean_ce <- colMeans(ce_matrix)
+		best_K <- Ks[which.min(mean_ce)]
+		best_K=as.numeric(as.character(best_K))
+		if(best_K==1){best_K=2}		
+		cat("Best K is:", best_K, "\n")
+		best_run <- which.min(ce_matrix[,best_K])
+		cat("Better run for K =", best_K, "is:", best_run, "\n")
+		# Extraer matriz Q para K optimo
+		qmatrix <- Q(project, K = best_K, run=best_run)	
+		rownames(qmatrix) <- rownames(genotype_matrix)
+		colnames(qmatrix) <- paste0("Cluster_",1:best_K)
+		}
 	}else{qmatrix=NULL}
 
 res=list(as.data.frame(div),coord2, getwd(), clust, datos, mrdMAT, perctCP12,BestNc,qmatrix, exadiv, exadivg, tablaOpt)

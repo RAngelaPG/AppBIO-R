@@ -29,7 +29,7 @@ gdiv<-function(datos,datos1,selv,quitomono,mdrMAT){
 ######################################################
 ##Diversity among groups
 ######################################################
-out="PopulationStructure.csv"
+#out="PopulationStructure.csv"
 ## function for the HE calculus
 heiter=function(freqs) {  
     if(is.matrix(freqs)){
@@ -100,7 +100,8 @@ groups[,1]=as.numeric(as.factor(groups[,1]))
             nummark=c(dim(tfreq)[2],unlist(nummark))
             heB=heT-mean(heW,na.rm=TRUE) 																## Among individuals whitin groups He 
             Fst=heB/heT 																	## Diversity among groups (estadistico F wright el grado de 
-                                                         ## diferencia genetica entre las poblaciones, en funcion de las frecuencias alelicas            
+                                                         ## diferencia genetica entre las poblaciones, en funcion de las frecuencias alelicas  
+			if(Fst<=0){Fst=0}														 
             div2=cbind(t(t(c("Diversity among groups","Diversity within group",rep("",(length(heW)-1))))),t(t(c("",seq(1:ngroup)))),t(t(c(Fst,heW))))
             div2=cbind(div2,nummark)
 			
@@ -178,7 +179,7 @@ groups[,1]=as.numeric(as.factor(groups[,1]))
 			}
             Fst=heB/heT 								  ## Diversity among groups (estadistico F wright el grado de 			
                                                           ## diferencia genetica entre las poblaciones, en funcion de las frecuencias alelicas
-            		
+            if(Fst<=0){Fst=0}														 		
             div2=cbind(t(t(c("Diversity among groups","Diversity within group",rep("",(length(heW)-1))))),t(t(c("",levels(as.factor(pp[,1]))))),t(t(c(Fst,heW))))
             div2=cbind(div2,nummark)
             agc.env=as.data.frame(groups[,1])

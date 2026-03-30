@@ -217,7 +217,7 @@ body<-dashboardBody(
                       selectInput('ycol', 'Y Variable',choices =""),
                       selectInput('zcol', 'Z Variable',choices =""),
                       tags$hr(),
-                      selectInput('catv','Group',choices = '',selected=NULL),					  
+                      #selectInput('catv','Group',choices = '',selected=NULL),					  
                       #Creacion de color para cambiar el color de los puntos del grafico de acuerdo a una lista de colores generada
                       selectInput('color','Choose a color',choices = '',selected="",multiple=T),
                       tags$hr(),
@@ -267,7 +267,7 @@ body<-dashboardBody(
                           selectInput('ycol3D', 'Y Variable',choices =""),
                           selectInput('zcol3D', 'Z Variable',choices =""),
                           tags$hr(),
-                          selectInput('catv3D','Group',choices = '',selected=NULL),					  
+                          #selectInput('catv3D','Group',choices = '',selected=NULL),					  
                           #Creacion de color para cambiar el color de los puntos del grafico de acuerdo a una lista de colores generada
                           selectInput('color3D','Choose a color',choices = '',selected="",multiple=T),
                           tags$hr(),
@@ -328,7 +328,7 @@ body<-dashboardBody(
                  selectInput('poslen','Position legend',choices=c('left','top','bottom','right'),selected='left'),
                  tags$hr(),
                  selectInput('typeclust','Type',choices=c('circular','rectangular'), selected='rectangular'),
-                 selectInput('catvdend','Group',choices = '',selected=NULL),					  
+                 #selectInput('catvdend','Group',choices = '',selected=NULL),					  
                  #Creacion de color para cambiar el color de los puntos del grafico de acuerdo a una lista de colores generada
                  selectInput('colordend','Choose a color',choices = '',selected="",multiple=T)
                ),
@@ -342,18 +342,19 @@ body<-dashboardBody(
        column(width=4,
               box(width=12,title=tagList(img(src="Biopng.png",height="25"),"Select options"), solidHeader=T, closable=F, collapsible=T, status="success", 
                       downloadButton("downloadData", "Download Precomputed file for groups",icon("download"), style = "color: white; background-color: #400080;border-color: #400080;"),
-					  tags$hr(),
-					  #tags$b("Add external file with your own groups"),
-					  #shinyFilesButton('fileenvbio', 'Upload data', 'Select csv file', FALSE),	
-					  fileInput('fileenvbio','Add external file with your own groups', buttonLabel = 'Select File',  placeholder = 'No file selected',  accept = c('.csv')),					  
+					  tags$hr(),					  
+					  fluidRow(
+					  column(6,fileInput('fileenvbio','Add external file with your own groups', buttonLabel = 'Select File',  placeholder = 'No file selected',  accept = c('.csv') )),					  
+					  column(6,selectInput('catv','Group',choices = '',selected=NULL)),
+						),
 					  tags$hr(style = "border-top: 4px solid black;"),
                       checkboxInput("quitomono","Remove monomorphic markers for calculation of Fst",value=FALSE),
 					  tags$hr(style = "border-top: 4px solid black;"),					  
-					  checkboxInput("mixture","Add mixture cluster (take time and only see in circular dendogram)",value=FALSE),
-					  tags$hr(style = "border-top: 4px solid black;"),
-				  	  checkboxInput("gapS","Optimize number of cluster (gap method take a lot of time)",value=FALSE),
+					  checkboxInput("gapS","Optimize number of cluster (gap method take a lot of time)",value=FALSE),
 					  selectInput('methgap','Method of optimization',choices=c('gap','silhouette'), selected='silhouette'),
                       textInput('nclust','No. Clusters',value='3'),
+					  tags$hr(style = "border-top: 4px solid black;"),
+                      checkboxInput("mixture","Add mixture cluster (take time and only see in circular dendogram)",value=FALSE),
 					  tags$hr(style = "border-top: 4px solid black;"),					  
                       radioButtons("distk", "Genetic Distance",choices = c(Rogers = "Rogers", Nei = "Nei")),
 					  div(style = "text-align: center;",actionButton("calcopt", "Run analysis",icon("gear"), style = "color: white; background-color: #400080;border-color: #400080;"))

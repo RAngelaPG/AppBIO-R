@@ -202,9 +202,9 @@ as much as possible the genetic diversity of the original collection")),tabName=
 			updateSelectInput(session,'xcol3D', 'X Variable',choices = vars,selected=vars[2])
 			updateSelectInput(session,'ycol3D', 'Y Variable',choices = vars,selected=vars[3])
 			updateSelectInput(session,'zcol3D', 'Z Variable',choices = vars,selected=vars[4])
-			updateSelectInput(session,'catv3D', 'Group',choices = vars,selected=vars[5])
+			#updateSelectInput(session,'catv3D', 'Group',choices = vars,selected=vars[5])
 			updateSelectInput(session,'eti3D', 'Label',choices = vars,selected=vars[1])
-			updateSelectInput(session,'catvdend', 'Group',choices = vars,selected=vars[5])    
+			#updateSelectInput(session,'catvdend', 'Group',choices = vars,selected=vars[5])    
 			updateSelectInput(session,'xcolCH', 'X Variable',choices = vars,selected=vars[2])
 			updateSelectInput(session,'ycolCH', 'Y Variable',choices = vars,selected=vars[3])
 			updateSelectInput(session,'zcolCH', 'Z Variable',choices = vars,selected=vars[4])
@@ -641,7 +641,7 @@ output$downloadData <- downloadHandler(
 		div=NULL		
 		biodata=list(as.data.frame(div),coord2, getwd(), clust, datos, mrdMAT, perctCP12,BestNc,qmatrix=NULL,exadiv=NULL, exadivg=NULL, tablaOpt=NULL)
 	}else{
-		biodata=Biodv(str_replace(filename,".csv",""),datos,nall,distk,mayorque,menorque,missval,typedata,ht1,ht2,ht3,missvalG,mixture,gap,methodgap)		
+		biodata=Biodv(str_replace(filename,".csv",""),datos,nall,distk,mayorque,menorque,missval,typedata,ht1,ht2,ht3,missvalG,mixture,gap,methodgap,as.numeric(input$nclust))		
 	}
 	updateTextInput(session,'tx','X Axis Label',value = paste0('Factor 1 (',biodata[[7]][1],'%)'))
 	updateTextInput(session,'ty','Y Axis Label',value = paste0('Factor 2 (',biodata[[7]][2],'%)'))
@@ -673,6 +673,8 @@ output$downloadData <- downloadHandler(
 			seedatos=as.data.frame("Option no available for distance matrix input file")
 		}else{				
 			seedatos<-as.data.frame(BiodivInfo$res1[[1]])
+			seedatos[,2]=round(as.numeric(seedatos[,2]),4)
+			names(seedatos)=c("source","value")
 		}
 	}else{
 		if(input$typedata=="DistMat"){
@@ -680,6 +682,8 @@ output$downloadData <- downloadHandler(
 		}else{
 			UpRD=GenInfo$UploadRd
 			seedatos<-UpRD$DivAna[[1]]
+			seedatos[,2]=round(as.numeric(seedatos[,2]),4)
+			names(seedatos)=c("source","value")
 		}
 	}
     datatable(seedatos, selection="multiple", escape=FALSE, 
@@ -756,6 +760,8 @@ output$downloadData <- downloadHandler(
 		seedatos=as.data.frame("Option no available for distance matrix input file")
 	}else{
 		seedatos=as.data.frame(DoforPopStr()[[1]])
+		seedatos[,3] <- ifelse(grepl("^\\d+(\\.\\d+)?$", seedatos[,3]),round(as.numeric(seedatos[,3]), 4), seedatos[,3])
+		names(seedatos)=c("source","group","value","usefulMark")
 	}	
 	datatable(seedatos, selection="multiple", escape=FALSE, 
               options = list(sDom  = '<"top">lrt<"bottom">ip',pageLength = 10,width="100%", scrollX = TRUE))
@@ -786,6 +792,7 @@ output$downloadData <- downloadHandler(
 				seedatos=forAMOVA(as.data.frame(BiodivInfo$res1[[6]]),agc.env)  
 				rownames(seedatos)=seedatos[,1]
 				seedatos=seedatos[,-1]	
+				seedatos[,2:8]<-apply(seedatos[,2:8], 2,function(x) {round(as.numeric(x),4)})
 				#write.csv(seedatos,file.path(BiodivInfo$res1[[3]],paste0("AMOVA_",input$catv,".csv")))
 			}else{
 				seedatos=as.data.frame("Option no available for continuous variables")
@@ -794,11 +801,13 @@ output$downloadData <- downloadHandler(
 			seedatos=as.data.frame(DoforPopStr()[[2]]) 
 			rownames(seedatos)=seedatos[,1]
 			seedatos=data.frame(seedatos[,-1])
+			seedatos[,2:8]<-apply(seedatos[,2:8], 2,function(x) {round(as.numeric(x),4)})
 		}
 	}else{
 		seedatos=as.data.frame(DoforPopStr()[[2]]) 
 		rownames(seedatos)=seedatos[,1]
 		seedatos=data.frame(seedatos[,-1])
+		seedatos[,2:8]<-apply(seedatos[,2:8], 2,function(x) {round(as.numeric(x),4)})
 	}
 	seedatos
   })
@@ -812,26 +821,26 @@ output$downloadData <- downloadHandler(
   #Transformacion de los datos, para el uso posterior en los graficos
   #shinyFileChoose(input, 'fileenvbio', roots = getVolumes(),filetypes=c('', 'csv'))
 ##################################################################################################################################################################
-colores_18 <- c(
-  "#E41A1C",  # rojo intenso
-  "#0057FF",  # azul eléctrico
-  "#00C853",  # verde brillante
-  "#FFD600",  # amarillo encendido
-  "#FF3D00",  # naranja fuerte
-  "#AA00FF",  # púrpura intenso
-  "#A65628",  # café
-  "#F781BF",  # rosa
-  "#17BECF",  # cian
-  "#BCBD22",  # oliva
-  "#08306B",  # azul oscuro
-  "#67000D",  # vino oscuro
-  "#00441B",  # verde bosque
-  "#3F007D",  # morado profundo
-  "#4A2C2A",  # marrón oscuro
-  "#00B0FF",  # azul celeste brillante
-  "#FF6F91",  # coral rosado
-  "#7CB342"   # verde lima oscuro
-)
+colores_18<-c("intense red" = "#E41A1C",
+  "electric blue" = "#0057FF",
+  "bright green" = "#00C853",
+  "vivid yellow" = "#FFD600",
+  "strong orange" = "#FF3D00",
+  "intense purple" = "#AA00FF",
+  "brown" = "#A65628",
+  "pink" = "#F781BF",
+  "cyan" = "#17BECF",
+  "olive" = "#BCBD22",
+  "dark blue" = "#08306B",
+  "dark wine" = "#67000D",
+  "forest green" = "#00441B",
+  "deep purple" = "#3F007D",
+  "dark brown" = "#4A2C2A",
+  "bright sky blue" = "#00B0FF",
+  "coral pink" = "#FF6F91",
+  "dark lime green" = "#7CB342"
+  )
+  
   mdata1=reactive({
   if(input$startAna=="StarBio"){go1=1}else{go1=0}
 	 validate(      
@@ -839,7 +848,7 @@ colores_18 <- c(
     )	
 	
     #Cada que se actualice nclust
-    pp= as.data.frame(cutree (as.hclust(BiodivInfo$res1[[4]]), k = as.numeric(input$nclust)))
+	pp= as.data.frame(cutree (as.hclust(BiodivInfo$res1[[4]]), k = as.numeric(BiodivInfo$res1[[8]])))	
     TFArx=as.phylo(as.hclust(BiodivInfo$res1[[4]]))
     groups=as.data.frame(pp)
     coord2=as.data.frame(BiodivInfo$res1[[2]])
@@ -869,18 +878,18 @@ colores_18 <- c(
     }
     #Nombre de las variables en la base de datos
     vars=names(data1)
+	vgg=vars[5:length(vars)]
+	vxyz=vars[2:4]
     #Actualiza el selectinput de acuerdo a la base de datos cargada
-    updateSelectInput(session,'xcol', 'X Variable',choices = vars,selected=vars[2])
-    updateSelectInput(session,'ycol', 'Y Variable',choices = vars,selected=vars[3])
-    updateSelectInput(session,'zcol', 'Z Variable',choices = vars,selected=vars[4])
-    updateSelectInput(session,'catv', 'Group',choices = vars,selected=vars[5])
+    updateSelectInput(session,'xcol', 'X Variable',choices = vxyz,selected=vxyz[1])
+    updateSelectInput(session,'ycol', 'Y Variable',choices = vxyz,selected=vxyz[2])
+    updateSelectInput(session,'zcol', 'Z Variable',choices = vxyz,selected=vxyz[3])
+    updateSelectInput(session,'catv', 'Group',choices = vgg,selected=vgg[1])
     updateSelectInput(session,'eti', 'Label',choices = vars,selected=vars[1])
-    updateSelectInput(session,'xcol3D', 'X Variable',choices = vars,selected=vars[2])
-    updateSelectInput(session,'ycol3D', 'Y Variable',choices = vars,selected=vars[3])
-    updateSelectInput(session,'zcol3D', 'Z Variable',choices = vars,selected=vars[4])
-    updateSelectInput(session,'catv3D', 'Group',choices = vars,selected=vars[5])
-    updateSelectInput(session,'eti3D', 'Label',choices = vars,selected=vars[1])
-    updateSelectInput(session,'catvdend', 'Group',choices = vars,selected=vars[5])
+    updateSelectInput(session,'xcol3D', 'X Variable',choices = vxyz,selected=vxyz[1])
+    updateSelectInput(session,'ycol3D', 'Y Variable',choices = vxyz,selected=vxyz[2])
+    updateSelectInput(session,'zcol3D', 'Z Variable',choices = vxyz,selected=vxyz[3])
+    updateSelectInput(session,'eti3D', 'Label',choices = vars,selected=vars[1])    
     
     result=list(data1,TFArx)
 	#write.csv(data1,file.path(BiodivInfo$res1[[3]],"GroupsCluster.csv"),row.names=F)
@@ -890,14 +899,17 @@ colores_18 <- c(
   #Cada que se elige un grupo se genera una cantidad de colores correspondiente 
   #al numero de elementos de cada grupo
   observeEvent(input$catv,{
+	# Asegura que exista la variable seleccionada
+    req(input$catv)
+  
 	if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
 	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
 	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
-	 hasResult <- !is.null(BiodivInfo$res1)
-	 validate(
-      need(Gdata != 0, "Please upload data"),
-	  need(hasResult, "Please select options and click the button 'Run analysis'")
-	)
+	#hasResult <- !is.null(BiodivInfo$res1)
+	  # Validaciones
+	req(Gdata != 0)
+	req(!is.null(BiodivInfo$res1))
+  
 	set.seed(7)
     colores=colors()[-c(1,3:12,13:25,24,37:46,57:67,80,82,83,85:89,101:106,108:113,126:127,138,140:141,152:253,260:366,377:392,
                         394:447,449,478:489,492,513:534,536:546,557:561,579:583,589:609,620:629,418,436,646:651)]
@@ -922,77 +934,10 @@ colores_18 <- c(
 		}
 	}
     updateSelectInput(session,'color','Choose a color',choices=d,selected=d[1:grupos])
+	updateSelectInput(session,'color3D','Choose a color', choices=d,selected=d[1:grupos])
+	updateSelectInput(session,'colordend','Choose a color', choices=d,selected=d[1:grupos])	
   })
-  observeEvent(input$catv3D,{
-    if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
-	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
-	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
-	 hasResult <- !is.null(BiodivInfo$res1)
-	 validate(
-      need(Gdata != 0, "Please upload data"),
-	  need(hasResult, "Please select options and click the button 'Run analysis'")
-	)
-	set.seed(7)
-    colores=colors()[-c(1,3:12,13:25,24,37:46,57:67,80,82,83,85:89,101:106,108:113,126:127,138,140:141,152:253,260:366,377:392,
-                        394:447,449,478:489,492,513:534,536:546,557:561,579:583,589:609,620:629,418,436,646:651)]
-    #d=sample(colores,100)
-	if(SelFile=="RData"){
-		UpRD=GenInfo$UploadRd
-		if(typeof(UpRD$Aux[[1]][,input$catv3D])!="double"){			
-			var=as.factor(UpRD$Aux[[1]][,input$catv3D])
-			grupos=nlevels(var)
-			if(grupos>18){d=sample(colores,100)}else{d=colores_18}
-		}else{
-			d=c("Jet","Jet","Jet","Jet","Jet","Jet")
-			grupos=2
-		}
-	}else{
-		if(typeof(BiodivInfo$res2[[1]][,input$catv3D])!="double"){			
-			var=as.factor(BiodivInfo$res2[[1]][,input$catv3D])
-			grupos=nlevels(var)
-			if(grupos>18){d=sample(colores,100)}else{d=colores_18}
-		}else{
-			d=c("Jet","Jet","Jet","Jet","Jet","Jet")
-			grupos=2
-		}
-	}
-    updateSelectInput(session,'color3D','Choose a color', choices=d,selected=d[1:grupos])
-  })
-  observeEvent(input$catvdend,{
-	if(!is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=1;SelFile="Data"}
-	 if(is.null(GenInfo$dfgen) & !is.null(GenInfo$UploadRd)){Gdata=1;SelFile="RData"}
-	 if(is.null(GenInfo$dfgen) & is.null(GenInfo$UploadRd)){Gdata=0}
-	 hasResult <- !is.null(BiodivInfo$res1)
-	 validate(
-      need(Gdata != 0, "Please upload data"),
-	  need(hasResult, "Please select options and click the button 'Run analysis'")
-	)
-    set.seed(7)
-    colores=colors()[-c(1,3:12,13:25,24,37:46,57:67,80,82,83,85:89,101:106,108:113,126:127,138,140:141,152:253,260:366,377:392,
-                        394:447,449,478:489,492,513:534,536:546,557:561,579:583,589:609,620:629,418,436,646:651)]    
-	#d=sample(colores,100)
-	if(SelFile=="RData"){
-		UpRD=GenInfo$UploadRd
-		if(typeof(UpRD$Aux[[1]][,input$catvdend])!="double"){			
-			var=as.factor(UpRD$Aux[[1]][,input$catvdend])
-			grupos=nlevels(var)
-			if(grupos>18){d=sample(colores,100)}else{d=colores_18}
-		}else{
-			d=c("Jet","Jet","Jet","Jet","Jet","Jet")
-			grupos=2
-		}
-	}else{
-		if(typeof(BiodivInfo$res2[[1]][,input$catvdend])!="double"){			
-			var=as.factor(BiodivInfo$res2[[1]][,input$catvdend])
-			grupos=nlevels(var)
-			if(grupos>18){d=sample(colores,100)}else{d=colores_18}
-		}else{
-			d=c("Jet","Jet","Jet","Jet","Jet","Jet")
-			grupos=2
-		}
-	}
-    updateSelectInput(session,'colordend','Choose a color', choices=d,selected=d[1:grupos])	
-  })
+    
 ##################################################################################################################################################################
   #grafico 2d
 ##################################################################################################################################################################
@@ -1076,8 +1021,8 @@ colores_18 <- c(
 	)
 	if(SelFile=="Data"){	 
 		#if(!file.exists("Output_3DPlots")) dir.create("Output_3DPlots")
-		if(typeof(BiodivInfo$res2[[1]][,input$catv3D])!="double"){	
-			p=plot_ly(data=BiodivInfo$res2[[1]],x=BiodivInfo$res2[[1]][,input$xcol3D],y=BiodivInfo$res2[[1]][,input$ycol3D],z=BiodivInfo$res2[[1]][,input$zcol3D],color=BiodivInfo$res2[[1]][,input$catv3D],
+		if(typeof(BiodivInfo$res2[[1]][,input$catv])!="double"){	
+			p=plot_ly(data=BiodivInfo$res2[[1]],x=BiodivInfo$res2[[1]][,input$xcol3D],y=BiodivInfo$res2[[1]][,input$ycol3D],z=BiodivInfo$res2[[1]][,input$zcol3D],color=BiodivInfo$res2[[1]][,input$catv],
 					type = 'scatter3d' ,mode="markers",colors = input$color3D,
 					text=BiodivInfo$res2[[1]][,input$eti3D],marker=list(size=input$size3D))%>%
 			#Nombre de los ejes del grafico
@@ -1087,7 +1032,7 @@ colores_18 <- c(
 					paper_bgcolor=input$bkgp3D,
 					title=input$tp3D,titlefont=list(size=input$ts3D,color=input$pnc3D))
 		}else{
-			p=plot_ly(data=BiodivInfo$res2[[1]],x=BiodivInfo$res2[[1]][,input$xcol3D],y=BiodivInfo$res2[[1]][,input$ycol3D],z=BiodivInfo$res2[[1]][,input$zcol3D],color=BiodivInfo$res2[[1]][,input$catv3D],
+			p=plot_ly(data=BiodivInfo$res2[[1]],x=BiodivInfo$res2[[1]][,input$xcol3D],y=BiodivInfo$res2[[1]][,input$ycol3D],z=BiodivInfo$res2[[1]][,input$zcol3D],color=BiodivInfo$res2[[1]][,input$catv],
 				type = 'scatter3d' ,mode="markers",colors=c("blue","cyan","green","orange","red"),
 				text=BiodivInfo$res2[[1]][,input$eti3D],marker=list(size=input$size3D))%>%
 		#Nombre de los ejes del grafico
@@ -1105,8 +1050,8 @@ colores_18 <- c(
 	}else{
 		UpRD=GenInfo$UploadRd
 		#if(!file.exists("Output_3DPlots")) dir.create("Output_3DPlots")
-		if(typeof(UpRD$Aux[[1]][,input$catv3D])!="double"){		
-			p=plot_ly(data=UpRD$Aux[[1]],x=UpRD$Aux[[1]][,input$xcol3D],y=UpRD$Aux[[1]][,input$ycol3D],z=UpRD$Aux[[1]][,input$zcol3D],color=UpRD$Aux[[1]][,input$catv3D],
+		if(typeof(UpRD$Aux[[1]][,input$catv])!="double"){		
+			p=plot_ly(data=UpRD$Aux[[1]],x=UpRD$Aux[[1]][,input$xcol3D],y=UpRD$Aux[[1]][,input$ycol3D],z=UpRD$Aux[[1]][,input$zcol3D],color=UpRD$Aux[[1]][,input$catv],
 					type = 'scatter3d' ,mode="markers",colors = input$color3D,
 					text=UpRD$Aux[[1]][,input$eti3D],marker=list(size=input$size3D))%>%
 			#Nombre de los ejes del grafico
@@ -1116,7 +1061,7 @@ colores_18 <- c(
 					paper_bgcolor=input$bkgp3D,
 					title=input$tp3D,titlefont=list(size=input$ts3D,color=input$pnc3D))
 		}else{
-			p=plot_ly(data=UpRD$Aux[[1]],x=UpRD$Aux[[1]][,input$xcol3D],y=UpRD$Aux[[1]][,input$ycol3D],z=UpRD$Aux[[1]][,input$zcol3D],color=UpRD$Aux[[1]][,input$catv3D],
+			p=plot_ly(data=UpRD$Aux[[1]],x=UpRD$Aux[[1]][,input$xcol3D],y=UpRD$Aux[[1]][,input$ycol3D],z=UpRD$Aux[[1]][,input$zcol3D],color=UpRD$Aux[[1]][,input$catv],
 					type = 'scatter3d' ,mode="markers",colors=c("blue","cyan","green","orange","red"),
 					text=UpRD$Aux[[1]][,input$eti3D],marker=list(size=input$size3D))%>%
 			#Nombre de los ejes del grafico
@@ -1193,7 +1138,7 @@ dendoPlot<-reactive({
 		#save(DivAna,Aux,file="DivAna.RData")
 		#if(!file.exists("Output_Dendograms")) dir.create("Output_Dendograms")
 		data=as.data.frame(BiodivInfo$res2[[1]])
-		info<- data[,c("Gen",input$catvdend)]
+		info<- data[,c("Gen",input$catv)]
 		info<- cbind(ID=info$Gen,info)
 		names(info)=c("ID","Gen","Group")		
 		tree=BiodivInfo$res2[[2]]
@@ -1261,7 +1206,7 @@ dendoPlot<-reactive({
 		UpRD=GenInfo$UploadRd
 		#if(!file.exists("Output_Dendograms")) dir.create("Output_Dendograms")
 		data=as.data.frame(UpRD$Aux[[1]][1])
-		info<- data[,c("Gen",input$catvdend)]
+		info<- data[,c("Gen",input$catv)]
 		info<- cbind(ID=info$Gen,info)
 		names(info)=c("ID","Gen","Group")
 		kbest<-length(unique(info$Group))
@@ -1705,6 +1650,8 @@ dendoPlot<-reactive({
 	updateTextInput(session,'tzCH','Z Axis Label',value = paste0('Factor 3 (',perctCP12[3],'%)'))			
 		
 	return(list(genos1,statsF))
+	
+    
   })
   
 	output$defaultcore <- DT::renderDataTable({
