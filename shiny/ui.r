@@ -383,7 +383,8 @@ body<-dashboardBody(
   ###################################################################################################################################################  
   ###################################################################################################################################################  
   tabItem(tabName="core",
-          box(solidHeader = TRUE,title = tagList(img(src="Biopng.png",height="25"),"Select Options"),width = 6,status = "success",
+		fluidRow(
+          box(solidHeader = TRUE,title = tagList(img(src="Biopng.png",height="25"),"Select Options"),width = 6,status = "success",collapsible=T, collapsed=F, 		
             fluidRow(
               tags$head(
                 tags$style(type="text/css", "#inline label{ display: table-cell; text-align: left; vertical-align: middle; } 
@@ -393,16 +394,18 @@ body<-dashboardBody(
                     useShinyjs(),
                     boxPad(color="gray",
                        checkboxGroupInput("datause", "Information to use:",c("Phenotypic Data" = "phendat",
-                       "Genetic Data" = "gendat","Matrix Distance" = "distdat")),
+                       "Genetic Data" = "gendat","Matrix Distance" = "distdat"),selected="gendat"),
                        #shinyFilesButton('filedistbio', 'Choose distance matrix (csv file)', 'Select File', FALSE),
 					   #shinyFilesButton('filephendatbio', 'Choose phenotypic data (csv file)', 'Select File', FALSE)
 					   fileInput('filedistbio','Choose distance matrix (csv file)', buttonLabel = 'Select File',  placeholder = 'No file selected',  accept = c('.csv')),					  
 					   fileInput('filephendatbio','Choose phenotypic data (csv file)', buttonLabel = 'Select File',  placeholder = 'No file selected',  accept = c('.csv'))					  
                            )
-                ),
-              column(width=6,
-                    boxPad(color="gray",tags$div(id = "inline", textInput('score','Size of Core Subset:',value = '0.2',width = '50%')))
-              )
+                ),			  
+			  column(width = 6,
+					boxPad(color = "gray",					
+						tags$div(id = "inline",textInput('score','Size of Core Subset:',value = '0.2',width = '50%'))
+						)
+					),						
             ),
             tags$br(),
             fluidRow(
@@ -451,18 +454,23 @@ body<-dashboardBody(
                             tags$div(id = "inline",textInput('CV','CV: Maximizes the proportions of alleles observed in the full dataset that are retained in the selected core.',value = '0'))
                      )
                      )
-            )
-          ),
-		fluidRow(
-          box(solidHeader = T, title=tagList(img(src="Biopng.png",height="25"),"Statistics"),status = "success", closable=F, collapsible=T, collapsed=T,      
-			div(style = "text-align: center;",actionButton("generate_Core", "Download report",icon("download"), style = "color: white; background-color: #400080;border-color: #400080;")),		  		    
-			downloadButton("generateCore", "Download report",, style = "visibility:hidden;"),
+            ),
+			fluidRow(
 			tags$hr(),
+			div(style = "text-align: center;",
+				actionButton("generate_core","Generate report",icon("gears"),style = "color: white; background-color: #400080; border-color: #400080;"),        
+				actionButton("downCore","Download report",icon("download"),style = "color: white; background-color: #0000ff; border-color: #0000ff;")),        
+				downloadButton("download_core","Download report",style = "visibility:hidden;")				
+			)
+          ),		
+          box(solidHeader = T, title=tagList(img(src="Biopng.png",height="25"),"Statistics"),status = "success", closable=F, collapsible=T, collapsed=F, 		
 			 DT::dataTableOutput("defaultcore"),
 			 tags$hr(),
 			DT::dataTableOutput("selInd")			  
-          ),
-		  box(loadingState(),title=tagList(img(src="Biopng.png",height="25"),"MDSplot2D Subset"), solidHeader=T, closable=F, collapsible=T, collapsed=F, status="success", 			
+          )
+		),
+		fluidRow(
+		  box(loadingState(),width=12,title=tagList(img(src="Biopng.png",height="25"),"MDSplot2D Subset"), solidHeader=T, closable=F, collapsible=T, collapsed=F, status="success", 			
 			sidebar=boxSidebar(id="boxMDS2DCH",width = 25,
                       background = "#8f8d8d",
                       useShinyalert(force=TRUE),         

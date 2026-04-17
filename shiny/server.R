@@ -524,18 +524,19 @@ output$downloadData <- downloadHandler(
 
  BiodivInfo <- reactiveValues(res1=NULL,res2=NULL)
 	observeEvent(input$calcopt, {
+  shinybusy::show_modal_spinner(spin = "fading-circle", text = "Running diversity analysis..." )
+  #withProgress(message = "Running analysis...", value = 0, {
 
-  withProgress(message = "Running analysis...", value = 0, {
-
-    incProgress(0.3, detail = "Processing diversity...")
+    #incProgress(0.3, detail = "Processing diversity...")
     BiodivInfo$res1 <- isolate(DoforDiv())
 
-    incProgress(0.6, detail = "Processing metadata...")
+    #incProgress(0.6, detail = "Processing metadata...")
     BiodivInfo$res2 <- isolate(mdata1())
 
-    incProgress(1, detail = "Done")
+    #incProgress(1, detail = "Done")
 
-  })  
+  #}) 
+	shinybusy::remove_modal_spinner()
 })
 
 	
@@ -1465,115 +1466,74 @@ dendoPlot<-reactive({
 	
   })
   
-  
+  CoreInfo <- reactiveValues(genos1=NULL,statsF=NULL)
+
   datacore=reactive({
+    req(input$datause)
     if ("phendat"%in%input$datause){
-      typedata<- cambia_caracter(input$typedata)
-	  if(!"gendat"%in%input$datause && "distdat"%in%input$datause){checadist="exist"}else{checadist="none"}
-	  
-	  dirfilePhen<-input$filephendatbio
-      validate(
-		need(!is.null(dirfilePhen), "Please select data"),
-		need(checadist!="exist","Combination of data NO available")
-      )
+      dirfilePhen<-input$filephendatbio
     }else{      
       dirfilePhen<-"none"      
     }
-  
+    
     if ("gendat"%in%input$datause){
       datosgen=as.data.frame(GenInfo$dfgen)
-	  #inFilegen=parseFilePaths(roots=getVolumes(), input$filegen)
-	  #headerdatos <- read.table(as.character(inFilegen$datapath),nrows=1,header = FALSE, sep =',', stringsAsFactors = FALSE)
-      #colnames(datosgen)=headerdatos    
       dirfileGen<-"exist"
-	  typedata<- cambia_caracter(input$typedata)	  
-	  validate(
-        need(nrow(datosgen) != 0, "Please select data"),
-		need(typedata!="DistMat","Please upload genetic data")
-      )      
+      typedata<- cambia_caracter(input$typedata)	  
       ht1=as.numeric(input$ht1)
       ht2=as.numeric(input$ht2)
       ht3=as.numeric(input$ht3)
       newcolnames <- cambia_caracter(quita_espacio(as.matrix(colnames(datosgen))))
       colnames(datosgen) <- putg(newcolnames)
-	  if (typedata=="vcfile"){
-		datosgen=replace(datosgen,datosgen==0,99)
-		datosgen=replace(datosgen,datosgen==1,0.5)
-		datosgen=replace(datosgen,datosgen==2,999)
-		datosgen=replace(datosgen,datosgen==99,1)   
-		datosgen=replace(datosgen,datosgen==999,0)   
-		datosgen <- as.data.frame(datosgen)
-	  }
+      if (typedata=="vcfile"){
+        datosgen=replace(datosgen,datosgen==0,99)
+        datosgen=replace(datosgen,datosgen==1,0.5)
+        datosgen=replace(datosgen,datosgen==2,999)
+        datosgen=replace(datosgen,datosgen==99,1)   
+        datosgen=replace(datosgen,datosgen==999,0)   
+        datosgen <- as.data.frame(datosgen)
+      }
       if (typedata=="SNP"){
         datosgen=replace(datosgen,datosgen==ht1,99)
-		datosgen=replace(datosgen,datosgen==ht2,0.5)
-		datosgen=replace(datosgen,datosgen==ht3,999)
-		datosgen=replace(datosgen,datosgen==99,1)   
-		datosgen=replace(datosgen,datosgen==999,0)   
-		datosgen <- as.data.frame(datosgen)
+        datosgen=replace(datosgen,datosgen==ht2,0.5)
+        datosgen=replace(datosgen,datosgen==ht3,999)
+        datosgen=replace(datosgen,datosgen==99,1)   
+        datosgen=replace(datosgen,datosgen==999,0)   
+        datosgen <- as.data.frame(datosgen)
       }
       if (typedata=="FREQ"){datosgen <-as.data.frame(datosgen)}
-	  
-	  if (typedata=="CUENTA"){
-		dtmp=as.data.frame(cbind(Allele=datosgen[,1],SNP=as.numeric(rep(c(NA,2)),dim(datosgen)[1]/2),datosgen[,-1]))
-		datosgen <- as.data.frame(CounToFreqNI(data_set=dtmp))
-	  }
-	  Marker=unlist(lapply(seq(1:dim(datosgen)[1]),function(y) rbind(y,y)))
+      
+      if (typedata=="CUENTA"){
+        dtmp=as.data.frame(cbind(Allele=datosgen[,1],SNP=as.numeric(rep(c(NA,2)),dim(datosgen)[1]/2),datosgen[,-1]))
+        datosgen <- as.data.frame(CounToFreqNI(data_set=dtmp))
+      }
+      Marker=unlist(lapply(seq(1:dim(datosgen)[1]),function(y) rbind(y,y)))
       Allele=rep(c("",".1"),dim(datosgen)[1])
-	  MAlle=paste("M",Marker,Allele,sep="")
+      MAlle=paste("M",Marker,Allele,sep="")
       mcomp=apply(datosgen[,-1],2,function(y) rbind(y,1-y))
-	  NGen=colnames(mcomp)
-	  mcomp=data.frame(t(mcomp))
-	  datos=as.data.frame(cbind(NGen,mcomp))
-	  colnames(datos)=c("NAME",MAlle)
-	  rownames(datos)=seq(1:length(NGen))
-	  rm(datosgen)
-	  gc()
+      NGen=colnames(mcomp)
+      mcomp=data.frame(t(mcomp))
+      datos=as.data.frame(cbind(NGen,mcomp))
+      colnames(datos)=c("NAME",MAlle)
+      rownames(datos)=seq(1:length(NGen))
+      rm(datosgen)
+      gc()
     }else{
       datos=as.data.frame(matrix(0,3,3))
       dirfileGen<-"none"
-      
-      } 
+    } 
     
     if ("distdat"%in%input$datause){      
-	  typedata<- cambia_caracter(input$typedata)	  
       dirfileDist<-input$filedistbio
-      validate(
-        need(!is.null(dirfileDist), "Please select data")
-      )
     }else{
       dirfileDist<-"none" 
     }
     
     ver=sum(as.numeric(c(input$mrdEN,input$csedEN,input$gdEN,input$pcdEN,
-              input$mrdEE,input$csedEE,input$gdEE,input$pcdEE,
-              input$mrdAN,input$csedAN,input$gdAN,input$pcdAN,
-              input$SH,input$HE,input$CV)))
-    validate(
-      need(ver == 1, "The sum of the weights must be one")
-    )
+                         input$mrdEE,input$csedEE,input$gdEE,input$pcdEE,
+                         input$mrdAN,input$csedAN,input$gdAN,input$pcdAN,
+                         input$SH,input$HE,input$CV)))
     
-    if("phendat"%in%input$datause){
-      dirfile=as.character(input$filephendatbio$datapath)
-      filename=as.character(input$filephendatbio$name)
-    }else{
-      if("gendat"%in%input$datause){
-        dirfile=as.character(input$filegen$datapath)
-        filename=as.character(input$filegen$name)
-      }else{
-        dirfile=as.character(input$filedistbio$datapath)
-        filename=as.character(input$filedistbio$name)
-      }
-    }
-	
-	#outFolder <- cambia_caracter(paste("CoreSubset_",str_replace(filename,".csv",""),sep=""))
-    #setwd(str_replace(dirfile,filename,""))
-    #if(!file.exists("Output_BIO-R")) dir.create("Output_BIO-R")
-    #setwd("Output_BIO-R")
-    #if(!file.exists(outFolder)) dir.create(outFolder)
-    #setwd(outFolder)
-    #fin=getwd()
-	
 	### Correr funciones ----------------------------------------
 	withProgress(message = 'Getting...', value = 0,{
 	incProgress(1/2, detail = "Wait, Please!")
@@ -1584,7 +1544,6 @@ dendoPlot<-reactive({
     	
 	genos<-as.data.frame(resCH[[1]])
 	distMat<-resCH[[2]]
-	#save(genos,datos,distMat,dirfileGen,dirfileDist,dirfilePhen,file="addreport.RData")
 	if (dirfileGen[1]!="none" & dirfilePhen[1]=="none" & dirfileDist[1]=="none"){
 		rownames(datos)<-datos[,1]
 		datos<-datos[,-1]
@@ -1649,27 +1608,32 @@ dendoPlot<-reactive({
 	updateTextInput(session,'tyCH','Y Axis Label',value = paste0('Factor 2 (',perctCP12[2],'%)'))
 	updateTextInput(session,'tzCH','Z Axis Label',value = paste0('Factor 3 (',perctCP12[3],'%)'))			
 		
-	return(list(genos1,statsF))
-	
+	#return(list(genos1,statsF))
+	CoreInfo$genos1=genos1
+	CoreInfo$statsF=statsF
     
   })
-  
-	output$defaultcore <- DT::renderDataTable({
-		req(datacore())
-		seedf<-as.data.frame(datacore()[[2]])
+      
+	output$defaultcore <- DT::renderDataTable({	
+		validate(      
+			need(!is.null(CoreInfo$statsF),"Select parameters and then click in Generate report button")
+		)  	
+		seedf<-as.data.frame(CoreInfo$statsF)
 		datatable(seedf, selection="multiple", escape=FALSE, 
               options = list(sDom  = '<"top">lrt<"bottom">ip',pageLength = 7,width="100%", scrollX = TRUE))
 	})
 
-    output$selInd <- DT::renderDataTable({
-		req(datacore())
-		seedf<-as.data.frame(datacore()[[1]])
+    output$selInd <- DT::renderDataTable({   
+		validate(      
+			need(!is.null(CoreInfo$genos1),"Select parameters and then click in Generate report button")
+		)
+		seedf<-as.data.frame(CoreInfo$genos1)
 		datatable(seedf, selection="multiple", escape=FALSE, 
               options = list(sDom  = '<"top">lrt<"bottom">ip',pageLength = 10,width="100%", scrollX = TRUE))
 	})
 	
-observeEvent(input$catvCH,{
-    genos1<-datacore()[[1]]
+observeEvent(input$catvCH,{	
+    genos1<-CoreInfo$genos1
 	set.seed(7)
     colores=colors()[-c(1,3:12,13:25,24,37:46,57:67,80,82,83,85:89,101:106,108:113,126:127,138,140:141,152:253,260:366,377:392,
                         394:447,449,478:489,492,513:534,536:546,557:561,579:583,589:609,620:629,418,436,646:651)]
@@ -1688,10 +1652,11 @@ observeEvent(input$catvCH,{
 ##################################################################################################################################################################
   #grafico 2d Core Hunter
 ##################################################################################################################################################################
-  mds2PlotCore<-reactive({		 
-	#if(SelFile=="Data"){	  
-		#if(!file.exists("Output_2DPlots")) dir.create("Output_2DPlots")    
-		genos1<-datacore()[[1]]		
+  mds2PlotCore<-reactive({
+		validate(      
+			need(!is.null(CoreInfo$genos1),"Select parameters and then click in Generate report button")
+		)
+		genos1<-CoreInfo$genos1
 		if(typeof(genos1[,input$catvCH])!="double"){
 			p=plot_ly(data=genos1,x=genos1[,input$xcolCH],y=genos1[,input$ycolCH],color=genos1[,input$catvCH],
 					type="scatter",mode="markers",colors = input$colorCH,xaxis=F, yaxis=F,
@@ -1710,10 +1675,7 @@ observeEvent(input$catvCH,{
 			#titulo y etiquetas ejes
 			layout(title=input$tpCH,titlefont=list(size=input$tsCH,color=input$pncCH), xaxis = list(title = input$txCH, titlefont=list(size=input$szlCH,color=input$acCH)),
 					yaxis = list(title = input$tyCH,titlefont=list(size=input$szlCH,color=input$acCH)))		
-		}
-		#el siguiente codigo, cambia temporalmente el directorio de trabajo para guardar el grafico 2d
-		#primero se especifica la direccion en la que se guardara y luego la accion (guardar el grafico)
-		#withr::with_dir(file.path(datacore()[[1]],"Output_2DPlots"),saveWidget(p,paste0('MDS2dCH_',input$catvCH,'.html'), selfcontained = F))
+		}		
 		p
 	#}else{
 	#	UpRD=GenInfo$UploadRd
@@ -1744,13 +1706,83 @@ observeEvent(input$catvCH,{
 	#}
   })
   
-  output$tryCH=renderPlotly({	
-	req(datacore())
+  output$tryCH=renderPlotly({   
 	mds2PlotCore()
   })
   
+  valdatacore <- reactive({    
+    req(input$datause)
+    # Ejemplo simple
+    dirfilePhen <- input$filephendatbio
+    dirfileDist <- input$filedistbio
+    
+    weights <- as.numeric(c(
+      input$mrdEN,input$csedEN,input$gdEN,input$pcdEN,
+      input$mrdEE,input$csedEE,input$gdEE,input$pcdEE,
+      input$mrdAN,input$csedAN,input$gdAN,input$pcdAN,
+      input$SH,input$HE,input$CV
+    ))
+    
+    ver <- sum(weights, na.rm = TRUE)
+    # NO validate aquí
+    return(list(
+      ver = ver,
+      dirfilePhen = dirfilePhen,
+      dirfileDist = dirfileDist
+    ))
+  })
+  
+  
+observeEvent(input$generate_core, {
+
+  req(valdatacore())
+  data <- valdatacore()
+
+  # 🔍 Validaciones (tu lógica)
+  errores <- c()
+
+  if(("phendat" %in% input$datause) && is.null(data$dirfilePhen)){
+    errores <- c(errores, "Please select phenotypic data")
+  }
+
+  if(("distdat" %in% input$datause) && is.null(data$dirfileDist)){
+    errores <- c(errores, "Please select distance data")
+  }
+
+  if(("gendat" %in% input$datause) && is.null(GenInfo$dfgen)){
+    errores <- c(errores, "Please select genetic data")
+  }
+
+  if(!("gendat" %in% input$datause) && ("distdat" %in% input$datause)){
+    errores <- c(errores, "Combination of data NOT available")
+  }
+
+  if(data$ver != 1){
+    errores <- c(errores, paste("The sum of weights must be 1 (actual:", data$ver, ")"))
+  }
+
+  # 🚫 Si hay errores → no generar
+  if(length(errores) > 0){
+    #showNotification(paste(errores, collapse = "\n"), type = "warning")
+	showModal(modalDialog(title = "Warnings", paste(errores, collapse = "\n"),    
+    easyClose = TRUE,
+    footer = modalButton("Close"),
+    size = "l"  # 👈 tamaño grande
+    ))
+    return()
+  }
+
+  # 🔥 Generar reporte
+  shinybusy::show_modal_spinner(text = "Generating Report...")
+
+		datacore()
+
+	shinybusy::remove_modal_spinner()
+	
+  })
+  
   ##Download report
-    output$generateCore <- downloadHandler(
+    output$download_core <- downloadHandler(
 		filename = function() {paste0("CoreSubset_dashboard_", Sys.Date(), ".html")},
   
 		content = function(file) {
@@ -1761,10 +1793,10 @@ observeEvent(input$catvCH,{
 	 
 	 reportCore <- reactiveVal(NULL)
     
-    observeEvent(input$generate_Core,{
-
-		shinybusy::show_modal_spinner(spin = "fading-circle", text = "Generating Report..." )
-
+    observeEvent(input$downCore,{
+		
+		shinybusy::show_modal_spinner(spin = "fading-circle", text = "Download Report..." )
+		
 		src <- normalizePath("local/reportCore.Rmd")
 
 		owd <- getwd()              # ⚠️ guardas ruta real
@@ -1777,7 +1809,7 @@ observeEvent(input$catvCH,{
 			rmarkdown::render( "reportCore.Rmd",
 				params = list(
 					toDownload = TRUE,
-					resCore = datacore(),
+					resCore = list(genos1=CoreInfo$genos1,statsF=CoreInfo$statsF),
 					mds2 = mds2PlotCore()					
 				),
 				output_format = rmdformats::robobook(toc_depth = 4)
@@ -1793,13 +1825,23 @@ observeEvent(input$catvCH,{
 			if (!dir.exists("www")) dir.create("www")
 			file.copy(outReport, "www/reportCore.html", overwrite = TRUE)
 			reportCore("reportCore.html")  # 🔥 clave	
-			shinyjs::click("generateCore")			
+			shinyjs::click("download_core")			
 		}
 		shinybusy::remove_modal_spinner()
-	})
+	
+})
     
 
-	
+  
+  
+shinyjs::disable("downCore")
+
+observe({
+  if (!is.null(CoreInfo$genos1)) {
+    shinyjs::enable("downCore")
+  }
+})
+  
 ##################################################################################################################################################################
 ###################################################################################################################################################################################################
 #Start GWAS Code
@@ -2104,44 +2146,43 @@ DoforGene<-reactive({
 		
 		if(!is.null(input$fileplants$datapath)){
 
-		outReport <- tryCatch({
+			outReport <- tryCatch({
 
-			rmarkdown::render( "reportGWAS.Rmd",
-				params = list(
-					toDownload = TRUE,
-					resGWAS = DoforGWAS(),
-					qqplotR = QQplotR(),
-					qtlplotR = QTLplotR(),
-					manplotR = ManplotR(),
-					rengenplotR = RenGenplotR()
-				),
-				output_format = rmdformats::robobook(toc_depth = 4)
-			)
-		}, error = function(e) {
-			showNotification(paste("Error:", e$message), type = "error")
-			NULL
-		})
-	} else{
-		outReport <- tryCatch({
+				rmarkdown::render( "reportGWAS.Rmd",
+					params = list(
+						toDownload = TRUE,
+						resGWAS = DoforGWAS(),
+						qqplotR = QQplotR(),
+						qtlplotR = QTLplotR(),
+						manplotR = ManplotR(),
+						rengenplotR = RenGenplotR()
+					),
+					output_format = rmdformats::robobook(toc_depth = 4)
+				)
+			}, error = function(e) {
+				showNotification(paste("Error:", e$message), type = "error")
+				NULL
+			})
+		} else{
+			outReport <- tryCatch({
 
-			rmarkdown::render( "reportGWAS.Rmd",
-				params = list(
-					toDownload = TRUE,
-					resGWAS = DoforGWAS(),
-					qqplotR = QQplotR(),
-					qtlplotR = QTLplotR(),
-					manplotR = ManplotR(),
-					rengenplotR = NULL
-				),
-				output_format = rmdformats::robobook(toc_depth = 4)
-			)
-		}, error = function(e) {
-			showNotification(paste("Error:", e$message), type = "error")
-			NULL
-		})
-	}
-
-  # 🔥 REGRESAR AL APP DIR
+				rmarkdown::render( "reportGWAS.Rmd",
+					params = list(
+						toDownload = TRUE,
+						resGWAS = DoforGWAS(),
+						qqplotR = QQplotR(),
+						qtlplotR = QTLplotR(),
+						manplotR = ManplotR(),
+						rengenplotR = NULL
+					),
+					output_format = rmdformats::robobook(toc_depth = 4)
+				)
+			}, error = function(e) {
+				showNotification(paste("Error:", e$message), type = "error")
+				NULL
+			})
+		}
+	# 🔥 REGRESAR AL APP DIR
 		setwd(owd)
 		if (!is.null(outReport)) {
 			if (!dir.exists("www")) dir.create("www")
@@ -2151,8 +2192,6 @@ DoforGene<-reactive({
 		}
 		shinybusy::remove_modal_spinner()
 	})
-  
-
 
 ##################################################################################################################################################################
 }
