@@ -1676,34 +1676,7 @@ observeEvent(input$catvCH,{
 			layout(title=input$tpCH,titlefont=list(size=input$tsCH,color=input$pncCH), xaxis = list(title = input$txCH, titlefont=list(size=input$szlCH,color=input$acCH)),
 					yaxis = list(title = input$tyCH,titlefont=list(size=input$szlCH,color=input$acCH)))		
 		}		
-		p
-	#}else{
-	#	UpRD=GenInfo$UploadRd
-	#	if(!file.exists("Output_2DPlots")) dir.create("Output_2DPlots")    
-	#	if(typeof(UpRD$Aux[[1]][,input$catvCH])!="double"){
-	#		p=plot_ly(data=UpRD$Aux[[1]],x=UpRD$Aux[[1]][,input$xcolCH],y=UpRD$Aux[[1]][,input$ycolCH],color=UpRD$Aux[[1]][,input$catvCH],
-	#				type="scatter",mode="markers",colors = input$colorCH,xaxis=F, yaxis=F,
-	#				text=UpRD$Aux[[1]][,input$etiCH],marker=list(size=input$sizeCH))%>%
-	#		#color de fondo del grafico
-	#		layout(plot_bgcolor=input$bkgpCH)%>%
-	#		#titulo y etiquetas ejes
-	#		layout(title=input$tpCH,titlefont=list(size=input$tsCH,color=input$pncCH), xaxis = list(title = input$txCH, titlefont=list(size=input$szlCH,color=input$acCH)),
-	#				yaxis = list(title = input$tyCH,titlefont=list(size=input$szlCH,color=input$acCH)))
-	#	}else{
-	#		p=plot_ly(data=UpRD$Aux[[1]],x=UpRD$Aux[[1]][,input$xcolCH],y=UpRD$Aux[[1]][,input$ycolCH],color=UpRD$Aux[[1]][,input$catvCH],
-	#				type="scatter",mode="markers",xaxis=F, yaxis=F,colors=c("blue","cyan","green","orange","red"),
-	#				text=UpRD$Aux[[1]][,input$etiCH],marker=list(size=input$sizeCH))%>%
-	#		#color de fondo del grafico
-	#		layout(plot_bgcolor=input$bkgpCH)%>%
-	#		#titulo y etiquetas ejes
-	#		layout(title=input$tpCH,titlefont=list(size=input$tsCH,color=input$pncCH), xaxis = list(title = input$txCH, titlefont=list(size=input$szlCH,color=input$acCH)),
-	#				yaxis = list(title = input$tyCH,titlefont=list(size=input$szlCH,color=input$acCH)))
-	#	}
-	#	#el siguiente codigo, cambia temporalmente el directorio de trabajo para guardar el grafico 2d
-	#	#primero se especifica la direccion en la que se guardara y luego la accion (guardar el grafico)
-	#	withr::with_dir(file.path(UpRD$DivAna[[3]],"Output_2DPlots"),saveWidget(p,paste0('MDS2dCH_',input$catvCH,'.html'), selfcontained = F))
-	#	p
-	#}
+		p	
   })
   
   output$tryCH=renderPlotly({   
@@ -1752,11 +1725,9 @@ observeEvent(input$generate_core, {
   if(("gendat" %in% input$datause) && is.null(GenInfo$dfgen)){
     errores <- c(errores, "Please select genetic data")
   }
-
-  if(!("gendat" %in% input$datause) && ("distdat" %in% input$datause)){
-    errores <- c(errores, "Combination of data NOT available")
-  }
-
+  #if(!("gendat" %in% input$datause) && ("distdat" %in% input$datause)){
+  #  errores <- c(errores, "Combination of data NOT available")
+  #}
   if(data$ver != 1){
     errores <- c(errores, paste("The sum of weights must be 1 (actual:", data$ver, ")"))
   }
